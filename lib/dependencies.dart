@@ -11,6 +11,12 @@ final _client = Dio(
 
 final UserRepository _userRepository = HttpUserRepository(dio: _client);
 
+final InterestsRepository _interestsRepository =
+    HttpInterestsRepository(dio: _client);
+
+final ProductRepository _productRepository =
+    HttpProductRepository(dio: _client);
+
 /* final _firebase = FirebaseAuth.instance;
 final _google = GoogleSignIn();
 final _facebook = FacebookLogin();

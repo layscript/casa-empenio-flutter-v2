@@ -1,4 +1,5 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
@@ -200,13 +201,20 @@ class _ListWarranty extends StatelessWidget {
       children: [
         ListView.separated(
           physics: const NeverScrollableScrollPhysics(),
-          separatorBuilder: (context, index) => const Divider(),
+          separatorBuilder: (context, index) => const SizedBox(height: 10),
           shrinkWrap: true,
           itemCount: loansState.listWarranty!.length,
           itemBuilder: (context, index) {
             final warranty = loansState.listWarranty![index];
             return ExpansionTile(
               title: Text('Garantía: ${index + 1}'),
+              collapsedTextColor: AppColors.primaryText,
+              textColor: AppColors.primaryText,
+              collapsedIconColor: AppColors.blue,
+              iconColor: AppColors.blue,
+              backgroundColor: const Color.fromARGB(255, 228, 228, 244),
+              collapsedBackgroundColor:
+                  const Color.fromARGB(255, 228, 228, 244),
               expandedCrossAxisAlignment: CrossAxisAlignment.start,
               childrenPadding: const EdgeInsets.symmetric(horizontal: 20),
               children: [
@@ -224,7 +232,7 @@ class _ListWarranty extends StatelessWidget {
                       child: IconButton(
                         icon: const Icon(
                           Icons.edit,
-                          color: Colors.orange,
+                          color: AppColors.yellow,
                         ),
                         onPressed: () => context
                             .read<LoansBloc>()
@@ -238,7 +246,7 @@ class _ListWarranty extends StatelessWidget {
                       child: IconButton(
                         icon: const Icon(
                           Icons.delete,
-                          color: Colors.red,
+                          color: AppColors.red,
                         ),
                         onPressed: () => context.read<LoansBloc>().add(
                               DeleteListWarranty(
@@ -259,7 +267,7 @@ class _ListWarranty extends StatelessWidget {
           width: double.infinity,
           alignment: Alignment.centerRight,
           child: FloatingActionButton(
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.darkBlue,
             onPressed: () => context.read<LoansBloc>().add(
                   const ChangeStatusAddListWarranty(
                     value: true,

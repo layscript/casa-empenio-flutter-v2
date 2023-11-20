@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/widgets/widgets.dart';
@@ -15,6 +16,7 @@ class HomeView extends StatelessWidget {
       child: Builder(builder: (context) {
         return Scaffold(
           appBar: AppBar(
+            backgroundColor: AppColors.blue,
             title: const Text('Casa de Empeño'),
             centerTitle: true,
           ),
@@ -23,14 +25,27 @@ class HomeView extends StatelessWidget {
             builder: (context, state) {
               switch (state.index) {
                 case 0:
-                  return Center(
-                    child: Text('Inicio:'),
-                  );
+                  return const MainView();
 
                 case 1:
                   return const LoansView();
+
+                case 2:
+                  return const ReportsView();
+
+                case 3:
+                  return const SalesView();
+
+                case 4:
+                  return const ProductsView();
+
+                case 5:
+                  return const UsersView();
+
+                case 6:
+                  return const InterestsView();
               }
-              return SizedBox();
+              return const SizedBox();
             },
           ),
         );

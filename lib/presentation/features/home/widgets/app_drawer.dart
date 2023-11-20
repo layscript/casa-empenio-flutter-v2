@@ -1,7 +1,9 @@
+import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({Key? key}) : super(key: key);
@@ -18,7 +20,10 @@ class AppDrawer extends StatelessWidget {
             const AppDrawerHeader(),
             ListTile(
               tileColor: homeState.index == 0 ? Colors.black12 : null,
-              leading: const Icon(Icons.home),
+              leading: const FaIcon(
+                FontAwesomeIcons.house,
+                size: 20,
+              ),
               title: const Text('Inicio'),
               onTap: () {
                 context.read<HomeBloc>().add(GoToHome());
@@ -27,7 +32,10 @@ class AppDrawer extends StatelessWidget {
             ),
             ListTile(
               tileColor: homeState.index == 1 ? Colors.black12 : null,
-              leading: const Icon(Icons.train),
+              leading: const FaIcon(
+                FontAwesomeIcons.accusoft,
+                size: 20,
+              ),
               title: const Text('Préstamos'),
               onTap: () {
                 context.read<HomeBloc>().add(GoToLoans());
@@ -35,60 +43,83 @@ class AppDrawer extends StatelessWidget {
               },
             ),
             ListTile(
-              leading: Icon(
-                Icons.train,
+              tileColor: homeState.index == 2 ? Colors.black12 : null,
+              leading: const FaIcon(
+                FontAwesomeIcons.fileArrowDown,
+                size: 20,
               ),
               title: const Text('Reportes'),
               onTap: () {
+                context.read<HomeBloc>().add(GoToReports());
                 Navigator.pop(context);
               },
             ),
             ListTile(
-              leading: Icon(
-                Icons.train,
+              tileColor: homeState.index == 3 ? Colors.black12 : null,
+              leading: const FaIcon(
+                FontAwesomeIcons.message,
+                size: 20,
               ),
               title: const Text('Ventas'),
               onTap: () {
+                context.read<HomeBloc>().add(GoToSales());
                 Navigator.pop(context);
               },
             ),
             ListTile(
-              leading: Icon(
-                Icons.train,
+              tileColor: homeState.index == 4 ? Colors.black12 : null,
+              leading: const FaIcon(
+                FontAwesomeIcons.cartArrowDown,
+                size: 20,
               ),
               title: const Text('Productos'),
               onTap: () {
+                context.read<HomeBloc>().add(GoToProducts());
                 Navigator.pop(context);
               },
             ),
             ListTile(
-              leading: Icon(
-                Icons.train,
+              tileColor: homeState.index == 5 ? Colors.black12 : null,
+              leading: const FaIcon(
+                FontAwesomeIcons.user,
+                size: 20,
               ),
               title: const Text('Usuarios'),
               onTap: () {
+                context.read<HomeBloc>().add(GoToUsers());
                 Navigator.pop(context);
               },
             ),
             ListTile(
-              leading: Icon(
-                Icons.train,
+              tileColor: homeState.index == 6 ? Colors.black12 : null,
+              leading: const FaIcon(
+                FontAwesomeIcons.piggyBank,
+                size: 20,
               ),
               title: const Text('Interes'),
               onTap: () {
+                context.read<HomeBloc>().add(GoToInterests());
                 Navigator.pop(context);
               },
             ),
             const Divider(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: PrimaryButton(
+              child: SecondaryButton(
                 onPressed: () {
                   Navigator.pop(context);
                   context.read<AuthBloc>().add(SignOff());
                 },
-                child: const Text(
-                  'Cerrar Sesión',
+                child: const Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    FaIcon(FontAwesomeIcons.circleArrowLeft),
+                    SizedBox(width: 10),
+                    Text(
+                      'Cerrar Sesión',
+                    ),
+                  ],
                 ),
               ),
             )
@@ -106,25 +137,34 @@ class AppDrawerHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final authBloc = context.watch<AuthBloc>().state;
     final isAuthenticated = authBloc is Authenticated;
+
     return DrawerHeader(
       margin: EdgeInsets.zero,
-      decoration: const BoxDecoration(
-        color: Colors.blue,
-      ),
+      /* decoration: const BoxDecoration(
+        color: Color.fromARGB(255, 7, 91, 65),
+      ), */
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (isAuthenticated) ...[
-              const FlutterLogo(
-                size: 60,
-              ),
+              if (authBloc.user.avatar == null)
+                const FlutterLogo(
+                  size: 60,
+                )
+              else
+                Image.network(
+                  authBloc.user.avatar!,
+                  width: 60,
+                  height: 60,
+                  fit: BoxFit.cover,
+                ),
               const SizedBox(height: 10),
               Text(
                 '${authBloc.user.nombre} ${authBloc.user.apellido}',
                 maxLines: 1,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppColors.primaryText,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
@@ -132,7 +172,7 @@ class AppDrawerHeader extends StatelessWidget {
               Text(
                 '${authBloc.user.role.nombre} ',
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppColors.primaryText,
                   fontSize: 13,
                 ),
               ),
@@ -145,7 +185,7 @@ class AppDrawerHeader extends StatelessWidget {
                 'username',
                 maxLines: 1,
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.black,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
@@ -153,7 +193,7 @@ class AppDrawerHeader extends StatelessWidget {
               const Text(
                 'role',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.black,
                   fontSize: 13,
                 ),
               ),

@@ -7,40 +7,79 @@ sealed class LoansEvent extends Equatable {
   List<Object> get props => [];
 }
 
+// Change index steps
 class ChangeIndexLoans extends LoansEvent {
   const ChangeIndexLoans({required this.index});
   final int index;
 }
 
-class ChangeDocument extends LoansEvent {
-  const ChangeDocument({required this.value});
+// Change one step
+class ChangeHasClientAval extends LoansEvent {
+  const ChangeHasClientAval({required this.value});
+  final bool? value;
+}
+
+class ChangeDocumentClient extends LoansEvent {
+  const ChangeDocumentClient({required this.value});
   final String value;
 }
 
-class ChangeFullNames extends LoansEvent {
-  const ChangeFullNames({required this.value});
+class ChangeFullNamesClient extends LoansEvent {
+  const ChangeFullNamesClient({required this.value});
   final String value;
 }
 
-class ChangeFullLastNames extends LoansEvent {
-  const ChangeFullLastNames({required this.value});
+class ChangeFullLastNamesClient extends LoansEvent {
+  const ChangeFullLastNamesClient({required this.value});
   final String value;
 }
 
-class ChangePhone extends LoansEvent {
-  const ChangePhone({required this.value});
+class ChangePhoneClient extends LoansEvent {
+  const ChangePhoneClient({required this.value});
   final String value;
 }
 
-class ChangeEmail extends LoansEvent {
-  const ChangeEmail({required this.value});
+class ChangeEmailClient extends LoansEvent {
+  const ChangeEmailClient({required this.value});
   final String value;
 }
 
-class ChangeHome extends LoansEvent {
-  const ChangeHome({required this.value});
+class ChangeHomeClient extends LoansEvent {
+  const ChangeHomeClient({required this.value});
   final String value;
 }
+
+class ChangeDocumentAval extends LoansEvent {
+  const ChangeDocumentAval({required this.value});
+  final String value;
+}
+
+class ChangeFullNamesAval extends LoansEvent {
+  const ChangeFullNamesAval({required this.value});
+  final String value;
+}
+
+class ChangeFullLastNamesAval extends LoansEvent {
+  const ChangeFullLastNamesAval({required this.value});
+  final String value;
+}
+
+class ChangePhoneAval extends LoansEvent {
+  const ChangePhoneAval({required this.value});
+  final String value;
+}
+
+class ChangeEmailAval extends LoansEvent {
+  const ChangeEmailAval({required this.value});
+  final String value;
+}
+
+class ChangeHomeAval extends LoansEvent {
+  const ChangeHomeAval({required this.value});
+  final String value;
+}
+
+// second step
 
 class ChangeCodeLoans extends LoansEvent {
   const ChangeCodeLoans({required this.value});

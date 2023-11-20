@@ -3,12 +3,19 @@ part of 'loans_bloc.dart';
 class LoansState extends Equatable {
   const LoansState({
     this.index = 0,
-    this.document,
-    this.fullNames,
-    this.fullLastNames,
-    this.phone,
-    this.email,
-    this.home,
+    this.isAval = false,
+    this.documentClient,
+    this.fullNamesClient,
+    this.fullLastNamesClient,
+    this.phoneClient,
+    this.emailClient,
+    this.homeClient,
+    this.documentAval,
+    this.fullNamesAval,
+    this.fullLastNamesAval,
+    this.phoneAval,
+    this.emailAval,
+    this.homeAval,
     this.codeLoans,
     this.startDate,
     this.amount,
@@ -30,12 +37,19 @@ class LoansState extends Equatable {
 
   final int index;
   //
-  final String? document;
-  final String? fullNames;
-  final String? phone;
-  final String? fullLastNames;
-  final String? email;
-  final String? home;
+  final bool? isAval;
+  final String? documentClient;
+  final String? fullNamesClient;
+  final String? phoneClient;
+  final String? fullLastNamesClient;
+  final String? emailClient;
+  final String? homeClient;
+  final String? documentAval;
+  final String? fullNamesAval;
+  final String? phoneAval;
+  final String? fullLastNamesAval;
+  final String? emailAval;
+  final String? homeAval;
 
   //
   final String? codeLoans;
@@ -61,12 +75,19 @@ class LoansState extends Equatable {
 
   LoansState copyWith({
     int? index,
-    String? document,
-    String? fullNames,
-    String? phone,
-    String? fullLastNames,
-    String? email,
-    String? home,
+    bool? isAval,
+    String? documentClient,
+    String? fullNamesClient,
+    String? phoneClient,
+    String? fullLastNamesClient,
+    String? emailClient,
+    String? homeClient,
+    String? documentAval,
+    String? fullNamesAval,
+    String? phoneAval,
+    String? fullLastNamesAval,
+    String? emailAval,
+    String? homeAval,
     String? codeLoans,
     String? startDate,
     String? amount,
@@ -87,12 +108,19 @@ class LoansState extends Equatable {
   }) =>
       LoansState(
         index: index ?? this.index,
-        document: document ?? this.document,
-        fullNames: fullNames ?? this.fullNames,
-        fullLastNames: fullLastNames ?? this.fullLastNames,
-        email: email ?? this.email,
-        home: home ?? this.home,
-        phone: phone ?? this.phone,
+        isAval: isAval ?? this.isAval,
+        documentClient: documentClient ?? this.documentClient,
+        fullNamesClient: fullNamesClient ?? this.fullNamesClient,
+        fullLastNamesClient: fullLastNamesClient ?? this.fullLastNamesClient,
+        emailClient: emailClient ?? this.emailClient,
+        homeClient: homeClient ?? this.homeClient,
+        phoneClient: phoneClient ?? this.phoneClient,
+        documentAval: documentAval ?? this.documentAval,
+        fullNamesAval: fullNamesAval ?? this.fullNamesAval,
+        fullLastNamesAval: fullLastNamesAval ?? this.fullLastNamesAval,
+        emailAval: emailAval ?? this.emailAval,
+        homeAval: homeAval ?? this.homeAval,
+        phoneAval: phoneAval ?? this.phoneAval,
         amount: amount ?? this.amount,
         codeLoans: codeLoans ?? this.codeLoans,
         deadlines: deadlines ?? this.deadlines,
@@ -120,18 +148,33 @@ class LoansState extends Equatable {
   }
 
   bool get canRegisterClient {
-    if (document == null ||
-        fullNames == null ||
-        fullLastNames == null ||
-        email == null ||
-        home == null ||
-        phone == null) return false;
-    if (document!.isEmpty || document!.length < 8) return false;
-    if (fullNames!.isEmpty) return false;
-    if (phone!.isEmpty || phone!.length < 9) return false;
-    if (fullLastNames!.isEmpty) return false;
-    if (email!.isEmpty || !validatorEmail(email!)) return false;
-    if (home!.isEmpty) return false;
+    if (documentClient == null ||
+        fullNamesClient == null ||
+        fullLastNamesClient == null ||
+        emailClient == null ||
+        homeClient == null ||
+        phoneClient == null) return false;
+    if (documentClient!.isEmpty || documentClient!.length < 8) return false;
+    if (fullNamesClient!.isEmpty) return false;
+    if (phoneClient!.isEmpty || phoneClient!.length < 9) return false;
+    if (fullLastNamesClient!.isEmpty) return false;
+    if (emailClient!.isEmpty || !validatorEmail(emailClient!)) return false;
+    if (homeClient!.isEmpty) return false;
+
+    if (isAval == true) {
+      if (documentAval == null ||
+          fullNamesAval == null ||
+          fullLastNamesAval == null ||
+          emailAval == null ||
+          homeAval == null ||
+          phoneAval == null) return false;
+      if (documentAval!.isEmpty || documentAval!.length < 8) return false;
+      if (fullNamesAval!.isEmpty) return false;
+      if (phoneAval!.isEmpty || phoneAval!.length < 9) return false;
+      if (fullLastNamesAval!.isEmpty) return false;
+      if (emailAval!.isEmpty || !validatorEmail(emailAval!)) return false;
+      if (homeAval!.isEmpty) return false;
+    }
 
     return true;
   }
@@ -179,13 +222,20 @@ class LoansState extends Equatable {
 
   @override
   List<Object?> get props => [
+        isAval,
         index,
-        document,
-        fullNames,
-        fullLastNames,
-        email,
-        home,
-        phone,
+        documentClient,
+        fullNamesClient,
+        fullLastNamesClient,
+        emailClient,
+        homeClient,
+        phoneClient,
+        documentAval,
+        fullNamesAval,
+        fullLastNamesAval,
+        emailAval,
+        homeAval,
+        phoneAval,
         amount,
         codeLoans,
         deadlines,

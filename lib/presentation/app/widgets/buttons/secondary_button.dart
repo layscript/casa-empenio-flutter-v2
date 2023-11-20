@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:flutter/material.dart';
 
 class SecondaryButton extends StatelessWidget {
@@ -16,9 +17,13 @@ class SecondaryButton extends StatelessWidget {
       height: 50,
       child: ElevatedButton(
         style: ButtonStyle(
-            backgroundColor: MaterialStatePropertyAll(
-          Colors.orange,
-        )),
+          backgroundColor: MaterialStateProperty.resolveWith<Color>(
+            (Set<MaterialState> states) =>
+                states.contains(MaterialState.disabled)
+                    ? AppColors.disabledButton
+                    : const Color.fromARGB(255, 255, 85, 0),
+          ),
+        ),
         onPressed: onPressed,
         child: child,
       ),

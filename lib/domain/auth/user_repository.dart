@@ -6,4 +6,30 @@ abstract class UserRepository {
     required String email,
     required String password,
   });
+
+  Future<Either<String, List<User>>> getUsers({
+    required int limit,
+    required int offset,
+  });
+  Future<Either<String, bool>> createUser({
+    required int id,
+    required String nombre,
+    required String apellido,
+    required String userName,
+    required String email,
+    required int celular,
+    required int rolId,
+    required String password,
+  });
+  Future<Either<String, bool>> updateUser({
+    required int id,
+    required String nombre,
+    required String apellido,
+    required String userName,
+    required String email,
+    required int celular,
+    required int rolId,
+    required String? password,
+  });
+  Future<Either<String, bool>> deleteUser({required int idUser});
 }

@@ -16,6 +16,16 @@ ThemeData buildTheme(BuildContext context) {
     ),
     scaffoldBackgroundColor: AppColors.white,
     platform: TargetPlatform.iOS,
+    checkboxTheme: CheckboxThemeData(
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(4)),
+      ),
+      fillColor: MaterialStateProperty.resolveWith(
+        (states) => states.contains(MaterialState.selected)
+            ? AppColors.blue
+            : AppColors.secondaryText,
+      ),
+    ),
     //hintColor: AppColors.secondaryText,
 
     /* bottomNavigationBarTheme: const BottomNavigationBarThemeData(
@@ -102,7 +112,7 @@ ThemeData buildTheme(BuildContext context) {
         backgroundColor: MaterialStateProperty.resolveWith<Color>(
           (Set<MaterialState> states) => states.contains(MaterialState.disabled)
               ? AppColors.disabledButton
-              : AppColors.buttonPrimary,
+              : AppColors.blue,
         ),
         //overlayColor: MaterialStateProperty.all(AppColors.primaryHover),
         animationDuration: const Duration(seconds: 500),

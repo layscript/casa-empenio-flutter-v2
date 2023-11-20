@@ -11,12 +11,23 @@ part 'loans_state.dart';
 class LoansBloc extends Bloc<LoansEvent, LoansState> {
   LoansBloc() : super(const LoansState()) {
     on<ChangeIndexLoans>(_onChangeIndexLoans);
-    on<ChangeDocument>(_onChangeDocument);
-    on<ChangeFullNames>(_onChangeFullNames);
-    on<ChangeFullLastNames>(_onChangeFullLastNames);
-    on<ChangePhone>(_onChangePhone);
-    on<ChangeEmail>(_onChangeEmail);
-    on<ChangeHome>(_onChangeHome);
+    //
+    on<ChangeHasClientAval>(_onChangeHasClientAval);
+
+    on<ChangeDocumentClient>(_onChangeDocumentClient);
+    on<ChangeFullNamesClient>(_onChangeFullNamesClient);
+    on<ChangeFullLastNamesClient>(_onChangeFullLastNamesClient);
+    on<ChangePhoneClient>(_onChangePhoneClient);
+    on<ChangeEmailClient>(_onChangeEmailClient);
+    on<ChangeHomeClient>(_onChangeHomeClient);
+
+    on<ChangeDocumentAval>(_onChangeDocumentAval);
+    on<ChangeFullNamesAval>(_onChangeFullNamesAval);
+    on<ChangeFullLastNamesAval>(_onChangeFullLastNamesAval);
+    on<ChangePhoneAval>(_onChangePhoneAval);
+    on<ChangeEmailAval>(_onChangeEmailAval);
+    on<ChangeHomeAval>(_onChangeHomeAval);
+    //
     on<ChangeCodeLoans>(_onChangeCodeLoans);
     on<ChangeStartDate>(_onChangeStartDate);
     on<ChangeAmount>(_onChangeAmount);
@@ -45,48 +56,93 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     emit(state.copyWith(index: event.index));
   }
 
-  void _onChangeDocument(
-    ChangeDocument event,
+  // one step - client
+  void _onChangeDocumentClient(
+    ChangeDocumentClient event,
     Emitter<LoansState> emit,
   ) {
-    emit(state.copyWith(document: event.value));
+    emit(state.copyWith(documentClient: event.value));
   }
 
-  void _onChangeFullNames(
-    ChangeFullNames event,
+  void _onChangeFullNamesClient(
+    ChangeFullNamesClient event,
     Emitter<LoansState> emit,
   ) {
-    emit(state.copyWith(fullNames: event.value));
+    emit(state.copyWith(fullNamesClient: event.value));
   }
 
-  void _onChangeFullLastNames(
-    ChangeFullLastNames event,
+  void _onChangeFullLastNamesClient(
+    ChangeFullLastNamesClient event,
     Emitter<LoansState> emit,
   ) {
-    emit(state.copyWith(fullLastNames: event.value));
+    emit(state.copyWith(fullLastNamesClient: event.value));
   }
 
-  void _onChangePhone(
-    ChangePhone event,
+  void _onChangePhoneClient(
+    ChangePhoneClient event,
     Emitter<LoansState> emit,
   ) {
-    emit(state.copyWith(phone: event.value));
+    emit(state.copyWith(phoneClient: event.value));
   }
 
-  void _onChangeEmail(
-    ChangeEmail event,
+  void _onChangeEmailClient(
+    ChangeEmailClient event,
     Emitter<LoansState> emit,
   ) {
-    emit(state.copyWith(email: event.value));
+    emit(state.copyWith(emailClient: event.value));
   }
 
-  void _onChangeHome(
-    ChangeHome event,
+  void _onChangeHomeClient(
+    ChangeHomeClient event,
     Emitter<LoansState> emit,
   ) {
-    emit(state.copyWith(home: event.value));
+    emit(state.copyWith(homeClient: event.value));
   }
 
+  // one step - aval
+  void _onChangeDocumentAval(
+    ChangeDocumentAval event,
+    Emitter<LoansState> emit,
+  ) {
+    emit(state.copyWith(documentAval: event.value));
+  }
+
+  void _onChangeFullNamesAval(
+    ChangeFullNamesAval event,
+    Emitter<LoansState> emit,
+  ) {
+    emit(state.copyWith(fullNamesAval: event.value));
+  }
+
+  void _onChangeFullLastNamesAval(
+    ChangeFullLastNamesAval event,
+    Emitter<LoansState> emit,
+  ) {
+    emit(state.copyWith(fullLastNamesAval: event.value));
+  }
+
+  void _onChangePhoneAval(
+    ChangePhoneAval event,
+    Emitter<LoansState> emit,
+  ) {
+    emit(state.copyWith(phoneAval: event.value));
+  }
+
+  void _onChangeEmailAval(
+    ChangeEmailAval event,
+    Emitter<LoansState> emit,
+  ) {
+    emit(state.copyWith(emailAval: event.value));
+  }
+
+  void _onChangeHomeAval(
+    ChangeHomeAval event,
+    Emitter<LoansState> emit,
+  ) {
+    emit(state.copyWith(homeAval: event.value));
+  }
+
+//
   void _onChangeCodeLoans(
     ChangeCodeLoans event,
     Emitter<LoansState> emit,
@@ -316,5 +372,26 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
         idWarranty: event.id,
       ),
     );
+  }
+
+  void _onChangeHasClientAval(
+    ChangeHasClientAval event,
+    Emitter<LoansState> emit,
+  ) {
+    if (event.value == false) {
+      emit(
+        state.copyWith(
+          isAval: event.value,
+          homeAval: '',
+          emailAval: '',
+          phoneAval: '',
+          documentAval: '',
+          fullNamesAval: '',
+          fullLastNamesAval: '',
+        ),
+      );
+    } else {
+      emit(state.copyWith(isAval: event.value));
+    }
   }
 }

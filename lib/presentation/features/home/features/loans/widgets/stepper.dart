@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:flutter/material.dart';
 
 class AppStepper extends StatelessWidget {
@@ -23,7 +24,9 @@ class AppStepper extends StatelessWidget {
                   Expanded(
                     flex: 4,
                     child: Divider(
-                      color: selectedIndex >= 0 ? Colors.blue : Colors.grey,
+                      color: selectedIndex >= 0
+                          ? AppColors.blue
+                          : AppColors.disabledButton,
                       height: 3,
                       thickness: 3,
                     ),
@@ -31,7 +34,9 @@ class AppStepper extends StatelessWidget {
                   Expanded(
                     flex: 3,
                     child: Divider(
-                      color: selectedIndex > 0 ? Colors.blue : Colors.grey,
+                      color: selectedIndex > 0
+                          ? AppColors.blue
+                          : AppColors.disabledButton,
                       height: 3,
                       thickness: 3,
                     ),
@@ -39,7 +44,9 @@ class AppStepper extends StatelessWidget {
                   Expanded(
                     flex: 3,
                     child: Divider(
-                      color: selectedIndex > 0 ? Colors.blue : Colors.grey,
+                      color: selectedIndex > 0
+                          ? AppColors.blue
+                          : AppColors.disabledButton,
                       height: 3,
                       thickness: 3,
                     ),
@@ -47,7 +54,9 @@ class AppStepper extends StatelessWidget {
                   Expanded(
                     flex: 4,
                     child: Divider(
-                      color: selectedIndex > 1 ? Colors.blue : Colors.grey,
+                      color: selectedIndex > 1
+                          ? AppColors.blue
+                          : AppColors.disabledButton,
                       height: 3,
                       thickness: 3,
                     ),
@@ -87,8 +96,8 @@ class AppStepper extends StatelessWidget {
                                       //       : AppColors.disabledButton,
                                       // ),
                                       color: isSelected || surpassSelected
-                                          ? Colors.blue
-                                          : Colors.grey,
+                                          ? AppColors.blue
+                                          : AppColors.disabledButton,
                                       shape: BoxShape.circle,
                                     ),
                                     child: Center(

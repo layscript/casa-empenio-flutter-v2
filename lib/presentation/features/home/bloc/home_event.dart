@@ -10,3 +10,13 @@ sealed class HomeEvent extends Equatable {
 class GoToHome extends HomeEvent {}
 
 class GoToLoans extends HomeEvent {}
+
+class GoToReports extends HomeEvent {}
+
+class GoToSales extends HomeEvent {}
+
+class GoToProducts extends HomeEvent {}
+
+class GoToUsers extends HomeEvent {}
+
+class GoToInterests extends HomeEvent {}
