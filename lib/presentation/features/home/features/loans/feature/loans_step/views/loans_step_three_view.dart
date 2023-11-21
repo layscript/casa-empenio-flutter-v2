@@ -2,16 +2,16 @@ import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
-import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/loans/feature/loans_step/bloc/loans_step_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class LoansStepThree extends StatelessWidget {
-  const LoansStepThree({super.key});
+class LoansStepThreeView extends StatelessWidget {
+  const LoansStepThreeView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final loansState = context.watch<LoansBloc>().state;
+    final loansState = context.watch<LoansStepBloc>().state;
     if (loansState.listWarranty != null && !loansState.addListWarranty) {
       return _ListWarranty(loansState: loansState);
     } else {
@@ -24,7 +24,7 @@ class _AddWarranty extends StatelessWidget {
   const _AddWarranty({
     required this.loansState,
   });
-  final LoansState loansState;
+  final LoansStepState loansState;
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +38,7 @@ class _AddWarranty extends StatelessWidget {
               child: AppTextFormField(
                 labelText: 'Marca',
                 initialValue: loansState.brand,
-                onChanged: (e) => context.read<LoansBloc>().add(
+                onChanged: (e) => context.read<LoansStepBloc>().add(
                       ChangeBrand(value: e),
                     ),
                 validator: (value) {
@@ -52,7 +52,7 @@ class _AddWarranty extends StatelessWidget {
               child: AppTextFormField(
                 labelText: 'Modelo',
                 initialValue: loansState.model,
-                onChanged: (e) => context.read<LoansBloc>().add(
+                onChanged: (e) => context.read<LoansStepBloc>().add(
                       ChangeModel(value: e),
                     ),
                 validator: (value) {
@@ -70,7 +70,7 @@ class _AddWarranty extends StatelessWidget {
               child: AppTextFormField(
                 labelText: 'Color',
                 initialValue: loansState.color,
-                onChanged: (e) => context.read<LoansBloc>().add(
+                onChanged: (e) => context.read<LoansStepBloc>().add(
                       ChangeColor(value: e),
                     ),
                 validator: (value) {
@@ -84,7 +84,7 @@ class _AddWarranty extends StatelessWidget {
               child: AppTextFormField(
                 labelText: 'Estado',
                 initialValue: loansState.status,
-                onChanged: (e) => context.read<LoansBloc>().add(
+                onChanged: (e) => context.read<LoansStepBloc>().add(
                       ChangeStatus(value: e),
                     ),
                 validator: (value) {
@@ -99,7 +99,7 @@ class _AddWarranty extends StatelessWidget {
         AppTextFormField(
           labelText: 'Serie',
           initialValue: loansState.serie,
-          onChanged: (e) => context.read<LoansBloc>().add(
+          onChanged: (e) => context.read<LoansStepBloc>().add(
                 ChangeSerie(value: e),
               ),
           validator: (value) {
@@ -111,7 +111,7 @@ class _AddWarranty extends StatelessWidget {
         AppTextFormField(
           labelText: 'Observaciones',
           initialValue: loansState.warrantyObservations,
-          onChanged: (e) => context.read<LoansBloc>().add(
+          onChanged: (e) => context.read<LoansStepBloc>().add(
                 ChangeWarrantyObservations(value: e),
               ),
           validator: (value) {
@@ -123,7 +123,7 @@ class _AddWarranty extends StatelessWidget {
         AppTextFormField(
           labelText: 'Precio Referencial',
           initialValue: loansState.price,
-          onChanged: (e) => context.read<LoansBloc>().add(
+          onChanged: (e) => context.read<LoansStepBloc>().add(
                 ChangePrice(value: e),
               ),
           validator: (value) {
@@ -135,7 +135,7 @@ class _AddWarranty extends StatelessWidget {
         if (loansState.listWarranty == null ||
             loansState.listWarranty!.isEmpty) ...[
           SecondaryButton(
-            onPressed: () => context.read<LoansBloc>().add(
+            onPressed: () => context.read<LoansStepBloc>().add(
                   const ChangeIndexLoans(
                     index: 1,
                   ),
@@ -148,7 +148,7 @@ class _AddWarranty extends StatelessWidget {
           onPressed: loansState.canRegisterWarranty
               ? () {
                   if (loansState.idWarranty == null) {
-                    context.read<LoansBloc>().add(
+                    context.read<LoansStepBloc>().add(
                           AddListWarranty(
                             value: Warranty(
                               id: generateIDFromDateTime(),
@@ -164,7 +164,7 @@ class _AddWarranty extends StatelessWidget {
                           ),
                         );
                   } else {
-                    context.read<LoansBloc>().add(
+                    context.read<LoansStepBloc>().add(
                           EditListWarranty(
                             value: Warranty(
                               id: loansState.idWarranty,
@@ -193,7 +193,7 @@ class _ListWarranty extends StatelessWidget {
   const _ListWarranty({
     required this.loansState,
   });
-  final LoansState loansState;
+  final LoansStepState loansState;
 
   @override
   Widget build(BuildContext context) {
@@ -235,7 +235,7 @@ class _ListWarranty extends StatelessWidget {
                           color: AppColors.yellow,
                         ),
                         onPressed: () => context
-                            .read<LoansBloc>()
+                            .read<LoansStepBloc>()
                             .add(ChangeStatusEditListWarranty(
                               value: true,
                               id: warranty.id!,
@@ -248,7 +248,7 @@ class _ListWarranty extends StatelessWidget {
                           Icons.delete,
                           color: AppColors.red,
                         ),
-                        onPressed: () => context.read<LoansBloc>().add(
+                        onPressed: () => context.read<LoansStepBloc>().add(
                               DeleteListWarranty(
                                 value: warranty,
                               ),
@@ -268,7 +268,7 @@ class _ListWarranty extends StatelessWidget {
           alignment: Alignment.centerRight,
           child: FloatingActionButton(
             backgroundColor: AppColors.darkBlue,
-            onPressed: () => context.read<LoansBloc>().add(
+            onPressed: () => context.read<LoansStepBloc>().add(
                   const ChangeStatusAddListWarranty(
                     value: true,
                   ),
@@ -280,7 +280,7 @@ class _ListWarranty extends StatelessWidget {
         ),
         const SizedBox(height: 50),
         SecondaryButton(
-          onPressed: () => context.read<LoansBloc>().add(
+          onPressed: () => context.read<LoansStepBloc>().add(
                 const ChangeIndexLoans(
                   index: 1,
                 ),
@@ -292,7 +292,7 @@ class _ListWarranty extends StatelessWidget {
           onPressed: loansState.listWarranty != null
               ? () {
                   print('asdasd');
-                  context.read<LoansBloc>().add(
+                  context.read<LoansStepBloc>().add(
                         AddListWarranty(
                           value: Warranty(
                             id: generateIDFromDateTime(),

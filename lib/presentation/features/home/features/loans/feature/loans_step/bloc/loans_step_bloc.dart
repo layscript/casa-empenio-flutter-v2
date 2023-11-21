@@ -1,0 +1,395 @@
+import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:equatable/equatable.dart';
+
+part 'loans_step_event.dart';
+part 'loans_step_state.dart';
+
+class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
+  LoansStepBloc() : super(const LoansStepState()) {
+    on<ChangeIndexLoans>(_onChangeIndexLoans);
+    //
+    on<ChangeHasClientAval>(_onChangeHasClientAval);
+
+    on<ChangeDocumentClient>(_onChangeDocumentClient);
+    on<ChangeFullNamesClient>(_onChangeFullNamesClient);
+    on<ChangeFullLastNamesClient>(_onChangeFullLastNamesClient);
+    on<ChangePhoneClient>(_onChangePhoneClient);
+    on<ChangeEmailClient>(_onChangeEmailClient);
+    on<ChangeHomeClient>(_onChangeHomeClient);
+
+    on<ChangeDocumentAval>(_onChangeDocumentAval);
+    on<ChangeFullNamesAval>(_onChangeFullNamesAval);
+    on<ChangeFullLastNamesAval>(_onChangeFullLastNamesAval);
+    on<ChangePhoneAval>(_onChangePhoneAval);
+    on<ChangeEmailAval>(_onChangeEmailAval);
+    on<ChangeHomeAval>(_onChangeHomeAval);
+    //
+    on<ChangeCodeLoans>(_onChangeCodeLoans);
+    on<ChangeStartDate>(_onChangeStartDate);
+    on<ChangeAmount>(_onChangeAmount);
+    on<ChangeDeadLines>(_onChangeDeadLines);
+    on<ChangeInterestRate>(_onChangeInterestRate);
+    on<ChangePaymentRate>(_onChangePaymentRate);
+    on<ChangeObservations>(_onChangeObservations);
+    on<ChangeBrand>(_onChangeBrand);
+    on<ChangeModel>(_onChangeModel);
+    on<ChangeColor>(_onChangeColor);
+    on<ChangeStatus>(_onChangeStatus);
+    on<ChangeSerie>(_onChangeSerie);
+    on<ChangeWarrantyObservations>(_onChangeWarrantyObservations);
+    on<ChangePrice>(_onChangePrice);
+    on<AddListWarranty>(_onAddListWarranty);
+    on<EditListWarranty>(_onEditListWarranty);
+    on<DeleteListWarranty>(_onDeleteListWarranty);
+    on<ChangeStatusAddListWarranty>(_onChangeStatusAddListWarranty);
+    on<ChangeStatusEditListWarranty>(_onChangeStatusEditListWarranty);
+  }
+
+  void _onChangeIndexLoans(
+    ChangeIndexLoans event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(state.copyWith(index: event.index));
+  }
+
+  // one step - client
+  void _onChangeDocumentClient(
+    ChangeDocumentClient event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(state.copyWith(documentClient: event.value));
+  }
+
+  void _onChangeFullNamesClient(
+    ChangeFullNamesClient event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(state.copyWith(fullNamesClient: event.value));
+  }
+
+  void _onChangeFullLastNamesClient(
+    ChangeFullLastNamesClient event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(state.copyWith(fullLastNamesClient: event.value));
+  }
+
+  void _onChangePhoneClient(
+    ChangePhoneClient event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(state.copyWith(phoneClient: event.value));
+  }
+
+  void _onChangeEmailClient(
+    ChangeEmailClient event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(state.copyWith(emailClient: event.value));
+  }
+
+  void _onChangeHomeClient(
+    ChangeHomeClient event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(state.copyWith(homeClient: event.value));
+  }
+
+  // one step - aval
+  void _onChangeDocumentAval(
+    ChangeDocumentAval event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(state.copyWith(documentAval: event.value));
+  }
+
+  void _onChangeFullNamesAval(
+    ChangeFullNamesAval event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(state.copyWith(fullNamesAval: event.value));
+  }
+
+  void _onChangeFullLastNamesAval(
+    ChangeFullLastNamesAval event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(state.copyWith(fullLastNamesAval: event.value));
+  }
+
+  void _onChangePhoneAval(
+    ChangePhoneAval event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(state.copyWith(phoneAval: event.value));
+  }
+
+  void _onChangeEmailAval(
+    ChangeEmailAval event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(state.copyWith(emailAval: event.value));
+  }
+
+  void _onChangeHomeAval(
+    ChangeHomeAval event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(state.copyWith(homeAval: event.value));
+  }
+
+//
+  void _onChangeCodeLoans(
+    ChangeCodeLoans event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(state.copyWith(codeLoans: event.value));
+  }
+
+  void _onChangeStartDate(
+    ChangeStartDate event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(state.copyWith(startDate: event.value));
+  }
+
+  void _onChangeAmount(
+    ChangeAmount event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(state.copyWith(amount: event.value));
+  }
+
+  void _onChangeDeadLines(
+    ChangeDeadLines event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(state.copyWith(deadlines: event.value));
+  }
+
+  void _onChangeInterestRate(
+    ChangeInterestRate event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(state.copyWith(interestRate: event.value));
+  }
+
+  void _onChangePaymentRate(
+    ChangePaymentRate event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(state.copyWith(paymentDate: event.value));
+  }
+
+  void _onChangeObservations(
+    ChangeObservations event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(state.copyWith(observations: event.value));
+  }
+
+  void _onChangeBrand(
+    ChangeBrand event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        brand: event.value,
+        idWarranty: state.idWarranty,
+      ),
+    );
+  }
+
+  void _onChangeModel(
+    ChangeModel event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        model: event.value,
+        idWarranty: state.idWarranty,
+      ),
+    );
+  }
+
+  void _onChangeColor(
+    ChangeColor event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        color: event.value,
+        idWarranty: state.idWarranty,
+      ),
+    );
+  }
+
+  void _onChangeStatus(
+    ChangeStatus event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        status: event.value,
+        idWarranty: state.idWarranty,
+      ),
+    );
+  }
+
+  void _onChangeSerie(
+    ChangeSerie event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        serie: event.value,
+        idWarranty: state.idWarranty,
+      ),
+    );
+  }
+
+  void _onChangeWarrantyObservations(
+    ChangeWarrantyObservations event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        warrantyObservations: event.value,
+        idWarranty: state.idWarranty,
+      ),
+    );
+  }
+
+  void _onChangePrice(
+    ChangePrice event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        price: event.value,
+        idWarranty: state.idWarranty,
+      ),
+    );
+  }
+
+  void _onAddListWarranty(
+    AddListWarranty event,
+    Emitter<LoansStepState> emit,
+  ) {
+    List<Warranty>? newList;
+    if (state.listWarranty != null) {
+      newList = [...state.listWarranty!, event.value];
+    } else {
+      newList = [event.value];
+    }
+    emit(
+      state.copyWith(
+        listWarranty: newList,
+        addListWarranty: false,
+        idWarranty: null,
+      ),
+    );
+  }
+
+  void _onEditListWarranty(
+    EditListWarranty event,
+    Emitter<LoansStepState> emit,
+  ) {
+    final updateWarranty = event.value;
+
+    if (state.listWarranty != null) {
+      final updatedList = List<Warranty>.from(state.listWarranty!);
+      final index = updatedList.indexWhere((e) => e.id == updateWarranty.id);
+
+      if (index != -1) {
+        updatedList[index] = updateWarranty;
+        //emit(LoansStepState(listWarranty: updatedList));
+        emit(
+          state.copyWith(
+            listWarranty: updatedList,
+            idWarranty: null,
+            addListWarranty: false,
+          ),
+        );
+      }
+    }
+  }
+
+  void _onDeleteListWarranty(
+    DeleteListWarranty event,
+    Emitter<LoansStepState> emit,
+  ) {
+    final deleteWarranty = event.value;
+    final newList =
+        state.listWarranty?.where((e) => e.id != deleteWarranty.id).toList();
+
+    emit(
+      state.copyWith(
+        listWarranty: newList,
+        addListWarranty: newList != null && newList.isEmpty,
+        model: '',
+        serie: '',
+        brand: '',
+        price: '',
+        warrantyObservations: '',
+        color: '',
+        status: '',
+        idWarranty: null,
+      ),
+    );
+  }
+
+  void _onChangeStatusAddListWarranty(
+    ChangeStatusAddListWarranty event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        addListWarranty: event.value,
+        model: '',
+        serie: '',
+        brand: '',
+        price: '',
+        warrantyObservations: '',
+        color: '',
+        status: '',
+        idWarranty: null,
+      ),
+    );
+  }
+
+  void _onChangeStatusEditListWarranty(
+    ChangeStatusEditListWarranty event,
+    Emitter<LoansStepState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        addListWarranty: event.value,
+        idWarranty: event.id,
+      ),
+    );
+  }
+
+  void _onChangeHasClientAval(
+    ChangeHasClientAval event,
+    Emitter<LoansStepState> emit,
+  ) {
+    if (event.value == false) {
+      emit(
+        state.copyWith(
+          isAval: event.value,
+          homeAval: '',
+          emailAval: '',
+          phoneAval: '',
+          documentAval: '',
+          fullNamesAval: '',
+          fullLastNamesAval: '',
+        ),
+      );
+    } else {
+      emit(state.copyWith(isAval: event.value));
+    }
+  }
+}

@@ -216,11 +216,7 @@ class UsersView extends StatelessWidget {
                     ],
                   ),
                 );
-
-              default:
             }
-
-            return const SizedBox();
           },
         );
       }),

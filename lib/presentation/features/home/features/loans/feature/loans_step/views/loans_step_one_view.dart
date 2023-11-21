@@ -1,15 +1,15 @@
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
-import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/loans/feature/loans_step/bloc/loans_step_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class LoansStepOne extends StatelessWidget {
-  const LoansStepOne({super.key});
+class LoansStepOneView extends StatelessWidget {
+  const LoansStepOneView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final loansState = context.watch<LoansBloc>().state;
+    final loansState = context.watch<LoansStepBloc>().state;
 
     return GestureDetector(
       child: Column(
@@ -24,7 +24,7 @@ class LoansStepOne extends StatelessWidget {
                   labelText: 'DNI',
                   keyboardType: TextInputType.number,
                   maxLength: 8,
-                  onChanged: (e) => context.read<LoansBloc>().add(
+                  onChanged: (e) => context.read<LoansStepBloc>().add(
                         ChangeDocumentClient(value: e),
                       ),
                   validator: (value) {
@@ -39,7 +39,7 @@ class LoansStepOne extends StatelessWidget {
                 child: AppTextFormField(
                   labelText: 'Nombres',
                   initialValue: loansState.fullNamesClient,
-                  onChanged: (e) => context.read<LoansBloc>().add(
+                  onChanged: (e) => context.read<LoansStepBloc>().add(
                         ChangeFullNamesClient(value: e),
                       ),
                   validator: (value) {
@@ -59,7 +59,7 @@ class LoansStepOne extends StatelessWidget {
                   labelText: 'Celular',
                   initialValue: loansState.phoneClient,
                   keyboardType: TextInputType.phone,
-                  onChanged: (e) => context.read<LoansBloc>().add(
+                  onChanged: (e) => context.read<LoansStepBloc>().add(
                         ChangePhoneClient(value: e),
                       ),
                   validator: (value) {
@@ -73,7 +73,7 @@ class LoansStepOne extends StatelessWidget {
                 child: AppTextFormField(
                   labelText: 'Apellidos',
                   initialValue: loansState.fullLastNamesClient,
-                  onChanged: (e) => context.read<LoansBloc>().add(
+                  onChanged: (e) => context.read<LoansStepBloc>().add(
                         ChangeFullLastNamesClient(value: e),
                       ),
                   validator: (value) {
@@ -90,7 +90,7 @@ class LoansStepOne extends StatelessWidget {
             keyboardType: TextInputType.emailAddress,
             initialValue: loansState.emailClient,
             inputFormatters: removeBlankSpaces,
-            onChanged: (e) => context.read<LoansBloc>().add(
+            onChanged: (e) => context.read<LoansStepBloc>().add(
                   ChangeEmailClient(value: e),
                 ),
             validator: (value) {
@@ -103,7 +103,7 @@ class LoansStepOne extends StatelessWidget {
           AppTextFormField(
             labelText: 'Domicilio',
             initialValue: loansState.homeClient,
-            onChanged: (e) => context.read<LoansBloc>().add(
+            onChanged: (e) => context.read<LoansStepBloc>().add(
                   ChangeHomeClient(value: e),
                 ),
             validator: (value) {
@@ -114,7 +114,7 @@ class LoansStepOne extends StatelessWidget {
           const SizedBox(height: 15),
           AppCheckbox(
             labelText: 'Agregar Aval',
-            onChanged: (value) => context.read<LoansBloc>().add(
+            onChanged: (value) => context.read<LoansStepBloc>().add(
                   ChangeHasClientAval(
                     value: value,
                   ),
@@ -127,7 +127,7 @@ class LoansStepOne extends StatelessWidget {
           const SizedBox(height: 15),
           PrimaryButton(
             onPressed: loansState.canRegisterClient
-                ? () => context.read<LoansBloc>().add(
+                ? () => context.read<LoansStepBloc>().add(
                       const ChangeIndexLoans(
                         index: 1,
                       ),
@@ -147,7 +147,7 @@ class _AddClientAval extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final loansState = context.watch<LoansBloc>().state;
+    final loansState = context.watch<LoansStepBloc>().state;
 
     return GestureDetector(
       child: Column(
@@ -175,7 +175,7 @@ class _AddClientAval extends StatelessWidget {
                   labelText: 'DNI',
                   keyboardType: TextInputType.number,
                   maxLength: 8,
-                  onChanged: (e) => context.read<LoansBloc>().add(
+                  onChanged: (e) => context.read<LoansStepBloc>().add(
                         ChangeDocumentAval(value: e),
                       ),
                   validator: (value) {
@@ -190,7 +190,7 @@ class _AddClientAval extends StatelessWidget {
                 child: AppTextFormField(
                   labelText: 'Nombres',
                   initialValue: loansState.fullNamesAval,
-                  onChanged: (e) => context.read<LoansBloc>().add(
+                  onChanged: (e) => context.read<LoansStepBloc>().add(
                         ChangeFullNamesAval(value: e),
                       ),
                   validator: (value) {
@@ -210,7 +210,7 @@ class _AddClientAval extends StatelessWidget {
                   labelText: 'Celular',
                   initialValue: loansState.phoneAval,
                   keyboardType: TextInputType.phone,
-                  onChanged: (e) => context.read<LoansBloc>().add(
+                  onChanged: (e) => context.read<LoansStepBloc>().add(
                         ChangePhoneAval(value: e),
                       ),
                   validator: (value) {
@@ -224,7 +224,7 @@ class _AddClientAval extends StatelessWidget {
                 child: AppTextFormField(
                   labelText: 'Apellidos',
                   initialValue: loansState.fullLastNamesAval,
-                  onChanged: (e) => context.read<LoansBloc>().add(
+                  onChanged: (e) => context.read<LoansStepBloc>().add(
                         ChangeFullLastNamesAval(value: e),
                       ),
                   validator: (value) {
@@ -241,7 +241,7 @@ class _AddClientAval extends StatelessWidget {
             keyboardType: TextInputType.emailAddress,
             initialValue: loansState.emailAval,
             inputFormatters: removeBlankSpaces,
-            onChanged: (e) => context.read<LoansBloc>().add(
+            onChanged: (e) => context.read<LoansStepBloc>().add(
                   ChangeEmailAval(value: e),
                 ),
             validator: (value) {
@@ -254,7 +254,7 @@ class _AddClientAval extends StatelessWidget {
           AppTextFormField(
             labelText: 'Domicilio',
             initialValue: loansState.homeAval,
-            onChanged: (e) => context.read<LoansBloc>().add(
+            onChanged: (e) => context.read<LoansStepBloc>().add(
                   ChangeHomeAval(value: e),
                 ),
             validator: (value) {
