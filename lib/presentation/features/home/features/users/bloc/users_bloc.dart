@@ -10,7 +10,7 @@ part 'users_state.dart';
 class UsersBloc extends Bloc<UsersEvent, UsersState> {
   UsersBloc({required UserRepository userRepository})
       : _userRepository = userRepository,
-        super(UsersInitial()) {
+        super(const UsersState()) {
     on<GetUsers>(_onGetUsers);
     on<SaveUser>(_onSaveUser);
     on<UpdateUser>(_onUpdateUser);
@@ -19,11 +19,24 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
 
   final UserRepository _userRepository;
 
+  UsersState get _loadingState =>
+      state.copyWith(userStatus: UserStatus.loading);
+
+  UsersState _successState(List<UserEntity> users) => state.copyWith(
+        userStatus: UserStatus.loaded,
+        listUsers: users,
+      );
+
+  UsersState _errorState(String message) => state.copyWith(
+        userStatus: UserStatus.error,
+        error: message,
+      );
+
   Future<void> _onGetUsers(
     GetUsers event,
     Emitter<UsersState> emit,
   ) async {
-    emit(UsersLoading());
+    emit(_loadingState);
 
     final result = await _userRepository.getUsers(
       limit: 100,
@@ -32,10 +45,10 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
 
     result.fold(
       (error) {
-        emit(UsersError(error));
+        emit(_errorState(error));
       },
       (users) {
-        emit(UsersLoaded(users));
+        emit(_successState(users));
       },
     );
   }
@@ -44,7 +57,7 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
     SaveUser event,
     Emitter<UsersState> emit,
   ) async {
-    emit(UsersLoading());
+    emit(_loadingState);
 
     final result = await _userRepository.createUser(
       id: 0,
@@ -59,7 +72,7 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
 
     result.fold(
       (error) {
-        emit(UsersError(error));
+        emit(_errorState(error));
       },
       (users) {
         add(GetUsers());
@@ -71,7 +84,7 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
     UpdateUser event,
     Emitter<UsersState> emit,
   ) async {
-    emit(UsersLoading());
+    emit(_loadingState);
     final result = await _userRepository.updateUser(
       id: event.id,
       nombre: event.fullNames,
@@ -85,7 +98,7 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
 
     result.fold(
       (error) {
-        emit(UsersError(error));
+        emit(_errorState(error));
       },
       (users) {
         add(GetUsers());
@@ -97,13 +110,13 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
     DeleteUser event,
     Emitter<UsersState> emit,
   ) async {
-    emit(UsersLoading());
+    emit(_loadingState);
     final result = await _userRepository.deleteUser(
       idUser: event.id,
     );
     result.fold(
       (message) {
-        emit(UsersError(message));
+        emit(_errorState(message));
       },
       (success) {
         add(GetUsers());

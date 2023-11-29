@@ -18,6 +18,12 @@ class AppTextFormField extends StatefulWidget {
     this.isValid,
     this.inputFormatters,
     this.inputStyle,
+    this.preffixIcon,
+    this.preffix,
+    this.suffix,
+    this.suffixIcon,
+    this.enabled = true,
+    this.textDirection = TextDirection.ltr,
   }) : super(key: key);
   final void Function(String)? onChanged;
   final String labelText;
@@ -30,6 +36,12 @@ class AppTextFormField extends StatefulWidget {
   final ValueChanged<bool>? isValid;
   final List<TextInputFormatter>? inputFormatters;
   final TextStyle? inputStyle;
+  final Widget? suffixIcon;
+  final Widget? preffixIcon;
+  final Widget? preffix;
+  final Widget? suffix;
+  final bool? enabled;
+  final TextDirection textDirection;
 
   @override
   State<AppTextFormField> createState() => _AppTextFormFieldState();
@@ -60,6 +72,8 @@ class _AppTextFormFieldState extends State<AppTextFormField> {
   @override
   Widget build(BuildContext context) {
     return TextFormField(
+      textDirection: widget.textDirection,
+      enabled: widget.enabled,
       initialValue: widget.initialValue,
       controller: widget.controller,
       onChanged: widget.onChanged,
@@ -69,6 +83,28 @@ class _AppTextFormFieldState extends State<AppTextFormField> {
       autovalidateMode: AutovalidateMode.onUserInteraction,
       keyboardType: widget.keyboardType,
       decoration: InputDecoration(
+        prefix: widget.preffix != null
+            ? Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: widget.preffix,
+              )
+            : null,
+        prefixIcon: widget.preffixIcon != null
+            ? Center(
+                child: widget.preffixIcon,
+              )
+            : null,
+        suffix: widget.suffix != null
+            ? Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: widget.suffix,
+              )
+            : null,
+        suffixIcon: widget.suffixIcon != null
+            ? Center(
+                child: widget.suffixIcon,
+              )
+            : null,
         labelText: widget.labelText,
         counterText: '',
         suffixIconConstraints: const BoxConstraints(

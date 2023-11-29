@@ -1,22 +1,36 @@
 part of 'interests_bloc.dart';
 
-sealed class InterestsState extends Equatable {
-  const InterestsState();
+enum InterestsStatus { initial, loading, error, loaded }
+
+class InterestsState extends Equatable {
+  const InterestsState({
+    this.interestsStatus = InterestsStatus.initial,
+    this.listInterests,
+    this.error,
+  });
+
+  final InterestsStatus interestsStatus;
+  final List<InterestsEntity>? listInterests;
+  final String? error;
+
+  bool get isInterestLoading => interestsStatus == InterestsStatus.loading;
+  bool get isInteresError => interestsStatus == InterestsStatus.error;
+
+  InterestsState copyWith({
+    InterestsStatus? interestsStatus,
+    List<InterestsEntity>? listInterests,
+    String? error,
+  }) =>
+      InterestsState(
+        error: error ?? this.error,
+        listInterests: listInterests ?? this.listInterests,
+        interestsStatus: interestsStatus ?? this.interestsStatus,
+      );
 
   @override
-  List<Object> get props => [];
-}
-
-final class InterestsInitial extends InterestsState {}
-
-final class InterestsLoading extends InterestsState {}
-
-final class InterestsLoaded extends InterestsState {
-  const InterestsLoaded(this.listInterests);
-  final List<Interests> listInterests;
-}
-
-final class InterestsError extends InterestsState {
-  const InterestsError(this.message);
-  final String message;
+  List<Object?> get props => [
+        interestsStatus,
+        listInterests,
+        error,
+      ];
 }

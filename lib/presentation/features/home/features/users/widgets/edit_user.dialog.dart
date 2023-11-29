@@ -12,7 +12,7 @@ class EditUserDialog extends StatefulWidget {
     super.key,
     required this.user,
   });
-  final User user;
+  final UserEntity user;
 
   @override
   State<EditUserDialog> createState() => _EditUserDialogState();
@@ -134,9 +134,9 @@ class _EditUserDialogState extends State<EditUserDialog> {
                   Navigator.pop(context);
                   context.read<UsersBloc>().add(
                         UpdateUser(
-                          rolId: widget.user.role.id,
+                          rolId: widget.user.role?.id ?? 0,
                           id: widget.user.id,
-                          celular: widget.user.celular,
+                          celular: widget.user.celular ?? 0,
                           fullNames: fullNamesCtrl.text,
                           fullLastNames: fullLastNamesCtrl.text,
                           email: emailCtrl.text,

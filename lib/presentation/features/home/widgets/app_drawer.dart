@@ -170,7 +170,7 @@ class AppDrawerHeader extends StatelessWidget {
                 ),
               ),
               Text(
-                '${authBloc.user.role.nombre} ',
+                '${authBloc.user.role?.nombre} ',
                 style: const TextStyle(
                   color: AppColors.primaryText,
                   fontSize: 13,

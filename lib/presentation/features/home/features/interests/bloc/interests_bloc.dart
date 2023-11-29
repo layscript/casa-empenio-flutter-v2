@@ -10,7 +10,7 @@ part 'interests_state.dart';
 class InterestsBloc extends Bloc<InterestsEvent, InterestsState> {
   InterestsBloc({required InterestsRepository interestsRepository})
       : _interestsRepository = interestsRepository,
-        super(InterestsInitial()) {
+        super(const InterestsState()) {
     on<GetInterests>(_onGetInterests);
     on<SaveInterest>(_onSaveInterest);
     on<UpdateInterest>(_onUpdateInterest);
@@ -19,18 +19,32 @@ class InterestsBloc extends Bloc<InterestsEvent, InterestsState> {
 
   final InterestsRepository _interestsRepository;
 
+  InterestsState get _loadingState =>
+      state.copyWith(interestsStatus: InterestsStatus.loading);
+
+  InterestsState _successState(List<InterestsEntity> listInterests) =>
+      state.copyWith(
+        interestsStatus: InterestsStatus.loaded,
+        listInterests: listInterests,
+      );
+
+  InterestsState _errorState(String message) => state.copyWith(
+        interestsStatus: InterestsStatus.error,
+        error: message,
+      );
+
   Future<void> _onGetInterests(
     GetInterests event,
     Emitter<InterestsState> emit,
   ) async {
-    emit(InterestsLoading());
+    emit(_loadingState);
     final result = await _interestsRepository.getInterest();
     result.fold(
       (message) {
-        emit(InterestsError(message));
+        emit(_errorState(message));
       },
       (listInterests) {
-        emit(InterestsLoaded(listInterests));
+        emit(_successState(listInterests));
       },
     );
   }
@@ -39,12 +53,12 @@ class InterestsBloc extends Bloc<InterestsEvent, InterestsState> {
     SaveInterest event,
     Emitter<InterestsState> emit,
   ) async {
-    emit(InterestsLoading());
+    emit(_loadingState);
     final result =
         await _interestsRepository.createInterests(interest: event.data);
     result.fold(
       (message) {
-        emit(InterestsError(message));
+        emit(_errorState(message));
       },
       (success) {
         add(GetInterests());
@@ -56,16 +70,16 @@ class InterestsBloc extends Bloc<InterestsEvent, InterestsState> {
     UpdateInterest event,
     Emitter<InterestsState> emit,
   ) async {
-    emit(InterestsLoading());
+    emit(_loadingState);
     final result = await _interestsRepository.updateInterests(
-      interests: Interests(
+      interests: InterestsEntity(
         id: event.id,
         intereses: event.data,
       ),
     );
     result.fold(
       (message) {
-        emit(InterestsError(message));
+        emit(_errorState(message));
       },
       (success) {
         add(GetInterests());
@@ -77,13 +91,13 @@ class InterestsBloc extends Bloc<InterestsEvent, InterestsState> {
     DeleteInterest event,
     Emitter<InterestsState> emit,
   ) async {
-    emit(InterestsLoading());
+    emit(_loadingState);
     final result = await _interestsRepository.deleteInterests(
       idInterest: event.id,
     );
     result.fold(
       (message) {
-        emit(InterestsError(message));
+        emit(_errorState(message));
       },
       (success) {
         add(GetInterests());

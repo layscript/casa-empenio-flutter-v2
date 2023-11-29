@@ -1,36 +1,36 @@
 part of 'products_bloc.dart';
 
-sealed class ProductsState extends Equatable {
-  const ProductsState();
+enum ProductsStatus { initial, loading, error, loaded }
+
+class ProductsState extends Equatable {
+  const ProductsState({
+    this.productsStatus = ProductsStatus.initial,
+    this.listProducts,
+    this.error,
+  });
+
+  final ProductsStatus productsStatus;
+  final List<ProductEntity>? listProducts;
+  final String? error;
+
+  bool get isProductLoading => productsStatus == ProductsStatus.loading;
+  bool get isProductError => productsStatus == ProductsStatus.error;
+
+  ProductsState copyWith({
+    ProductsStatus? productsStatus,
+    List<ProductEntity>? listProducts,
+    String? error,
+  }) =>
+      ProductsState(
+        error: error ?? this.error,
+        listProducts: listProducts ?? this.listProducts,
+        productsStatus: productsStatus ?? this.productsStatus,
+      );
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [
+        productsStatus,
+        listProducts,
+        error,
+      ];
 }
-
-final class ProductsInitial extends ProductsState {}
-
-final class ProductsLoading extends ProductsState {}
-
-final class ProductsLoaded extends ProductsState {
-  const ProductsLoaded(this.listProducts);
-  final List<Product> listProducts;
-}
-
-final class ProductsError extends ProductsState {
-  const ProductsError(this.message);
-  final String message;
-}
-
-/* final class InterestsInitial extends InterestsState {}
-
-final class InterestsLoading extends InterestsState {}
-
-final class InterestsLoaded extends InterestsState {
-  const InterestsLoaded(this.listInterests);
-  final List<Interests> listInterests;
-}
-
-final class InterestsError extends InterestsState {
-  const InterestsError(this.message);
-  final String message;
-} */

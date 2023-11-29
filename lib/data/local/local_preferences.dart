@@ -10,18 +10,18 @@ class LocalPreferences implements Preferences {
   final SharedPreferences _preferences;
 
   @override
-  User? get token {
+  UserEntity? get token {
     final userString = _preferences.getString(_tokenKey);
     if (userString != null) {
       final userMap = jsonDecode(userString) as Map<String, dynamic>;
-      final user = User.fromJson(userMap);
+      final user = UserEntity.fromJson(userMap);
       return user;
     }
     return null;
   }
 
   @override
-  Future<bool> setToken(User value) {
+  Future<bool> setToken(UserEntity value) {
     final userString = jsonEncode(value.toJson());
     return _preferences.setString(_tokenKey, userString);
   }

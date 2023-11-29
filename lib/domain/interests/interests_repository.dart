@@ -3,7 +3,8 @@ import 'package:dartz/dartz.dart';
 
 abstract class InterestsRepository {
   Future<Either<String, bool>> createInterests({required String interest});
-  Future<Either<String, bool>> updateInterests({required Interests interests});
+  Future<Either<String, bool>> updateInterests(
+      {required InterestsEntity interests});
   Future<Either<String, bool>> deleteInterests({required int idInterest});
-  Future<Either<String, List<Interests>>> getInterest();
+  Future<Either<String, List<InterestsEntity>>> getInterest();
 }

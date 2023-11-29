@@ -1,5 +1,6 @@
 export 'loans/views/loans_view.dart';
-export 'loans/bloc/loans_bloc.dart';
+export 'loans/blocs/client_bloc/client_bloc.dart';
+export 'loans/blocs/loans_bloc/loans_bloc.dart';
 
 export 'users/bloc/users_bloc.dart';
 export 'users/views/users_view.dart';

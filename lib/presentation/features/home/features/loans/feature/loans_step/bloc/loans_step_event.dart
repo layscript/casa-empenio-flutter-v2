@@ -7,6 +7,9 @@ sealed class LoansStepEvent extends Equatable {
   List<Object> get props => [];
 }
 
+// Gets Loans
+class GetLastCodeLoans extends LoansStepEvent {}
+
 // Change index steps
 class ChangeIndexLoans extends LoansStepEvent {
   const ChangeIndexLoans({required this.index});
@@ -103,7 +106,7 @@ class ChangeDeadLines extends LoansStepEvent {
 
 class ChangeInterestRate extends LoansStepEvent {
   const ChangeInterestRate({required this.value});
-  final String value;
+  final InterestsEntity? value;
 }
 
 class ChangePaymentRate extends LoansStepEvent {
@@ -113,6 +116,11 @@ class ChangePaymentRate extends LoansStepEvent {
 
 class ChangeObservations extends LoansStepEvent {
   const ChangeObservations({required this.value});
+  final String value;
+}
+
+class ChangeDescription extends LoansStepEvent {
+  const ChangeDescription({required this.value});
   final String value;
 }
 
@@ -153,17 +161,17 @@ class ChangePrice extends LoansStepEvent {
 
 class AddListWarranty extends LoansStepEvent {
   const AddListWarranty({required this.value});
-  final Warranty value;
+  final WarrantyState value;
 }
 
 class EditListWarranty extends LoansStepEvent {
   const EditListWarranty({required this.value});
-  final Warranty value;
+  final WarrantyState value;
 }
 
 class DeleteListWarranty extends LoansStepEvent {
   const DeleteListWarranty({required this.value});
-  final Warranty value;
+  final WarrantyState value;
 }
 
 class ChangeStatusAddListWarranty extends LoansStepEvent {
@@ -178,4 +186,11 @@ class ChangeStatusEditListWarranty extends LoansStepEvent {
   });
   final bool value;
   final String id;
+}
+
+class UploadImagesWarranty extends LoansStepEvent {}
+
+class SaveAllLoan extends LoansStepEvent {
+  const SaveAllLoan(this.userId);
+  final String userId;
 }

@@ -1,0 +1,123 @@
+import 'package:casa_empenio_pe/domain/loans/loans_entity.dart';
+
+class ProductEntity {
+  const ProductEntity({
+    required this.id,
+    required this.descripcion,
+    required this.estado,
+    required this.marca,
+    required this.modelo,
+    required this.color,
+    required this.serie,
+    required this.placa,
+    required this.carroceria,
+    required this.motor,
+    required this.anio,
+    required this.valorizacion,
+    required this.observaciones,
+    required this.cantidad,
+    required this.imagen,
+    required this.activo,
+    required this.updatedAt,
+    required this.createdAt,
+    required this.prestamo,
+  });
+
+  final int? id;
+  final String? descripcion;
+  final String? estado;
+  final String? marca;
+  final String? modelo;
+  final String? color;
+  final String? serie;
+  final String? placa;
+  final String? carroceria;
+  final String? motor;
+  final int? anio;
+  final int? valorizacion;
+  final String? observaciones;
+  final int? cantidad;
+  final String? imagen;
+  final bool? activo;
+  final String? updatedAt;
+  final String? createdAt;
+  final LoansEntity? prestamo;
+/* 
+  ProductEntity copyWith({
+    int? id,
+    String? descripcion,
+    String? estado,
+    String? marca,
+    String? modelo,
+    String? color,
+    String? serie,
+    String? placa,
+    String? carroceria,
+    String? motor,
+    int? anio,
+    int? valorizacion,
+    String? observaciones,
+    int? cantidad,
+    String? imagen,
+    bool? activo,
+    String? updatedAt,
+    String? createdAt,
+    LoansEntity? prestamo,
+  }) =>
+      ProductEntity(
+        id: id ?? this.id,
+        descripcion: descripcion ?? this.descripcion,
+        estado: estado ?? this.estado,
+        marca: marca ?? this.marca,
+        modelo: modelo ?? this.modelo,
+        color: color ?? this.color,
+        serie: serie ?? this.serie,
+        placa: placa ?? this.placa,
+        carroceria: carroceria ?? this.carroceria,
+        motor: motor ?? this.motor,
+        anio: anio ?? this.anio,
+        valorizacion: valorizacion ?? this.valorizacion,
+        observaciones: observaciones ?? this.observaciones,
+        cantidad: cantidad ?? this.cantidad,
+        imagen: imagen ?? this.imagen,
+        activo: activo ?? this.activo,
+        updatedAt: updatedAt ?? this.updatedAt,
+        createdAt: createdAt ?? this.createdAt,
+        prestamo: prestamo ?? this.prestamo,
+      );
+ */
+  static List<ProductEntity> listGetProductsFromMap(
+    Map<String, dynamic> map,
+  ) {
+    final list = map['body'] as List<dynamic>;
+    return list
+        .map((e) => getProductFromMap(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  static ProductEntity getProductFromMap(Map<String, dynamic> map) {
+    return ProductEntity(
+      id: map['id'] as int?,
+      descripcion: map['descripcion'] as String?,
+      estado: map['estado'] as String?,
+      marca: map['marca'] as String?,
+      modelo: map['modelo'] as String?,
+      color: map['color'] as String?,
+      serie: map['serie'] as String?,
+      placa: map['placa'] as String?,
+      carroceria: map['carroceria'] as String?,
+      motor: map['motor'] as String?,
+      anio: map['anio'] as int?,
+      valorizacion: map['valorizacion'] as int?,
+      observaciones: map['observaciones'] as String?,
+      cantidad: map['cantidad'] as int?,
+      imagen: map['imagen'] as String?,
+      activo: map['activo'] as bool?,
+      updatedAt: map['updatedAt'] as String?,
+      createdAt: map['createdAt'] as String?,
+      prestamo: map['prestamo'] == null
+          ? null
+          : LoansEntity.getLoanFromMap(map['prestamo']),
+    );
+  }
+}

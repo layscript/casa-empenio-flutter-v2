@@ -6,3 +6,69 @@ sealed class ReportsEvent extends Equatable {
   @override
   List<Object> get props => [];
 }
+
+class GetLoadInitialDataContracts extends ReportsEvent {
+  const GetLoadInitialDataContracts({
+    required this.start,
+    required this.end,
+  });
+
+  final DateTime? start;
+  final DateTime? end;
+}
+
+class GetLoadInitialDataPayments extends ReportsEvent {
+  const GetLoadInitialDataPayments({
+    required this.start,
+    required this.end,
+  });
+
+  final DateTime? start;
+  final DateTime? end;
+}
+
+class GetDetailsReportLoan extends ReportsEvent {
+  const GetDetailsReportLoan(this.value);
+  final int value;
+}
+
+class GetDetailsReportPay extends ReportsEvent {
+  const GetDetailsReportPay(this.value);
+  final int value;
+}
+
+class CancelReportLoan extends ReportsEvent {
+  const CancelReportLoan(this.id);
+  final int id;
+}
+
+// TAGS
+class ChangeVigentContracts extends ReportsEvent {
+  const ChangeVigentContracts(this.value);
+  final bool value;
+}
+
+class ChangeVencidoContracts extends ReportsEvent {
+  const ChangeVencidoContracts(this.value);
+  final bool value;
+}
+
+class ChangePagadoContracts extends ReportsEvent {
+  const ChangePagadoContracts(this.value);
+  final bool value;
+}
+
+class ChangeVentaContracts extends ReportsEvent {
+  const ChangeVentaContracts(this.value);
+  final bool value;
+}
+
+class ChangeLiquidadoContracts extends ReportsEvent {
+  const ChangeLiquidadoContracts(this.value);
+  final bool value;
+}
+
+class ChangeCanceladoContracts extends ReportsEvent {
+  const ChangeCanceladoContracts(this.value);
+  final bool value;
+}

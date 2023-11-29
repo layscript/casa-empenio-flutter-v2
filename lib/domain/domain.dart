@@ -1,9 +1,29 @@
 export 'auth/auth.dart';
 export 'preferences/preferences.dart';
-export 'warranty/warranty.dart';
+export 'warranty/warranty_entity.dart';
+
+export 'contract/contract_entity.dart';
 
 export 'interests/interests_repository.dart';
-export 'interests/interests.dart';
+export 'interests/interests_entity.dart';
 
-export 'product/product.dart';
+export 'product/product_entity.dart';
 export 'product/product_repository.dart';
+
+export 'customer/customer_entity.dart';
+export 'customer/customer_repository.dart';
+export 'customer/customer_sunat_entity.dart';
+
+export 'loans/loans_entity.dart';
+export 'loans/loans_repository.dart';
+
+export 'pay/pay_entity.dart';
+
+export 'increase/increase_entity.dart';
+
+export 'reports/reports_entity.dart';
+export 'reports/reports_repository.dart';
+
+export 'sales/sales_repository.dart';
+export 'sales/sales_detail_entity.dart';
+export 'sales/sales_entity.dart';

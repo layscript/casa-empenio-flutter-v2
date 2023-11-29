@@ -40,9 +40,19 @@ dependencies:
   dio: ^5.3.3
   shared_preferences: ^2.2.2
   dartz: ^0.10.1
-  intl: ^0.18.1
+  #intl: ^0.18.1
   cached_network_image: ^3.3.0
   font_awesome_flutter: ^10.6.0
+  image_picker: ^1.0.4
+  pdf: ^3.10.6
+  printing: ^5.11.1
+  excel: ^3.0.0
+  screenshot: ^2.1.0
+  open_file: ^3.3.2
+  path_provider: ^2.1.1
+  url_launcher: ^6.1.14
+  quantity_input: ^1.0.2
+  intl: ^0.17.0
 
 dev_dependencies:
   flutter_test:

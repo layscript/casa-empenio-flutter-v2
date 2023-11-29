@@ -17,6 +17,22 @@ final InterestsRepository _interestsRepository =
 final ProductRepository _productRepository =
     HttpProductRepository(dio: _client);
 
+final CustomerRepository _customerRepository = HttpCustomerRepository(
+  dio: _client,
+);
+
+final LoansRepository _loansRepository = HttpLoansRepository(
+  dio: _client,
+);
+
+final ReportsRepository _reportsRepository = HttpReportsRepository(
+  dio: _client,
+);
+
+final SalesRepository _salesRepository = HttpSalesRepository(
+  dio: _client,
+);
+
 /* final _firebase = FirebaseAuth.instance;
 final _google = GoogleSignIn();
 final _facebook = FacebookLogin();

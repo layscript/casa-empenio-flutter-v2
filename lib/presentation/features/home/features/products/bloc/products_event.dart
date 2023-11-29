@@ -9,6 +9,13 @@ sealed class ProductsEvent extends Equatable {
 
 class GetProducts extends ProductsEvent {}
 
+class SearchProductsByName extends ProductsEvent {
+  const SearchProductsByName({
+    required this.value,
+  });
+  final String value;
+}
+
 
 /* class GetInterests extends InterestsEvent {}
 

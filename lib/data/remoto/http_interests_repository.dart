@@ -57,7 +57,7 @@ class HttpInterestsRepository implements InterestsRepository {
   }
 
   @override
-  Future<Either<String, List<Interests>>> getInterest() async {
+  Future<Either<String, List<InterestsEntity>>> getInterest() async {
     const path = '/configuraciones/intereses';
     try {
       final response = await _dio.get<String>(path);
@@ -67,7 +67,7 @@ class HttpInterestsRepository implements InterestsRepository {
         return Left(message);
       } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
-        return Right(listGetInterestFromMap(map));
+        return Right(InterestsEntity.listGetInterestFromMap(map));
       }
     } catch (e) {
       //print('responseee ee: $e');
@@ -77,7 +77,7 @@ class HttpInterestsRepository implements InterestsRepository {
 
   @override
   Future<Either<String, bool>> updateInterests({
-    required Interests interests,
+    required InterestsEntity interests,
   }) async {
     final path = '/configuraciones/intereses/${interests.id}';
     final payload = {
@@ -95,24 +95,7 @@ class HttpInterestsRepository implements InterestsRepository {
         return const Right(true);
       }
     } catch (e) {
-      print('responseee ee: $e');
       return const Left('Ocurrió un error 2');
     }
   }
-}
-
-List<Interests> listGetInterestFromMap(
-  Map<String, dynamic> map,
-) {
-  final list = map['body'] as List<dynamic>;
-  return list
-      .map((e) => getInterestFromMap(e as Map<String, dynamic>))
-      .toList();
-}
-
-Interests getInterestFromMap(Map<String, dynamic> map) {
-  return Interests(
-    id: map['id'] as int,
-    intereses: map['interes'] as String,
-  );
 }

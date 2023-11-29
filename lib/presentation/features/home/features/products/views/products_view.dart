@@ -1,9 +1,9 @@
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/products/widgets/widgets.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -13,62 +13,46 @@ class ProductsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      lazy: false,
-      create: (context) => ProductsBloc(productRepository: context.read())
-        ..add(
-          GetProducts(),
-        ),
-      child: Builder(builder: (context) {
-        return BlocBuilder<ProductsBloc, ProductsState>(
-          builder: (context, state) {
-            switch (state) {
-              case ProductsLoading() || ProductsInitial():
-                return const Center(
-                  child: CupertinoActivityIndicator(),
-                );
-
-              case ProductsError():
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        state.message,
-                        textAlign: TextAlign.center,
+    return GestureDetector(
+      onTap: () => Keyboard.unfocus(context),
+      child: BlocProvider(
+        lazy: false,
+        create: (context) => ProductsBloc(productRepository: context.read())
+          ..add(
+            GetProducts(),
+          ),
+        child: Builder(builder: (context) {
+          return BlocConsumer<ProductsBloc, ProductsState>(
+            listener: (context, state) {
+              if (state.isProductLoading) {
+                OverlayLoader.show(context);
+              } else {
+                OverlayLoader.hide();
+                if (state.isProductError) {
+                  ErrorSnackbar.show(context, state.error ?? '');
+                }
+              }
+            },
+            builder: (context, state) {
+              return Container(
+                width: double.infinity,
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom,
+                ),
+                child: Stack(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      height: MediaQuery.of(context).size.height * 0.9,
+                      padding: const EdgeInsets.only(
+                        bottom: 120,
                       ),
-                      const SizedBox(height: 15),
-                      ElevatedButton(
-                        onPressed: () =>
-                            context.read<ProductsBloc>().add(GetProducts()),
-                        child: const Text(
-                          'Cargar de nuevo',
-                        ),
-                      )
-                    ],
-                  ),
-                );
-
-              case ProductsLoaded():
-                return Padding(
-                  padding: EdgeInsets.only(
-                    bottom: MediaQuery.of(context).viewInsets.bottom,
-                  ),
-                  child: Stack(
-                    children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        height: MediaQuery.of(context).size.height * 0.9,
-                        padding: const EdgeInsets.only(
-                          bottom: 120,
-                        ),
-                        child: SingleChildScrollView(
-                          child: Column(
-                            children: [
-                              const SizedBox(height: 20),
-                              const Text(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 20),
+                            const Center(
+                              child: Text(
                                 'Lista de Productos',
                                 style: TextStyle(
                                   color: AppColors.primaryText,
@@ -76,14 +60,14 @@ class ProductsView extends StatelessWidget {
                                   fontSize: 18,
                                 ),
                               ),
-                              const SizedBox(height: 20),
-                              const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 15),
-                                child: AppTextFormField(
-                                  labelText: 'Buscar ...',
-                                ),
-                              ),
-                              const SizedBox(height: 20),
+                            ),
+                            const SizedBox(height: 20),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 20),
+                              child: SearchProducts(),
+                            ),
+                            const SizedBox(height: 20),
+                            if (state.listProducts != null)
                               ListView.separated(
                                 physics: const NeverScrollableScrollPhysics(),
                                 separatorBuilder: (context, index) =>
@@ -91,9 +75,9 @@ class ProductsView extends StatelessWidget {
                                   height: 10,
                                 ),
                                 shrinkWrap: true,
-                                itemCount: state.listProducts.length,
+                                itemCount: state.listProducts!.length,
                                 itemBuilder: (context, index) {
-                                  final product = state.listProducts[index];
+                                  final product = state.listProducts![index];
                                   return ListTile(
                                     dense: true,
                                     leading: product.imagen == null
@@ -112,24 +96,24 @@ class ProductsView extends StatelessWidget {
                                               color: Colors.red,
                                             ),
                                             /* child: CachedNetworkImage(
-                                              width: 50,
-                                              height: 50,
-                                              fit: BoxFit.scaleDown,
-                                              imageUrl: product.imagen!
-                                                      .contains('.jpg')
-                                                  ? '$endPoint/${product.imagen}'
-                                                  : '$endPoint/${product.imagen}.jpg',
-                                              placeholder: (context, url) =>
-                                                  const Center(
-                                                child: SizedBox(
-                                                  height: 50,
-                                                  width: 50,
-                                                  child: CircularProgressIndicator(),
+                                                width: 50,
+                                                height: 50,
+                                                fit: BoxFit.scaleDown,
+                                                imageUrl: product.imagen!
+                                                        .contains('.jpg')
+                                                    ? '$endPoint/${product.imagen}'
+                                                    : '$endPoint/${product.imagen}.jpg',
+                                                placeholder: (context, url) =>
+                                                    const Center(
+                                                  child: SizedBox(
+                                                    height: 50,
+                                                    width: 50,
+                                                    child: CircularProgressIndicator(),
+                                                  ),
                                                 ),
-                                              ),
-                                              errorWidget: (context, url, error) =>
-                                                  const Icon(Icons.error),
-                                            ), */
+                                                errorWidget: (context, url, error) =>
+                                                    const Icon(Icons.error),
+                                              ), */
                                           ),
                                     title: Column(
                                       crossAxisAlignment:
@@ -192,60 +176,56 @@ class ProductsView extends StatelessWidget {
                                   );
                                 },
                               ),
-                              const SizedBox(height: 15),
-                            ],
-                          ),
+                            const SizedBox(height: 15),
+                          ],
                         ),
                       ),
-                      Positioned.fill(
-                        top: null,
-                        child: Container(
-                          height: 120,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 26,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.white,
-                            boxShadow: defaultBoxShadow,
-                          ),
-                          child: Center(
-                            child: PrimaryButton(
-                              onPressed: () {
-                                showDialog(
-                                  barrierDismissible: false,
-                                  context: context,
-                                  builder: (_) {
-                                    return BlocProvider.value(
-                                      value: context.read<ProductsBloc>(),
-                                      child: const AddProductDialog(),
-                                    );
-                                  },
-                                );
-                              },
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  FaIcon(FontAwesomeIcons.circlePlus),
-                                  SizedBox(width: 10),
-                                  Text('Agregar Producto'),
-                                ],
-                              ),
+                    ),
+                    Positioned.fill(
+                      top: null,
+                      child: Container(
+                        height: 120,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 26,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          boxShadow: defaultBoxShadow,
+                        ),
+                        child: Center(
+                          child: PrimaryButton(
+                            onPressed: () {
+                              showDialog(
+                                barrierDismissible: false,
+                                context: context,
+                                builder: (_) {
+                                  return BlocProvider.value(
+                                    value: context.read<ProductsBloc>(),
+                                    child: const AddProductDialog(),
+                                  );
+                                },
+                              );
+                            },
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                FaIcon(FontAwesomeIcons.circlePlus),
+                                SizedBox(width: 10),
+                                Text('Agregar Producto'),
+                              ],
                             ),
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                );
-
-              default:
-            }
-
-            return const SizedBox();
-          },
-        );
-      }),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        }),
+      ),
     );
   }
 }

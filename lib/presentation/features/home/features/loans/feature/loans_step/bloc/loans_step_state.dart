@@ -1,7 +1,37 @@
 part of 'loans_step_bloc.dart';
 
+enum LoansStepStatus { initial, loading, loaded, error }
+
+class WarrantyState {
+  const WarrantyState({
+    required this.id,
+    required this.description,
+    required this.brand,
+    required this.model,
+    required this.color,
+    required this.status,
+    required this.serie,
+    required this.warrantyObservations,
+    required this.price,
+    required this.photoWarranty,
+  });
+
+  final String? id;
+  final String? description;
+  final String? brand;
+  final String? model;
+  final String? color;
+  final String? status;
+  final String? serie;
+  final String? warrantyObservations;
+  final String? price;
+  final XFile? photoWarranty;
+}
+
 class LoansStepState extends Equatable {
   const LoansStepState({
+    this.loansStepStatus = LoansStepStatus.initial,
+    this.message,
     this.index = 0,
     this.isAval = false,
     this.documentClient,
@@ -20,10 +50,15 @@ class LoansStepState extends Equatable {
     this.startDate,
     this.amount,
     this.deadlines,
+    this.listInterests,
     this.interestRate,
     this.paymentDate,
+    this.paymentDateWithoutFormatt,
     this.observations,
+    this.totalToPay,
+    this.totalProfit,
     this.idWarranty,
+    this.description,
     this.brand,
     this.model,
     this.color,
@@ -33,10 +68,12 @@ class LoansStepState extends Equatable {
     this.price,
     this.listWarranty,
     this.addListWarranty = false,
+    this.photoWarranty,
   });
 
+  final LoansStepStatus loansStepStatus;
+  final String? message;
   final int index;
-  //
   final bool? isAval;
   final String? documentClient;
   final String? fullNamesClient;
@@ -56,12 +93,17 @@ class LoansStepState extends Equatable {
   final String? startDate;
   final String? amount;
   final String? deadlines;
-  final String? interestRate;
+  final List<InterestsEntity>? listInterests;
+  final InterestsEntity? interestRate;
   final String? paymentDate;
+  final DateTime? paymentDateWithoutFormatt;
   final String? observations;
+  final String? totalToPay;
+  final String? totalProfit;
 
   //
   final String? idWarranty;
+  final String? description;
   final String? brand;
   final String? model;
   final String? color;
@@ -69,12 +111,66 @@ class LoansStepState extends Equatable {
   final String? serie;
   final String? warrantyObservations;
   final String? price;
-  final List<Warranty>? listWarranty;
+  final List<WarrantyState>? listWarranty;
   final bool addListWarranty;
+  final XFile? photoWarranty;
+
   //
 
+  bool get isLoansStepLoading => loansStepStatus == LoansStepStatus.loading;
+  bool get isLoansStepError => loansStepStatus == LoansStepStatus.error;
+
+  //
+
+  @override
+  String toString() {
+    return '''{
+   loansStepStatus: $loansStepStatus,   
+   message: $message,   
+   index: $index,   
+   isAval: $isAval,   
+   documentClient: $documentClient,   
+   fullNamesClient: $fullNamesClient,   
+   phoneClient: $phoneClient, 
+   fullLastNamesClient: $fullLastNamesClient,   
+   emailClient: $emailClient,   
+   homeClient: $homeClient,   
+   documentAval: $documentAval,   
+   fullNamesAval: $fullNamesAval,   
+   phoneAval: $phoneAval,   
+   fullLastNamesAval: $fullLastNamesAval,
+   emailAval: $emailAval,
+   homeAval: $homeAval,
+   codeLoans: $codeLoans, 
+   startDate: $startDate,
+   amount: $amount,   
+   deadlines: $deadlines,   
+   listInterests: $listInterests,   
+   interestRate: $interestRate,   
+   paymentDate: $paymentDate, 
+   paymentDateWithoutFormatt: $paymentDateWithoutFormatt,  
+   observations: $observations,
+   totalToPay: $totalToPay,
+   totalProfit: $totalProfit,
+   description: $description,
+   idWarranty: $idWarranty,
+   brand: $brand;
+   model: $model,
+   color: $color,
+   status: $status,
+   serie: $serie,
+   warrantyObservations: $warrantyObservations,
+   price: $price,
+   listWarranty: $listWarranty,
+   addListWarranty: $addListWarranty,
+}''';
+  }
+
   LoansStepState copyWith({
+    int? lastCode,
+    LoansStepStatus? loansStepStatus,
     int? index,
+    String? message,
     bool? isAval,
     String? documentClient,
     String? fullNamesClient,
@@ -92,10 +188,13 @@ class LoansStepState extends Equatable {
     String? startDate,
     String? amount,
     String? deadlines,
-    String? interestRate,
+    List<InterestsEntity>? listInterests,
+    InterestsEntity? interestRate,
     String? paymentDate,
+    DateTime? paymentDateWithoutFormatt,
     String? observations,
     String? idWarranty,
+    String? description,
     String? brand,
     String? model,
     String? color,
@@ -103,10 +202,15 @@ class LoansStepState extends Equatable {
     String? serie,
     String? warrantyObservations,
     String? price,
-    List<Warranty>? listWarranty,
+    List<WarrantyState>? listWarranty,
     bool? addListWarranty,
+    String? totalToPay,
+    String? totalProfit,
+    XFile? photoWarranty,
   }) =>
       LoansStepState(
+        loansStepStatus: loansStepStatus ?? this.loansStepStatus,
+        message: message ?? this.message,
         index: index ?? this.index,
         isAval: isAval ?? this.isAval,
         documentClient: documentClient ?? this.documentClient,
@@ -124,9 +228,12 @@ class LoansStepState extends Equatable {
         amount: amount ?? this.amount,
         codeLoans: codeLoans ?? this.codeLoans,
         deadlines: deadlines ?? this.deadlines,
+        listInterests: listInterests ?? this.listInterests,
         interestRate: interestRate ?? this.interestRate,
         observations: observations ?? this.observations,
         paymentDate: paymentDate ?? this.paymentDate,
+        paymentDateWithoutFormatt:
+            paymentDateWithoutFormatt ?? this.paymentDateWithoutFormatt,
         startDate: startDate ?? this.startDate,
         brand: brand ?? this.brand,
         color: color ?? this.color,
@@ -134,10 +241,14 @@ class LoansStepState extends Equatable {
         model: model ?? this.model,
         price: price ?? this.price,
         serie: serie ?? this.serie,
-        status: status ?? this.status,
+        status: status,
         warrantyObservations: warrantyObservations ?? this.warrantyObservations,
         addListWarranty: addListWarranty ?? this.addListWarranty,
         idWarranty: idWarranty,
+        description: description ?? this.description,
+        totalToPay: totalToPay ?? this.totalToPay,
+        totalProfit: totalProfit ?? this.totalProfit,
+        photoWarranty: photoWarranty,
       );
 
   String titleIndexLoans() {
@@ -191,7 +302,7 @@ class LoansStepState extends Equatable {
     if (codeLoans!.isEmpty) return false;
     if (amount!.isEmpty) return false;
     if (deadlines!.isEmpty) return false;
-    if (interestRate!.isEmpty) return false;
+    if (interestRate == null) return false;
     if (observations!.isEmpty) return false;
     if (paymentDate!.isEmpty) return false;
     if (startDate!.isEmpty) return false;
@@ -201,14 +312,17 @@ class LoansStepState extends Equatable {
 
   bool get canRegisterWarranty {
     //if (listWarranty == null) return false;
-    if (brand == null ||
+    if (description == null ||
+        brand == null ||
         model == null ||
         color == null ||
         status == null ||
         serie == null ||
         warrantyObservations == null ||
-        price == null) return false;
+        price == null ||
+        photoWarranty == null) return false;
 
+    if (description!.isEmpty) return false;
     if (brand!.isEmpty) return false;
     if (model!.isEmpty) return false;
     if (color!.isEmpty) return false;
@@ -216,12 +330,14 @@ class LoansStepState extends Equatable {
     if (serie!.isEmpty) return false;
     if (warrantyObservations!.isEmpty) return false;
     if (price!.isEmpty) return false;
-
+    if (photoWarranty == null) return false;
     return true;
   }
 
   @override
   List<Object?> get props => [
+        loansStepStatus,
+        message,
         isAval,
         index,
         documentClient,
@@ -239,11 +355,14 @@ class LoansStepState extends Equatable {
         amount,
         codeLoans,
         deadlines,
+        listInterests,
         interestRate,
         observations,
         paymentDate,
+        paymentDateWithoutFormatt,
         startDate,
         idWarranty,
+        description,
         brand,
         model,
         color,
@@ -253,5 +372,8 @@ class LoansStepState extends Equatable {
         price,
         listWarranty,
         addListWarranty,
+        totalToPay,
+        totalProfit,
+        photoWarranty,
       ];
 }

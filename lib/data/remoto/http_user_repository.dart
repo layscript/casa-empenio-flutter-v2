@@ -12,7 +12,7 @@ class HttpUserRepository implements UserRepository {
   final Dio _dio;
 
   @override
-  Future<Either<String, User>> logIn({
+  Future<Either<String, UserEntity>> logIn({
     required String email,
     required String password,
   }) async {
@@ -30,11 +30,9 @@ class HttpUserRepository implements UserRepository {
       } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final data = map['body'];
-        return Right(userFromMap(data));
+        return Right(UserEntity.userFromMap(data));
       }
     } catch (e) {
-      print('messageee 2.6: ${e}');
-
       return const Left('Ocurrió un error 2');
     }
   }
@@ -64,8 +62,6 @@ class HttpUserRepository implements UserRepository {
 
     try {
       final response = await _dio.post<String>(path, data: payload);
-      print('resposopd 1: ${response.statusCode}');
-      print('resposopd 2: ${response.data}');
 
       if (response.statusCode != 201) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
@@ -76,9 +72,6 @@ class HttpUserRepository implements UserRepository {
         return const Right(true);
       }
     } catch (e) {
-      print('resposopd 3: ${e}');
-
-      //print('responseee ee: $e');
       return const Left('Ocurrió un error 2');
     }
   }
@@ -97,13 +90,12 @@ class HttpUserRepository implements UserRepository {
         return const Right(true);
       }
     } catch (e) {
-      //print('responseee ee: $e');
       return const Left('Ocurrió un error 2');
     }
   }
 
   @override
-  Future<Either<String, List<User>>> getUsers({
+  Future<Either<String, List<UserEntity>>> getUsers({
     required int limit,
     required int offset,
   }) async {
@@ -116,13 +108,9 @@ class HttpUserRepository implements UserRepository {
         return Left(message);
       } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
-        print('debugbeu 1: $map');
-        return Right(listGetUsersFromMap(map));
+        return Right(UserEntity.listGetUsersFromMap(map));
       }
     } catch (e) {
-      //print('responseee ee: $e');
-      print('debugbeu 2: $e');
-
       return const Left('Ocurrió un error 2');
     }
   }
@@ -155,8 +143,6 @@ class HttpUserRepository implements UserRepository {
 
     try {
       final response = await _dio.put<String>(path, data: payload);
-      print('resposopd 1: ${response.statusCode}');
-      print('resposopd 2: ${response.data}');
 
       if (response.statusCode != 200) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
@@ -167,39 +153,7 @@ class HttpUserRepository implements UserRepository {
         return const Right(true);
       }
     } catch (e) {
-      print('resposopd 3: ${e}');
-
-      //print('responseee ee: $e');
       return const Left('Ocurrió un error 2');
     }
   }
 }
-
-List<User> listGetUsersFromMap(
-  Map<String, dynamic> map,
-) {
-  print('debugbeu 3.1: $map');
-
-  final list = map['body'][0] as List<dynamic>;
-  print('debugbeu 3.2: $list');
-
-  return list.map((e) => userFromMap(e as Map<String, dynamic>)).toList();
-}
-
-User userFromMap(Map<String, dynamic> map) {
-  print('debugbeu 2: $map');
-
-  return User(
-    id: map['id'] as int,
-    nombre: map['nombre'] as String,
-    apellido: map['apellido'] as String,
-    userName: map['userName'] as String,
-    email: map['email'] as String,
-    avatar: map['avatar'] as String?,
-    celular: map['celular'] as int,
-    role: roleFromMap(map['role']),
-  );
-}
-
-Role roleFromMap(Map<String, dynamic> map) =>
-    Role(id: map['id'] as int, nombre: map['nombre'] as String);

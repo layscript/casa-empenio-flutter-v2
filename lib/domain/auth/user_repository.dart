@@ -2,12 +2,12 @@ import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:dartz/dartz.dart';
 
 abstract class UserRepository {
-  Future<Either<String, User>> logIn({
+  Future<Either<String, UserEntity>> logIn({
     required String email,
     required String password,
   });
 
-  Future<Either<String, List<User>>> getUsers({
+  Future<Either<String, List<UserEntity>>> getUsers({
     required int limit,
     required int offset,
   });

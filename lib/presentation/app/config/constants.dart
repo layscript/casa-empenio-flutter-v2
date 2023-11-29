@@ -1,7 +1,12 @@
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 const endPoint = 'http://161.132.38.162:31032';
+const downloadFactura =
+    'https://facturacion.beyzon.dev/public/api/getFile?nombreFile=';
+
 const appTitle = 'Casa de Empeño';
 const appVersion = 'v. 1.0.0';
 
@@ -9,9 +14,16 @@ const invalidEmptyValue = 'Es requerido';
 const invalidEmail = 'El correo electrónico no es válido';
 const invalidPhone = 'Ingrese un número de teléfono válido';
 
+final oCcy = NumberFormat("#,##0.00", "en_US");
 final defaultBoxShadow = <BoxShadow>[
   BoxShadow(
     color: AppColors.lightBlack.withOpacity(0.50),
     blurRadius: 10,
   ),
 ];
+
+Future<void> customLaunchUrl(Uri url) async {
+  if (!await launchUrl(url)) {
+    throw Exception('Could not launch $url');
+  }
+}

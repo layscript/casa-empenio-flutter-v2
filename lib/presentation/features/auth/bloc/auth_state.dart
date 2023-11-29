@@ -13,7 +13,7 @@ final class AuthLoading extends AuthState {}
 
 final class Authenticated extends AuthState {
   const Authenticated({required this.user});
-  final User user;
+  final UserEntity user;
 }
 
 final class UnAuthenticated extends AuthState {}

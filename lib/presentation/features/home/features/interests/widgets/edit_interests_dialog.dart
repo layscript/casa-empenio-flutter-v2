@@ -11,7 +11,7 @@ class EditInterestsDialog extends StatefulWidget {
     super.key,
     required this.interests,
   });
-  final Interests interests;
+  final InterestsEntity interests;
 
   @override
   State<EditInterestsDialog> createState() => _EditInterestsDialogState();

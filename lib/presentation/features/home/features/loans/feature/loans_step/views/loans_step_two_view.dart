@@ -1,3 +1,5 @@
+import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/feature/loans_step/bloc/loans_step_bloc.dart';
 import 'package:flutter/material.dart';
@@ -18,12 +20,11 @@ class LoansStepTwoView extends StatelessWidget {
           children: [
             Expanded(
               child: AppTextFormField(
+                enabled: false,
                 labelText: 'Código Prestamo',
-                initialValue: loansState.codeLoans,
+                controller: TextEditingController(text: loansState.codeLoans),
                 keyboardType: TextInputType.number,
-                onChanged: (e) => context.read<LoansStepBloc>().add(
-                      ChangeCodeLoans(value: e),
-                    ),
+                onChanged: null,
                 validator: (value) {
                   if (value!.isEmpty) return 'Campo Requerido';
                   return null;
@@ -33,11 +34,10 @@ class LoansStepTwoView extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: AppTextFormField(
+                enabled: false,
                 labelText: 'Fecha',
-                initialValue: loansState.startDate,
-                onChanged: (e) => context.read<LoansStepBloc>().add(
-                      ChangeStartDate(value: e),
-                    ),
+                controller: TextEditingController(text: loansState.startDate),
+                onChanged: null,
                 validator: (value) {
                   if (value!.isEmpty) return 'Campo Requerido';
                   return null;
@@ -51,7 +51,14 @@ class LoansStepTwoView extends StatelessWidget {
           children: [
             Expanded(
               child: AppTextFormField(
+                preffix: const Text(
+                  'S/.',
+                  style: TextStyle(
+                    color: AppColors.black,
+                  ),
+                ),
                 labelText: 'Monto a prestar',
+                keyboardType: TextInputType.number,
                 initialValue: loansState.amount,
                 onChanged: (e) => context.read<LoansStepBloc>().add(
                       ChangeAmount(value: e),
@@ -65,8 +72,16 @@ class LoansStepTwoView extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: AppTextFormField(
+                textDirection: TextDirection.rtl,
                 labelText: 'Plazos',
+                suffix: const Text(
+                  ' Dia(s)',
+                  style: TextStyle(
+                    color: AppColors.black,
+                  ),
+                ),
                 initialValue: loansState.deadlines,
+                keyboardType: TextInputType.number,
                 onChanged: (e) => context.read<LoansStepBloc>().add(
                       ChangeDeadLines(value: e),
                     ),
@@ -82,30 +97,37 @@ class LoansStepTwoView extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: AppTextFormField(
-                labelText: 'Tasa de Interes',
-                initialValue: loansState.interestRate,
+              child: AppDropdownButtonFormField<InterestsEntity>(
+                value: loansState.interestRate,
                 onChanged: (e) => context.read<LoansStepBloc>().add(
-                      ChangeInterestRate(value: e),
+                      ChangeInterestRate(
+                        value: e,
+                      ),
                     ),
-                validator: (value) {
-                  if (value!.isEmpty) return 'Campo Requerido';
-                  return null;
-                },
+                labelText: 'Tasa de Interes',
+                items: loansState.listInterests != null
+                    ? loansState.listInterests!
+                        .map(
+                          (e) => DropdownMenuItem<InterestsEntity>(
+                            value: e,
+                            child: Text(e.intereses),
+                          ),
+                        )
+                        .toList()
+                    : null,
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: AppTextFormField(
+                enabled: false,
                 labelText: 'Fecha de Pago',
-                initialValue: loansState.paymentDate,
-                onChanged: (e) => context.read<LoansStepBloc>().add(
-                      ChangePaymentRate(value: e),
-                    ),
+                controller: TextEditingController(text: loansState.paymentDate),
                 validator: (value) {
                   if (value!.isEmpty) return 'Campo Requerido';
                   return null;
                 },
+                onChanged: null,
               ),
             ),
           ],
@@ -123,8 +145,12 @@ class LoansStepTwoView extends StatelessWidget {
           },
         ),
         const SizedBox(height: 15),
-        Text('Ganancia: '),
-        Text('Total a Pagar: '),
+        //TODO:: Mejorar diseño aqui
+        if (loansState.totalProfit != null &&
+            loansState.totalToPay != null) ...[
+          Text('Ganancia: ${loansState.totalProfit}'),
+          Text('Total a Pagar: ${loansState.totalToPay}'),
+        ],
         const SizedBox(height: 15),
         SecondaryButton(
           onPressed: () => context.read<LoansStepBloc>().add(
@@ -132,7 +158,7 @@ class LoansStepTwoView extends StatelessWidget {
                   index: 0,
                 ),
               ),
-          child: Text('Volver'),
+          child: const Text('Volver'),
         ),
         const SizedBox(height: 15),
         PrimaryButton(
@@ -143,7 +169,7 @@ class LoansStepTwoView extends StatelessWidget {
                     ),
                   )
               : null,
-          child: Text('Continuar'),
+          child: const Text('Continuar'),
         )
       ],
     );
