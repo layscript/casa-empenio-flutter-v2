@@ -7,6 +7,75 @@ sealed class LoansStepEvent extends Equatable {
   List<Object> get props => [];
 }
 
+class GetApiSunatByDNI extends LoansStepEvent {
+  const GetApiSunatByDNI(this.document);
+  final String document;
+}
+
+// SaveFirstStepOne
+class SaveFirstStepOne extends LoansStepEvent {
+  const SaveFirstStepOne({
+    required this.documentClient,
+    required this.namesClient,
+    required this.phoneClient,
+    required this.lastNamesClient,
+    required this.emailClient,
+    required this.domicilioClient,
+    required this.photosClient,
+    required this.isAval,
+    required this.documentAval,
+    required this.namesAval,
+    required this.phoneAval,
+    required this.lastNamesAval,
+    required this.emailAval,
+    required this.domicilioAval,
+    required this.photosAval,
+  });
+
+  final String documentClient;
+  final String namesClient;
+  final String phoneClient;
+  final String lastNamesClient;
+  final String emailClient;
+  final String domicilioClient;
+  final bool isAval;
+  final String? documentAval;
+  final String? namesAval;
+  final String? phoneAval;
+  final String? lastNamesAval;
+  final String? emailAval;
+  final String? domicilioAval;
+  final List<XFile>? photosClient;
+  final List<XFile>? photosAval;
+}
+
+class SaveSecondStepOne extends LoansStepEvent {
+  const SaveSecondStepOne({
+    required this.index,
+    required this.amount,
+    required this.deadlines,
+    required this.interest,
+    required this.endDateTime,
+    required this.observations,
+  });
+
+  final int index;
+  final String? amount;
+  final String? deadlines;
+  final InterestsEntity? interest;
+  final String? endDateTime;
+  final String? observations;
+}
+
+class SaveThirdStepOne extends LoansStepEvent {
+  const SaveThirdStepOne({
+    required this.index,
+    required this.value,
+  });
+  final int index;
+  final WarrantyState value;
+}
+
 // Gets Loans
 class GetLastCodeLoans extends LoansStepEvent {}
 
@@ -160,18 +229,30 @@ class ChangePrice extends LoansStepEvent {
 }
 
 class AddListWarranty extends LoansStepEvent {
-  const AddListWarranty({required this.value});
+  const AddListWarranty({
+    required this.value,
+    required this.localState,
+  });
   final WarrantyState value;
+  final LoansPreferencesEntity localState;
 }
 
 class EditListWarranty extends LoansStepEvent {
-  const EditListWarranty({required this.value});
+  const EditListWarranty({
+    required this.value,
+    required this.localState,
+  });
   final WarrantyState value;
+  final LoansPreferencesEntity localState;
 }
 
 class DeleteListWarranty extends LoansStepEvent {
-  const DeleteListWarranty({required this.value});
+  const DeleteListWarranty({
+    required this.value,
+    required this.localState,
+  });
   final WarrantyState value;
+  final LoansPreferencesEntity localState;
 }
 
 class ChangeStatusAddListWarranty extends LoansStepEvent {

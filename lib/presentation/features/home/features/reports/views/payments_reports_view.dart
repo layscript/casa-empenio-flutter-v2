@@ -39,13 +39,13 @@ class _PaymentsReportsViewState extends State<PaymentsReportsView> {
     return LayoutBuilder(
       builder: (context, constraints) {
         return Container(
-          color: Colors.red,
+          //color: Colors.red,
           width: constraints.maxWidth,
           height: constraints.maxHeight,
           child: Column(
             children: [
               Container(
-                color: Colors.yellow,
+                //color: Colors.yellow,
                 width: double.infinity,
                 height: constraints.maxHeight * 0.08,
                 child: ListTile(
@@ -133,7 +133,7 @@ class _PaymentsReportsViewState extends State<PaymentsReportsView> {
                 ),
               ),
               Container(
-                color: Colors.purple,
+                //color: Colors.purple,
                 width: double.infinity,
                 height: constraints.maxHeight * 0.40,
                 child: SingleChildScrollView(
@@ -257,6 +257,9 @@ class _PaymentsReportsViewState extends State<PaymentsReportsView> {
                                                                   loansRepository:
                                                                       context
                                                                           .read(),
+                                                                  cajaRepository:
+                                                                      context
+                                                                          .read(),
                                                                 ),
                                                                 child:
                                                                     ShowDialogBillingLoan(
@@ -327,7 +330,7 @@ class _PaymentsReportsViewState extends State<PaymentsReportsView> {
                 ),
               ),
               Container(
-                color: Colors.blue,
+                //color: Colors.blue,
                 width: double.infinity,
                 height: constraints.maxHeight * 0.44,
                 child: SingleChildScrollView(
@@ -465,7 +468,7 @@ class _PaymentsReportsViewState extends State<PaymentsReportsView> {
                 ),
               ),
               Container(
-                color: Colors.red,
+                //color: Colors.red,
                 width: double.infinity,
                 height: constraints.maxHeight * 0.08,
                 padding: const EdgeInsets.symmetric(horizontal: 20),

@@ -4,6 +4,7 @@ import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _tokenKey = 'du18sj17';
+const _loansKey = 'du1865z33';
 
 class LocalPreferences implements Preferences {
   LocalPreferences(this._preferences);
@@ -28,4 +29,25 @@ class LocalPreferences implements Preferences {
 
   @override
   Future<void> removeToken() => _preferences.remove(_tokenKey);
+
+  @override
+  LoansPreferencesEntity? get getLoansPreferences {
+    final loansString = _preferences.getString(_loansKey);
+    print('locaaaalalsslda 0: ${loansString}');
+    if (loansString != null && loansString != "null") {
+      final loansMap = jsonDecode(loansString) as Map<String, dynamic>;
+      final loans = LoansPreferencesEntity.fromJson(loansMap);
+      return loans;
+    }
+    return null;
+  }
+
+  @override
+  Future<void> removeLoansPreferences() => _preferences.remove(_loansKey);
+
+  @override
+  Future<bool> setLoansPreferences(LoansPreferencesEntity value) {
+    final loansString = jsonEncode(value.toJson());
+    return _preferences.setString(_loansKey, loansString);
+  }
 }

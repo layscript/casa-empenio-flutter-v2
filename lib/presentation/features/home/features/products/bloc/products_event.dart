@@ -16,6 +16,73 @@ class SearchProductsByName extends ProductsEvent {
   final String value;
 }
 
+class SaveProduct extends ProductsEvent {
+  const SaveProduct({
+    required this.id,
+    required this.descripcion,
+    required this.categoria,
+    required this.placa,
+    required this.marca,
+    required this.modelo,
+    required this.valorizacion,
+    required this.observaciones,
+    required this.imagen,
+    required this.imagenDos,
+    //required this.imagenTres,
+    required this.cantidad,
+  });
+
+  final int? id;
+  final String? descripcion;
+  final String? categoria;
+  final String? placa;
+  final String? marca;
+  final String? modelo;
+  final double? valorizacion;
+  final String? observaciones;
+  final String? imagen;
+  final String? imagenDos;
+  //final String? imagenTres;
+  final int? cantidad;
+}
+
+class SaveVehiculo extends ProductsEvent {
+  const SaveVehiculo({
+    required this.id,
+    required this.descripcion,
+    required this.categoria,
+    required this.marca,
+    required this.modelo,
+    required this.valorizacion,
+    required this.observaciones,
+    required this.imagen,
+    required this.imagenDos,
+    required this.cantidad,
+    required this.color,
+    required this.serie,
+    required this.placa,
+    required this.anio,
+    required this.motor,
+    required this.carroceria,
+  });
+
+  final int? id;
+  final String? descripcion;
+  final String? categoria;
+  final String? marca;
+  final String? modelo;
+  final double? valorizacion;
+  final String? observaciones;
+  final String? imagen;
+  final String? imagenDos;
+  final int? cantidad;
+  final String? color;
+  final String? serie;
+  final String? placa;
+  final String? anio;
+  final String? motor;
+  final String? carroceria;
+}
 
 /* class GetInterests extends InterestsEvent {}
 

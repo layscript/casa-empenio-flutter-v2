@@ -33,7 +33,7 @@ class HttpUserRepository implements UserRepository {
         return Right(UserEntity.userFromMap(data));
       }
     } catch (e) {
-      return const Left('Ocurrió un error 2');
+      return const Left('Ocurrió un error con el servidor');
     }
   }
 
@@ -72,7 +72,7 @@ class HttpUserRepository implements UserRepository {
         return const Right(true);
       }
     } catch (e) {
-      return const Left('Ocurrió un error 2');
+      return const Left('Ocurrió un error con el servidor');
     }
   }
 
@@ -90,7 +90,7 @@ class HttpUserRepository implements UserRepository {
         return const Right(true);
       }
     } catch (e) {
-      return const Left('Ocurrió un error 2');
+      return const Left('Ocurrió un error con el servidor');
     }
   }
 
@@ -111,7 +111,7 @@ class HttpUserRepository implements UserRepository {
         return Right(UserEntity.listGetUsersFromMap(map));
       }
     } catch (e) {
-      return const Left('Ocurrió un error 2');
+      return const Left('Ocurrió un error con el servidor');
     }
   }
 
@@ -153,7 +153,7 @@ class HttpUserRepository implements UserRepository {
         return const Right(true);
       }
     } catch (e) {
-      return const Left('Ocurrió un error 2');
+      return const Left('Ocurrió un error con el servidor');
     }
   }
 }

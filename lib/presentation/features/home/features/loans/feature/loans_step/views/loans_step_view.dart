@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/feature/loans_step/bloc/loans_step_bloc.dart';
@@ -15,17 +16,65 @@ class LoansStepView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final preferences = context.read<Preferences>();
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.blue,
         centerTitle: true,
         title: const Text('Registrar Préstamo'),
+        actions: [
+          if (preferences.getLoansPreferences != null)
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: () {
+                showDialog(
+                  barrierDismissible: false,
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: const Text('¿Estás seguro de eliminar?'),
+                      content: const Text(
+                        'Se eliminarán todos los datos almacenados del préstamo',
+                        style: TextStyle(
+                          fontWeight: FontWeight.normal,
+                          color: AppColors.primaryText,
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text(
+                            'Cancelar',
+                            style: TextStyle(
+                              color: AppColors.red,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            context
+                                .read<Preferences>()
+                                .removeLoansPreferences();
+                            Navigator.pop(context);
+                            Navigator.pop(context);
+                          },
+                          child: const Text('Aceptar'),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+            )
+        ],
       ),
       body: BlocProvider(
         lazy: false,
         create: (context) => LoansStepBloc(
           loansRepository: context.read(),
           interestsRepository: context.read(),
+          preferences: context.read(),
+          categoriesRepository: context.read(),
         )..add(GetLastCodeLoans()),
         child: Builder(
           builder: (context) {
@@ -36,7 +85,17 @@ class LoansStepView extends StatelessWidget {
                 } else {
                   OverlayLoader.hide();
                   if (state.isLoansStepError) {
-                    ErrorSnackbar.show(context, state.message ?? '');
+                    ErrorSnackbar.show(
+                      context,
+                      state.message ?? 'Ocurrió un error, intentelo más tarde',
+                    );
+                  }
+                  if (state.isLoansStepSuccess) {
+                    SuccessSnackbar.show(
+                      context,
+                      'Guardado correctamente',
+                    );
+                    Navigator.pop(context, true);
                   }
                 }
               },

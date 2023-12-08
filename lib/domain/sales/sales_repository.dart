@@ -6,4 +6,6 @@ abstract class SalesRepository {
     required DateTime inicio,
     required DateTime fin,
   });
+
+  Future<bool> createSalesProduct(Map<String, dynamic> data);
 }

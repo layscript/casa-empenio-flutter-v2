@@ -10,6 +10,7 @@ part 'sales_state.dart';
 final _initialState = SalesState(
   status: SalesStatus.initial,
   addStatus: SalesStatus.initial,
+  saveStatus: SalesStatus.initial,
   startTimeSales: DateTime.now(),
   endTimeSales: DateTime.now(),
   listSales: const [],
@@ -23,9 +24,11 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
     required SalesRepository salesRepository,
     required CustomerRepository customerRepository,
     required ProductRepository productRepository,
+    required CajaRepository cajaRepository,
   })  : _salesRepository = salesRepository,
         _customerRepository = customerRepository,
         _productRepository = productRepository,
+        _cajaRepository = cajaRepository,
         super(_initialState) {
     on<GetSalesInitial>((event, emit) => emit(
           state.copyWith(
@@ -34,15 +37,39 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
           ),
         ));
     on<GetListSales>(_onGetListSales);
+    on<GetCashSalesStatus>(_onGetCashSalesStatus);
     on<GetCustomerSalesByDni>(_onGetCustomerSalesByDni);
     on<SaveProductSalesToCart>(_onSaveProductSalesToCart);
     on<DeleteProductSalesToCart>(_onDeleteProductSalesToCart);
     on<UpdateProductSalesToCart>(_onUpdateProductSalesToCart);
+    on<GenerateSalesProduct>(_onGenerateSalesProduct);
   }
 
   final SalesRepository _salesRepository;
   final CustomerRepository _customerRepository;
   final ProductRepository _productRepository;
+  final CajaRepository _cajaRepository;
+
+  Future<void> _onGetCashSalesStatus(
+    GetCashSalesStatus event,
+    Emitter<SalesState> emit,
+  ) async {
+    final result = await _cajaRepository.getCajaOfTheDay();
+    result.fold(
+      // Error
+      (left) => emit(
+        state.copyWith(
+          openBox: true,
+        ),
+      ),
+      // Success
+      (rigth) => emit(
+        state.copyWith(
+          openBox: false,
+        ),
+      ),
+    );
+  }
 
   Future<void> _onGetListSales(
     GetListSales event,
@@ -80,7 +107,12 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
     GetCustomerSalesByDni event,
     Emitter<SalesState> emit,
   ) async {
-    emit(state.copyWith(addStatus: SalesStatus.loading));
+    emit(
+      state.copyWith(
+        addStatus: SalesStatus.loading,
+        saveStatus: SalesStatus.initial,
+      ),
+    );
 
     final result = await _customerRepository.getCustomerSunatByDni(
       dni: event.value,
@@ -174,5 +206,59 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
         ),
       );
     }
+  }
+
+  Future<void> _onGenerateSalesProduct(
+    GenerateSalesProduct event,
+    Emitter<SalesState> emit,
+  ) async {
+    /*  emit(
+      state.copyWith(
+        saveStatus: SalesStatus.loading,
+        customer: state.customer,
+        selectedProductsSales: state.selectedProductsSales,
+      ),
+    );
+
+    final detalles = state.selectedProductsSales!.map((e) {
+      return {
+        'cantidad': e.cantidad,
+        'precio': e.precio,
+        'bienGarantiaId': e.selectedProducts?.id,
+      };
+    }).toList();
+
+    final data = <String, dynamic>{
+      'detalleVentaDto': detalles,
+      'total': detalles.fold(
+          0.0,
+          (previousValue, element) =>
+              previousValue + (element['cantidad']! * element['precio']!)),
+      'nombres': state.customer?.nombre,
+      'apellidos':
+          '${state.customer?.apellidoPaterno} ${state.customer?.apellidoMaterno}',
+      'direccion': '${state.customer?.domicilio?.direccion}',
+      'dni': '${state.customer?.dni}',
+      'usuarioId': event.userId,
+    };
+
+    final result = await _salesRepository.createSalesProduct(data);
+    if (result) {
+      emit(
+        state.copyWith(
+          saveStatus: SalesStatus.success,
+          customer: null,
+          selectedProductsSales: null,
+        ),
+      );
+    } else {
+      emit(
+        state.copyWith(
+          saveStatus: SalesStatus.error,
+          customer: null,
+          selectedProductsSales: null,
+        ),
+      );
+    } */
   }
 }

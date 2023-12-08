@@ -39,12 +39,71 @@ class _ShowDialogBillingLoanState extends State<ShowDialogBillingLoan> {
       onTap: () => Keyboard.unfocus(context),
       child: BlocConsumer<LoansBloc, LoansState>(
         listener: (context, state) {
-          if (state.isLoansError) {
-            Navigator.pop(context);
+          if (state.isLoansElectronicTicketSuccess) {
+            showDialog(
+              barrierDismissible: false,
+              context: context,
+              builder: (context) {
+                return AlertDialog(
+                  title: const Text(
+                    'Boleta generada',
+                    style: TextStyle(
+                      color: Colors.green,
+                    ),
+                  ),
+                  content: const Text('La boleta se ha generado correctamente'),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.pop(context, true);
+                      },
+                      child: const Text('Aceptar'),
+                    ),
+                  ],
+                );
+              },
+            );
+          }
+
+          if (state.isLoansElectronicTicketError) {
+            showDialog(
+              barrierDismissible: false,
+              context: context,
+              builder: (context) {
+                return AlertDialog(
+                  title: const Text(
+                    'Ocurrió un error',
+                    style: TextStyle(
+                      color: Colors.red,
+                    ),
+                  ),
+                  content: const Text('Vuelve a intentarlo de nuevo'),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Aceptar'),
+                    ),
+                  ],
+                );
+              },
+            );
           }
         },
         builder: (context, state) {
           switch (state.loansStatus) {
+            case LoansStatus.electronicTicketLoading:
+              return const SizedBox(
+                width: 300,
+                height: 300,
+                child: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+
             case LoansStatus.loaded:
               final loan = state.loanDetails;
               return AlertDialog(
@@ -165,6 +224,7 @@ class _ShowDialogBillingLoanState extends State<ShowDialogBillingLoan> {
                   )
                 ],
               );
+
             default:
           }
 

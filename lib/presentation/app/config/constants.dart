@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-const endPoint = 'http://161.132.38.162:31032';
+//const endPoint = 'http://161.132.38.162:31032';
+const endPoint = 'http://192.168.195.118:4000';
+
 const downloadFactura =
     'https://facturacion.beyzon.dev/public/api/getFile?nombreFile=';
 

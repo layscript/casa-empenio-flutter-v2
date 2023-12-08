@@ -1,6 +1,7 @@
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
+import 'package:casa_empenio_pe/presentation/features/auth/auth.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/blocs/loans_bloc/loans_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -33,6 +34,8 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
 
   @override
   Widget build(BuildContext context) {
+    final authBloc = context.read<AuthBloc>().state as Authenticated;
+
     return GestureDetector(
       onTap: () => Keyboard.unfocus(context),
       child: AlertDialog(
@@ -342,7 +345,9 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                                                     idPrestamo:
                                                         widget.nroPrestamo ?? 0,
                                                     monto: montoCtrl.text,
-                                                    userId: '',
+                                                    userId: authBloc.user.id
+                                                        .toString(),
+                                                    codigo: loan?.codigo ?? 0,
                                                   ),
                                                 );
                                           },
@@ -363,7 +368,7 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                                       SavePaymentLoan(
                                         idPrestamo: widget.nroPrestamo ?? 0,
                                         monto: montoCtrl.text,
-                                        userId: '',
+                                        userId: authBloc.user.id.toString(),
                                       ),
                                     );
                               }

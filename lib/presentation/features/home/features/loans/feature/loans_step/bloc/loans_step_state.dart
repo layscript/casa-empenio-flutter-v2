@@ -1,11 +1,13 @@
 part of 'loans_step_bloc.dart';
 
-enum LoansStepStatus { initial, loading, loaded, error }
+enum LoansStepStatus { initial, loading, loaded, error, success }
 
 class WarrantyState {
   const WarrantyState({
     required this.id,
     required this.description,
+    required this.category,
+    required this.placa,
     required this.brand,
     required this.model,
     required this.color,
@@ -17,6 +19,8 @@ class WarrantyState {
   });
 
   final String? id;
+  final CategoriesEntity? category;
+  final String? placa;
   final String? description;
   final String? brand;
   final String? model;
@@ -25,7 +29,59 @@ class WarrantyState {
   final String? serie;
   final String? warrantyObservations;
   final String? price;
-  final XFile? photoWarranty;
+  final List<XFile>? photoWarranty;
+
+  factory WarrantyState.fromJson(Map<String, dynamic> json) {
+    return WarrantyState(
+      id: json['id'],
+      description: json['description'],
+      category: json['category'] != null
+          ? CategoriesEntity(
+              id: json['category']['id'],
+              descripcion: json['category']['descripcion'],
+              updatedAt: json['category']['updatedAt'],
+              createdAt: json['category']['createdAt'],
+            )
+          : null,
+      placa: json['placa'],
+      brand: json['brand'],
+      model: json['model'],
+      color: json['color'],
+      status: json['status'],
+      serie: json['serie'],
+      warrantyObservations: json['warrantyObservations'],
+      price: json['price'],
+      photoWarranty: json['photoWarranty'] != null
+          ? (json['photoWarranty'] as List<dynamic>)
+              .map((path) => XFile(path))
+              .toList()
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'category': category != null
+          ? {
+              'id': category?.id,
+              'descripcion': category?.descripcion,
+              'updatedAt': category?.updatedAt,
+              'createdAt': category?.createdAt,
+            }
+          : null,
+      'placa': placa,
+      'description': description,
+      'brand': brand,
+      'model': model,
+      'color': color,
+      'status': status,
+      'serie': serie,
+      'warrantyObservations': warrantyObservations,
+      'price': price,
+      'photoWarranty': photoWarranty?.map((xFile) => xFile.path).toList(),
+    };
+  }
 }
 
 class LoansStepState extends Equatable {
@@ -40,12 +96,14 @@ class LoansStepState extends Equatable {
     this.phoneClient,
     this.emailClient,
     this.homeClient,
+    this.photosClient,
     this.documentAval,
     this.fullNamesAval,
     this.fullLastNamesAval,
     this.phoneAval,
     this.emailAval,
     this.homeAval,
+    this.photosAval,
     this.codeLoans,
     this.startDate,
     this.amount,
@@ -57,10 +115,13 @@ class LoansStepState extends Equatable {
     this.observations,
     this.totalToPay,
     this.totalProfit,
+    this.listCategories,
+    this.categories,
     this.idWarranty,
     this.description,
     this.brand,
     this.model,
+    this.placa,
     this.color,
     this.status,
     this.serie,
@@ -81,12 +142,15 @@ class LoansStepState extends Equatable {
   final String? fullLastNamesClient;
   final String? emailClient;
   final String? homeClient;
+  final List<XFile>? photosClient;
+
   final String? documentAval;
   final String? fullNamesAval;
   final String? phoneAval;
   final String? fullLastNamesAval;
   final String? emailAval;
   final String? homeAval;
+  final List<XFile>? photosAval;
 
   //
   final String? codeLoans;
@@ -102,10 +166,13 @@ class LoansStepState extends Equatable {
   final String? totalProfit;
 
   //
+  final List<CategoriesEntity>? listCategories;
+  final CategoriesEntity? categories;
   final String? idWarranty;
   final String? description;
   final String? brand;
   final String? model;
+  final String? placa;
   final String? color;
   final String? status;
   final String? serie;
@@ -113,16 +180,17 @@ class LoansStepState extends Equatable {
   final String? price;
   final List<WarrantyState>? listWarranty;
   final bool addListWarranty;
-  final XFile? photoWarranty;
+  final List<XFile>? photoWarranty;
 
   //
 
   bool get isLoansStepLoading => loansStepStatus == LoansStepStatus.loading;
   bool get isLoansStepError => loansStepStatus == LoansStepStatus.error;
+  bool get isLoansStepSuccess => loansStepStatus == LoansStepStatus.success;
 
   //
 
-  @override
+  /*  @override
   String toString() {
     return '''{
    loansStepStatus: $loansStepStatus,   
@@ -165,7 +233,7 @@ class LoansStepState extends Equatable {
    addListWarranty: $addListWarranty,
 }''';
   }
-
+ */
   LoansStepState copyWith({
     int? lastCode,
     LoansStepStatus? loansStepStatus,
@@ -178,18 +246,22 @@ class LoansStepState extends Equatable {
     String? fullLastNamesClient,
     String? emailClient,
     String? homeClient,
+    List<XFile>? photosClient,
     String? documentAval,
     String? fullNamesAval,
     String? phoneAval,
     String? fullLastNamesAval,
     String? emailAval,
     String? homeAval,
+    List<XFile>? photosAval,
     String? codeLoans,
     String? startDate,
     String? amount,
     String? deadlines,
     List<InterestsEntity>? listInterests,
+    List<CategoriesEntity>? listCategories,
     InterestsEntity? interestRate,
+    CategoriesEntity? categories,
     String? paymentDate,
     DateTime? paymentDateWithoutFormatt,
     String? observations,
@@ -206,7 +278,8 @@ class LoansStepState extends Equatable {
     bool? addListWarranty,
     String? totalToPay,
     String? totalProfit,
-    XFile? photoWarranty,
+    List<XFile>? photoWarranty,
+    String? placa,
   }) =>
       LoansStepState(
         loansStepStatus: loansStepStatus ?? this.loansStepStatus,
@@ -219,12 +292,14 @@ class LoansStepState extends Equatable {
         emailClient: emailClient ?? this.emailClient,
         homeClient: homeClient ?? this.homeClient,
         phoneClient: phoneClient ?? this.phoneClient,
+        photosClient: photosClient ?? this.photosClient,
         documentAval: documentAval ?? this.documentAval,
         fullNamesAval: fullNamesAval ?? this.fullNamesAval,
         fullLastNamesAval: fullLastNamesAval ?? this.fullLastNamesAval,
         emailAval: emailAval ?? this.emailAval,
         homeAval: homeAval ?? this.homeAval,
         phoneAval: phoneAval ?? this.phoneAval,
+        photosAval: photosAval ?? this.photosAval,
         amount: amount ?? this.amount,
         codeLoans: codeLoans ?? this.codeLoans,
         deadlines: deadlines ?? this.deadlines,
@@ -241,14 +316,17 @@ class LoansStepState extends Equatable {
         model: model ?? this.model,
         price: price ?? this.price,
         serie: serie ?? this.serie,
-        status: status,
+        status: status ?? this.status,
         warrantyObservations: warrantyObservations ?? this.warrantyObservations,
         addListWarranty: addListWarranty ?? this.addListWarranty,
         idWarranty: idWarranty,
         description: description ?? this.description,
         totalToPay: totalToPay ?? this.totalToPay,
         totalProfit: totalProfit ?? this.totalProfit,
-        photoWarranty: photoWarranty,
+        photoWarranty: photoWarranty ?? this.photoWarranty,
+        listCategories: listCategories ?? this.listCategories,
+        categories: categories ?? this.categories,
+        placa: placa ?? this.placa,
       );
 
   String titleIndexLoans() {
@@ -346,12 +424,14 @@ class LoansStepState extends Equatable {
         emailClient,
         homeClient,
         phoneClient,
+        photosAval,
         documentAval,
         fullNamesAval,
         fullLastNamesAval,
         emailAval,
         homeAval,
         phoneAval,
+        photosAval,
         amount,
         codeLoans,
         deadlines,
@@ -375,5 +455,8 @@ class LoansStepState extends Equatable {
         totalToPay,
         totalProfit,
         photoWarranty,
+        listCategories,
+        categories,
+        placa,
       ];
 }

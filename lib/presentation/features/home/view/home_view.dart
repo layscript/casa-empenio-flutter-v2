@@ -44,6 +44,15 @@ class HomeView extends StatelessWidget {
 
                 case 6:
                   return const InterestsView();
+
+                case 7:
+                  return const CategoriesView();
+
+                case 8:
+                  return const CajasView();
+
+                case 9:
+                  return const ExpensesView();
               }
               return const SizedBox();
             },

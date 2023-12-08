@@ -3,16 +3,18 @@ import 'package:casa_empenio_pe/presentation/features/home/features/loans/blocs/
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class SearchLoansClient extends StatefulWidget {
-  const SearchLoansClient({super.key});
+class SearchLoansClientByGeneral extends StatefulWidget {
+  const SearchLoansClientByGeneral({super.key});
 
   @override
-  State<SearchLoansClient> createState() => _SearchLoansClientState();
+  State<SearchLoansClientByGeneral> createState() =>
+      _SearchLoansClientByGeneralState();
 }
 
-class _SearchLoansClientState extends State<SearchLoansClient> {
-  final dniCtrl = TextEditingController();
-  bool dniIsValid = false;
+class _SearchLoansClientByGeneralState
+    extends State<SearchLoansClientByGeneral> {
+  final textCtrl = TextEditingController();
+  bool textIsValid = false;
 
   @override
   Widget build(BuildContext context) {
@@ -21,20 +23,17 @@ class _SearchLoansClientState extends State<SearchLoansClient> {
         Expanded(
           flex: 2,
           child: AppTextFormField(
-            controller: dniCtrl,
-            labelText: 'Ingresar DNI del cliente',
-            maxLength: 8,
-            keyboardType: TextInputType.number,
-            isValid: (value) => setState(() => dniIsValid = value),
+            controller: textCtrl,
+            labelText: 'Ingresar texto',
+            isValid: (value) => setState(() => textIsValid = value),
             validator: (value) {
               if (value!.isEmpty) return 'Campo requerido';
-              if (value.length < 8) return 'Ingrese 8 digitos';
               return null;
             },
-            suffixIcon: dniCtrl.text.isNotEmpty
+            suffixIcon: textCtrl.text.isNotEmpty
                 ? GestureDetector(
                     onTap: () {
-                      dniCtrl.clear();
+                      textCtrl.clear();
                       context.read<LoansBloc>().add(GetLoansInitial());
                     },
                     child: const Icon(
@@ -47,11 +46,11 @@ class _SearchLoansClientState extends State<SearchLoansClient> {
         const SizedBox(width: 10),
         Expanded(
           child: ElevatedButton(
-            onPressed: dniIsValid
+            onPressed: textIsValid
                 ? () {
                     context.read<LoansBloc>().add(
-                          GetLoansByDni(
-                            value: dniCtrl.text,
+                          GetLoansByText(
+                            value: textCtrl.text,
                           ),
                         );
                   }

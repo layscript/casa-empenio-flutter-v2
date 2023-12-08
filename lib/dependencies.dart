@@ -2,7 +2,8 @@ part of 'main.dart';
 
 final _client = Dio(
   BaseOptions(
-    baseUrl: 'http://161.132.38.162:31032',
+    //baseUrl: 'http://161.132.38.162:31032',
+    baseUrl: endPoint,
     validateStatus: (status) => (status ?? 500) < 500,
     connectTimeout: const Duration(seconds: 60000),
     receiveTimeout: const Duration(seconds: 60000),
@@ -30,6 +31,18 @@ final ReportsRepository _reportsRepository = HttpReportsRepository(
 );
 
 final SalesRepository _salesRepository = HttpSalesRepository(
+  dio: _client,
+);
+
+final CategoriesRepository _categoriesRepository = HttpCategoriesRepository(
+  dio: _client,
+);
+
+final CajaRepository _cajaRepository = HttpCajaRepository(
+  dio: _client,
+);
+
+final ExpensesRepository _expensesRepository = HttpExpensesRepository(
   dio: _client,
 );
 

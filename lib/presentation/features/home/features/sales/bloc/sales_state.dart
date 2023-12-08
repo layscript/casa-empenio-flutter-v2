@@ -1,6 +1,11 @@
 part of 'sales_bloc.dart';
 
-enum SalesStatus { initial, loading, success, error }
+enum SalesStatus {
+  initial,
+  loading,
+  success,
+  error,
+}
 
 class ProductSales {
   const ProductSales({
@@ -27,8 +32,10 @@ class ProductSales {
 
 class SalesState extends Equatable {
   const SalesState({
+    this.openBox = false,
     required this.status,
     required this.addStatus,
+    required this.saveStatus,
     required this.startTimeSales,
     required this.endTimeSales,
     required this.listSales,
@@ -37,8 +44,10 @@ class SalesState extends Equatable {
     required this.selectedProductsSales,
   });
 
+  final bool openBox;
   final SalesStatus status;
   final SalesStatus addStatus;
+  final SalesStatus saveStatus;
   final DateTime startTimeSales;
   final DateTime endTimeSales;
   final List<SalesEntity> listSales;
@@ -51,13 +60,19 @@ class SalesState extends Equatable {
   bool get isSalesError => status == SalesStatus.error;
   bool get isSalesSuccess => status == SalesStatus.success;
 
-  bool get isAddSalesLoading => status == SalesStatus.loading;
-  bool get isAddSalesError => status == SalesStatus.error;
-  bool get isAddSalesSuccess => status == SalesStatus.success;
+  bool get isAddSalesLoading => addStatus == SalesStatus.loading;
+  bool get isAddSalesError => addStatus == SalesStatus.error;
+  bool get isAddSalesSuccess => addStatus == SalesStatus.success;
+
+  bool get isSaveSalesLoading => saveStatus == SalesStatus.loading;
+  bool get isSaveSalesError => saveStatus == SalesStatus.error;
+  bool get isSaveSalesSuccess => saveStatus == SalesStatus.success;
 
   SalesState copyWith({
+    bool? openBox,
     SalesStatus? status,
     SalesStatus? addStatus,
+    SalesStatus? saveStatus,
     DateTime? startTimeSales,
     DateTime? endTimeSales,
     List<SalesEntity>? listSales,
@@ -66,21 +81,24 @@ class SalesState extends Equatable {
     List<ProductSales>? selectedProductsSales,
   }) =>
       SalesState(
+        openBox: openBox ?? this.openBox,
         status: status ?? this.status,
         addStatus: addStatus ?? this.addStatus,
+        saveStatus: saveStatus ?? this.saveStatus,
         startTimeSales: startTimeSales ?? this.startTimeSales,
         endTimeSales: endTimeSales ?? this.endTimeSales,
         listSales: listSales ?? this.listSales,
         totalSales: totalSales ?? this.totalSales,
         customer: customer,
-        selectedProductsSales:
-            selectedProductsSales ?? this.selectedProductsSales,
+        selectedProductsSales: selectedProductsSales,
       );
 
   @override
   List<Object?> get props => [
+        openBox,
         status,
         addStatus,
+        saveStatus,
         startTimeSales,
         endTimeSales,
         listSales,

@@ -15,9 +15,18 @@ abstract class ProductRepository {
     required String criterio,
   });
 
-  Future<void> createProduct();
+  Future<bool> createVehiculo({
+    required Map<String, dynamic> payload,
+  });
+  Future<bool> updateVehiculo({
+    required Map<String, dynamic> payload,
+  });
 
-  Future<void> updateProduct();
+  Future<bool> createProduct({
+    required Map<String, dynamic> payload,
+  });
 
-  Future<void> deleteProduct();
+  Future<bool> updateProduct({
+    required Map<String, dynamic> payload,
+  });
 }

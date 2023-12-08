@@ -17,8 +17,10 @@ class ProductsView extends StatelessWidget {
       onTap: () => Keyboard.unfocus(context),
       child: BlocProvider(
         lazy: false,
-        create: (context) => ProductsBloc(productRepository: context.read())
-          ..add(
+        create: (context) => ProductsBloc(
+          productRepository: context.read(),
+          categoriesRepository: context.read(),
+        )..add(
             GetProducts(),
           ),
         child: Builder(builder: (context) {
@@ -30,6 +32,23 @@ class ProductsView extends StatelessWidget {
                 OverlayLoader.hide();
                 if (state.isProductError) {
                   ErrorSnackbar.show(context, state.error ?? '');
+                }
+
+                if (state.isProductSuccess) {
+                  Navigator.pop(context);
+                  context.read<ProductsBloc>().add(GetProducts());
+                  SuccessSnackbar.show(
+                    context,
+                    'Producto/Vehiculo Agregado Correctamente',
+                  );
+                }
+
+                if (state.isProductFailure) {
+                  Navigator.pop(context);
+                  ErrorSnackbar.show(
+                    context,
+                    state.error ?? 'Ocurrió un problema, intentelo de nuevo',
+                  );
                 }
               }
             },
@@ -80,7 +99,25 @@ class ProductsView extends StatelessWidget {
                                   final product = state.listProducts![index];
                                   return ListTile(
                                     dense: true,
-                                    leading: product.imagen == null
+                                    //leading: product.imagen != null
+                                    leading: false
+                                        ? GestureDetector(
+                                            onTap: () {},
+                                            child: Image.network(
+                                              '$endPoint/${product.imagen}.jpg',
+                                              width: 50,
+                                              height: 50,
+                                              fit: BoxFit.scaleDown,
+                                            ),
+                                          )
+                                        : const SizedBox(
+                                            height: 50,
+                                            width: 50,
+                                            child: Center(
+                                              child: Icon(Icons.image),
+                                            ),
+                                          ),
+                                    /* leading: product.imagen == null
                                         ? const SizedBox(
                                             height: 50,
                                             width: 50,
@@ -114,7 +151,7 @@ class ProductsView extends StatelessWidget {
                                                 errorWidget: (context, url, error) =>
                                                     const Icon(Icons.error),
                                               ), */
-                                          ),
+                                          ), */
                                     title: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
@@ -124,7 +161,7 @@ class ProductsView extends StatelessWidget {
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
-                                          'Prestamo - N° ${product.prestamo?.codigoFormateado}',
+                                          'Prestamo - N° ${product.prestamo?.codigoFormateado ?? ''}',
                                           style: const TextStyle(
                                             color: Colors.blue,
                                             fontSize: 12,
@@ -152,7 +189,17 @@ class ProductsView extends StatelessWidget {
                                           SizedBox(
                                             height: 40,
                                             child: IconButton(
-                                              onPressed: () {},
+                                              onPressed: () {
+                                                showDialog(
+                                                  barrierDismissible: false,
+                                                  context: context,
+                                                  builder: (_) {
+                                                    return ContractsDetailsAlert(
+                                                      product: product,
+                                                    );
+                                                  },
+                                                );
+                                              },
                                               icon: const FaIcon(
                                                 FontAwesomeIcons.fileInvoice,
                                                 size: 20,
@@ -163,7 +210,25 @@ class ProductsView extends StatelessWidget {
                                         SizedBox(
                                           width: 40,
                                           child: IconButton(
-                                            onPressed: () {},
+                                            onPressed: () {
+                                              showDialog(
+                                                barrierDismissible: false,
+                                                context: context,
+                                                builder: (_) {
+                                                  final isProduct =
+                                                      product.motor == null;
+
+                                                  return BlocProvider.value(
+                                                    value: context
+                                                        .read<ProductsBloc>(),
+                                                    child: EditProductDialog(
+                                                      product: product,
+                                                      isProduct: isProduct,
+                                                    ),
+                                                  );
+                                                },
+                                              );
+                                            },
                                             icon: const FaIcon(
                                               FontAwesomeIcons.penToSquare,
                                               size: 20,

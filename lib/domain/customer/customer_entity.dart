@@ -13,6 +13,8 @@ class CustomerEntity {
     required this.prestamos,
     required this.prestamosAval,
     required this.pagos,
+    required this.imagenUno,
+    required this.imagenDos,
     required this.ventas,
     required this.updatedAt,
     required this.createdAt,
@@ -28,6 +30,8 @@ class CustomerEntity {
   final List<LoansEntity>? prestamosAval;
   final List<PayEntity>? pagos;
   final List<SalesEntity>? ventas;
+  final String? imagenUno;
+  final String? imagenDos;
   final String? updatedAt;
   final String? createdAt;
 
@@ -47,6 +51,8 @@ class CustomerEntity {
       domicilio: map['domicilio'],
       email: map['email'],
       celular: map['celular'],
+      imagenUno: map['imagen'],
+      imagenDos: map['imagen2'],
       prestamos: map['prestamos'] != null
           ? LoansEntity.listGetSalesDetailFromMap(
               map['prestamos'] as List<dynamic>)

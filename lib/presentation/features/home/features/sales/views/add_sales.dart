@@ -1,5 +1,8 @@
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/overlay_loader.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
+import 'package:casa_empenio_pe/presentation/features/auth/auth.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/sales/bloc/sales_bloc.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/sales/widgets/widgets.dart';
 import 'package:flutter/material.dart';
@@ -12,10 +15,20 @@ class AddFormSales extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authBloc = context.read<AuthBloc>().state as Authenticated;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.blue,
         title: const Text('Nueva Venta'),
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.add),
+        onPressed: () => context.read<SalesBloc>().add(
+              GenerateSalesProduct(
+                authBloc.user.id,
+              ),
+            ),
       ),
       body: Container(
         padding: const EdgeInsets.all(20),
@@ -24,7 +37,28 @@ class AddFormSales extends StatelessWidget {
           children: [
             const SearchCustomerSales(),
             const SizedBox(height: 20),
-            BlocBuilder<SalesBloc, SalesState>(
+            BlocConsumer<SalesBloc, SalesState>(
+              listener: (context, state) {
+                if (state.isSaveSalesLoading) {
+                  OverlayLoader.show(context);
+                } else {
+                  OverlayLoader.hide();
+                  if (state.isSaveSalesError) {
+                    ErrorSnackbar.show(
+                      context,
+                      'Ocurrió un problema con la venta',
+                    );
+                  }
+
+                  if (state.isSaveSalesSuccess) {
+                    SuccessSnackbar.show(
+                      context,
+                      'Venta generada correctamente',
+                    );
+                    Navigator.pop(context, true);
+                  }
+                }
+              },
               builder: (context, state) {
                 switch (state.addStatus) {
                   case SalesStatus.loading:
@@ -138,7 +172,7 @@ class AddFormSales extends StatelessWidget {
                                           child: Placeholder(),
                                         )
                                       : Image.network(
-                                          '$endPoint/${selectedProduct.selectedProducts?.imagen}.jpg',
+                                          '$endPoint/${selectedProduct.selectedProducts?.imagen}',
                                           width: 50,
                                           height: 50,
                                           fit: BoxFit.cover,

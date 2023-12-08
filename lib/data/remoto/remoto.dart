@@ -1,4 +1,7 @@
+export 'http_caja_repository.dart';
+export 'http_categories_repository.dart';
 export 'http_customer_repository.dart';
+export 'http_expenses_repository.dart';
 export 'http_interests_repository.dart';
 export 'http_loans_repository.dart';
 export 'http_product_repository.dart';

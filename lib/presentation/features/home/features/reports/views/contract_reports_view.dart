@@ -37,13 +37,13 @@ class _ContractReportsViewState extends State<ContractReportsView> {
     return LayoutBuilder(
       builder: (context, constraints) {
         return Container(
-          color: Colors.red,
+          //color: Colors.red,
           width: constraints.maxWidth,
           height: constraints.maxHeight,
           child: Column(
             children: [
               Container(
-                color: Colors.yellow,
+                //color: Colors.yellow,
                 width: double.infinity,
                 height: constraints.maxHeight * 0.15,
                 child: Column(
@@ -139,7 +139,7 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                 ),
               ),
               Container(
-                color: Colors.purple,
+                //color: Colors.purple,
                 width: double.infinity,
                 height: constraints.maxHeight * 0.70,
                 child: Padding(
@@ -151,7 +151,7 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        color: Colors.green,
+                        //color: Colors.green,
                         width: double.infinity,
                         height: constraints.maxHeight * 0.30,
                         child: Column(
@@ -168,7 +168,7 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                             ),
                             const SizedBox(height: 10),
                             Container(
-                              color: Colors.pink,
+                              //color: Colors.pink,
                               width: double.infinity,
                               height: constraints.maxHeight * 0.25,
                               child: BlocBuilder<ReportsBloc, ReportsState>(
@@ -255,7 +255,7 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                         ),
                       ),
                       Container(
-                        color: Colors.yellow,
+                        //color: Colors.yellow,
                         width: double.infinity,
                         height: constraints.maxHeight * 0.40,
                         child: Column(
@@ -272,7 +272,7 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                             ),
                             const SizedBox(height: 10),
                             Container(
-                              color: Colors.red,
+                              //color: Colors.red,
                               height: constraints.maxHeight * 0.35,
                               child: BlocBuilder<ReportsBloc, ReportsState>(
                                 builder: (context, state) {
@@ -412,8 +412,10 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                                                 'PAGADO') {
                                                           final result =
                                                               await showDialog<
-                                                                  bool>(
+                                                                  bool?>(
                                                             context: context,
+                                                            barrierDismissible:
+                                                                false,
                                                             builder: (_) {
                                                               return BlocProvider
                                                                   .value(
@@ -429,8 +431,18 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                                             },
                                                           );
 
-                                                          if (result != null) {
+                                                          if (result != null &&
+                                                              mounted) {
                                                             // Volver a cargar la data
+                                                            context
+                                                                .read<
+                                                                    ReportsBloc>()
+                                                                .add(
+                                                                  const GetLoadInitialDataContracts(
+                                                                    end: null,
+                                                                    start: null,
+                                                                  ),
+                                                                );
                                                           }
                                                         }
                                                       },
@@ -468,7 +480,7 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                 ),
               ),
               Container(
-                color: Colors.red,
+                //color: Colors.red,
                 width: double.infinity,
                 height: constraints.maxHeight * 0.15,
                 padding: const EdgeInsets.symmetric(

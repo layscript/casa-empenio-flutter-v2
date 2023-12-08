@@ -3,6 +3,7 @@
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
+import 'package:casa_empenio_pe/presentation/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/sales/bloc/sales_bloc.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/sales/views/add_sales.dart';
 import 'package:flutter/material.dart';
@@ -26,14 +27,60 @@ class _SalesViewState extends State<SalesView> {
         salesRepository: context.read(),
         customerRepository: context.read(),
         productRepository: context.read(),
-      )..add(
+        cajaRepository: context.read(),
+      )
+        ..add(
           const GetListSales(
             start: null,
             end: null,
           ),
+        )
+        ..add(
+          GetCashSalesStatus(),
         ),
       child: Builder(builder: (context) {
-        return BlocBuilder<SalesBloc, SalesState>(
+        return BlocConsumer<SalesBloc, SalesState>(
+          listener: (context, state) {
+            if (state.status == SalesStatus.loading) {
+            } else {
+              if (false) {
+                //if (state.openBox) {
+                showDialog(
+                  barrierDismissible: false,
+                  context: context,
+                  builder: (_) {
+                    return WillPopScope(
+                      onWillPop: () async => false,
+                      child: AlertDialog(
+                        title: const Text('Alerta'),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Para continuar con el registro necesita abrir caja',
+                              style: TextStyle(
+                                color: AppColors.primaryText,
+                                fontWeight: FontWeight.normal,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            ElevatedButton(
+                              onPressed: () {
+                                context.read<HomeBloc>().add(GoToCajas());
+                                Navigator.pop(context);
+                              },
+                              child: const Text('Ir a caja'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }
+            }
+          },
           builder: (context, state) {
             switch (state.status) {
               case SalesStatus.loading:
@@ -111,8 +158,8 @@ class _SalesViewState extends State<SalesView> {
                           ),
                           const SizedBox(width: 3),
                           IconButton(
-                            onPressed: () {
-                              Navigator.push(
+                            onPressed: () async {
+                              final result = await Navigator.push<bool?>(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) {
@@ -123,6 +170,15 @@ class _SalesViewState extends State<SalesView> {
                                   },
                                 ),
                               );
+
+                              if (result != null && mounted) {
+                                context.read<SalesBloc>().add(
+                                      const GetListSales(
+                                        start: null,
+                                        end: null,
+                                      ),
+                                    );
+                              }
                             },
                             icon: const FaIcon(
                               FontAwesomeIcons.circlePlus,

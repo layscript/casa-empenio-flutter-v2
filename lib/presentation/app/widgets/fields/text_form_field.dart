@@ -131,10 +131,12 @@ class _AppTextFormFieldState extends State<AppTextFormField> {
       validator: (value) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final result = widget.validator?.call(value);
-          setState(() {
-            _hasError = result != null;
-          });
-          widget.isValid?.call(result == null);
+          if (mounted) {
+            setState(() {
+              _hasError = result != null;
+            });
+            widget.isValid?.call(result == null);
+          }
         });
         return widget.validator?.call(value);
       },

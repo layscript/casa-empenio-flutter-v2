@@ -31,7 +31,7 @@ class HttpInterestsRepository implements InterestsRepository {
       }
     } catch (e) {
       //print('responseee ee: $e');
-      return const Left('Ocurrió un error 2');
+      return const Left('Ocurrió un error con el servidor');
     }
   }
 
@@ -52,7 +52,7 @@ class HttpInterestsRepository implements InterestsRepository {
       }
     } catch (e) {
       //print('responseee ee: $e');
-      return const Left('Ocurrió un error 2');
+      return const Left('Ocurrió un error con el servidor');
     }
   }
 
@@ -71,7 +71,7 @@ class HttpInterestsRepository implements InterestsRepository {
       }
     } catch (e) {
       //print('responseee ee: $e');
-      return const Left('Ocurrió un error 2');
+      return const Left('Ocurrió un error con el servidor');
     }
   }
 
@@ -95,7 +95,7 @@ class HttpInterestsRepository implements InterestsRepository {
         return const Right(true);
       }
     } catch (e) {
-      return const Left('Ocurrió un error 2');
+      return const Left('Ocurrió un error con el servidor');
     }
   }
 }

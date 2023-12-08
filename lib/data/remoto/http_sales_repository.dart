@@ -50,7 +50,36 @@ class HttpSalesRepository implements SalesRepository {
         return Right(result);
       }
     } catch (e) {
-      return const Left('Ocurrió un error 2');
+      return const Left('Ocurrió un error con el servidor');
+    }
+  }
+
+  @override
+  Future<bool> createSalesProduct(Map<String, dynamic> payload) async {
+    const path = '/almacen/ventas/';
+    try {
+      final response = await _dio.post<String>(path, data: payload);
+      if (response.statusCode != 201) {
+        return false;
+      } else {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final parsedMap = {
+          'ventaId': map['id'],
+        };
+
+        final responseFactura = await _dio.post(
+          '/facturacion/facturacion/venta',
+          data: parsedMap,
+        );
+
+        if (responseFactura.statusCode != 201) {
+          return false;
+        } else {
+          return true;
+        }
+      }
+    } catch (e) {
+      return false;
     }
   }
 }

@@ -30,8 +30,8 @@ class CancelDialogReportLoan extends StatelessWidget {
                   ),
                   actions: [
                     TextButton(
-                      onPressed: () => {
-                        Navigator.pop(context),
+                      onPressed: () {
+                        Navigator.pop(context);
                       },
                       child: const Text('Aceptar'),
                     ),
@@ -39,7 +39,8 @@ class CancelDialogReportLoan extends StatelessWidget {
                 );
               },
             );
-          } else if (state.isReportsCanceledSuccess) {
+          }
+          if (state.isReportsCanceledSuccess) {
             showDialog(
               context: context,
               builder: (context) {
@@ -53,9 +54,9 @@ class CancelDialogReportLoan extends StatelessWidget {
                   ),
                   actions: [
                     TextButton(
-                      onPressed: () => {
-                        Navigator.pop(context),
-                        Navigator.pop(context, true),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.pop(context, true);
                       },
                       child: const Text('Aceptar'),
                     ),

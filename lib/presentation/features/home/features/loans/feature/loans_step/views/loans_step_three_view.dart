@@ -1,3 +1,6 @@
+import 'dart:developer';
+
+import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/feature/loans_step/bloc/loans_step_bloc.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/feature/loans_step/widgets/widgets.dart';
 import 'package:flutter/material.dart';
@@ -10,13 +13,19 @@ class LoansStepThreeView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<LoansStepBloc, LoansStepState>(
       builder: (context, loansState) {
-        if (loansState.listWarranty != null && !loansState.addListWarranty) {
-          return ShowListWarranty(loansState: loansState);
+        final preferences = context.read<Preferences>();
+        final stateLocalWarranty =
+            preferences.getLoansPreferences?.warrantyPreferences;
+
+        if (!loansState.addListWarranty && stateLocalWarranty != null) {
+          return ShowListWarranty(
+            listWarranty: stateLocalWarranty,
+          );
         } else {
           if (loansState.idWarranty == null) {
             return const AddFormWarranty();
           } else {
-            return const EditFormWarranty();
+            return EditFormWarranty(loansState: loansState);
           }
         }
       },

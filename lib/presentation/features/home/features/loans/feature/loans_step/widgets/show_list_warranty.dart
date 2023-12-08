@@ -1,7 +1,9 @@
 import 'dart:io';
 
+import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
+import 'package:casa_empenio_pe/presentation/features/auth/auth.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/feature/loans_step/bloc/loans_step_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,21 +11,28 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class ShowListWarranty extends StatelessWidget {
   const ShowListWarranty({
     super.key,
-    required this.loansState,
+    required this.listWarranty,
   });
-  final LoansStepState loansState;
+  final List<WarrantyState>? listWarranty;
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.read<AuthBloc>().state as Authenticated;
+    final preferences = context.read<Preferences>();
+    final localState =
+        preferences.getLoansPreferences ?? LoansPreferencesEntity.init();
+
     return Column(
       children: [
         ListView.separated(
           physics: const NeverScrollableScrollPhysics(),
           separatorBuilder: (context, index) => const SizedBox(height: 10),
           shrinkWrap: true,
-          itemCount: loansState.listWarranty!.length,
+          itemCount: listWarranty!.length,
           itemBuilder: (context, index) {
-            final warranty = loansState.listWarranty![index];
+            final warranty = listWarranty![index];
+            print('lksjadjlads: ${warranty?.id}');
+
             return ExpansionTile(
               title: Text('Garantía: ${index + 1}'),
               collapsedTextColor: AppColors.primaryText,
@@ -36,17 +45,28 @@ class ShowListWarranty extends StatelessWidget {
               expandedCrossAxisAlignment: CrossAxisAlignment.start,
               childrenPadding: const EdgeInsets.symmetric(horizontal: 20),
               children: [
+                Text('Descripción: ${warranty.description}'),
+                Text('Categoria: ${warranty.category?.descripcion}'),
                 Text('Modelo: ${warranty.model}'),
                 Text('Marca: ${warranty.brand}'),
+                if (warranty.placa != null) Text('Placa: ${warranty.placa}'),
                 Text('Color: ${warranty.color}'),
                 Text('Estado: ${warranty.status}'),
                 Text('Serie: ${warranty.serie}'),
                 Text('Observaciones: ${warranty.warrantyObservations}'),
                 Text('Precio Referencial: ${warranty.price}'),
-                Image.file(
-                  File(warranty.photoWarranty!.path),
-                  width: 100,
-                  height: 100,
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    for (int i = 0;
+                        i < (warranty.photoWarranty?.length ?? 0);
+                        i++)
+                      Image.file(
+                        File(warranty.photoWarranty![i].path),
+                        width: 100,
+                        height: 100,
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 10),
                 Row(
@@ -73,6 +93,7 @@ class ShowListWarranty extends StatelessWidget {
                         ),
                         onPressed: () => context.read<LoansStepBloc>().add(
                               DeleteListWarranty(
+                                localState: localState,
                                 value: warranty,
                               ),
                             ),
@@ -112,9 +133,9 @@ class ShowListWarranty extends StatelessWidget {
         ),
         const SizedBox(height: 15),
         PrimaryButton(
-          onPressed: loansState.listWarranty != null
+          onPressed: listWarranty != null
               ? () => context.read<LoansStepBloc>().add(
-                    const SaveAllLoan(''),
+                    SaveAllLoan(auth.user.id.toString()),
                   )
               : null,
           child: const Text('Registrar Préstamo'),

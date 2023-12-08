@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:casa_empenio_pe/presentation/app/services/create_contracts_product_pdft.dart';
 import 'package:casa_empenio_pe/presentation/app/services/services.dart';
 import 'package:flutter/material.dart';
 import 'package:pdf/pdf.dart';
@@ -36,7 +37,7 @@ class PdfPreviewPage extends StatelessWidget {
   }
 }
 
-/* class PdfPreviewVehiculoPage extends StatelessWidget {
+class PdfPreviewVehiculoPage extends StatelessWidget {
   final Map<String, dynamic> vehiculo;
   final Map<String, dynamic> cliente;
   final int type;
@@ -60,15 +61,13 @@ class PdfPreviewPage extends StatelessWidget {
           'A4': PdfPageFormat.a4,
         },
         canChangeOrientation: false,
-        build: (context) =>
-            productosProvider.crearContratoVehiculoPdf(vehiculo, type, cliente),
+        build: (context) => CreateContractsProductPdf.crearContratoVehiculoPdf(
+            vehiculo, type, cliente),
         canDebug: false,
       ),
     );
   }
 }
-
-*/
 
 class PdfPreviewFacturaPage extends StatelessWidget {
   final String url;

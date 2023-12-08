@@ -70,7 +70,7 @@ class HttpReportsRepository implements ReportsRepository {
         return Right(result);
       }
     } catch (e) {
-      return const Left('Ocurrió un error 2');
+      return const Left('Ocurrió un error con el servidor');
     }
   }
 
@@ -112,7 +112,7 @@ class HttpReportsRepository implements ReportsRepository {
         return Right(result);
       }
     } catch (e) {
-      return const Left('Ocurrió un error 2');
+      return const Left('Ocurrió un error con el servidor');
     }
   }
 
@@ -157,7 +157,7 @@ class HttpReportsRepository implements ReportsRepository {
         return Right(result);
       }
     } catch (e) {
-      return const Left('Ocurrió un error 2');
+      return const Left('Ocurrió un error con el servidor');
     }
   }
 
@@ -203,7 +203,7 @@ class HttpReportsRepository implements ReportsRepository {
         return Right(result);
       }
     } catch (e) {
-      return const Left('Ocurrió un error 2');
+      return const Left('Ocurrió un error con el servidor');
     }
   }
 }

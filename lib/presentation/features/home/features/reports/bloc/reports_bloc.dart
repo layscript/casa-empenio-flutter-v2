@@ -187,6 +187,7 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
       state.copyWith(
         statusIncreases: ReportsStatus.loading,
         statusLoans: ReportsStatus.loading,
+        statusCanceled: ReportsStatus.initial,
         startTimeContracts: event.start,
         endTimeContracts: event.end,
       ),
@@ -306,9 +307,16 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     // Cancelar prestamo
     //await _reportsRepository.cancelLoan(id: event.id);
     emit(state.copyWith(statusCanceled: ReportsStatus.loading));
-    await Future.delayed(const Duration(seconds: 2));
-    emit(state.copyWith(statusCanceled: ReportsStatus.success));
-    //emit(state.copyWith(statusCanceled: ReportsStatus.error));
+    final result = await _reportsRepository.cancelLoan(
+      id: event.id,
+    );
+    /*  await Future.delayed(const Duration(seconds: 2));
+    final result = true; */
+    if (result) {
+      emit(state.copyWith(statusCanceled: ReportsStatus.success));
+    } else {
+      emit(state.copyWith(statusCanceled: ReportsStatus.error));
+    }
   }
 
   Future<void> _onGetDetailsReportPay(

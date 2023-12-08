@@ -77,6 +77,7 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
         builder: (context, state) {
           final oCcy = NumberFormat("#,##0.00", "en_US");
           final loan = state.loanDetails;
+
           if (loan == null) {
             return const Center(
               child: CircularProgressIndicator(),
@@ -216,6 +217,8 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                       const SizedBox(height: 10),
                       if (loan?.bienesGarantia != null)
                         ...loan!.bienesGarantia!.map((bien) {
+                          print('jsalkdjklads: ${bien.imagen}');
+
                           return Column(
                             children: [
                               const Divider(
@@ -434,8 +437,9 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                           ),
                                         );
                                       },
+                                      // TODO:: Revisar bien csmre:v
                                       child: Image.network(
-                                        '$endPoint/${bien.imagen}.jpg',
+                                        '$endPoint/${bien.imagen}',
                                         height: 50,
                                         width: 50,
                                       ),
@@ -617,6 +621,7 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
               onPressed: () async {
                 final header = await cabeceraController.capture();
                 final body = await bodyController.capture();
+                print('sadadsasd: ${header} - ${body}');
                 if (header != null && body != null) {
                   if (!mounted) return;
                   Navigator.push(

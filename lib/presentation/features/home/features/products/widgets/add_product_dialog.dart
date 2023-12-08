@@ -14,13 +14,18 @@ class _AddProductDialogState extends State<AddProductDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      insetPadding: EdgeInsets.zero,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 15,
+        vertical: 20,
+      ),
+      clipBehavior: Clip.antiAliasWithSaveLayer,
       scrollable: true,
       title: const Text('Agregar Producto'),
       content: Builder(builder: (context) {
         var width = MediaQuery.of(context).size.width;
-        return Container(
-          width: width,
-          //color: Colors.blue,
+        return SizedBox(
+          width: width * 0.85,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -58,9 +63,9 @@ class _AddProductDialogState extends State<AddProductDialog> {
               ),
               const SizedBox(height: 10),
               if (selectedOption != null && selectedOption == 'Vehiculo')
-                const AddFormVehiculo(),
+                const AddFormVehiculo(data: null),
               if (selectedOption != null && selectedOption == 'Producto')
-                const AddFormProduct(),
+                const AddFormProduct(data: null),
             ],
           ),
         );

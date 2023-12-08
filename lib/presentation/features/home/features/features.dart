@@ -1,3 +1,9 @@
+export 'categories/views/categories_view.dart';
+export 'categories/bloc/categories_bloc.dart';
+
+export 'cajas/bloc/cajas_bloc.dart';
+export 'cajas/views/cajas_view.dart';
+
 export 'loans/views/loans_view.dart';
 export 'loans/blocs/client_bloc/client_bloc.dart';
 export 'loans/blocs/loans_bloc/loans_bloc.dart';
@@ -7,6 +13,9 @@ export 'users/views/users_view.dart';
 
 export 'sales/bloc/sales_bloc.dart';
 export 'sales/views/sales_view.dart';
+
+export 'expenses/bloc/expenses_bloc.dart';
+export 'expenses/views/expenses_view.dart';
 
 export 'interests/bloc/interests_bloc.dart';
 export 'interests/views/interests_view.dart';

@@ -102,6 +102,42 @@ class AppDrawer extends StatelessWidget {
                 Navigator.pop(context);
               },
             ),
+            ListTile(
+              tileColor: homeState.index == 7 ? Colors.black12 : null,
+              leading: const FaIcon(
+                FontAwesomeIcons.screwdriverWrench,
+                size: 20,
+              ),
+              title: const Text('Categorías'),
+              onTap: () {
+                context.read<HomeBloc>().add(GoToCategories());
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              tileColor: homeState.index == 8 ? Colors.black12 : null,
+              leading: const FaIcon(
+                FontAwesomeIcons.expeditedssl,
+                size: 20,
+              ),
+              title: const Text('Cajas'),
+              onTap: () {
+                context.read<HomeBloc>().add(GoToCajas());
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              tileColor: homeState.index == 9 ? Colors.black12 : null,
+              leading: const FaIcon(
+                FontAwesomeIcons.ccDinersClub,
+                size: 20,
+              ),
+              title: const Text('Gastos'),
+              onTap: () {
+                context.read<HomeBloc>().add(GoToExpenses());
+                Navigator.pop(context);
+              },
+            ),
             const Divider(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),

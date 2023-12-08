@@ -9,6 +9,8 @@ sealed class SalesEvent extends Equatable {
 
 class GetSalesInitial extends SalesEvent {}
 
+class GetCashSalesStatus extends SalesEvent {}
+
 class GetListSales extends SalesEvent {
   const GetListSales({
     required this.start,
@@ -51,4 +53,9 @@ class DeleteProductSalesToCart extends SalesEvent {
   });
 
   final int id;
+}
+
+class GenerateSalesProduct extends SalesEvent {
+  const GenerateSalesProduct(this.userId);
+  final int userId;
 }

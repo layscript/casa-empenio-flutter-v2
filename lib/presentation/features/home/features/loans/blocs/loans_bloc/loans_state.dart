@@ -5,29 +5,50 @@ enum LoansStatus {
   loading,
   error,
   loaded,
+
   paymentSuccess,
   paymentError,
+
   settlementSuccess,
   settlementError,
+
   addAmountSuccess,
   addAmountError,
+
+  electronicTicketLoading,
+  electronicTicketSuccess,
+  electronicTicketError,
 
   ///
   loadingDetailsLoan,
   loadingDetailsSunat,
+
+  searchClientLoading,
+  searchClientSuccess,
+  searchClientError,
 }
 
 class LoansState extends Equatable {
   const LoansState({
+    this.searchText = '',
+    this.openBox = false,
+    this.typeSearch,
     this.loansStatus = LoansStatus.initial,
+    this.loansSearchStatus = LoansStatus.initial,
     this.customer,
+    this.searchCustomer,
     this.customerSunat,
     this.error,
     this.loanDetails,
   });
 
+  final bool openBox;
+  final bool? typeSearch;
+  final String searchText;
   final LoansStatus loansStatus;
+  final LoansStatus loansSearchStatus;
   final CustomerEntity? customer;
+  final CustomerEntity? searchCustomer;
   final CustomerSunatEntity? customerSunat;
   final String? error;
   final LoansEntity? loanDetails;
@@ -53,6 +74,21 @@ class LoansState extends Equatable {
       loansStatus == LoansStatus.addAmountSuccess;
   bool get isLoansAddAmountError => loansStatus == LoansStatus.addAmountError;
 
+  bool get isLoansElectronicTicketLoading =>
+      loansStatus == LoansStatus.electronicTicketLoading;
+
+  bool get isLoansElectronicTicketSuccess =>
+      loansStatus == LoansStatus.electronicTicketSuccess;
+  bool get isLoansElectronicTicketError =>
+      loansStatus == LoansStatus.electronicTicketError;
+
+  bool get isLoansSearchClientLoading =>
+      loansSearchStatus == LoansStatus.searchClientLoading;
+  bool get isLoansSearchClientError =>
+      loansSearchStatus == LoansStatus.searchClientError;
+  bool get isLoansSearchClientSuccess =>
+      loansSearchStatus == LoansStatus.searchClientSuccess;
+
   String fullNamesCustomerSunat() {
     return '${customerSunat?.nombre} ${customerSunat?.apellidoPaterno} ${customerSunat?.apellidoMaterno}';
   }
@@ -67,24 +103,39 @@ class LoansState extends Equatable {
   }
 
   LoansState copyWith({
+    bool? openBox,
+    bool? typeSearch,
+    String? searchText,
     LoansStatus? loansStatus,
+    LoansStatus? loansSearchStatus,
     CustomerEntity? customer,
+    CustomerEntity? searchCustomer,
     CustomerSunatEntity? customerSunat,
     LoansEntity? loanDetails,
     String? error,
   }) =>
       LoansState(
+        openBox: openBox ?? this.openBox,
+        typeSearch: typeSearch ?? this.typeSearch,
+        searchText: searchText ?? this.searchText,
         error: error ?? this.error,
         customer: customer ?? this.customer,
+        searchCustomer: searchCustomer ?? this.searchCustomer,
         customerSunat: customerSunat ?? this.customerSunat,
         loansStatus: loansStatus ?? this.loansStatus,
+        loansSearchStatus: loansSearchStatus ?? this.loansSearchStatus,
         loanDetails: loanDetails ?? this.loanDetails,
       );
 
   @override
   List<Object?> get props => [
+        openBox,
+        typeSearch,
+        searchText,
         loansStatus,
+        loansSearchStatus,
         customer,
+        searchCustomer,
         customerSunat,
         error,
         loanDetails,

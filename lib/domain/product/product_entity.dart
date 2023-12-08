@@ -1,9 +1,12 @@
+import 'dart:developer';
+
 import 'package:casa_empenio_pe/domain/loans/loans_entity.dart';
 
 class ProductEntity {
   const ProductEntity({
     required this.id,
     required this.descripcion,
+    required this.categoria,
     required this.estado,
     required this.marca,
     required this.modelo,
@@ -21,10 +24,13 @@ class ProductEntity {
     required this.updatedAt,
     required this.createdAt,
     required this.prestamo,
+    required this.imagenDos,
+    required this.imagenTres,
   });
 
   final int? id;
   final String? descripcion;
+  final String? categoria;
   final String? estado;
   final String? marca;
   final String? modelo;
@@ -38,6 +44,8 @@ class ProductEntity {
   final String? observaciones;
   final int? cantidad;
   final String? imagen;
+  final String? imagenDos;
+  final String? imagenTres;
   final bool? activo;
   final String? updatedAt;
   final String? createdAt;
@@ -86,6 +94,7 @@ class ProductEntity {
         prestamo: prestamo ?? this.prestamo,
       );
  */
+
   static List<ProductEntity> listGetProductsFromMap(
     Map<String, dynamic> map,
   ) {
@@ -96,8 +105,11 @@ class ProductEntity {
   }
 
   static ProductEntity getProductFromMap(Map<String, dynamic> map) {
+    log('print mapitaaaaa: ${map}');
+
     return ProductEntity(
       id: map['id'] as int?,
+      categoria: map['categoria'] as String?,
       descripcion: map['descripcion'] as String?,
       estado: map['estado'] as String?,
       marca: map['marca'] as String?,
@@ -112,6 +124,8 @@ class ProductEntity {
       observaciones: map['observaciones'] as String?,
       cantidad: map['cantidad'] as int?,
       imagen: map['imagen'] as String?,
+      imagenDos: map['imagen2'] as String?,
+      imagenTres: map['imagen3'] as String?,
       activo: map['activo'] as bool?,
       updatedAt: map['updatedAt'] as String?,
       createdAt: map['createdAt'] as String?,

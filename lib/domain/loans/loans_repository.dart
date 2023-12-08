@@ -5,9 +5,13 @@ import 'package:dartz/dartz.dart';
 
 abstract class LoansRepository {
   Future<Either<String, int>> getLastCode();
-  Future<Either<String, LoansEntity>> getLoan({required int id});
-  Future<void> getLoans({required String criterio});
-  Future<void> saveLoan({
+  Future<Either<String, LoansEntity>> getLoan({
+    required int id,
+  });
+  Future<Either<String, List<LoansEntity>>> getLoans({
+    required String criterio,
+  });
+  Future<Either<String, ContratoEntity>> saveLoan({
     required int plazoDias,
     required double interes,
     required DateTime fechaPago,
@@ -19,12 +23,18 @@ abstract class LoansRepository {
     required String usuarioId,
   });
 
-  Future<Either<String, ReportsPaymentEntity>> getPayments({required int id});
+  Future<Either<String, ReportsPaymentEntity>> getPayments({
+    required int id,
+  });
 
-  Future<void> savePayment({
+  Future<bool> savePayment({
     required int codigo,
     required double monto,
     required String userId,
+  });
+
+  Future<bool> payOffLoan({
+    required int id,
   });
 
   Future<bool> addAmountLoan({
@@ -36,10 +46,15 @@ abstract class LoansRepository {
   Future<Uint8List> createInvoicePdf({required String url});
   Future<void> createSalesNote({required String id});
   Future<void> createLoanNote({required String id});
-  Future<void> createInvoceLoans({
+  Future<bool> createInvoceLoans({
     required String dni,
     required String fullName,
     required String? direccion,
     required int idPrestamo,
+  });
+
+  Future<bool> uploadWarrantyImage({
+    required String path,
+    required int idGarantia,
   });
 }

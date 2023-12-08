@@ -4,4 +4,8 @@ abstract class Preferences {
   UserEntity? get token;
   Future<bool> setToken(UserEntity value);
   Future<void> removeToken();
+
+  LoansPreferencesEntity? get getLoansPreferences;
+  Future<bool> setLoansPreferences(LoansPreferencesEntity value);
+  Future<void> removeLoansPreferences();
 }

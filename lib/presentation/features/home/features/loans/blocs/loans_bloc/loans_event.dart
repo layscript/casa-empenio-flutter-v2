@@ -9,8 +9,29 @@ sealed class LoansEvent extends Equatable {
 
 class GetLoansInitial extends LoansEvent {}
 
+class GetCashStatus extends LoansEvent {}
+
+class ChangeTypeSearch extends LoansEvent {
+  const ChangeTypeSearch(this.value);
+  final bool value;
+}
+
+class GetLoansSearchByDni extends LoansEvent {
+  const GetLoansSearchByDni({
+    required this.value,
+  });
+  final String value;
+}
+
 class GetLoansByDni extends LoansEvent {
   const GetLoansByDni({
+    required this.value,
+  });
+  final String value;
+}
+
+class GetLoansByText extends LoansEvent {
+  const GetLoansByText({
     required this.value,
   });
   final String value;
@@ -42,10 +63,12 @@ class SaveSettlementLoan extends LoansEvent {
     required this.idPrestamo,
     required this.monto,
     required this.userId,
+    required this.codigo,
   });
   final int idPrestamo;
   final String monto;
   final String userId;
+  final int codigo;
 }
 
 class AddAmountLoan extends LoansEvent {

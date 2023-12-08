@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
@@ -30,7 +31,7 @@ class HttpLoansRepository implements LoansRepository {
       }
     } catch (e) {
       //print('responseee ee: $e');
-      return const Left('Ocurrió un error 2');
+      return const Left('Ocurrió un error con el servidor');
     }
   }
 
@@ -49,18 +50,34 @@ class HttpLoansRepository implements LoansRepository {
         return Right(LoansEntity.getLoanFromMap(map['body']));
       }
     } catch (e) {
-      return const Left('Ocurrió un error 2');
+      return const Left('Ocurrió un error con el servidor');
     }
   }
 
   @override
-  Future<void> getLoans({required String criterio}) {
-    // TODO: implement getLoans
-    throw UnimplementedError();
+  Future<Either<String, List<LoansEntity>>> getLoans({
+    required String criterio,
+  }) async {
+    final path = '/prestamos/prestamos/criterio/$criterio';
+    try {
+      final response = await _dio.get<String>(path);
+      if (response.statusCode != 200) {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final message = map['message'] ?? 'Ocurrió un error';
+        return Left(message);
+      } else {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final body = map['body'];
+        return Right(LoansEntity.listGetSalesDetailFromMap(body));
+      }
+    } catch (e) {
+      print('skjladajlsdkjlasaljksd: ${e}');
+      return const Left('Ocurrió un error con el servidor');
+    }
   }
 
   @override
-  Future<void> saveLoan({
+  Future<Either<String, ContratoEntity>> saveLoan({
     required int plazoDias,
     required double interes,
     required DateTime fechaPago,
@@ -71,6 +88,8 @@ class HttpLoansRepository implements LoansRepository {
     required List<Map<String, dynamic>> bienes,
     required String usuarioId,
   }) async {
+    const path = '/prestamos/prestamos';
+
     final endDateTime = DateTime(
       fechaPago.year,
       fechaPago.month,
@@ -86,15 +105,110 @@ class HttpLoansRepository implements LoansRepository {
       'fechaPago': endDateTime.toIso8601String(),
       'monto': monto,
       'observaciones': observaciones,
-      'cliente': cliente,
-      'aval': aval,
+      'cliente': {
+        'nombres': cliente.nombres,
+        'apellidos': cliente.apellidos,
+        'dni': cliente.dni,
+        'celular': cliente.celular,
+        'email': cliente.email,
+      },
+      'aval': aval == null
+          ? null
+          : {
+              'nombres': aval.nombres,
+              'apellidos': aval.apellidos,
+              'dni': aval.dni,
+              'celular': aval.celular,
+              'email': aval.email,
+            },
       'bienesGarantia': bienes,
       'usuarioId': usuarioId,
     };
+
+    log('payladolada: $payload');
+
+    try {
+      final response = await _dio.post<String>(path, data: payload);
+      log('statttuututus code 1: ${response.statusCode}');
+      if (response.statusCode != 201) {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final message = map['message'] ?? 'Ocurrió un error';
+        return Left(message);
+      } else {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        log('statttuututus code 2: ${map}');
+        final bienesResponse = map['body']['bienesGarantia'];
+        log('statttuututus code 3: ${bienesResponse}');
+
+        final resultCustomerPhotos = await updateCustomerPhotos(
+          dni: int.parse(cliente.dni ?? '0'),
+          imagenUno: cliente.imagenUno ?? '',
+          imagenDos: cliente.imagenDos ?? '',
+        );
+        log('aksjdljldsakjklads z3.5: ${bienesResponse}');
+
+        for (var bienResponse in bienesResponse) {
+          log('aksjdljldsakjklads z3.6: ${bienResponse}');
+
+          for (var garantia in bienes) {
+            log('aksjdljldsakjklads z3.7: ${garantia}');
+            final imagenUno = garantia['imagen'];
+            final imagenDos = garantia['imagen2'];
+            final imagenTres = garantia['imagen3'];
+            print('aksjdljldsakjklads 3.1: $imagenUno');
+            print('aksjdljldsakjklads 3.2: $imagenDos');
+            print('aksjdljldsakjklads 3.3: $imagenTres');
+            final exito = await updateWarrantyPhotos(
+              idGarantia: bienResponse['id'],
+              imagenUno: imagenUno,
+              imagenDos: imagenDos,
+              imagenTres: imagenTres,
+            );
+            if (!exito) {
+              return const Left('Ocurrió un problema con las imagenes');
+            }
+          }
+        }
+
+        final prendas = bienes
+            .map(
+              (e) => PrendaEntity(
+                nombre: e['descripcion'],
+                marca: e['marca'],
+                modelo: e['modelo'],
+                serie: e['serie'],
+                color: e['color'],
+                estado: e['estado'],
+              ),
+            )
+            .toList();
+
+        final contrato = ContratoEntity(
+          interes: interes,
+          numero: json.decode(response.data!)['body']['codigo'],
+          nombre: '${cliente.nombres} ${cliente.apellidos}',
+          dni: cliente.dni ?? '',
+          domicilio: cliente.domicilio ?? '',
+          fechaVencimiento: endDateTime,
+          monto: monto,
+          montoPagar: monto + (monto * interes / 100),
+          prendas: prendas,
+          nombreAval: aval == null
+              ? ''
+              : '${aval.nombres ?? ''} ${aval.apellidos ?? ''}',
+          dniAval: aval == null ? '' : aval.dni ?? '',
+        );
+
+        return Right(contrato);
+      }
+    } catch (e) {
+      //print('responseee ee: $e');
+      return const Left('Ocurrió un error con el servidor');
+    }
   }
 
   @override
-  Future<void> savePayment({
+  Future<bool> savePayment({
     required int codigo,
     required double monto,
     required String userId,
@@ -107,17 +221,23 @@ class HttpLoansRepository implements LoansRepository {
     };
     try {
       final response = await _dio.post<String>(path, data: payload);
+      print('saveeeee 1: ${response.statusCode}');
+      print('saveeeee 2: ${response.data}');
+
       if (response.statusCode != 201) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
         //return Left(message);
+        return false;
       } else {
         //final map = json.decode(response.data!) as Map<String, dynamic>;
         //return const Right(true);
+        return true;
       }
     } catch (e) {
       //print('responseee ee: $e');
       //return const Left('Ocurrió un error 2');
+      return true;
     }
   }
 
@@ -221,14 +341,12 @@ class HttpLoansRepository implements LoansRepository {
   }
 
   @override
-  Future<void> createInvoceLoans({
+  Future<bool> createInvoceLoans({
     required String dni,
     required String fullName,
     required String? direccion,
     required int idPrestamo,
   }) async {
-    // TODO: implement createInvoceLoans
-
     final payload = {
       'dni': dni,
       'nombreCompleto': fullName,
@@ -240,17 +358,21 @@ class HttpLoansRepository implements LoansRepository {
 
     try {
       final response = await _dio.post<String>(path, data: payload);
+      print('skjaldjsadkla 1: ${response.statusCode}');
+      print('skjaldjsadkla 2:   ${response.data}');
+
       if (response.statusCode != 201) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
-        /*  return false; */
-        //return Left(message);
+        return false;
       } else {
+        return true;
         //final map = json.decode(response.data!) as Map<String, dynamic>;
         //return const Right(true);
         /* return true; */
       }
     } catch (e) {
+      return false;
       //print('responseee ee: $e');
       //return const Left('Ocurrió un error 2');
       /* return false; */
@@ -274,95 +396,154 @@ class HttpLoansRepository implements LoansRepository {
       }
     } catch (e) {
       //print('responseee ee: $e');
-      return const Left('Ocurrió un error 2');
+      return const Left('Ocurrió un error con el servidor');
     }
   }
-  /*  @override
-  Future<Either<String, bool>> createInterests({
-    required String interest,
+
+  @override
+  Future<bool> uploadWarrantyImage({
+    required String path,
+    required int idGarantia,
   }) async {
-    const path = '/configuraciones/intereses';
-    final payload = {
-      'interes': interest,
-    };
+    if (path.contains('files/garantias')) {
+      return true;
+    }
+
+    final img = File(path);
+
     try {
-      final response = await _dio.post<String>(path, data: payload);
+      final path = '/prestamos/prestamos/imagenGarantia/$idGarantia';
+
+      FormData formData = FormData.fromMap({
+        'imagen': await MultipartFile.fromFile(
+          img.path,
+          filename: img.path.split('/').last,
+        )
+      });
+
+      log('statttuututus code 6: ${formData}');
+
+      final response = await _dio.put(path, data: formData);
+      log('statttuututus code 7: ${response.statusCode}');
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> payOffLoan({required int id}) async {
+    final path = '/prestamos/prestamos/liquidar/$id';
+
+    try {
+      final response = await _dio.put<String>(path);
+      print('saveeeee 1.1: ${response.statusCode}');
+      print('saveeeee 2.2: ${response.data}');
+
       if (response.statusCode != 201) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
-        return Left(message);
+        //return Left(message);
+        return false;
       } else {
         //final map = json.decode(response.data!) as Map<String, dynamic>;
-        return const Right(true);
+        //return const Right(true);
+        return true;
       }
     } catch (e) {
       //print('responseee ee: $e');
-      return const Left('Ocurrió un error 2');
+      //return const Left('Ocurrió un error 2');
+      return true;
     }
   }
 
-  @override
-  Future<Either<String, bool>> deleteInterests({
-    required int idInterest,
+  Future<bool> updateCustomerPhotos({
+    required int dni,
+    required String imagenUno,
+    required String imagenDos,
   }) async {
-    final path = '/configuraciones/intereses/$idInterest}';
+    if (imagenUno.contains('files/garantias') ||
+        imagenUno.contains('files/garantias')) {
+      return true;
+    }
+
+    final imgUno = File(imagenUno);
+    final imgDos = File(imagenDos);
+
     try {
-      final response = await _dio.delete<String>(path);
-      if (response.statusCode != 200) {
-        final map = json.decode(response.data!) as Map<String, dynamic>;
-        final message = map['message'] ?? 'Ocurrió un error';
-        return Left(message);
+      final path = '/clientes/clientes/imagenCliente/$dni';
+
+      FormData formData = FormData.fromMap({
+        'imagen': await MultipartFile.fromFile(
+          imgUno.path,
+          filename: imgUno.path.split('/').last,
+        ),
+        'imagen2': await MultipartFile.fromFile(
+          imgDos.path,
+          filename: imgDos.path.split('/').last,
+        )
+      });
+
+      final response = await _dio.put(path, data: formData);
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return true;
       } else {
-        //final map = json.decode(response.data!) as Map<String, dynamic>;
-        return const Right(true);
+        return false;
       }
     } catch (e) {
-      //print('responseee ee: $e');
-      return const Left('Ocurrió un error 2');
+      return false;
     }
   }
 
-  @override
-  Future<Either<String, List<InterestsEntity>>> getInterest() async {
-    const path = '/configuraciones/intereses';
-    try {
-      final response = await _dio.get<String>(path);
-      if (response.statusCode != 200) {
-        final map = json.decode(response.data!) as Map<String, dynamic>;
-        final message = map['message'] ?? 'Ocurrió un error';
-        return Left(message);
-      } else {
-        final map = json.decode(response.data!) as Map<String, dynamic>;
-        return Right(InterestsEntity.listGetInterestFromMap(map));
-      }
-    } catch (e) {
-      //print('responseee ee: $e');
-      return const Left('Ocurrió un error 2');
-    }
-  }
-
-  @override
-  Future<Either<String, bool>> updateInterests({
-    required InterestsEntity interests,
+  Future<bool> updateWarrantyPhotos({
+    required int idGarantia,
+    required String imagenUno,
+    required String imagenDos,
+    required String imagenTres,
   }) async {
-    final path = '/configuraciones/intereses/${interests.id}';
-    final payload = {
-      'id': interests.id,
-      'interes': interests.intereses,
-    };
+    if (imagenUno.contains('files/garantias') ||
+        imagenDos.contains('files/garantias') ||
+        imagenTres.contains('files/garantias')) {
+      return true;
+    }
+
+    final imgUno = File(imagenUno);
+    final imgDos = File(imagenDos);
+    final imgTres = File(imagenTres);
+
     try {
-      final response = await _dio.put<String>(path, data: payload);
-      if (response.statusCode != 200) {
-        final map = json.decode(response.data!) as Map<String, dynamic>;
-        final message = map['message'] ?? 'Ocurrió un error';
-        return Left(message);
+      final path = '/prestamos/prestamos/imagenGarantia/$idGarantia';
+
+      FormData formData = FormData.fromMap({
+        'imagen': await MultipartFile.fromFile(
+          imgUno.path,
+          filename: imgUno.path.split('/').last,
+        ),
+        'imagen2': await MultipartFile.fromFile(
+          imgDos.path,
+          filename: imgDos.path.split('/').last,
+        ),
+        'imagen3': await MultipartFile.fromFile(
+          imgTres.path,
+          filename: imgTres.path.split('/').last,
+        )
+      });
+
+      final response = await _dio.put(path, data: formData);
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return true;
       } else {
-        //final map = json.decode(response.data!) as Map<String, dynamic>;
-        return const Right(true);
+        return false;
       }
     } catch (e) {
-      print('responseee ee: $e');
-      return const Left('Ocurrió un error 2');
+      return false;
     }
-  } */
+  }
 }

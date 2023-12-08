@@ -74,6 +74,27 @@ class MainView extends StatelessWidget {
                 text: 'Interéses',
                 icon: FontAwesomeIcons.piggyBank,
               ),
+              _ItemGrid(
+                onTap: () => context.read<HomeBloc>().add(
+                      GoToCategories(),
+                    ),
+                text: 'Categorías',
+                icon: FontAwesomeIcons.screwdriverWrench,
+              ),
+              _ItemGrid(
+                onTap: () => context.read<HomeBloc>().add(
+                      GoToCajas(),
+                    ),
+                text: 'Cajas',
+                icon: FontAwesomeIcons.expeditedssl,
+              ),
+              _ItemGrid(
+                onTap: () => context.read<HomeBloc>().add(
+                      GoToExpenses(),
+                    ),
+                text: 'Gastos',
+                icon: FontAwesomeIcons.ccDinersClub,
+              ),
             ],
           ),
         ],

@@ -9,6 +9,7 @@ import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/blocs/loans_bloc/loans_bloc.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/feature/loans_step/views/loans_step_view.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/loans/views/loan_client_view.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -26,10 +27,12 @@ class _LoansViewState extends State<LoansView> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
+      lazy: false,
       create: (context) => LoansBloc(
         customerRepository: context.read(),
         loansRepository: context.read(),
-      ),
+        cajaRepository: context.read(),
+      )..add(GetCashStatus()),
       child: Builder(
         builder: (context) {
           return BlocConsumer<LoansBloc, LoansState>(
@@ -40,6 +43,43 @@ class _LoansViewState extends State<LoansView> {
               OverlayLoader.hide();
               if (state.isLoansError) {
                 ErrorSnackbar.show(context, state.error ?? '');
+              }
+
+              //if (state.openBox) {
+              if (false) {
+                showDialog(
+                  barrierDismissible: false,
+                  context: context,
+                  builder: (_) {
+                    return WillPopScope(
+                      onWillPop: () async => false,
+                      child: AlertDialog(
+                        title: const Text('Alerta'),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Para continuar con el registro necesita abrir caja',
+                              style: TextStyle(
+                                color: AppColors.primaryText,
+                                fontWeight: FontWeight.normal,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            ElevatedButton(
+                              onPressed: () {
+                                context.read<HomeBloc>().add(GoToCajas());
+                                Navigator.pop(context);
+                              },
+                              child: const Text('Ir a caja'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
               }
             }
           }, builder: (context, state) {
@@ -77,9 +117,76 @@ class _LoansViewState extends State<LoansView> {
                             ),
                             child: Column(
                               children: [
-                                const SearchLoansClient(),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () => context
+                                            .read<LoansBloc>()
+                                            .add(const ChangeTypeSearch(true)),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(10),
+                                          decoration: BoxDecoration(
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                            color: state.typeSearch == true
+                                                ? AppColors.blue
+                                                : Colors.grey[300],
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              'Busqueda por DNI',
+                                              style: TextStyle(
+                                                color: state.typeSearch == true
+                                                    ? AppColors.white
+                                                    : Colors.grey,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () => context
+                                            .read<LoansBloc>()
+                                            .add(const ChangeTypeSearch(false)),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(10),
+                                          decoration: BoxDecoration(
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                            color: state.typeSearch == false
+                                                ? AppColors.blue
+                                                : Colors.grey[300],
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              'Busqueda General',
+                                              style: TextStyle(
+                                                color: state.typeSearch == false
+                                                    ? AppColors.white
+                                                    : Colors.grey,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  ],
+                                ),
+                                if (state.typeSearch == true) ...[
+                                  const SizedBox(height: 15),
+                                  const SearchLoansClientByDNI(),
+                                ],
+                                if (state.typeSearch == false) ...[
+                                  const SizedBox(height: 15),
+                                  const SearchLoansClientByGeneral(),
+                                ],
                                 const SizedBox(height: 15),
-                                if (state.customer != null)
+                                if (state.customer != null &&
+                                    state.customer?.nombres != null)
                                   Row(
                                     children: [
                                       const Text(
@@ -104,6 +211,13 @@ class _LoansViewState extends State<LoansView> {
                             ),
                           ),
                           if (state.customer?.prestamos != null)
+                            /*  ListViewLoansSuccess(
+                              customer: state.customer,
+                              hiddeOnTap: false,
+                              typeSearch: state.typeSearch,
+                              searchText: state.searchText,
+                              state: state,
+                            ), */
                             ListView.separated(
                               physics: const NeverScrollableScrollPhysics(),
                               separatorBuilder: (context, index) =>
@@ -127,121 +241,88 @@ class _LoansViewState extends State<LoansView> {
                                 final auth = context.read<AuthBloc>().state
                                     as Authenticated;
 
-                                return Container(
-                                  margin: const EdgeInsets.symmetric(
-                                      horizontal: 10),
-                                  decoration: BoxDecoration(
-                                    color: prestamo?.estado == 'CANCELADO'
-                                        ? Colors.red[50]
-                                        : Colors.white,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: ListTile(
-                                    dense: true,
-                                    title: Text(
-                                      'Cod:. ${prestamo?.codigo.toString().padLeft(6, '0')} - s/.$montoFinal',
-                                      maxLines: 1,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.normal,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    subtitle: prestamo?.fecha != null
-                                        ? Text(
-                                            '${state.formattedDate(
-                                              prestamo!.fecha!,
-                                            )} ${prestamo.estado == 'CANCELADO' ? '- CANCELADO' : ''}',
-                                            maxLines: 3,
-                                            style: const TextStyle(
-                                              color: AppColors.secondaryText,
-                                              fontWeight: FontWeight.normal,
-                                              fontSize: 12,
-                                            ),
-                                          )
-                                        : null,
-                                    trailing: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        //Visualizar
-                                        SizedBox(
-                                          height: 38,
-                                          width: 38,
-                                          child: IconButton(
-                                            padding: EdgeInsets.zero,
-                                            onPressed: () {
-                                              showDialog(
-                                                barrierDismissible: false,
-                                                context: context,
-                                                builder: (_) {
-                                                  return BlocProvider.value(
-                                                    value: context
-                                                        .read<LoansBloc>(),
-                                                    child: ShowInfoClientLoans(
-                                                      nroPrestamo:
-                                                          prestamo?.codigo,
-                                                    ),
-                                                  );
-                                                },
-                                              );
-                                            },
-                                            icon: const Icon(
-                                              Icons.remove_red_eye_outlined,
-                                              color: Colors.blue,
+                                return GestureDetector(
+                                  onTap: () {
+                                    if (state.typeSearch == false) {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => BlocProvider.value(
+                                            value: context.read<LoansBloc>(),
+                                            child: LoanClientView(
+                                              document:
+                                                  prestamo?.cliente?.dni ?? '',
                                             ),
                                           ),
                                         ),
-                                        if (auth.user.role?.id != 2)
-                                          //Editar
+                                      );
+                                    }
+                                  },
+                                  child: Container(
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 10),
+                                    decoration: BoxDecoration(
+                                      color: prestamo?.estado == 'CANCELADO'
+                                          ? Colors.red[50]
+                                          : Colors.white,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: ListTile(
+                                      dense: true,
+                                      title: Text(
+                                        'Cod:. ${prestamo?.codigo.toString().padLeft(6, '0')} - s/.$montoFinal',
+                                        maxLines: 1,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.normal,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      subtitle: prestamo?.fecha != null
+                                          ? Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  '${state.formattedDate(
+                                                    prestamo!.fecha!,
+                                                  )} ${prestamo.estado == 'CANCELADO' ? '- CANCELADO' : ''}',
+                                                  maxLines: 3,
+                                                  style: const TextStyle(
+                                                    color:
+                                                        AppColors.secondaryText,
+                                                    fontWeight:
+                                                        FontWeight.normal,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                                if (state.typeSearch == false)
+                                                  Text(
+                                                    '${prestamo.cliente?.nombres ?? ''} ${prestamo.cliente?.apellidos ?? ''}',
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: const TextStyle(
+                                                      color: AppColors
+                                                          .secondaryText,
+                                                      fontWeight:
+                                                          FontWeight.normal,
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                              ],
+                                            )
+                                          : null,
+                                      trailing: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          //Visualizar
                                           SizedBox(
                                             height: 38,
                                             width: 38,
                                             child: IconButton(
                                               padding: EdgeInsets.zero,
                                               onPressed: () {
-                                                if (prestamo?.cerrado ==
-                                                    false) {
-                                                  // open modal editar
-                                                } else {
-                                                  // open modal nuevo
-                                                }
-                                              },
-                                              icon: Icon(
-                                                prestamo?.cerrado == false
-                                                    ? Icons.edit
-                                                    : Icons.new_label,
-                                                color:
-                                                    prestamo?.cerrado == false
-                                                        ? Colors.blue
-                                                        : Colors.purple,
-                                              ),
-                                            ),
-                                          ),
-                                        if (auth.user.role?.id == 2 &&
-                                            prestamo?.cerrado == true)
-                                          SizedBox(
-                                            height: 38,
-                                            width: 38,
-                                            child: IconButton(
-                                              padding: EdgeInsets.zero,
-                                              onPressed: () {
-                                                // TODO:: falta validar
-                                              },
-                                              icon: const Icon(
-                                                Icons.new_label,
-                                                color: Colors.purple,
-                                              ),
-                                            ),
-                                          ),
-                                        if (prestamo?.cerrado == false)
-                                          // Pagar prestamo
-                                          SizedBox(
-                                            height: 38,
-                                            width: 38,
-                                            child: IconButton(
-                                              padding: EdgeInsets.zero,
-                                              onPressed: () async {
-                                                final result =
-                                                    await showDialog<bool>(
+                                                showDialog(
                                                   barrierDismissible: false,
                                                   context: context,
                                                   builder: (_) {
@@ -249,7 +330,7 @@ class _LoansViewState extends State<LoansView> {
                                                       value: context
                                                           .read<LoansBloc>(),
                                                       child:
-                                                          PaymentLoanDialogClient(
+                                                          ShowInfoClientLoans(
                                                         nroPrestamo:
                                                             prestamo?.codigo,
                                                       ),
@@ -258,57 +339,106 @@ class _LoansViewState extends State<LoansView> {
                                                 );
                                               },
                                               icon: const Icon(
-                                                Icons.payments_outlined,
-                                                color: Colors.green,
+                                                Icons.remove_red_eye_outlined,
+                                                color: Colors.blue,
                                               ),
                                             ),
                                           ),
-                                        if (prestamo?.cerrado == false)
-                                          // Agregar monto
-                                          SizedBox(
-                                            height: 38,
-                                            width: 38,
-                                            child: IconButton(
-                                              padding: EdgeInsets.zero,
-                                              onPressed: () async {
-                                                final result =
-                                                    await showDialog<bool>(
-                                                  barrierDismissible: false,
-                                                  context: context,
-                                                  builder: (_) {
-                                                    return BlocProvider.value(
-                                                      value: context
-                                                          .read<LoansBloc>(),
-                                                      child:
-                                                          AddAmountLoanDialogClient(
-                                                        nroPrestamo:
-                                                            prestamo?.codigo,
-                                                      ),
-                                                    );
-                                                  },
-                                                );
-                                              },
-                                              icon: Icon(
-                                                Icons.add_card,
-                                                color: Colors.red[400],
-                                              ),
-                                            ),
-                                          ),
-                                        if (prestamo?.cerrado == true &&
-                                            prestamo?.estado != 'CANCELADO')
-                                          SizedBox(
-                                            height: 38,
-                                            width: 38,
-                                            child: IconButton(
-                                              padding: EdgeInsets.zero,
-                                              onPressed: () async {
-                                                if (prestamo?.boleta == null) {
-                                                  // Abrir modal facturacion
-                                                  // prestamo -> codigo
-                                                  // cliente -> dni
+                                          if (auth.user.role?.id != 2)
 
-                                                  final dniCustomer =
-                                                      state.customer?.dni;
+                                            //Editar
+                                            SizedBox(
+                                              height: 38,
+                                              width: 38,
+                                              child: IconButton(
+                                                padding: EdgeInsets.zero,
+                                                onPressed: () {
+                                                  if (prestamo?.cerrado ==
+                                                      false) {
+                                                    // TODAVIA NO ESTÁ CERRADO PUEDO EDITAR
+
+                                                    showModalBottomSheet(
+                                                      isDismissible: false,
+                                                      context: context,
+                                                      builder: (context) {
+                                                        return Padding(
+                                                          padding:
+                                                              MediaQuery.of(
+                                                                      context)
+                                                                  .viewInsets,
+                                                          child:
+                                                              EditLoanBottomSheet(
+                                                            idPrestamo: prestamo
+                                                                    ?.codigo ??
+                                                                0,
+                                                            isNuevo: false,
+                                                          ),
+                                                        );
+                                                      },
+                                                    );
+                                                  } else {
+                                                    print(
+                                                        'sadjklsadjklsdakjsad 2');
+
+                                                    showModalBottomSheet(
+                                                      isDismissible: false,
+                                                      context: context,
+                                                      builder: (context) {
+                                                        return Padding(
+                                                          padding:
+                                                              MediaQuery.of(
+                                                                      context)
+                                                                  .viewInsets,
+                                                          child:
+                                                              EditLoanBottomSheet(
+                                                            idPrestamo: prestamo
+                                                                    ?.codigo ??
+                                                                0,
+                                                            isNuevo: true,
+                                                          ),
+                                                        );
+                                                      },
+                                                    );
+
+                                                    // YA ESTÁ CERRADO
+                                                  }
+                                                },
+                                                icon: Icon(
+                                                  prestamo?.cerrado == false
+                                                      ? Icons.edit
+                                                      : Icons.new_label,
+                                                  color:
+                                                      prestamo?.cerrado == false
+                                                          ? Colors.blue
+                                                          : Colors.purple,
+                                                ),
+                                              ),
+                                            ),
+                                          if (auth.user.role?.id == 2 &&
+                                              prestamo?.cerrado == true)
+                                            SizedBox(
+                                              height: 38,
+                                              width: 38,
+                                              child: IconButton(
+                                                padding: EdgeInsets.zero,
+                                                onPressed: () {
+                                                  // TODO:: falta validar
+                                                  print('jskladljda');
+                                                },
+                                                icon: const Icon(
+                                                  Icons.new_label,
+                                                  color: Colors.purple,
+                                                ),
+                                              ),
+                                            ),
+                                          if (prestamo?.cerrado == false)
+                                            // Pagar prestamo
+                                            SizedBox(
+                                              height: 38,
+                                              width: 38,
+                                              child: IconButton(
+                                                padding: EdgeInsets.zero,
+                                                onPressed: () async {
                                                   final result =
                                                       await showDialog<bool>(
                                                     barrierDismissible: false,
@@ -318,47 +448,159 @@ class _LoansViewState extends State<LoansView> {
                                                         value: context
                                                             .read<LoansBloc>(),
                                                         child:
-                                                            ShowDialogBillingLoan(
+                                                            PaymentLoanDialogClient(
                                                           nroPrestamo:
                                                               prestamo?.codigo,
-                                                          dniCustomer:
-                                                              dniCustomer,
                                                         ),
                                                       );
                                                     },
                                                   );
-                                                } else {
-                                                  // Abrir excel - verde
-                                                  Navigator.push(context,
-                                                      MaterialPageRoute(
-                                                    builder: (context) {
-                                                      return PdfPreviewFacturaPage(
-                                                        url: prestamo
-                                                                ?.boleta?.pdf ??
-                                                            '',
-                                                        id: prestamo?.codigo ??
-                                                            0,
-                                                        tipo: 'prestamo',
-                                                        notaCredito: prestamo
-                                                            ?.notaCredito,
-                                                      );
-                                                    },
-                                                  ));
-                                                }
-                                              },
-                                              icon: Icon(
-                                                Icons.description,
-                                                color: prestamo?.boleta == null
-                                                    ? Colors.blue
-                                                    : prestamo?.notaCredito
-                                                                ?.length ==
-                                                            0
-                                                        ? Colors.green
-                                                        : Colors.red[400],
+                                                  print('resuuult: ${result}');
+                                                  if (result != null &&
+                                                      mounted) {
+                                                    //TODO :: Cargar todo
+                                                    context
+                                                        .read<LoansBloc>()
+                                                        .add(
+                                                          GetLoansByDni(
+                                                            value: state
+                                                                .searchText,
+                                                          ),
+                                                        );
+                                                  }
+                                                },
+                                                icon: const Icon(
+                                                  Icons.payments_outlined,
+                                                  color: Colors.green,
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                      ],
+                                          if (prestamo?.cerrado == false)
+                                            // Agregar monto
+                                            SizedBox(
+                                              height: 38,
+                                              width: 38,
+                                              child: IconButton(
+                                                padding: EdgeInsets.zero,
+                                                onPressed: () async {
+                                                  final result =
+                                                      await showDialog<bool>(
+                                                    barrierDismissible: false,
+                                                    context: context,
+                                                    builder: (_) {
+                                                      return BlocProvider.value(
+                                                        value: context
+                                                            .read<LoansBloc>(),
+                                                        child:
+                                                            AddAmountLoanDialogClient(
+                                                          nroPrestamo:
+                                                              prestamo?.codigo,
+                                                        ),
+                                                      );
+                                                    },
+                                                  );
+
+                                                  print('resuuult: ${result}');
+                                                  if (result != null &&
+                                                      mounted) {
+                                                    //TODO :: Cargar todo
+                                                    context
+                                                        .read<LoansBloc>()
+                                                        .add(
+                                                          GetLoansByDni(
+                                                            value: state
+                                                                .searchText,
+                                                          ),
+                                                        );
+                                                  }
+                                                },
+                                                icon: Icon(
+                                                  Icons.add_card,
+                                                  color: Colors.red[400],
+                                                ),
+                                              ),
+                                            ),
+                                          if (prestamo?.cerrado == true &&
+                                              prestamo?.estado != 'CANCELADO')
+                                            SizedBox(
+                                              height: 38,
+                                              width: 38,
+                                              child: IconButton(
+                                                padding: EdgeInsets.zero,
+                                                onPressed: () async {
+                                                  if (prestamo?.boleta ==
+                                                      null) {
+                                                    final dniCustomer =
+                                                        state.customer?.dni;
+                                                    final result =
+                                                        await showDialog<bool>(
+                                                      barrierDismissible: false,
+                                                      context: context,
+                                                      builder: (_) {
+                                                        return BlocProvider
+                                                            .value(
+                                                          value: context.read<
+                                                              LoansBloc>(),
+                                                          child:
+                                                              ShowDialogBillingLoan(
+                                                            nroPrestamo:
+                                                                prestamo
+                                                                    ?.codigo,
+                                                            dniCustomer:
+                                                                dniCustomer,
+                                                          ),
+                                                        );
+                                                      },
+                                                    );
+
+                                                    print(
+                                                        'resuuult: ${result}');
+                                                    if (result != null &&
+                                                        mounted) {
+                                                      context
+                                                          .read<LoansBloc>()
+                                                          .add(
+                                                            GetLoansByDni(
+                                                              value: state
+                                                                  .searchText,
+                                                            ),
+                                                          );
+                                                    }
+                                                  } else {
+                                                    // Abrir excel - verde
+                                                    Navigator.push(context,
+                                                        MaterialPageRoute(
+                                                      builder: (context) {
+                                                        return PdfPreviewFacturaPage(
+                                                          url: prestamo?.boleta
+                                                                  ?.pdf ??
+                                                              '',
+                                                          id: prestamo
+                                                                  ?.codigo ??
+                                                              0,
+                                                          tipo: 'prestamo',
+                                                          notaCredito: prestamo
+                                                              ?.notaCredito,
+                                                        );
+                                                      },
+                                                    ));
+                                                  }
+                                                },
+                                                icon: Icon(
+                                                  Icons.description,
+                                                  color: prestamo?.boleta ==
+                                                          null
+                                                      ? Colors.blue
+                                                      : prestamo?.notaCredito
+                                                                  ?.length ==
+                                                              0
+                                                          ? Colors.green
+                                                          : Colors.red[400],
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 );

@@ -1,6 +1,9 @@
 export 'add_amount_loan_dialog_client.dart';
+export 'edit_loan_bottom_sheet.dart';
 export 'payment_loan_dialog_client.dart';
-export 'search_loans_client.dart';
+export 'search_loans_client_by_dni.dart';
+export 'search_loans_client_by_general.dart';
 export 'show_dialog_billing_loan.dart';
 export 'show_dialog_clients.dart';
+export 'show_dialog_only_client.dart';
 export 'show_info_client_loans.dart';

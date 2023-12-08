@@ -4,6 +4,7 @@ import 'package:casa_empenio_pe/app.dart';
 import 'package:casa_empenio_pe/bootstrap.dart';
 import 'package:casa_empenio_pe/data/data.dart';
 import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -44,6 +45,15 @@ Future<void> main() async {
         ),
         RepositoryProvider(
           create: (context) => _salesRepository,
+        ),
+        RepositoryProvider(
+          create: (context) => _categoriesRepository,
+        ),
+        RepositoryProvider(
+          create: (context) => _cajaRepository,
+        ),
+        RepositoryProvider(
+          create: (context) => _expensesRepository,
         ),
       ],
       child: MultiBlocProvider(
