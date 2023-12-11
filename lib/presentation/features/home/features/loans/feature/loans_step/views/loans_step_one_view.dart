@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
@@ -42,14 +43,12 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
   bool isValidNamesClient = false;
   bool isValidLastNamesClient = false;
   bool isValidPhoneClient = false;
-  bool isValidEmailClient = false;
   bool isValidDomicilioClient = false;
 
   bool isValidDocumentAval = false;
   bool isValidNamesAval = false;
   bool isValidLastNamesAval = false;
   bool isValidPhoneAval = false;
-  bool isValidEmailAval = false;
   bool isValidDomicilioAval = false;
 
   @override
@@ -121,12 +120,6 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
             ? true
             : false;
 
-    isValidEmailClient = state.emailClient != null
-        ? true
-        : localState?.emailClient != null
-            ? true
-            : false;
-
     isValidDomicilioClient = state.homeClient != null
         ? true
         : localState?.domicilioClient != null
@@ -154,12 +147,6 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
     isValidPhoneAval = state.phoneAval != null
         ? true
         : localState?.phoneAval != null
-            ? true
-            : false;
-
-    isValidEmailAval = state.emailAval != null
-        ? true
-        : localState?.emailAval != null
             ? true
             : false;
 
@@ -222,7 +209,9 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
 
                     result.fold(
                       (error) {
-                        documentClientCtrl.text = '';
+                        print('djdjdjdjd 5: ${error}');
+                        documentClientCtrl.text = e;
+                        /* documentClientCtrl.text = '';
                         namesClientCtrl.text = '';
                         lastNamesClientCtrl.text = '';
                         domicilioClientCtrl.text = '';
@@ -233,9 +222,11 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
                           fullLastNamesClient: '',
                           domicilioClient: '',
                         );
-                        preferences.setLoansPreferences(newState);
+                        preferences.setLoansPreferences(newState); */
                       },
                       (customer) {
+                        print('djdjdjdjd 6: ${customer}');
+
                         final customerDni = customer.dni ?? '';
                         final customerName = customer.nombre ?? '';
                         final customerLastName =
@@ -350,16 +341,6 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
             final newState = localState.copyWith(emailClient: e);
             preferences.setLoansPreferences(newState);
           },
-          isValid: (value) {
-            setState(() {
-              isValidEmailClient = value;
-            });
-          },
-          validator: (value) {
-            if (value!.isEmpty) return 'Campo Requerido';
-            if (!validatorEmail(value)) return 'Correo inválido';
-            return null;
-          },
         ),
         const SizedBox(height: 15),
         AppTextFormField(
@@ -415,7 +396,7 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
               ),
             if (selectedPhotosClient!.length < 2)
               Expanded(
-                child: ElevatedButton(
+                child: SecondaryButton(
                   onPressed: () async {
                     final photo = await ImagePicker().pickImage(
                       source: ImageSource.camera,
@@ -437,7 +418,7 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
                     }
                   },
                   child: Text(
-                    'Cargar Imagen (${2 - selectedPhotosClient!.length})',
+                    'Subir Imagen (${2 - selectedPhotosClient!.length})',
                   ),
                 ),
               ),
@@ -511,7 +492,10 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
 
                           result.fold(
                             (error) {
-                              documentAvalCtrl.text = '';
+                              log('djdjdjdjd 3: ${error}');
+                              documentAvalCtrl.text = e;
+
+                              /* documentAvalCtrl.text = '';
                               namesAvalCtrl.text = '';
                               lastNamesAvaltCtrl.text = '';
                               domicilioAvalCtrl.text = '';
@@ -522,9 +506,11 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
                                 fullLastNamesAval: '',
                                 domicilioAval: '',
                               );
-                              preferences.setLoansPreferences(newState);
+                              preferences.setLoansPreferences(newState); */
                             },
                             (customer) {
+                              log('djdjdjdjd 4: ${customer}');
+
                               final customerDni = customer.dni ?? '';
                               final customerName = customer.nombre ?? '';
                               final customerLastName =
@@ -640,16 +626,6 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
                   final newState = localState.copyWith(emailAval: e);
                   preferences.setLoansPreferences(newState);
                 },
-                validator: (value) {
-                  if (value!.isEmpty) return 'Campo Requerido';
-                  if (!validatorEmail(value)) return 'Correo inválido';
-                  return null;
-                },
-                isValid: (value) {
-                  setState(() {
-                    isValidEmailAval = value;
-                  });
-                },
               ),
               const SizedBox(height: 15),
               AppTextFormField(
@@ -705,7 +681,7 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
                     ),
                   if (selectedPhotosAval!.length < 2)
                     Expanded(
-                      child: ElevatedButton(
+                      child: SecondaryButton(
                         onPressed: () async {
                           final photo = await ImagePicker().pickImage(
                             source: ImageSource.camera,
@@ -727,7 +703,7 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
                           }
                         },
                         child: Text(
-                          'Cargar Imagen (${2 - selectedPhotosAval!.length})',
+                          'Subir Imagen (${2 - selectedPhotosAval!.length})',
                         ),
                       ),
                     ),
@@ -743,17 +719,15 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
                   isValidNamesClient &&
                   isValidLastNamesClient &&
                   isValidPhoneClient &&
-                  isValidEmailClient &&
-                  isValidDomicilioClient &&
-                  selectedPhotosClient?.length == 2
+                  isValidDomicilioClient /* &&
+                  selectedPhotosClient?.length == 2 */
               ? isAval
                   ? isValidDocumentAval &&
                           isValidNamesAval &&
                           isValidLastNamesAval &&
                           isValidPhoneAval &&
-                          isValidEmailAval &&
-                          isValidDomicilioAval &&
-                          selectedPhotosAval?.length == 2
+                          isValidDomicilioAval /*  &&
+                          selectedPhotosAval?.length == 2 */
                       ? () {
                           context.read<LoansStepBloc>().add(
                                 SaveFirstStepOne(

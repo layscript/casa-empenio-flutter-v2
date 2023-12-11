@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
@@ -5,6 +7,7 @@ import 'package:casa_empenio_pe/presentation/features/auth/auth.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/blocs/loans_bloc/loans_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 class PaymentLoanDialogClient extends StatefulWidget {
@@ -21,6 +24,8 @@ class PaymentLoanDialogClient extends StatefulWidget {
 
 class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
   final montoCtrl = TextEditingController();
+  List<XFile>? selectedPhotosLiquidar = [];
+
   bool liquidar = false;
   double restante = 0;
 
@@ -296,13 +301,74 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                             )
                           : const SizedBox(),
                     const SizedBox(height: 10),
-                    PrimaryButton(
-                      onPressed: loan?.ganancia != null &&
-                              montoCtrl.text != "" &&
-                              montoCtrl.text != "0"
-                          ? () {
-                              if (liquidar) {
-                                // ShowDialogGuardarLiquidacion
+                    if (liquidar) ...[
+                      Row(
+                        children: [
+                          for (int i = 0;
+                              i < (selectedPhotosLiquidar?.length ?? 0);
+                              i++)
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  selectedPhotosLiquidar?.removeAt(i);
+                                });
+                              },
+                              child: Stack(
+                                children: [
+                                  Image.file(
+                                    File(selectedPhotosLiquidar![i].path),
+                                    width: 100,
+                                    height: 100,
+                                  ),
+                                  Positioned(
+                                    top: 0,
+                                    right: 0,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(10),
+                                        color: Colors.red,
+                                      ),
+                                      child: const Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          if (selectedPhotosLiquidar!.length < 1)
+                            Expanded(
+                              child: SecondaryButton(
+                                onPressed: () async {
+                                  final photo = await ImagePicker().pickImage(
+                                    source: ImageSource.camera,
+                                    imageQuality: 70,
+                                  );
+
+                                  if (photo != null) {
+                                    setState(() {
+                                      selectedPhotosLiquidar?.add(photo);
+                                    });
+                                  }
+                                },
+                                child: Text(
+                                  'Subir Imagen (${1 - selectedPhotosLiquidar!.length})',
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                    if (liquidar)
+                      PrimaryButton(
+                        onPressed: loan?.ganancia != null &&
+                                montoCtrl.text != "" &&
+                                montoCtrl.text != "0" &&
+                                liquidar &&
+                                selectedPhotosLiquidar!.isNotEmpty
+                            ? () {
                                 showDialog(
                                   barrierDismissible: false,
                                   context: context,
@@ -348,6 +414,8 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                                                     userId: authBloc.user.id
                                                         .toString(),
                                                     codigo: loan?.codigo ?? 0,
+                                                    photos:
+                                                        selectedPhotosLiquidar,
                                                   ),
                                                 );
                                           },
@@ -362,8 +430,16 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                                     );
                                   },
                                 );
-                              } else {
-                                // Guardar Pago
+                              }
+                            : null,
+                        child: const Text('Liquidar'),
+                      ),
+                    if (!liquidar)
+                      PrimaryButton(
+                        onPressed: (loan?.ganancia != null &&
+                                montoCtrl.text != "" &&
+                                montoCtrl.text != "0")
+                            ? () {
                                 context.read<LoansBloc>().add(
                                       SavePaymentLoan(
                                         idPrestamo: widget.nroPrestamo ?? 0,
@@ -372,12 +448,11 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                                       ),
                                     );
                               }
-                            }
-                          : null,
-                      child: Text(
-                        liquidar ? 'Liquidar ' : 'Registrar Pago',
-                      ),
-                    )
+                            : null,
+                        child: const Text(
+                          'Registrar Pago',
+                        ),
+                      )
                   ],
                 ),
               );

@@ -215,7 +215,7 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
                     statusWarranty = value;
                   });
                 },
-                items: ['Nuevo', 'Bueno', 'Regular']
+                items: ['nuevo', 'bueno', 'regular']
                     .map(
                       (e) => DropdownMenuItem<String?>(
                         value: e,
@@ -331,7 +331,7 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
                     }
                   },
                   child: Text(
-                    'Cargar Imagen (${3 - selectedPhotos!.length})',
+                    'Subir Imagen (${3 - selectedPhotos!.length})',
                   ),
                 ),
               ),
@@ -380,8 +380,8 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
                   isValidColorWarranty &&
                   isValidSerieWarranty &&
                   isValidObservationWarranty &&
-                  isValidPriceWarranty &&
-                  selectedPhotos?.length == 3
+                  isValidPriceWarranty /* &&
+                  selectedPhotos?.length == 3 */
               ? () {
                   context.read<LoansStepBloc>().add(
                         AddListWarranty(

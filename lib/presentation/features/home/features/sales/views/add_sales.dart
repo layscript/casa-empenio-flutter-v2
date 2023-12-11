@@ -1,6 +1,5 @@
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
-import 'package:casa_empenio_pe/presentation/app/utils/overlay_loader.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/features/auth/auth.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/sales/bloc/sales_bloc.dart';
@@ -22,14 +21,20 @@ class AddFormSales extends StatelessWidget {
         backgroundColor: AppColors.blue,
         title: const Text('Nueva Venta'),
       ),
-      floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.add),
-        onPressed: () => context.read<SalesBloc>().add(
-              GenerateSalesProduct(
-                authBloc.user.id,
-              ),
-            ),
-      ),
+      floatingActionButton: Builder(builder: (context) {
+        final salesBloc = context.watch<SalesBloc>().state;
+        return salesBloc.selectedProductsSales == null ||
+                salesBloc.selectedProductsSales!.isEmpty
+            ? const SizedBox()
+            : FloatingActionButton(
+                onPressed: () => context.read<SalesBloc>().add(
+                      GenerateSalesProduct(
+                        authBloc.user.id,
+                      ),
+                    ),
+                child: const Icon(Icons.add),
+              );
+      }),
       body: Container(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -202,12 +207,39 @@ class AddFormSales extends StatelessWidget {
                                       const SizedBox(height: 2),
                                     ],
                                   ),
-                                  subtitle: Text(
-                                    '${selectedProduct.selectedProducts?.cantidad} disponible(s)',
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.green,
-                                    ),
+                                  subtitle: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '${selectedProduct.selectedProducts?.cantidad} disponible(s)',
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.green,
+                                        ),
+                                      ),
+                                      if (selectedProduct.gastoAdicional !=
+                                              null &&
+                                          selectedProduct.observaciones !=
+                                              null) ...[
+                                        Text(
+                                          'G. Adicional: s/.${selectedProduct.gastoAdicional}',
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            color: AppColors.red,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        Text(
+                                          'G. Obs: ${selectedProduct.observaciones}',
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            color: AppColors.red,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ]
+                                    ],
                                   ),
                                   trailing: QuantityInput(
                                     buttonColor: Colors.purple,

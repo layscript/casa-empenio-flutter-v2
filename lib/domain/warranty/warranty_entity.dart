@@ -1,9 +1,12 @@
+import 'dart:developer';
+
 import 'package:casa_empenio_pe/domain/domain.dart';
 
 class WarrantyEntity {
   const WarrantyEntity({
     required this.id,
     required this.description,
+    required this.categoria,
     required this.estado,
     required this.color,
     required this.marca,
@@ -17,6 +20,8 @@ class WarrantyEntity {
     required this.createdAt,
     required this.detallesVenta,
     required this.imagen,
+    required this.imagenDos,
+    required this.imagenTres,
     required this.motor,
     required this.observaciones,
     required this.placa,
@@ -26,6 +31,7 @@ class WarrantyEntity {
 
   final int? id;
   final String? description;
+  final String? categoria;
   final String? estado;
   final String? marca;
   final String? modelo;
@@ -41,6 +47,8 @@ class WarrantyEntity {
   final LoansEntity? prestamo;
   final SalesDetailEntity? detallesVenta;
   final String? imagen;
+  final String? imagenDos;
+  final String? imagenTres;
   final bool? activo;
   final String? updatedAt;
   final String? createdAt;
@@ -54,9 +62,11 @@ class WarrantyEntity {
   }
 
   static WarrantyEntity getWarrantyFromMap(Map<String, dynamic> map) {
+    log('kasjdjkldasajsd: 2 ${map}');
     return WarrantyEntity(
       id: map['id'],
       description: map['descripcion'],
+      categoria: map['categoria'],
       estado: map['estado'],
       color: map['color'],
       marca: map['marca'],
@@ -74,6 +84,8 @@ class WarrantyEntity {
           ? SalesDetailEntity.getSalesDetailFromMap(map['detallesVenta'])
           : null,
       imagen: map['imagen'],
+      imagenDos: map['imagen2'],
+      imagenTres: map['imagen3'],
       motor: map['motor'],
       observaciones: map['observaciones'],
       placa: map['placa'],

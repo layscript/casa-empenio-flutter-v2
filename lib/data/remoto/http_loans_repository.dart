@@ -7,6 +7,7 @@ import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart';
 
 class HttpLoansRepository implements LoansRepository {
   const HttpLoansRepository({
@@ -125,7 +126,8 @@ class HttpLoansRepository implements LoansRepository {
       'usuarioId': usuarioId,
     };
 
-    log('payladolada: $payload');
+    log('payladolada 1: $payload');
+    log('payladolada 2: $bienes');
 
     try {
       final response = await _dio.post<String>(path, data: payload);
@@ -139,33 +141,44 @@ class HttpLoansRepository implements LoansRepository {
         log('statttuututus code 2: ${map}');
         final bienesResponse = map['body']['bienesGarantia'];
         log('statttuututus code 3: ${bienesResponse}');
-
-        final resultCustomerPhotos = await updateCustomerPhotos(
-          dni: int.parse(cliente.dni ?? '0'),
-          imagenUno: cliente.imagenUno ?? '',
-          imagenDos: cliente.imagenDos ?? '',
-        );
-        log('aksjdljldsakjklads z3.5: ${bienesResponse}');
+        if (cliente.imagenUno != null && cliente.imagenDos != null) {
+          await updateCustomerPhotos(
+            dni: int.parse(cliente.dni ?? '0'),
+            imagenUno: cliente.imagenUno ?? '',
+            imagenDos: cliente.imagenDos ?? '',
+          );
+        }
 
         for (var bienResponse in bienesResponse) {
           log('aksjdljldsakjklads z3.6: ${bienResponse}');
 
           for (var garantia in bienes) {
             log('aksjdljldsakjklads z3.7: ${garantia}');
-            final imagenUno = garantia['imagen'];
-            final imagenDos = garantia['imagen2'];
-            final imagenTres = garantia['imagen3'];
+            final imagenUno = garantia['imagen'] as String?;
+            final imagenDos = garantia['imagen2'] as String?;
+            final imagenTres = garantia['imagen3'] as String?;
             print('aksjdljldsakjklads 3.1: $imagenUno');
             print('aksjdljldsakjklads 3.2: $imagenDos');
             print('aksjdljldsakjklads 3.3: $imagenTres');
-            final exito = await updateWarrantyPhotos(
-              idGarantia: bienResponse['id'],
-              imagenUno: imagenUno,
-              imagenDos: imagenDos,
-              imagenTres: imagenTres,
-            );
-            if (!exito) {
-              return const Left('Ocurrió un problema con las imagenes');
+            final mainImage = imagenUno?.trimLeft();
+            print('aksjdljldsakjklads 3.4: $mainImage');
+
+            if (mainImage != null || mainImage != '') {
+              print('aksjdljldsakjklads 3.5.1: $mainImage');
+              print('aksjdljldsakjklads 3.5.2: ${bienResponse['id']}');
+
+              final exito = await updateWarrantyPhotos(
+                idGarantia: bienResponse['id'],
+                imagenUno: imagenUno!.trimLeft(),
+                imagenDos: imagenDos == null ? '' : imagenDos.trimLeft(),
+                imagenTres: imagenTres == null ? '' : imagenTres.trimLeft(),
+              );
+
+              print('aksjdljldsakjklads 3.5.3: ${exito}');
+
+              if (!exito) {
+                return const Left('Ocurrió un problema con las imagenes');
+              }
             }
           }
         }
@@ -224,20 +237,18 @@ class HttpLoansRepository implements LoansRepository {
       print('saveeeee 1: ${response.statusCode}');
       print('saveeeee 2: ${response.data}');
 
-      if (response.statusCode != 201) {
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return true;
+      } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
         //return Left(message);
         return false;
-      } else {
-        //final map = json.decode(response.data!) as Map<String, dynamic>;
-        //return const Right(true);
-        return true;
       }
     } catch (e) {
       //print('responseee ee: $e');
       //return const Left('Ocurrió un error 2');
-      return true;
+      return false;
     }
   }
 
@@ -437,7 +448,11 @@ class HttpLoansRepository implements LoansRepository {
   }
 
   @override
-  Future<bool> payOffLoan({required int id}) async {
+  Future<bool> payOffLoan({
+    required int id,
+    required int idPrestamo,
+    required List<XFile>? photos,
+  }) async {
     final path = '/prestamos/prestamos/liquidar/$id';
 
     try {
@@ -445,20 +460,26 @@ class HttpLoansRepository implements LoansRepository {
       print('saveeeee 1.1: ${response.statusCode}');
       print('saveeeee 2.2: ${response.data}');
 
-      if (response.statusCode != 201) {
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        if (photos?.length == 0) {
+          return true;
+        } else {
+          final result = await updateLiquidacionPhotos(
+            idPrestamo: idPrestamo,
+            imagenUno: photos!.first.path,
+          );
+          return result;
+        }
+      } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
         //return Left(message);
         return false;
-      } else {
-        //final map = json.decode(response.data!) as Map<String, dynamic>;
-        //return const Right(true);
-        return true;
       }
     } catch (e) {
       //print('responseee ee: $e');
       //return const Left('Ocurrió un error 2');
-      return true;
+      return false;
     }
   }
 
@@ -468,7 +489,7 @@ class HttpLoansRepository implements LoansRepository {
     required String imagenDos,
   }) async {
     if (imagenUno.contains('files/garantias') ||
-        imagenUno.contains('files/garantias')) {
+        imagenDos.contains('files/garantias')) {
       return true;
     }
 
@@ -501,42 +522,260 @@ class HttpLoansRepository implements LoansRepository {
     }
   }
 
-  Future<bool> updateWarrantyPhotos({
-    required int idGarantia,
+  Future<bool> updateLiquidacionPhotos({
+    required int idPrestamo,
     required String imagenUno,
-    required String imagenDos,
-    required String imagenTres,
+    //required String imagenDos,
   }) async {
-    if (imagenUno.contains('files/garantias') ||
-        imagenDos.contains('files/garantias') ||
-        imagenTres.contains('files/garantias')) {
+    if (imagenUno.contains(
+            'files/garantias') /* ||
+        imagenDos.contains('files/garantias') */
+        ) {
       return true;
     }
 
     final imgUno = File(imagenUno);
-    final imgDos = File(imagenDos);
-    final imgTres = File(imagenTres);
+    //final imgDos = File(imagenDos);
 
     try {
-      final path = '/prestamos/prestamos/imagenGarantia/$idGarantia';
+      final path = '/prestamos/prestamos/imagenLiquidar/$idPrestamo';
 
       FormData formData = FormData.fromMap({
         'imagen': await MultipartFile.fromFile(
           imgUno.path,
           filename: imgUno.path.split('/').last,
         ),
-        'imagen2': await MultipartFile.fromFile(
+        /* 'imagen2': await MultipartFile.fromFile(
           imgDos.path,
           filename: imgDos.path.split('/').last,
-        ),
-        'imagen3': await MultipartFile.fromFile(
-          imgTres.path,
-          filename: imgTres.path.split('/').last,
-        )
+        ) */
       });
 
       final response = await _dio.put(path, data: formData);
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
+  }
 
+  Future<bool> updateWarrantyPhotos({
+    required int idGarantia,
+    required String imagenUno,
+    required String? imagenDos,
+    required String? imagenTres,
+  }) async {
+    print('aksjdljldsakjklads 3.5.4');
+    if (imagenUno.contains('files/garantias')) {
+      return true;
+    }
+
+    if (imagenDos != null && imagenDos.contains('files/garantias')) {
+      return true;
+    }
+    print('aksjdljldsakjklads 3.5.5');
+
+    if (imagenTres != null && imagenTres.contains('files/garantias')) {
+      return true;
+    }
+
+    print('aksjdljldsakjklads 3.5.6');
+
+    final imgUno = File(imagenUno);
+    File? imgDos;
+    File? imgTres;
+
+    if (imagenDos != null) {
+      imgDos = File(imagenDos);
+    }
+
+    if (imagenTres != null) {
+      imgTres = File(imagenTres);
+    }
+
+    print('aksjdljldsakjklads 3.5.7.1 : ${imgUno}');
+    print('aksjdljldsakjklads 3.5.7.2 : ${imgDos}');
+    print('aksjdljldsakjklads 3.5.7.3 : ${imgTres}');
+
+    try {
+      final path = '/prestamos/prestamos/imagenGarantia/$idGarantia';
+      print('aksjdljldsakjklads 3.5.7.4 : ${path}');
+
+      FormData formData = FormData.fromMap({
+        'imagen': await MultipartFile.fromFile(
+          imgUno.path,
+          filename: imgUno.path.split('/').last,
+        ),
+        /*  if (imagenDos != null)
+          'imagen2': await MultipartFile.fromFile(
+            imgDos!.path,
+            filename: imgDos.path.split('/').last,
+          ),
+        if (imagenTres != null)
+          'imagen3': await MultipartFile.fromFile(
+            imgTres!.path,
+            filename: imgTres.path.split('/').last,
+          ) */
+      });
+
+      print('aksjdljldsakjklads 3.5.7.5 : ${formData}');
+      final response = await _dio.put(path, data: formData);
+      print('aksjdljldsakjklads 3.5.7.6 : ${response.statusCode}');
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      print('aksjdljldsakjklads 3.5.7.7 : ${e}');
+
+      return false;
+    }
+  }
+
+  @override
+  Future<Either<String, bool>> updateLoan({
+    required int plazoDias,
+    required double interes,
+    required DateTime fechaPago,
+    required double monto,
+    required String observaciones,
+    required CustomerEntity cliente,
+    required CustomerEntity? aval,
+    required List<Map<String, dynamic>> bienes,
+    required String usuarioId,
+    required int idLoan,
+  }) async {
+    final path = '/prestamos/prestamos/$idLoan';
+
+    final payload = {
+      'plazoDias': plazoDias,
+      'interes': interes,
+      'fechaPago': fechaPago.toIso8601String(),
+      'monto': monto,
+      'observaciones': observaciones,
+      'cliente': {
+        'nombres': cliente.nombres,
+        'apellidos': cliente.apellidos,
+        'dni': cliente.dni,
+        'celular': cliente.celular,
+        'email': cliente.email,
+      },
+      'aval': aval == null
+          ? null
+          : {
+              'nombres': aval.nombres,
+              'apellidos': aval.apellidos,
+              'dni': aval.dni,
+              'celular': aval.celular,
+              'email': aval.email,
+            },
+      'bienesGarantia': bienes,
+      'adminId': usuarioId,
+    };
+
+    log('payladolada: $payload');
+
+    try {
+      final response = await _dio.put<String>(path, data: payload);
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        log('statttuututus code 2: ${map}');
+        final bienesResponse = map['body']['bienesGarantia'];
+        log('statttuututus code 3: ${bienesResponse}');
+
+        if (cliente.imagenUno != null && cliente.imagenDos != null) {
+          await updateCustomerPhotos(
+            dni: int.parse(cliente.dni ?? '0'),
+            imagenUno: cliente.imagenUno ?? '',
+            imagenDos: cliente.imagenDos ?? '',
+          );
+        }
+
+        log('aksjdljldsakjklads z3.5: ${bienesResponse}');
+
+        for (var bienResponse in bienesResponse) {
+          log('aksjdljldsakjklads z3.6: ${bienResponse}');
+
+          for (var garantia in bienes) {
+            log('aksjdljldsakjklads z3.7: ${garantia}');
+            final imagenUno = garantia['imagen'] as String?;
+            final imagenDos = garantia['imagen2'] as String?;
+            final imagenTres = garantia['imagen3'] as String?;
+            print('aksjdljldsakjklads 3.1: $imagenUno');
+            print('aksjdljldsakjklads 3.2: $imagenDos');
+            print('aksjdljldsakjklads 3.3: $imagenTres');
+            final mainImage = imagenUno?.trimLeft();
+            print('aksjdljldsakjklads 3.4: $mainImage');
+
+            if (mainImage != null || mainImage != '') {
+              print('aksjdljldsakjklads 3.5.1: $mainImage');
+              print('aksjdljldsakjklads 3.5.2: ${bienResponse['id']}');
+
+              final exito = await updateWarrantyPhotos(
+                idGarantia: bienResponse['id'],
+                imagenUno: imagenUno!.trimLeft(),
+                imagenDos: imagenDos == null ? '' : imagenDos.trimLeft(),
+                imagenTres: imagenTres == null ? '' : imagenTres.trimLeft(),
+              );
+
+              print('aksjdljldsakjklads 3.5.3: ${exito}');
+
+              if (!exito) {
+                return const Left('Ocurrió un problema con las imagenes');
+              }
+            }
+          }
+        }
+        return const Right(true);
+      } else {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final message = map['message'] ?? 'Ocurrió un error';
+        return Left(message);
+      }
+    } catch (e) {
+      //print('responseee ee: $e');
+      return const Left('Ocurrió un error con el servidor');
+    }
+  }
+
+  @override
+  Future<bool> deleteLoan({
+    required int idLoan,
+  }) async {
+    final path = '/prestamos/prestamos/$idLoan';
+    try {
+      final response = await _dio.delete<String>(path);
+      if (response.statusCode != 200) {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final message = map['message'] ?? 'Ocurrió un error';
+        return false;
+      } else {
+        //final map = json.decode(response.data!) as Map<String, dynamic>;
+        return true;
+      }
+    } catch (e) {
+      //print('responseee ee: $e');
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> updateStatusLoan({
+    required int idLoan,
+    required String value,
+  }) async {
+    final path = '/prestamos/prestamos/cambiar-estado/$idLoan';
+    final payload = {
+      'estado': value,
+    };
+
+    try {
+      final response = await _dio.put<String>(path, data: payload);
       if (response.statusCode == 201 || response.statusCode == 200) {
         return true;
       } else {

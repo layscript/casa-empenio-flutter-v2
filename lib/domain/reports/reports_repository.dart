@@ -19,4 +19,5 @@ abstract class ReportsRepository {
     required DateTime fin,
   });
   Future<bool> cancelLoan({required int id});
+  Future<bool> cancelSettledLoan({required int id});
 }

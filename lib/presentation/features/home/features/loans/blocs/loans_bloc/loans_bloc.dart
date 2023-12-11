@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 part 'loans_event.dart';
@@ -32,6 +34,10 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     on<CreateInvoiceLoans>(_onCreateInvoiceLoans);
 
     on<GetLoansSearchByDni>(_onGetLoansSearchByDni);
+    on<UpdateAllLoan>(_onUpdateAllLoan);
+
+    on<DeleteLoanById>(_onDeleteLoanById);
+    on<UpdateStatusLoanById>(_onUpdateStatusLoanById);
   }
 
   final CustomerRepository _customerRepository;
@@ -204,9 +210,14 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
       userId: event.userId,
     );
 
+    print('saljdjkasldads 1: ${resultPayment}');
     final resultLoand = await _loansRepository.payOffLoan(
       id: event.codigo,
+      idPrestamo: event.idPrestamo,
+      photos: event.photos,
     );
+
+    print('saljdjkasldads 2: ${resultLoand}');
 
     if (resultPayment && resultLoand) {
       emit(
@@ -334,5 +345,94 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
         ),
       ),
     );
+  }
+
+  Future<void> _onUpdateAllLoan(
+    UpdateAllLoan event,
+    Emitter<LoansState> emit,
+  ) async {
+    emit(state.copyWith(loansRenewStatus: LoansStatus.loading));
+
+    if (event.isNuevo) {
+      /*  log('clieeent 1: ${event.cliente.toString()}');
+      log('clieeent 1: ${event.aval.toString()}');
+      log('clieeent 1: ${event.bienes}'); */
+
+      final result = await _loansRepository.saveLoan(
+        plazoDias: event.plazoDias,
+        interes: event.interes,
+        fechaPago: event.fechaPago,
+        monto: event.monto,
+        observaciones: event.observaciones,
+        cliente: event.cliente,
+        aval: event.aval.dni == null ? null : event.aval,
+        bienes: event.bienes,
+        usuarioId: event.userId,
+      );
+      result.fold(
+        (error) => emit(
+          state.copyWith(loansRenewStatus: LoansStatus.error),
+        ),
+        (contrato) => emit(
+          state.copyWith(loansRenewStatus: LoansStatus.loaded),
+        ),
+      );
+    } else {
+      /* log('clieeent 2.1: ${event.cliente.toString()}');
+      log('clieeent 2.2: ${event.aval.toString()}');
+      log('clieeent 2.3: ${event.bienes}'); */
+
+      final result = await _loansRepository.updateLoan(
+        plazoDias: event.plazoDias,
+        interes: event.interes,
+        fechaPago: event.fechaPago,
+        monto: event.monto,
+        observaciones: event.observaciones,
+        cliente: event.cliente,
+        aval: event.aval.dni == null ? null : event.aval,
+        bienes: event.bienes,
+        usuarioId: event.userId,
+        idLoan: event.codigo,
+      );
+      result.fold(
+        (error) => emit(
+          state.copyWith(loansRenewStatus: LoansStatus.error),
+        ),
+        (contrato) => emit(
+          state.copyWith(loansRenewStatus: LoansStatus.loaded),
+        ),
+      );
+    }
+  }
+
+  Future<void> _onDeleteLoanById(
+    DeleteLoanById event,
+    Emitter<LoansState> emit,
+  ) async {
+    emit(state.copyWith(loansStatus: LoansStatus.deleteLoanLoading));
+    final result = await _loansRepository.deleteLoan(
+      idLoan: event.idLoan,
+    );
+    if (result) {
+      emit(state.copyWith(loansStatus: LoansStatus.deleteLoanSuccess));
+    } else {
+      emit(state.copyWith(loansStatus: LoansStatus.deleteLoanError));
+    }
+  }
+
+  Future<void> _onUpdateStatusLoanById(
+    UpdateStatusLoanById event,
+    Emitter<LoansState> emit,
+  ) async {
+    emit(state.copyWith(loansStatus: LoansStatus.updateStatusLoanLoading));
+    final result = await _loansRepository.updateStatusLoan(
+      idLoan: event.idLoan,
+      value: event.value,
+    );
+    if (result) {
+      emit(state.copyWith(loansStatus: LoansStatus.updateStatusLoanSuccess));
+    } else {
+      emit(state.copyWith(loansStatus: LoansStatus.updateStatusLoanError));
+    }
   }
 }

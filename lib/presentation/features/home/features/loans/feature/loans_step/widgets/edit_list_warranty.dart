@@ -225,7 +225,7 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
                     statusWarranty = value;
                   });
                 },
-                items: ['Nuevo', 'Bueno', 'Regular']
+                items: ['nuevo', 'bueno', 'regular']
                     .map(
                       (e) => DropdownMenuItem<String?>(
                         value: e,

@@ -4,7 +4,6 @@ import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/widgets/widgets.dart';
-import 'package:casa_empenio_pe/presentation/features/home/features/reports/bloc/reports_bloc.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/reports/widgets/widgets.dart';
 import 'package:excel/excel.dart';
 import 'package:flutter/material.dart';
@@ -182,7 +181,7 @@ class _PaymentsReportsViewState extends State<PaymentsReportsView> {
                                         shrinkWrap: true,
                                         itemCount:
                                             reportsBloc.listClosedLoans.length,
-                                        itemBuilder: (context, index) {
+                                        itemBuilder: (_, index) {
                                           final prestamo = reportsBloc
                                               .listClosedLoans[index];
                                           final fechaCreacion = DateTime.parse(
@@ -190,6 +189,9 @@ class _PaymentsReportsViewState extends State<PaymentsReportsView> {
                                           final fechaFormateada =
                                               DateFormat('dd/MM/yyyy - kk:mm')
                                                   .format(fechaCreacion);
+
+                                          print(
+                                              'asdkljadsjlasd: ${prestamo?.estado}');
                                           return Container(
                                             margin: const EdgeInsets.only(
                                                 bottom: 5),
@@ -234,15 +236,14 @@ class _PaymentsReportsViewState extends State<PaymentsReportsView> {
                                                           'CANCELADO')
                                                     IconButton(
                                                       padding: EdgeInsets.zero,
-                                                      onPressed: () async {
+                                                      onPressed: () {
                                                         if (prestamo.boleta ==
                                                             null) {
                                                           final dniCustomer =
                                                               prestamo
                                                                   .cliente?.dni;
-                                                          final result =
-                                                              await showDialog<
-                                                                  bool>(
+
+                                                          showDialog<bool>(
                                                             barrierDismissible:
                                                                 false,
                                                             context: context,
@@ -309,6 +310,53 @@ class _PaymentsReportsViewState extends State<PaymentsReportsView> {
                                                                 ? Colors.green
                                                                 : Colors
                                                                     .red[400],
+                                                      ),
+                                                    ),
+                                                  if (prestamo.estado ==
+                                                      'LIQUIDADO')
+                                                    IconButton(
+                                                      padding: EdgeInsets.zero,
+                                                      onPressed: () async {
+                                                        final result =
+                                                            await showDialog<
+                                                                bool?>(
+                                                          barrierDismissible:
+                                                              false,
+                                                          context: context,
+                                                          builder: (_) {
+                                                            return BlocProvider
+                                                                .value(
+                                                              value: context.read<
+                                                                  ReportsBloc>(),
+                                                              child: AnularDialogReport(
+                                                                  codigo: prestamo
+                                                                      .codigo),
+                                                            );
+                                                          },
+                                                        );
+
+                                                        if (result != null &&
+                                                            mounted) {
+                                                          await Future.delayed(
+                                                                  const Duration(
+                                                                      milliseconds:
+                                                                          300))
+                                                              .then((value) {
+                                                            context
+                                                                .read<
+                                                                    ReportsBloc>()
+                                                                .add(
+                                                                  const GetLoadInitialDataPayments(
+                                                                    end: null,
+                                                                    start: null,
+                                                                  ),
+                                                                );
+                                                          });
+                                                        }
+                                                      },
+                                                      icon: const Icon(
+                                                        Icons.delete_forever,
+                                                        color: Colors.red,
                                                       ),
                                                     ),
                                                 ],

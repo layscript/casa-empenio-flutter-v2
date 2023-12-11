@@ -6,14 +6,14 @@ class IncreaseEntity {
     required this.fecha,
     required this.monto,
     required this.observaciones,
-    required this.prestamo,
-  });
+/*     required this.prestamo,
+ */  });
 
   final int? id;
   final String? fecha;
-  final int? monto;
+  final String? monto;
   final String? observaciones;
-  final LoansEntity? prestamo;
+  /* final LoansEntity? prestamo; */
 
   static List<IncreaseEntity> listIncreaseFromMap(
     List<dynamic> list,
@@ -29,9 +29,9 @@ class IncreaseEntity {
       fecha: map['fecha'],
       monto: map['monto'],
       observaciones: map['observaciones'],
-      prestamo: map['prestamo'] != null
+      /* prestamo: map['prestamo'] != null
           ? LoansEntity.getLoanFromMap(map['prestamo'])
-          : null,
+          : null, */
     );
   }
 }

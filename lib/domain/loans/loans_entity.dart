@@ -24,8 +24,10 @@ class LoansEntity {
     required this.admin,
     required this.aumentos,
     required this.aval,
+    required this.imagenLiquidado,
     required this.pagos,
     required this.usuario,
+    required this.eliminado,
     required this.bienesGarantia,
   });
 
@@ -46,12 +48,45 @@ class LoansEntity {
   final UserEntity? usuario;
   final UserEntity? admin;
   final String? fecha;
+  final bool? eliminado;
+  final String? imagenLiquidado;
   final String? updatedAt;
   final String? createdAt;
   final List<IncreaseEntity>? aumentos;
   final TicketEntity? boleta;
   final List<CreditNoteEntity>? notaCredito;
   final List<WarrantyEntity>? bienesGarantia;
+
+  @override
+  String toString() {
+    return '''
+codigo: $codigo,
+codigoFormateado: $codigoFormateado,
+plazoDias: $plazoDias,
+interes: $interes,
+fechaPago: $fechaPago,
+fechaCierre: $fechaCierre,
+monto: $monto,
+observaciones: $observaciones,
+estado: $estado,
+cerrado: $cerrado,
+ganancia: $ganancia,
+cliente: ${cliente.toString()},
+aval: $aval, 
+pagos: $pagos,
+usuario: $usuario,
+admin: $admin,
+fecha: $fecha,
+updatedAt: $updatedAt,
+createdAt: $createdAt,
+aumentos: $aumentos,
+imagenLiquidado: $imagenLiquidado,
+boleta: $boleta,
+notaCredito: $notaCredito,
+bienesGarantia: $bienesGarantia,
+eliminado: $eliminado,
+''';
+  }
 
   static List<LoansEntity> listGetSalesDetailFromMap(
     List<dynamic> list,
@@ -60,6 +95,7 @@ class LoansEntity {
   }
 
   static LoansEntity getLoanFromMap(Map<String, dynamic> map) {
+    log('askdjklsadads 2: $map');
     return LoansEntity(
       codigo: map['codigo'] as int?,
       codigoFormateado: map['codigoFormateado'] as String?,
@@ -72,9 +108,11 @@ class LoansEntity {
       estado: map['estado'] as String?,
       cerrado: map['cerrado'] as bool?,
       ganancia: map['ganancia'] as String?,
+      eliminado: map['eliminado'] as bool?,
       fecha: map['fecha'] as String?,
       updatedAt: map['updatedAt'] as String?,
       createdAt: map['createdAt'] as String?,
+      imagenLiquidado: map['imagenLiquidado'] as String?,
       admin: map['admin'] != null ? UserEntity.userFromMap(map['admin']) : null,
       aumentos: map['aumentos'] != null
           ? IncreaseEntity.listIncreaseFromMap(map['aumentos'])

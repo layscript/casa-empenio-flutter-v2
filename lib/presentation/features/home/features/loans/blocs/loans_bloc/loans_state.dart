@@ -26,6 +26,16 @@ enum LoansStatus {
   searchClientLoading,
   searchClientSuccess,
   searchClientError,
+
+  //
+  deleteLoanLoading,
+  deleteLoanSuccess,
+  deleteLoanError,
+
+  //
+  updateStatusLoanLoading,
+  updateStatusLoanSuccess,
+  updateStatusLoanError,
 }
 
 class LoansState extends Equatable {
@@ -35,11 +45,13 @@ class LoansState extends Equatable {
     this.typeSearch,
     this.loansStatus = LoansStatus.initial,
     this.loansSearchStatus = LoansStatus.initial,
+    this.loansRenewStatus = LoansStatus.initial,
     this.customer,
     this.searchCustomer,
     this.customerSunat,
     this.error,
     this.loanDetails,
+    this.listCategories,
   });
 
   final bool openBox;
@@ -47,11 +59,13 @@ class LoansState extends Equatable {
   final String searchText;
   final LoansStatus loansStatus;
   final LoansStatus loansSearchStatus;
+  final LoansStatus? loansRenewStatus;
   final CustomerEntity? customer;
   final CustomerEntity? searchCustomer;
   final CustomerSunatEntity? customerSunat;
   final String? error;
   final LoansEntity? loanDetails;
+  final List<CategoriesEntity>? listCategories;
 
   bool get isLoadingDetailsLoan =>
       loansStatus == LoansStatus.loadingDetailsLoan;
@@ -82,12 +96,27 @@ class LoansState extends Equatable {
   bool get isLoansElectronicTicketError =>
       loansStatus == LoansStatus.electronicTicketError;
 
+  bool get isLoansDeleteLoading => loansStatus == LoansStatus.deleteLoanLoading;
+  bool get isLoansDeleteSuccess => loansStatus == LoansStatus.deleteLoanSuccess;
+  bool get isLoansDeleteError => loansStatus == LoansStatus.deleteLoanError;
+
   bool get isLoansSearchClientLoading =>
       loansSearchStatus == LoansStatus.searchClientLoading;
   bool get isLoansSearchClientError =>
       loansSearchStatus == LoansStatus.searchClientError;
   bool get isLoansSearchClientSuccess =>
       loansSearchStatus == LoansStatus.searchClientSuccess;
+
+  bool get isLoansUpdateStatusLoading =>
+      loansStatus == LoansStatus.updateStatusLoanLoading;
+  bool get isLoansUpdateStatusError =>
+      loansStatus == LoansStatus.updateStatusLoanError;
+  bool get isLoansUpdateStatusSuccess =>
+      loansStatus == LoansStatus.updateStatusLoanSuccess;
+
+  bool get isLoansRenevLoading => loansRenewStatus == LoansStatus.loading;
+  bool get isLoansRenevError => loansRenewStatus == LoansStatus.error;
+  bool get isLoansRenevSuccess => loansRenewStatus == LoansStatus.loaded;
 
   String fullNamesCustomerSunat() {
     return '${customerSunat?.nombre} ${customerSunat?.apellidoPaterno} ${customerSunat?.apellidoMaterno}';
@@ -108,11 +137,13 @@ class LoansState extends Equatable {
     String? searchText,
     LoansStatus? loansStatus,
     LoansStatus? loansSearchStatus,
+    LoansStatus? loansRenewStatus,
     CustomerEntity? customer,
     CustomerEntity? searchCustomer,
     CustomerSunatEntity? customerSunat,
     LoansEntity? loanDetails,
     String? error,
+    List<CategoriesEntity>? listCategories,
   }) =>
       LoansState(
         openBox: openBox ?? this.openBox,
@@ -125,6 +156,8 @@ class LoansState extends Equatable {
         loansStatus: loansStatus ?? this.loansStatus,
         loansSearchStatus: loansSearchStatus ?? this.loansSearchStatus,
         loanDetails: loanDetails ?? this.loanDetails,
+        listCategories: listCategories ?? this.listCategories,
+        loansRenewStatus: loansRenewStatus ?? this.loansRenewStatus,
       );
 
   @override
@@ -139,5 +172,7 @@ class LoansState extends Equatable {
         customerSunat,
         error,
         loanDetails,
+        listCategories,
+        loansRenewStatus,
       ];
 }

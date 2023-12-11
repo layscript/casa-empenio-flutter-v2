@@ -138,9 +138,18 @@ class _LoanClientViewState extends State<LoanClientView> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        '${state.formattedDate(
+                                        state.formattedDate(
                                           prestamo!.fecha!,
-                                        )} ${prestamo.estado == 'CANCELADO' ? '- CANCELADO' : ''}',
+                                        ),
+                                        maxLines: 3,
+                                        style: const TextStyle(
+                                          color: AppColors.secondaryText,
+                                          fontWeight: FontWeight.normal,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${prestamo.estado}',
                                         maxLines: 3,
                                         style: const TextStyle(
                                           color: AppColors.secondaryText,
@@ -199,45 +208,72 @@ class _LoanClientViewState extends State<LoanClientView> {
                                     width: 38,
                                     child: IconButton(
                                       padding: EdgeInsets.zero,
-                                      onPressed: () {
+                                      onPressed: () async {
                                         if (prestamo?.cerrado == false) {
                                           // TODAVIA NO ESTÁ CERRADO PUEDO EDITAR
-
-                                          showModalBottomSheet(
+                                          final result =
+                                              await showModalBottomSheet<bool?>(
                                             isDismissible: false,
                                             context: context,
-                                            builder: (context) {
-                                              return Padding(
-                                                padding: MediaQuery.of(context)
-                                                    .viewInsets,
-                                                child: EditLoanBottomSheet(
-                                                  idPrestamo:
-                                                      prestamo?.codigo ?? 0,
-                                                  isNuevo: false,
+                                            builder: (_) {
+                                              return BlocProvider.value(
+                                                value:
+                                                    context.read<LoansBloc>(),
+                                                child: Padding(
+                                                  padding:
+                                                      MediaQuery.of(context)
+                                                          .viewInsets,
+                                                  child: EditLoanBottomSheet(
+                                                    idPrestamo:
+                                                        prestamo?.codigo ?? 0,
+                                                    isNuevo: false,
+                                                  ),
                                                 ),
                                               );
                                             },
                                           );
+                                          if (result != null && mounted) {
+                                            context.read<LoansBloc>().add(
+                                                  GetLoansByDni(
+                                                    value: state.searchText,
+                                                  ),
+                                                );
+                                          }
                                         } else {
-                                          print('sadjklsadjklsdakjsad 2');
-
-                                          showModalBottomSheet(
+                                          print('sadjklsadjklsdakjsad 2.1');
+                                          // YA ESTÁ CERRADO asi que renuevo
+                                          final result =
+                                              await showModalBottomSheet<bool?>(
                                             isDismissible: false,
                                             context: context,
-                                            builder: (context) {
-                                              return Padding(
-                                                padding: MediaQuery.of(context)
-                                                    .viewInsets,
-                                                child: EditLoanBottomSheet(
-                                                  idPrestamo:
-                                                      prestamo?.codigo ?? 0,
-                                                  isNuevo: true,
+                                            builder: (_) {
+                                              return BlocProvider.value(
+                                                value:
+                                                    context.read<LoansBloc>(),
+                                                child: Padding(
+                                                  padding:
+                                                      MediaQuery.of(context)
+                                                          .viewInsets,
+                                                  child: EditLoanBottomSheet(
+                                                    idPrestamo:
+                                                        prestamo?.codigo ?? 0,
+                                                    isNuevo: true,
+                                                  ),
                                                 ),
                                               );
                                             },
                                           );
+                                          print('sadjklsadjklsdakjsad 2.2');
 
-                                          // YA ESTÁ CERRADO
+                                          if (result != null && mounted) {
+                                            print('sadjklsadjklsdakjsad 2.3');
+
+                                            context.read<LoansBloc>().add(
+                                                  GetLoansByDni(
+                                                    value: state.searchText,
+                                                  ),
+                                                );
+                                          }
                                         }
                                       },
                                       icon: Icon(
@@ -398,6 +434,82 @@ class _LoanClientViewState extends State<LoanClientView> {
                                             : prestamo?.notaCredito?.length == 0
                                                 ? Colors.green
                                                 : Colors.red[400],
+                                      ),
+                                    ),
+                                  ),
+
+                                if (prestamo?.estado != 'VENCIDO')
+                                  SizedBox(
+                                    height: 38,
+                                    width: 38,
+                                    child: IconButton(
+                                      padding: EdgeInsets.zero,
+                                      onPressed: () async {
+                                        final result = await showDialog(
+                                          barrierDismissible: false,
+                                          context: context,
+                                          builder: (_) => BlocProvider.value(
+                                            value: context.read<LoansBloc>(),
+                                            child: DeleteLoanDialog(
+                                              idLoan: prestamo?.codigo ?? 0,
+                                            ),
+                                          ),
+                                        );
+
+                                        if (result != null && mounted) {
+                                          await Future.delayed(const Duration(
+                                                  milliseconds: 300))
+                                              .then((value) {
+                                            context.read<LoansBloc>().add(
+                                                  GetLoansSearchByDni(
+                                                    value: widget.document,
+                                                  ),
+                                                );
+                                          });
+                                        }
+                                      },
+                                      icon: const Icon(
+                                        Icons.delete_forever,
+                                        color: Colors.red,
+                                      ),
+                                    ),
+                                  ),
+
+                                if (prestamo?.estado == 'VENCIDO')
+                                  SizedBox(
+                                    height: 38,
+                                    width: 38,
+                                    child: IconButton(
+                                      padding: EdgeInsets.zero,
+                                      onPressed: () async {
+                                        print(
+                                            'kljasdkljasd: ${prestamo?.codigo}');
+                                        final result = await showDialog(
+                                          barrierDismissible: false,
+                                          context: context,
+                                          builder: (_) => BlocProvider.value(
+                                            value: context.read<LoansBloc>(),
+                                            child: UpdateStatusLoanDialog(
+                                              idLoan: prestamo?.codigo ?? 0,
+                                            ),
+                                          ),
+                                        );
+
+                                        if (result != null && mounted) {
+                                          await Future.delayed(const Duration(
+                                                  milliseconds: 300))
+                                              .then((value) {
+                                            context.read<LoansBloc>().add(
+                                                  GetLoansSearchByDni(
+                                                    value: widget.document,
+                                                  ),
+                                                );
+                                          });
+                                        }
+                                      },
+                                      icon: const Icon(
+                                        Icons.update,
+                                        color: Colors.orange,
                                       ),
                                     ),
                                   ),

@@ -39,6 +39,7 @@ class _ShowDetailsReportPayState extends State<ShowDetailsReportPay> {
           );
         } else if (state.isReportsDetailsSuccess) {
           final pago = state.paymentDetails;
+          print('lsdkajlaksd: ${pago?.fecha}');
           return AlertDialog(
             title: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -120,10 +121,12 @@ class _ShowDetailsReportPayState extends State<ShowDetailsReportPay> {
                         const Text(
                           'Fecha de Pago',
                         ),
-                        Text(
-                          DateFormat('dd/MM/yyyy').format(
-                              DateTime.parse(pago?.fecha ?? '').toLocal()),
-                        ),
+                        if (pago?.fecha != null)
+                          Text(
+                            DateFormat('dd/MM/yyyy').format(
+                              DateTime.parse(pago!.fecha!).toLocal(),
+                            ),
+                          ),
                       ],
                     ),
                     const SizedBox(

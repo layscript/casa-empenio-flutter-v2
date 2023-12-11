@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
@@ -77,6 +79,8 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
         builder: (context, state) {
           final oCcy = NumberFormat("#,##0.00", "en_US");
           final loan = state.loanDetails;
+
+          log('kasdklña loan: ${loan.toString()}');
 
           if (loan == null) {
             return const Center(
@@ -207,9 +211,98 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                         ],
                       ),
                       const SizedBox(height: 20),
-                      const Text(
-                        'Bienes en Garantia',
-                        style: TextStyle(
+                      Text(
+                        'Aumentos (${loan.aumentos?.length})',
+                        style: const TextStyle(
+                          color: AppColors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      if (loan?.aumentos != null)
+                        ...loan!.aumentos!.map((aumento) {
+                          return Column(
+                            children: [
+                              const Divider(
+                                height: 20,
+                                color: Colors.black,
+                              ),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    "Fecha: ",
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      DateFormat('dd/MM/yyyy - hh:mm').format(
+                                          DateTime.parse(aumento.fecha ?? '')
+                                              .toLocal()),
+                                      overflow: TextOverflow.clip,
+                                      textAlign: TextAlign.end,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.normal,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    "Monto: ",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      's/.${aumento.monto}',
+                                      overflow: TextOverflow.clip,
+                                      textAlign: TextAlign.end,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.normal,
+                                      ),
+                                    ),
+                                  )
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    "Observaciones: ",
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      '${aumento.observaciones}',
+                                      overflow: TextOverflow.clip,
+                                      textAlign: TextAlign.end,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.normal,
+                                      ),
+                                    ),
+                                  )
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                            ],
+                          );
+                        }).toList(),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Bienes en Garantia (${loan.bienesGarantia?.length})',
+                        style: const TextStyle(
                           color: AppColors.red,
                           fontWeight: FontWeight.bold,
                         ),
@@ -245,9 +338,7 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                 ],
                               ),
                               if (bien.estado != '' && bien.estado != null) ...[
-                                const SizedBox(
-                                  height: 10,
-                                ),
+                                const SizedBox(height: 10),
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
@@ -260,6 +351,31 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                     Expanded(
                                       child: Text(
                                         '${bien.estado?.toUpperCase()}',
+                                        overflow: TextOverflow.clip,
+                                        textAlign: TextAlign.end,
+                                        maxLines: 4,
+                                      ),
+                                    )
+                                  ],
+                                ),
+                              ],
+                              if (bien.categoria != '' &&
+                                  bien.categoria != null) ...[
+                                const SizedBox(
+                                  height: 10,
+                                ),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text(
+                                      "Categoria: ",
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                    Expanded(
+                                      child: Text(
+                                        '${bien.categoria?.toUpperCase()}',
                                         overflow: TextOverflow.clip,
                                         textAlign: TextAlign.end,
                                         maxLines: 4,
@@ -442,6 +558,13 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                         '$endPoint/${bien.imagen}',
                                         height: 50,
                                         width: 50,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                          return const Placeholder(
+                                            fallbackHeight: 50,
+                                            fallbackWidth: 50,
+                                          );
+                                        },
                                       ),
                                     ),
                                   ],
@@ -451,9 +574,9 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                           );
                         }).toList(),
                       const SizedBox(height: 20),
-                      const Text(
-                        'Pagos Realizados',
-                        style: TextStyle(
+                      Text(
+                        'Pagos Realizados (${loan.pagos?.length})',
+                        style: const TextStyle(
                           color: AppColors.red,
                           fontWeight: FontWeight.bold,
                         ),
@@ -527,6 +650,20 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                           Text('${loan?.estado}'),
                         ],
                       ),
+                      if (loan?.estado == 'LIQUIDADO') ...[
+                        const SizedBox(height: 10),
+                        Image.network(
+                          '$endPoint/${loan.imagenLiquidado}',
+                          height: 100,
+                          width: 100,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Placeholder(
+                              fallbackHeight: 50,
+                              fallbackWidth: 50,
+                            );
+                          },
+                        ),
+                      ],
                       if (loan?.usuario != null)
                         const Divider(
                           height: 20,

@@ -26,7 +26,7 @@ class HttpCustomerRepository implements CustomerRepository {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final body = map['body'] != null;
 
-        if (!body) return const Left('El cliente no existe');
+        if (!body) return const Left('El cliente no existe 1');
         return Right(CustomerEntity.getCustomerFromMap(map['body']));
       }
     } catch (e) {
@@ -47,7 +47,7 @@ class HttpCustomerRepository implements CustomerRepository {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final body = map['body'] != null;
 
-        if (!body) return const Left('El cliente no existe');
+        if (!body) return const Left('El cliente no existe 2');
         return Right(CustomerEntity.listGetCustomerFromMap(map['body']));
       }
     } catch (e) {
@@ -63,18 +63,25 @@ class HttpCustomerRepository implements CustomerRepository {
     try {
       final response = await _dio.get<String>(path);
       if (response.statusCode != 200) {
+        print('djdjdjdjd 1');
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
+        print('djdjdjdjd 1.1 : ${message}');
+
         return Left(message);
       } else {
+        print('djdjdjdjd 2');
+
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final body = map['body'] != null;
 
-        if (!body) return const Left('El cliente no existe');
+        if (!body) return const Left('El cliente no existe 3');
         final data = map['body']['data'];
         return Right(CustomerSunatEntity.getCustomerSunatFromMap(data));
       }
     } catch (e) {
+      print('djdjdjdjd 3');
+
       return const Left('Ocurrió un error');
     }
   }

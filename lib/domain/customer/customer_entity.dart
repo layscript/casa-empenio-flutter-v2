@@ -35,6 +35,24 @@ class CustomerEntity {
   final String? updatedAt;
   final String? createdAt;
 
+  @override
+  String toString() {
+    return '''
+    dni: $dni,
+    nombres: $nombres,
+    apellidos: $apellidos,
+    domicilio: $domicilio,
+    email: $email,
+    celular: $celular,
+    prestamos: $prestamos,
+    prestamosAval: $prestamosAval,
+    pagos: $pagos,
+    ventas: $ventas,
+    imagenUno: $imagenUno,
+    imagenDos: $imagenDos,
+''';
+  }
+
   static List<CustomerEntity> listGetCustomerFromMap(
     List<dynamic> list,
   ) {

@@ -126,7 +126,7 @@ class LoansPreferencesEntity extends Equatable {
   }
 
   factory LoansPreferencesEntity.fromJson(Map<String, dynamic> map) {
-    print('klsaklasda: ${map['interest']}');
+    //print('klsaklasda: ${map['interest']}');
     return LoansPreferencesEntity(
       documentClient: map['documentClient'],
       fullNamesClient: map['fullNamesClient'],

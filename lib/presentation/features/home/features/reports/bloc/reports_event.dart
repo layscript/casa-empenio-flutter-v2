@@ -7,6 +7,11 @@ sealed class ReportsEvent extends Equatable {
   List<Object> get props => [];
 }
 
+class AnularPrestamoLiquidado extends ReportsEvent {
+  const AnularPrestamoLiquidado(this.codigo);
+  final int? codigo;
+}
+
 class GetLoadInitialDataContracts extends ReportsEvent {
   const GetLoadInitialDataContracts({
     required this.start,

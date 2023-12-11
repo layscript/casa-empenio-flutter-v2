@@ -33,7 +33,6 @@ class LocalPreferences implements Preferences {
   @override
   LoansPreferencesEntity? get getLoansPreferences {
     final loansString = _preferences.getString(_loansKey);
-    print('locaaaalalsslda 0: ${loansString}');
     if (loansString != null && loansString != "null") {
       final loansMap = jsonDecode(loansString) as Map<String, dynamic>;
       final loans = LoansPreferencesEntity.fromJson(loansMap);

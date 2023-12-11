@@ -50,6 +50,7 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     on<GetDetailsReportLoan>(_onGetDetailsReportLoan);
     on<GetDetailsReportPay>(_onGetDetailsReportPay);
     on<CancelReportLoan>(_onCancelReportLoan);
+    on<AnularPrestamoLiquidado>(_onAnularPrestamoLiquidado);
 
     // Tags
     on<ChangeCanceladoContracts>(
@@ -346,5 +347,20 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
         );
       },
     );
+  }
+
+  Future<void> _onAnularPrestamoLiquidado(
+    AnularPrestamoLiquidado event,
+    Emitter<ReportsState> emit,
+  ) async {
+    emit(state.copyWith(statusCanceled: ReportsStatus.loading));
+    final result = await _reportsRepository.cancelSettledLoan(
+      id: event.codigo ?? 0,
+    );
+    if (result) {
+      emit(state.copyWith(statusCanceled: ReportsStatus.success));
+    } else {
+      emit(state.copyWith(statusCanceled: ReportsStatus.error));
+    }
   }
 }

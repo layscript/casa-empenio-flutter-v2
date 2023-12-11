@@ -206,4 +206,25 @@ class HttpReportsRepository implements ReportsRepository {
       return const Left('Ocurrió un error con el servidor');
     }
   }
+
+  @override
+  Future<bool> cancelSettledLoan({
+    required int id,
+  }) async {
+    final path = '/prestamos/prestamos/cambiar-estado/$id';
+    final payload = {
+      'estado': 'CANCELADO',
+    };
+
+    try {
+      final response = await _dio.put<String>(path, data: payload);
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
+  }
 }
