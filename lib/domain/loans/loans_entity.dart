@@ -95,7 +95,8 @@ eliminado: $eliminado,
   }
 
   static LoansEntity getLoanFromMap(Map<String, dynamic> map) {
-    log('askdjklsadads 2: $map');
+    log('askdjklsadads 2.1: ${map['aval']}');
+    log('askdjklsadads 2.2: ${map['cliente']}');
     return LoansEntity(
       codigo: map['codigo'] as int?,
       codigoFormateado: map['codigoFormateado'] as String?,

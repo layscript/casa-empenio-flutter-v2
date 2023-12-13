@@ -1,10 +1,10 @@
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/feature/loans_step/bloc/loans_step_bloc.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/loans/feature/loans_step/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -179,6 +179,238 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
     });
   }
 
+  // Events Client
+  void onChangeDocumentClient({
+    required String value,
+    required LoansPreferencesEntity localState,
+    required Preferences preferences,
+  }) async {
+    final newState = localState.copyWith(documentClient: value);
+    preferences.setLoansPreferences(newState);
+    if (value.length == 8) {
+      final result = await context
+          .read<CustomerRepository>()
+          .getCustomerSunatByDni(dni: value);
+
+      result.fold(
+        (error) {
+          documentClientCtrl.text = value;
+        },
+        (customer) {
+          final customerDni = customer.dni ?? '';
+          final customerName = customer.nombre ?? '';
+          final customerLastName =
+              '${customer.apellidoPaterno} ${customer.apellidoMaterno}';
+          final customerDomicilio = customer.domicilio?.direccion ?? '';
+
+          documentClientCtrl.text = customerDni;
+          namesClientCtrl.text = customerName;
+          lastNamesClientCtrl.text = customerLastName;
+          domicilioClientCtrl.text = customerDomicilio;
+
+          final newState = localState.copyWith(
+            documentClient: customerDni,
+            fullNamesClient: customerName,
+            fullLastNamesClient: customerLastName,
+            domicilioClient: customerDomicilio,
+          );
+          preferences.setLoansPreferences(newState);
+        },
+      );
+    }
+  }
+
+  void onChangeNamesClient({
+    required String value,
+    required LoansPreferencesEntity localState,
+    required Preferences preferences,
+  }) async {
+    final newState = localState.copyWith(fullNamesClient: value);
+    preferences.setLoansPreferences(newState);
+  }
+
+  void onChangePhoneClient({
+    required String value,
+    required LoansPreferencesEntity localState,
+    required Preferences preferences,
+  }) async {
+    final newState = localState.copyWith(phoneClient: value);
+    preferences.setLoansPreferences(newState);
+  }
+
+  void onChangeLastNamesClient({
+    required String value,
+    required LoansPreferencesEntity localState,
+    required Preferences preferences,
+  }) {
+    final newState = localState.copyWith(fullLastNamesClient: value);
+    preferences.setLoansPreferences(newState);
+  }
+
+  void onChangeEmailClient({
+    required String value,
+    required LoansPreferencesEntity localState,
+    required Preferences preferences,
+  }) {
+    final newState = localState.copyWith(emailClient: value);
+    preferences.setLoansPreferences(newState);
+  }
+
+  void onChangeDomicilioClient({
+    required String value,
+    required LoansPreferencesEntity localState,
+    required Preferences preferences,
+  }) {
+    final newState = localState.copyWith(domicilioClient: value);
+    preferences.setLoansPreferences(newState);
+  }
+
+  void onChangePhotosClient({
+    required LoansPreferencesEntity localState,
+    required Preferences preferences,
+  }) async {
+    final photo = await ImagePicker().pickImage(
+      source: ImageSource.camera,
+      imageQuality: 70,
+    );
+
+    if (photo != null) {
+      setState(() {
+        selectedPhotosClient?.add(photo);
+      });
+
+      final imagesClientState = localState.imagesClient;
+      final newState = localState.copyWith(
+        imagesClient:
+            imagesClientState == null ? [photo] : [...imagesClientState, photo],
+      );
+      preferences.setLoansPreferences(newState);
+    }
+  }
+
+  // Events Aval
+  void onChangeAval({
+    required bool? value,
+    required LoansPreferencesEntity localState,
+    required Preferences preferences,
+  }) {
+    setState(() {
+      isAval = value ?? false;
+    });
+    final newState = localState.copyWith(isAval: value);
+    preferences.setLoansPreferences(newState);
+  }
+
+  void onChangeDocumentAval({
+    required String value,
+    required LoansPreferencesEntity localState,
+    required Preferences preferences,
+  }) async {
+    final newState = localState.copyWith(documentAval: value);
+    preferences.setLoansPreferences(newState);
+
+    if (value.length == 8) {
+      // LLamar api
+      final result = await context
+          .read<CustomerRepository>()
+          .getCustomerSunatByDni(dni: value);
+
+      result.fold(
+        (error) {
+          documentAvalCtrl.text = value;
+        },
+        (customer) {
+          final customerDni = customer.dni ?? '';
+          final customerName = customer.nombre ?? '';
+          final customerLastName =
+              '${customer.apellidoPaterno} ${customer.apellidoMaterno}';
+          final customerDomicilio = customer.domicilio?.direccion ?? '';
+
+          documentAvalCtrl.text = customerDni;
+          namesAvalCtrl.text = customerName;
+          lastNamesAvaltCtrl.text = customerLastName;
+          domicilioAvalCtrl.text = customerDomicilio;
+
+          final newState = localState.copyWith(
+            documentAval: customerDni,
+            fullNamesAval: customerName,
+            fullLastNamesAval: customerLastName,
+            domicilioAval: customerDomicilio,
+          );
+          preferences.setLoansPreferences(newState);
+        },
+      );
+    }
+  }
+
+  void onChangeNamesAval({
+    required String value,
+    required LoansPreferencesEntity localState,
+    required Preferences preferences,
+  }) {
+    final newState = localState.copyWith(fullNamesAval: value);
+    preferences.setLoansPreferences(newState);
+  }
+
+  void onChangePhoneAval({
+    required String value,
+    required LoansPreferencesEntity localState,
+    required Preferences preferences,
+  }) {
+    final newState = localState.copyWith(phoneAval: value);
+    preferences.setLoansPreferences(newState);
+  }
+
+  void onChangeLastNamesAval({
+    required String value,
+    required LoansPreferencesEntity localState,
+    required Preferences preferences,
+  }) {
+    final newState = localState.copyWith(fullLastNamesAval: value);
+    preferences.setLoansPreferences(newState);
+  }
+
+  void onChangeEmailAval({
+    required String value,
+    required LoansPreferencesEntity localState,
+    required Preferences preferences,
+  }) {
+    final newState = localState.copyWith(emailAval: value);
+    preferences.setLoansPreferences(newState);
+  }
+
+  void onChangeDomicilioAval({
+    required String value,
+    required LoansPreferencesEntity localState,
+    required Preferences preferences,
+  }) {
+    final newState = localState.copyWith(domicilioAval: value);
+    preferences.setLoansPreferences(newState);
+  }
+
+  void onChangePhotosAval({
+    required LoansPreferencesEntity localState,
+    required Preferences preferences,
+  }) async {
+    final photo = await ImagePicker().pickImage(
+      source: ImageSource.camera,
+      imageQuality: 70,
+    );
+
+    if (photo != null) {
+      setState(() {
+        selectedPhotosAval?.add(photo);
+      });
+
+      final imagesAvaltState = localState.imagesAval;
+      final newState = localState.copyWith(
+        imagesAval:
+            imagesAvaltState == null ? [photo] : [...imagesAvaltState, photo],
+      );
+      preferences.setLoansPreferences(newState);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final preferences = context.read<Preferences>();
@@ -197,59 +429,11 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
                 labelText: 'DNI',
                 keyboardType: TextInputType.number,
                 maxLength: 8,
-                onChanged: (e) async {
-                  final newState = localState.copyWith(documentClient: e);
-                  preferences.setLoansPreferences(newState);
-
-                  if (e.length == 8) {
-                    // LLamar api
-                    final result = await context
-                        .read<CustomerRepository>()
-                        .getCustomerSunatByDni(dni: e);
-
-                    result.fold(
-                      (error) {
-                        print('djdjdjdjd 5: ${error}');
-                        documentClientCtrl.text = e;
-                        /* documentClientCtrl.text = '';
-                        namesClientCtrl.text = '';
-                        lastNamesClientCtrl.text = '';
-                        domicilioClientCtrl.text = '';
-
-                        final newState = localState.copyWith(
-                          documentClient: e,
-                          fullNamesClient: '',
-                          fullLastNamesClient: '',
-                          domicilioClient: '',
-                        );
-                        preferences.setLoansPreferences(newState); */
-                      },
-                      (customer) {
-                        print('djdjdjdjd 6: ${customer}');
-
-                        final customerDni = customer.dni ?? '';
-                        final customerName = customer.nombre ?? '';
-                        final customerLastName =
-                            '${customer.apellidoPaterno} ${customer.apellidoMaterno}';
-                        final customerDomicilio =
-                            customer.domicilio?.direccion ?? '';
-
-                        documentClientCtrl.text = customerDni;
-                        namesClientCtrl.text = customerName;
-                        lastNamesClientCtrl.text = customerLastName;
-                        domicilioClientCtrl.text = customerDomicilio;
-
-                        final newState = localState.copyWith(
-                          documentClient: customerDni,
-                          fullNamesClient: customerName,
-                          fullLastNamesClient: customerLastName,
-                          domicilioClient: customerDomicilio,
-                        );
-                        preferences.setLoansPreferences(newState);
-                      },
-                    );
-                  }
-                },
+                onChanged: (e) => onChangeDocumentClient(
+                  value: e,
+                  localState: localState,
+                  preferences: preferences,
+                ),
                 validator: (value) {
                   if (value!.isEmpty) return 'Campo Requerido';
                   if (value.length < 8) return 'Ingresar 8 Dígitos';
@@ -267,10 +451,11 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
               child: AppTextFormField(
                 labelText: 'Nombres',
                 controller: namesClientCtrl,
-                onChanged: (e) {
-                  final newState = localState.copyWith(fullNamesClient: e);
-                  preferences.setLoansPreferences(newState);
-                },
+                onChanged: (e) => onChangeNamesClient(
+                  value: e,
+                  localState: localState,
+                  preferences: preferences,
+                ),
                 validator: (value) {
                   if (value!.isEmpty) return 'Campo Requerido';
                   return null;
@@ -299,10 +484,11 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
                     isValidPhoneClient = value;
                   });
                 },
-                onChanged: (e) {
-                  final newState = localState.copyWith(phoneClient: e);
-                  preferences.setLoansPreferences(newState);
-                },
+                onChanged: (e) => onChangePhoneClient(
+                  value: e,
+                  localState: localState,
+                  preferences: preferences,
+                ),
                 validator: (value) {
                   if (value!.isEmpty) return 'Campo Requerido';
                   return null;
@@ -314,10 +500,11 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
               child: AppTextFormField(
                 labelText: 'Apellidos',
                 controller: lastNamesClientCtrl,
-                onChanged: (e) {
-                  final newState = localState.copyWith(fullLastNamesClient: e);
-                  preferences.setLoansPreferences(newState);
-                },
+                onChanged: (e) => onChangeLastNamesClient(
+                  value: e,
+                  localState: localState,
+                  preferences: preferences,
+                ),
                 validator: (value) {
                   if (value!.isEmpty) return 'Campo Requerido';
                   return null;
@@ -337,19 +524,21 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
           keyboardType: TextInputType.emailAddress,
           controller: emailClientCtrl,
           inputFormatters: removeBlankSpaces,
-          onChanged: (e) {
-            final newState = localState.copyWith(emailClient: e);
-            preferences.setLoansPreferences(newState);
-          },
+          onChanged: (e) => onChangeEmailClient(
+            value: e,
+            localState: localState,
+            preferences: preferences,
+          ),
         ),
         const SizedBox(height: 15),
         AppTextFormField(
           labelText: 'Domicilio',
           controller: domicilioClientCtrl,
-          onChanged: (e) {
-            final newState = localState.copyWith(domicilioClient: e);
-            preferences.setLoansPreferences(newState);
-          },
+          onChanged: (e) => onChangeDomicilioClient(
+            value: e,
+            localState: localState,
+            preferences: preferences,
+          ),
           isValid: (value) {
             setState(() {
               isValidDomicilioClient = value;
@@ -364,59 +553,21 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
         Row(
           children: [
             for (int i = 0; i < (selectedPhotosClient?.length ?? 0); i++)
-              GestureDetector(
+              CustomImageClient(
                 onTap: () {
                   setState(() {
                     selectedPhotosClient?.removeAt(i);
                   });
                 },
-                child: Stack(
-                  children: [
-                    Image.file(
-                      File(selectedPhotosClient![i].path),
-                      width: 100,
-                      height: 100,
-                    ),
-                    Positioned(
-                      top: 0,
-                      right: 0,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          color: Colors.red,
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                path: selectedPhotosClient![i].path,
               ),
             if (selectedPhotosClient!.length < 2)
               Expanded(
                 child: SecondaryButton(
-                  onPressed: () async {
-                    final photo = await ImagePicker().pickImage(
-                      source: ImageSource.camera,
-                      imageQuality: 70,
-                    );
-
-                    if (photo != null) {
-                      setState(() {
-                        selectedPhotosClient?.add(photo);
-                      });
-
-                      final imagesClientState = localState.imagesClient;
-                      final newState = localState.copyWith(
-                        imagesClient: imagesClientState == null
-                            ? [photo]
-                            : [...imagesClientState, photo],
-                      );
-                      preferences.setLoansPreferences(newState);
-                    }
-                  },
+                  onPressed: () => onChangePhotosClient(
+                    localState: localState,
+                    preferences: preferences,
+                  ),
                   child: Text(
                     'Subir Imagen (${2 - selectedPhotosClient!.length})',
                   ),
@@ -425,34 +576,15 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
           ],
         ),
         const SizedBox(height: 15),
+        // Form AVAL
         AppCheckbox(
           labelText: 'Agregar Aval',
           value: isAval,
-          onChanged: (value) {
-            setState(() {
-              isAval = value ?? false;
-            });
-            final newState = localState.copyWith(isAval: value);
-            preferences.setLoansPreferences(newState);
-            /* setState(() {
-              isAval = !isAval;
-              isValidEmailAval = false;
-              isValidNamesAval = false;
-              isValidPhoneAval = false;
-              isValidDocumentAval = false;
-              isValidDomicilioAval = false;
-              isValidLastNamesAval = false;
-
-              documentAvalCtrl.clear();
-              namesAvalCtrl.clear();
-              phoneAvalCtrl.clear();
-              lastNamesAvaltCtrl.clear();
-              emailAvalCtrl.clear();
-              domicilioAvalCtrl.clear();
-              selectedPhotosAval?.clear();
-              selectedPhotosAval = [];
-            }); */
-          },
+          onChanged: (value) => onChangeAval(
+            value: value,
+            localState: localState,
+            preferences: preferences,
+          ),
         ),
         if (isAval) ...[
           Column(
@@ -480,60 +612,11 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
                       labelText: 'DNI',
                       keyboardType: TextInputType.number,
                       maxLength: 8,
-                      onChanged: (e) async {
-                        final newState = localState.copyWith(documentAval: e);
-                        preferences.setLoansPreferences(newState);
-
-                        if (e.length == 8) {
-                          // LLamar api
-                          final result = await context
-                              .read<CustomerRepository>()
-                              .getCustomerSunatByDni(dni: e);
-
-                          result.fold(
-                            (error) {
-                              log('djdjdjdjd 3: ${error}');
-                              documentAvalCtrl.text = e;
-
-                              /* documentAvalCtrl.text = '';
-                              namesAvalCtrl.text = '';
-                              lastNamesAvaltCtrl.text = '';
-                              domicilioAvalCtrl.text = '';
-
-                              final newState = localState.copyWith(
-                                documentAval: e,
-                                fullNamesAval: '',
-                                fullLastNamesAval: '',
-                                domicilioAval: '',
-                              );
-                              preferences.setLoansPreferences(newState); */
-                            },
-                            (customer) {
-                              log('djdjdjdjd 4: ${customer}');
-
-                              final customerDni = customer.dni ?? '';
-                              final customerName = customer.nombre ?? '';
-                              final customerLastName =
-                                  '${customer.apellidoPaterno} ${customer.apellidoMaterno}';
-                              final customerDomicilio =
-                                  customer.domicilio?.direccion ?? '';
-
-                              documentAvalCtrl.text = customerDni;
-                              namesAvalCtrl.text = customerName;
-                              lastNamesAvaltCtrl.text = customerLastName;
-                              domicilioAvalCtrl.text = customerDomicilio;
-
-                              final newState = localState.copyWith(
-                                documentAval: customerDni,
-                                fullNamesAval: customerName,
-                                fullLastNamesAval: customerLastName,
-                                domicilioAval: customerDomicilio,
-                              );
-                              preferences.setLoansPreferences(newState);
-                            },
-                          );
-                        }
-                      },
+                      onChanged: (e) => onChangeDocumentAval(
+                        value: e,
+                        localState: localState,
+                        preferences: preferences,
+                      ),
                       isValid: (value) {
                         setState(() {
                           isValidDocumentAval = value;
@@ -551,10 +634,11 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
                     child: AppTextFormField(
                       labelText: 'Nombres',
                       controller: namesAvalCtrl,
-                      onChanged: (e) {
-                        final newState = localState.copyWith(fullNamesAval: e);
-                        preferences.setLoansPreferences(newState);
-                      },
+                      onChanged: (e) => onChangeNamesAval(
+                        value: e,
+                        localState: localState,
+                        preferences: preferences,
+                      ),
                       validator: (value) {
                         if (value!.isEmpty) return 'Campo Requerido';
                         return null;
@@ -578,10 +662,11 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
                       preffix: const Text('(+51)'),
                       controller: phoneAvalCtrl,
                       keyboardType: TextInputType.phone,
-                      onChanged: (e) {
-                        final newState = localState.copyWith(phoneAval: e);
-                        preferences.setLoansPreferences(newState);
-                      },
+                      onChanged: (e) => onChangePhoneAval(
+                        value: e,
+                        localState: localState,
+                        preferences: preferences,
+                      ),
                       validator: (value) {
                         if (value!.isEmpty) return 'Campo Requerido';
                         return null;
@@ -598,11 +683,11 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
                     child: AppTextFormField(
                       labelText: 'Apellidos',
                       controller: lastNamesAvaltCtrl,
-                      onChanged: (e) {
-                        final newState =
-                            localState.copyWith(fullLastNamesAval: e);
-                        preferences.setLoansPreferences(newState);
-                      },
+                      onChanged: (e) => onChangeLastNamesAval(
+                        value: e,
+                        localState: localState,
+                        preferences: preferences,
+                      ),
                       isValid: (value) {
                         setState(() {
                           isValidLastNamesAval = value;
@@ -622,19 +707,21 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
                 keyboardType: TextInputType.emailAddress,
                 inputFormatters: removeBlankSpaces,
                 controller: emailAvalCtrl,
-                onChanged: (e) {
-                  final newState = localState.copyWith(emailAval: e);
-                  preferences.setLoansPreferences(newState);
-                },
+                onChanged: (e) => onChangeEmailAval(
+                  value: e,
+                  localState: localState,
+                  preferences: preferences,
+                ),
               ),
               const SizedBox(height: 15),
               AppTextFormField(
                 labelText: 'Domicilio',
                 controller: domicilioAvalCtrl,
-                onChanged: (e) {
-                  final newState = localState.copyWith(domicilioAval: e);
-                  preferences.setLoansPreferences(newState);
-                },
+                onChanged: (e) => onChangeDomicilioAval(
+                  value: e,
+                  localState: localState,
+                  preferences: preferences,
+                ),
                 validator: (value) {
                   if (value!.isEmpty) return 'Campo Requerido';
                   return null;
@@ -649,59 +736,21 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
               Row(
                 children: [
                   for (int i = 0; i < (selectedPhotosAval?.length ?? 0); i++)
-                    GestureDetector(
+                    CustomImageClient(
                       onTap: () {
                         setState(() {
                           selectedPhotosAval?.removeAt(i);
                         });
                       },
-                      child: Stack(
-                        children: [
-                          Image.file(
-                            File(selectedPhotosAval![i].path),
-                            width: 100,
-                            height: 100,
-                          ),
-                          Positioned(
-                            top: 0,
-                            right: 0,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(10),
-                                color: Colors.red,
-                              ),
-                              child: const Icon(
-                                Icons.close,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      path: selectedPhotosAval![i].path,
                     ),
                   if (selectedPhotosAval!.length < 2)
                     Expanded(
                       child: SecondaryButton(
-                        onPressed: () async {
-                          final photo = await ImagePicker().pickImage(
-                            source: ImageSource.camera,
-                            imageQuality: 70,
-                          );
-
-                          if (photo != null) {
-                            setState(() {
-                              selectedPhotosAval?.add(photo);
-                            });
-
-                            final imagesAvaltState = localState.imagesAval;
-                            final newState = localState.copyWith(
-                              imagesAval: imagesAvaltState == null
-                                  ? [photo]
-                                  : [...imagesAvaltState, photo],
-                            );
-                            preferences.setLoansPreferences(newState);
-                          }
-                        },
+                        onPressed: () => onChangePhotosAval(
+                          localState: localState,
+                          preferences: preferences,
+                        ),
                         child: Text(
                           'Subir Imagen (${2 - selectedPhotosAval!.length})',
                         ),

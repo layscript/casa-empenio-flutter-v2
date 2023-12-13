@@ -421,6 +421,25 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
     );
   }
 
+  List<String> keys = ['imagen', 'imagen2', 'imagen3'];
+
+  Future<void> _seleccionarNuevaImagen(int index, String key) async {
+    final XFile? photo =
+        await _picker.pickImage(source: ImageSource.camera, imageQuality: 70);
+
+    if (photo != null) {
+      setState(() {
+        _garantiasControllers[index][key] = photo.path;
+      });
+    }
+  }
+
+  void _eliminarImagen(int index, String key) {
+    setState(() {
+      _garantiasControllers[index][key] = null;
+    });
+  }
+
   void showDialogGuardar() {
     final authUser = context.read<Preferences>().token;
 
@@ -501,7 +520,7 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
                               ? null
                               : selectedPhotosClient?[0].path,
                           imagenDos: selectedPhotosClient!.isEmpty ||
-                                  selectedPhotosClient!.length == 0
+                                  selectedPhotosClient!.length == 1
                               ? null
                               : selectedPhotosClient?[1].path,
                           ventas: null,
@@ -523,7 +542,7 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
                               ? null
                               : selectedPhotosAval?[0].path,
                           imagenDos: selectedPhotosAval!.isEmpty ||
-                                  selectedPhotosAval!.length == 0
+                                  selectedPhotosAval!.length == 1
                               ? null
                               : selectedPhotosAval?[1].path,
                           ventas: null,
@@ -924,154 +943,130 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
                                         ),
                                         const SizedBox(height: 15),
                                         Row(
-                                          children: [
-                                            for (int i = 0;
-                                                i <
-                                                    (selectedPhotosWarranty
-                                                            ?.length ??
-                                                        0);
-                                                i++)
-                                              GestureDetector(
-                                                onTap: () {
-                                                  selectedPhotosWarranty
-                                                      ?.removeAt(i);
-                                                  setState(() {});
-                                                },
-                                                child: Stack(
-                                                  children: [
-                                                    selectedPhotosWarranty![i]
-                                                            .path
+                                          children: keys.map((key) {
+                                            return GestureDetector(
+                                              onTap: () {
+                                                _seleccionarNuevaImagen(
+                                                  index,
+                                                  key,
+                                                );
+                                              },
+                                              child: Stack(
+                                                children: [
+                                                  if (_garantiasControllers[
+                                                              index][key] !=
+                                                          null &&
+                                                      _garantiasControllers[
+                                                              index][key] !=
+                                                          '')
+                                                    _garantiasControllers[index]
+                                                                [key]!
                                                             .contains(
                                                                 'files/garantias')
-                                                        ? Image.network(
-                                                            '$endPoint/${selectedPhotosWarranty?[i].path}',
-                                                            width: 70,
-                                                            height: 70,
-                                                          )
-                                                        : Image.file(
-                                                            File(
-                                                              selectedPhotosWarranty![
-                                                                      i]
-                                                                  .path,
+                                                        ? Expanded(
+                                                            child:
+                                                                Image.network(
+                                                              '$endPoint/${_garantiasControllers[index][key]}',
+                                                              width: 90,
+                                                              height: 90,
+                                                              errorBuilder:
+                                                                  (context,
+                                                                      error,
+                                                                      stackTrace) {
+                                                                return Container(
+                                                                  margin: const EdgeInsets
+                                                                          .only(
+                                                                      right:
+                                                                          10),
+                                                                  child: Image
+                                                                      .asset(
+                                                                    AppIcons
+                                                                        .notFound,
+                                                                    width: 80,
+                                                                  ),
+                                                                );
+                                                              },
                                                             ),
-                                                            width: 70,
-                                                            height: 70,
-                                                            errorBuilder:
-                                                                (context, error,
-                                                                    stackTrace) {
-                                                              return const Placeholder(
-                                                                fallbackWidth:
-                                                                    70,
-                                                                fallbackHeight:
-                                                                    70,
-                                                              );
-                                                            },
+                                                          )
+                                                        : Expanded(
+                                                            child: Image.file(
+                                                              File(
+                                                                  _garantiasControllers[
+                                                                          index]
+                                                                      [key]!),
+                                                              width: 90,
+                                                              height: 90,
+                                                            ),
+                                                          )
+                                                  else
+                                                    Container(
+                                                      margin:
+                                                          const EdgeInsets.only(
+                                                        right: 7,
+                                                      ),
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                              4),
+                                                      width: 85,
+                                                      height: 85,
+                                                      decoration: BoxDecoration(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(10),
+                                                        color: AppColors.blue,
+                                                      ),
+                                                      child: const Center(
+                                                        child: Text(
+                                                          'Subir Imagen',
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                          style: TextStyle(
+                                                            color: Colors.white,
+                                                            fontWeight:
+                                                                FontWeight.w600,
                                                           ),
-                                                    Positioned(
-                                                      top: 0,
-                                                      right: 0,
-                                                      child: Container(
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(10),
-                                                          color: Colors.red,
-                                                        ),
-                                                        child: const Icon(
-                                                          Icons.close,
-                                                          color: Colors.white,
                                                         ),
                                                       ),
                                                     ),
-                                                  ],
-                                                ),
+                                                  if (_garantiasControllers[
+                                                              index][key] !=
+                                                          null &&
+                                                      _garantiasControllers[
+                                                              index][key] !=
+                                                          '')
+                                                    Positioned(
+                                                      top: 0,
+                                                      right: 5,
+                                                      child: GestureDetector(
+                                                        onTap: () {
+                                                          _eliminarImagen(
+                                                              index, key);
+                                                        },
+                                                        child: Container(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .all(2),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        10),
+                                                            color: Colors.red,
+                                                          ),
+                                                          child: const Icon(
+                                                            Icons.close,
+                                                            color: Colors.white,
+                                                            size: 20,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                ],
                                               ),
-                                            if (selectedPhotosWarranty!.length <
-                                                1)
-                                              Expanded(
-                                                child: ElevatedButton(
-                                                  onPressed: () async {
-                                                    final photo =
-                                                        await ImagePicker()
-                                                            .pickImage(
-                                                      source:
-                                                          ImageSource.camera,
-                                                      imageQuality: 70,
-                                                    );
-
-                                                    if (photo != null) {
-                                                      setState(() {
-                                                        _garantiasControllers[
-                                                                    index]
-                                                                ['imagen'] =
-                                                            photo.path;
-
-                                                        selectedPhotosWarranty
-                                                            ?.add(photo);
-                                                      });
-                                                    }
-                                                  },
-                                                  child: Text(
-                                                    'Cargar Imagen (${1 - selectedPhotosWarranty!.length})',
-                                                  ),
-                                                ),
-                                              ),
-                                          ],
+                                            );
+                                          }).toList(),
                                         ),
-
-                                        /*  Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              _garantiasControllers[index]
-                                                          ['imagen'] !=
-                                                      null
-                                                  ? _garantiasControllers[index]
-                                                              ['imagen']
-                                                          .contains(
-                                                              'files/garantias')
-                                                      ? Expanded(
-                                                          child: Image.network(
-                                                            '$endPoint/${_garantiasControllers[index]['imagen']}',
-                                                            width: 100,
-                                                            height: 100,
-                                                          ),
-                                                        )
-                                                      : Expanded(
-                                                          child: Image.file(
-                                                            File(
-                                                                _garantiasControllers[
-                                                                        index]
-                                                                    ['imagen']),
-                                                            width: 100,
-                                                            height: 100,
-                                                          ),
-                                                        )
-                                                  : const SizedBox.shrink(),
-                                              Expanded(
-                                                child: ElevatedButton(
-                                                  onPressed: () async {
-                                                    final XFile? photo =
-                                                        await _cargarImagen();
-                                                    if (photo != null) {
-                                                      setState(() {
-                                                        _garantiasControllers[index]
-                                                            ['imagen'] = photo.path;
-                                                      });
-                                                    }
-                                                  },
-                                                  child: _garantiasControllers[
-                                                              index]['imagen'] !=
-                                                          null
-                                                      ? const Text('Cambiar Imagen')
-                                                      : const Text('Cargar Imagen'),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                           */
                                         const SizedBox(height: 60),
                                       ],
                                     ),
@@ -1140,6 +1135,12 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
   }
 
   Widget _buildFormCliente() {
+    if (selectedPhotosClient != null) {
+      for (var element in selectedPhotosClient!) {
+        print('asdasd1: ${element.path}');
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Form(
@@ -1283,19 +1284,20 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
                     },
                     child: Stack(
                       children: [
-                        selectedPhotosClient![i]
-                                .path
-                                .contains('files/garantias')
-                            ? Image.network(
-                                '$endPoint/${selectedPhotosClient?[i].path}',
-                                width: 70,
-                                height: 70,
-                              )
-                            : Image.file(
-                                File(selectedPhotosClient![i].path),
-                                width: 70,
-                                height: 70,
-                              ),
+                        if (selectedPhotosClient!.isNotEmpty &&
+                            selectedPhotosClient![i].path.contains('files'))
+                          Image.network(
+                            '$endPoint/${selectedPhotosClient?[i].path}',
+                            width: 70,
+                            height: 70,
+                          ),
+                        if (selectedPhotosClient!.isNotEmpty &&
+                            selectedPhotosClient![i].path.contains('/data'))
+                          Image.file(
+                            File(selectedPhotosClient![i].path),
+                            width: 70,
+                            height: 70,
+                          ),
                         Positioned(
                           top: 0,
                           right: 0,
@@ -1472,17 +1474,20 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
                     },
                     child: Stack(
                       children: [
-                        selectedPhotosAval![i].path.contains('files/garantias')
-                            ? Image.network(
-                                '$endPoint/${selectedPhotosAval?[i].path}',
-                                width: 70,
-                                height: 70,
-                              )
-                            : Image.file(
-                                File(selectedPhotosAval![i].path),
-                                width: 70,
-                                height: 70,
-                              ),
+                        if (selectedPhotosAval!.isNotEmpty &&
+                            selectedPhotosAval![i].path.contains('files'))
+                          Image.network(
+                            '$endPoint/${selectedPhotosAval?[i].path}',
+                            width: 70,
+                            height: 70,
+                          ),
+                        if (selectedPhotosAval!.isNotEmpty &&
+                            selectedPhotosAval![i].path.contains('/data'))
+                          Image.file(
+                            File(selectedPhotosAval![i].path),
+                            width: 70,
+                            height: 70,
+                          ),
                         Positioned(
                           top: 0,
                           right: 0,
@@ -1681,7 +1686,6 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
           const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.start,
-            // textDirection: TextDirection.ltr,
             children: [
               const SizedBox(
                 width: 120,
@@ -1692,12 +1696,8 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
                   ),
                 ),
               ),
-              SizedBox(
-                width: 70,
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: Text('S/. ${oCcy.format(_gananciaPrestamo)}'),
-                ),
+              Expanded(
+                child: Text('S/. ${oCcy.format(_gananciaPrestamo)}'),
               )
             ],
           ),
@@ -1715,12 +1715,8 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
                   ),
                 ),
               ),
-              SizedBox(
-                width: 70,
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: Text('S/. ${oCcy.format(_montoPagarPrestamo)}'),
-                ),
+              Expanded(
+                child: Text('S/. ${oCcy.format(_montoPagarPrestamo)}'),
               )
             ],
           ),

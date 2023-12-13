@@ -354,10 +354,6 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     emit(state.copyWith(loansRenewStatus: LoansStatus.loading));
 
     if (event.isNuevo) {
-      /*  log('clieeent 1: ${event.cliente.toString()}');
-      log('clieeent 1: ${event.aval.toString()}');
-      log('clieeent 1: ${event.bienes}'); */
-
       final result = await _loansRepository.saveLoan(
         plazoDias: event.plazoDias,
         interes: event.interes,
@@ -378,10 +374,9 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
         ),
       );
     } else {
-      /* log('clieeent 2.1: ${event.cliente.toString()}');
-      log('clieeent 2.2: ${event.aval.toString()}');
-      log('clieeent 2.3: ${event.bienes}'); */
-
+      log('clienteee 1: ${event.cliente.toString()}');
+      log('clienteee 2: ${event.aval.toString()}');
+      log('clienteee 3: ${event.bienes}');
       final result = await _loansRepository.updateLoan(
         plazoDias: event.plazoDias,
         interes: event.interes,

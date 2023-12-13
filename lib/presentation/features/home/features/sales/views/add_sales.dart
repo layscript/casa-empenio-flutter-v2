@@ -92,26 +92,41 @@ class AddFormSales extends StatelessWidget {
                         children: [
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Cliente:',
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                              const SizedBox(
+                                width: 70,
+                                child: Text(
+                                  'Cliente:',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                               ),
-                              Text(
-                                  '${cliente.nombre} ${cliente.apellidoPaterno} ${cliente.apellidoMaterno}'),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  '${cliente.nombre} ${cliente.apellidoPaterno} ${cliente.apellidoMaterno}',
+                                ),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 10),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Dirección:',
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                              const SizedBox(
+                                width: 70,
+                                child: Text(
+                                  'Dirección:',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                               ),
-                              Text(cliente.dni != '0'
-                                  ? '${cliente.domicilio?.direccion}'
-                                  : ''),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(cliente.dni != '0'
+                                    ? '${cliente.domicilio?.direccion}'
+                                    : ''),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 20),

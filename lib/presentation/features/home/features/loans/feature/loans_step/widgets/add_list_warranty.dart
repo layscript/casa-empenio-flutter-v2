@@ -313,8 +313,8 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
                 ),
               ),
 
-            // Botón para seleccionar imágenes
-            if (selectedPhotos!.length < 3)
+            // Botón para seleccionar imágenes desde la cámara
+            if (selectedPhotos!.length < 2)
               Expanded(
                 child: ElevatedButton(
                   onPressed: () async {
@@ -331,7 +331,30 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
                     }
                   },
                   child: Text(
-                    'Subir Imagen (${3 - selectedPhotos!.length})',
+                    'Tomar Foto (${2 - selectedPhotos!.length})',
+                  ),
+                ),
+              ),
+            const SizedBox(width: 10),
+            // Botón para seleccionar imagen desde la galería
+            if (selectedPhotos!.length < 3)
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final photo = await ImagePicker().pickImage(
+                      source: ImageSource.gallery,
+                      imageQuality: 70,
+                    );
+
+                    // Verifica si se seleccionó una imagen antes de agregarla a la lista
+                    if (photo != null) {
+                      setState(() {
+                        selectedPhotos?.add(photo);
+                      });
+                    }
+                  },
+                  child: const Text(
+                    'Subir Imagen (1)',
                   ),
                 ),
               ),

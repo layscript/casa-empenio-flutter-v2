@@ -1,7 +1,9 @@
 import 'dart:io';
 
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/reports/bloc/reports_bloc.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/reports/views/reports_detail_view.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/reports/widgets/widgets.dart';
 import 'package:excel/excel.dart';
 import 'package:flutter/material.dart';
@@ -51,58 +53,9 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                     ListTile(
                       dense: true,
                       contentPadding: EdgeInsets.zero,
-                      leading: IconButton(
-                        constraints: const BoxConstraints(),
-                        onPressed: () async {
-                          final excel = Excel.createExcel();
-                          excel.rename('Sheet1', 'Reporte');
-                          excel.insertRowIterables(
-                            'Reporte',
-                            [
-                              'Nro',
-                              'DNI',
-                              'Cliente',
-                              'Fecha Prestamo',
-                              'Fecha Recojo',
-                              'Monto Prestado',
-                              'Ganancia',
-                              'Estado'
-                            ],
-                            0,
-                          );
-                          final prestamos = reportsBloc.listLoans;
-                          for (var i = 0; i < prestamos.length; i++) {
-                            excel.insertRowIterables(
-                              'Reporte',
-                              [
-                                i + 1,
-                                prestamos[i].cliente?.dni,
-                                '${prestamos[i].cliente?.nombres} ${prestamos[i].cliente?.apellidos}',
-                                DateFormat('dd/MM/yyyy').format(
-                                  DateTime.parse(prestamos[i].fecha ?? ''),
-                                ),
-                                DateFormat('dd/MM/yyyy').format(
-                                  DateTime.parse(prestamos[i].fechaPago ?? ''),
-                                ),
-                                double.parse(prestamos[i].monto ?? '0.00'),
-                                double.parse(prestamos[i].ganancia ?? '0.00'),
-                                prestamos[i].estado,
-                              ],
-                              i + 1,
-                            );
-
-                            final bytes = excel.save();
-                            var directory = await getTemporaryDirectory();
-                            final path =
-                                p.join('${directory.path}/reporte.xlsx');
-                            File(path)
-                              ..createSync(recursive: true)
-                              ..writeAsBytesSync(bytes!);
-
-                            await OpenFile.open(path);
-                          }
-                        },
-                        icon: const Icon(Icons.download),
+                      leading: LeadingDownloadButtonPaymentsContracts(
+                        listIncrease: reportsBloc.listIncrease,
+                        listLoans: reportsBloc.listLoans,
                       ),
                       title: FittedBox(
                         child: Text(
@@ -113,6 +66,7 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                         constraints: const BoxConstraints(),
                         onPressed: () async {
                           final result = await showDateRangePicker(
+                            locale: const Locale('es'),
                             context: context,
                             firstDate: DateTime(2022, 1, 1),
                             lastDate: DateTime(2030, 12, 31),
@@ -201,42 +155,71 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                           itemBuilder: (context, index) {
                                             final aumento =
                                                 reportsBloc.listIncrease[index];
-                                            return Container(
-                                              margin: const EdgeInsets.only(
-                                                  bottom: 5),
-                                              decoration: BoxDecoration(
-                                                  color: Colors.white,
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          10)),
-                                              child: ListTile(
-                                                dense: true,
-                                                contentPadding:
-                                                    const EdgeInsets.only(
-                                                        left: 10, right: 0),
-                                                title: Text(
-                                                  '${aumento.prestamo?.codigo.toString().padLeft(6, '0')} - S/. ${oCcy.format(double.parse(aumento.monto ?? '0.00'))}',
-                                                ),
-                                                subtitle: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      'Obs: ${aumento.observaciones}',
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
+                                            return GestureDetector(
+                                              onTap: () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) =>
+                                                        BlocProvider(
+                                                      create: (context) =>
+                                                          LoansBloc(
+                                                        customerRepository:
+                                                            context.read(),
+                                                        loansRepository:
+                                                            context.read(),
+                                                        cajaRepository:
+                                                            context.read(),
+                                                      ),
+                                                      child: ReportsDetailView(
+                                                        document: aumento
+                                                                .prestamo
+                                                                ?.cliente
+                                                                ?.dni ??
+                                                            '',
+                                                      ),
                                                     ),
-                                                    const SizedBox(height: 3),
-                                                    Text(
-                                                      '${aumento.prestamo?.cliente?.nombres} ${aumento.prestamo?.cliente?.apellidos}',
-                                                    ),
-                                                  ],
-                                                ),
-                                                trailing: Text(
-                                                  DateFormat('dd/MM/yyyy')
-                                                      .format(
-                                                    DateTime.parse(
-                                                      aumento.fecha ?? '',
+                                                  ),
+                                                );
+                                              },
+                                              child: Container(
+                                                margin: const EdgeInsets.only(
+                                                    bottom: 5),
+                                                decoration: BoxDecoration(
+                                                    color: Colors.white,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            10)),
+                                                child: ListTile(
+                                                  dense: true,
+                                                  contentPadding:
+                                                      const EdgeInsets.only(
+                                                          left: 10, right: 0),
+                                                  title: Text(
+                                                    '${aumento.prestamo?.codigo.toString().padLeft(6, '0')} - S/. ${oCcy.format(double.parse(aumento.monto ?? '0.00'))}',
+                                                  ),
+                                                  subtitle: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        'Obs: ${aumento.observaciones}',
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
+                                                      const SizedBox(height: 3),
+                                                      Text(
+                                                        '${aumento.prestamo?.cliente?.nombres} ${aumento.prestamo?.cliente?.apellidos}',
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  trailing: Text(
+                                                    DateFormat('dd/MM/yyyy')
+                                                        .format(
+                                                      DateTime.parse(
+                                                        aumento.fecha ?? '',
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
@@ -313,152 +296,186 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                             final fechaFormateada =
                                                 DateFormat('dd/MM/yyyy - kk:mm')
                                                     .format(fechaCreacion);
-                                            return Container(
-                                              margin: const EdgeInsets.only(
-                                                bottom: 5,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                  color: prestamo.estado ==
-                                                          'CANCELADO'
-                                                      ? Colors.red[50]
-                                                      : Colors.white,
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          10)),
-                                              child: ListTile(
-                                                dense: true,
-                                                contentPadding:
-                                                    const EdgeInsets.only(
-                                                        left: 10, right: 0),
-                                                title: Text(
-                                                  'Cod.: ${prestamo.codigo.toString().padLeft(6, '0')} - S/. ${oCcy.format(double.parse(prestamo.ganancia ?? '0.00') + double.parse(prestamo.monto ?? '0.00'))}',
-                                                ),
-                                                subtitle: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      '$fechaFormateada - ${prestamo.estado}',
-                                                    ),
-                                                    const SizedBox(height: 3),
-                                                    Text(
-                                                      '${prestamo.cliente?.nombres} ${prestamo.cliente?.apellidos}',
-                                                    )
-                                                  ],
-                                                ),
-                                                trailing: Row(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    IconButton(
-                                                      onPressed: () {
-                                                        showDialog(
-                                                          barrierDismissible:
-                                                              false,
-                                                          context: context,
-                                                          builder: (_) {
-                                                            return BlocProvider
-                                                                .value(
-                                                              value: context.read<
-                                                                  ReportsBloc>(),
-                                                              child:
-                                                                  ShowDetailsReportLoans(
-                                                                nroPrestamo:
-                                                                    prestamo
-                                                                        .codigo,
-                                                              ),
-                                                            );
-                                                          },
-                                                        );
-                                                      },
-                                                      icon: const Icon(
-                                                        Icons
-                                                            .remove_red_eye_outlined,
-                                                        color: Colors.blue,
+
+                                            return GestureDetector(
+                                              onTap: () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) =>
+                                                        BlocProvider(
+                                                      create: (context) =>
+                                                          LoansBloc(
+                                                        customerRepository:
+                                                            context.read(),
+                                                        loansRepository:
+                                                            context.read(),
+                                                        cajaRepository:
+                                                            context.read(),
+                                                      ),
+                                                      child: ReportsDetailView(
+                                                        document: prestamo
+                                                                ?.cliente
+                                                                ?.dni ??
+                                                            '',
                                                       ),
                                                     ),
-                                                    if (prestamo.estado ==
-                                                        'VIGENTE')
-                                                      const Icon(
-                                                        Icons.circle,
-                                                        color: Colors.green,
+                                                  ),
+                                                );
+                                              },
+                                              child: Container(
+                                                margin: const EdgeInsets.only(
+                                                  bottom: 5,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                    color: prestamo.estado ==
+                                                            'CANCELADO'
+                                                        ? Colors.red[50]
+                                                        : Colors.white,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            10)),
+                                                child: ListTile(
+                                                  dense: true,
+                                                  contentPadding:
+                                                      const EdgeInsets.only(
+                                                          left: 10, right: 0),
+                                                  title: Text(
+                                                    'Cod.: ${prestamo.codigo.toString().padLeft(6, '0')} - S/. ${oCcy.format(double.parse(prestamo.ganancia ?? '0.00') + double.parse(prestamo.monto ?? '0.00'))}',
+                                                  ),
+                                                  subtitle: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        '$fechaFormateada - ${prestamo.estado}',
                                                       ),
-                                                    if (prestamo.estado ==
-                                                        'VENCIDO')
-                                                      const Icon(
-                                                        Icons.circle,
-                                                        color: Colors.red,
-                                                      ),
-                                                    if (prestamo.estado ==
-                                                        'CANCELADO')
-                                                      const Icon(
-                                                        Icons.circle,
-                                                        color: Colors.grey,
-                                                      ),
-                                                    if (prestamo.estado ==
-                                                            'PAGADO' ||
-                                                        prestamo.estado ==
-                                                            'LIQUIDADO')
-                                                      const Icon(
-                                                        Icons.circle,
-                                                        color: Colors.blueGrey,
-                                                      ),
-                                                    IconButton(
-                                                      onPressed: () async {
-                                                        if (prestamo.estado != 'CANCELADO' &&
-                                                            prestamo.estado !=
-                                                                'LIQUIDADO' &&
-                                                            prestamo.estado !=
-                                                                'PAGADO') {
-                                                          final result =
-                                                              await showDialog<
-                                                                  bool?>(
-                                                            context: context,
+                                                      const SizedBox(height: 3),
+                                                      Text(
+                                                        '${prestamo.cliente?.nombres} ${prestamo.cliente?.apellidos}',
+                                                      )
+                                                    ],
+                                                  ),
+                                                  trailing: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      IconButton(
+                                                        onPressed: () {
+                                                          showDialog(
                                                             barrierDismissible:
                                                                 false,
+                                                            context: context,
                                                             builder: (_) {
                                                               return BlocProvider
                                                                   .value(
                                                                 value: context.read<
                                                                     ReportsBloc>(),
                                                                 child:
-                                                                    CancelDialogReportLoan(
-                                                                  codigo: prestamo
-                                                                          .codigo ??
-                                                                      0,
+                                                                    ShowDetailsReportLoans(
+                                                                  nroPrestamo:
+                                                                      prestamo
+                                                                          .codigo,
                                                                 ),
                                                               );
                                                             },
                                                           );
-
-                                                          if (result != null &&
-                                                              mounted) {
-                                                            // Volver a cargar la data
-                                                            context
-                                                                .read<
-                                                                    ReportsBloc>()
-                                                                .add(
-                                                                  const GetLoadInitialDataContracts(
-                                                                    end: null,
-                                                                    start: null,
+                                                        },
+                                                        icon: const Icon(
+                                                          Icons
+                                                              .remove_red_eye_outlined,
+                                                          color: Colors.blue,
+                                                        ),
+                                                      ),
+                                                      if (prestamo.estado ==
+                                                          'VIGENTE')
+                                                        const Icon(
+                                                          Icons.circle,
+                                                          color: Colors.green,
+                                                        ),
+                                                      if (prestamo.estado ==
+                                                          'VENCIDO')
+                                                        const Icon(
+                                                          Icons.circle,
+                                                          color: Colors.red,
+                                                        ),
+                                                      if (prestamo.estado ==
+                                                          'CANCELADO')
+                                                        const Icon(
+                                                          Icons.circle,
+                                                          color: Colors.grey,
+                                                        ),
+                                                      if (prestamo.estado ==
+                                                              'PAGADO' ||
+                                                          prestamo.estado ==
+                                                              'LIQUIDADO')
+                                                        const Icon(
+                                                          Icons.circle,
+                                                          color:
+                                                              Colors.blueGrey,
+                                                        ),
+                                                      IconButton(
+                                                        onPressed: () async {
+                                                          if (prestamo.estado != 'CANCELADO' &&
+                                                              prestamo.estado !=
+                                                                  'LIQUIDADO' &&
+                                                              prestamo.estado !=
+                                                                  'PAGADO') {
+                                                            final result =
+                                                                await showDialog<
+                                                                    bool?>(
+                                                              context: context,
+                                                              barrierDismissible:
+                                                                  false,
+                                                              builder: (_) {
+                                                                return BlocProvider
+                                                                    .value(
+                                                                  value: context
+                                                                      .read<
+                                                                          ReportsBloc>(),
+                                                                  child:
+                                                                      CancelDialogReportLoan(
+                                                                    codigo:
+                                                                        prestamo.codigo ??
+                                                                            0,
                                                                   ),
                                                                 );
+                                                              },
+                                                            );
+
+                                                            if (result !=
+                                                                    null &&
+                                                                mounted) {
+                                                              // Volver a cargar la data
+                                                              context
+                                                                  .read<
+                                                                      ReportsBloc>()
+                                                                  .add(
+                                                                    const GetLoadInitialDataContracts(
+                                                                      end: null,
+                                                                      start:
+                                                                          null,
+                                                                    ),
+                                                                  );
+                                                            }
                                                           }
-                                                        }
-                                                      },
-                                                      icon: Icon(
-                                                        Icons.cancel,
-                                                        color: prestamo.estado ==
-                                                                    'CANCELADO' ||
-                                                                prestamo.estado ==
-                                                                    'PAGADO' ||
-                                                                prestamo.estado ==
-                                                                    'LIQUIDADO'
-                                                            ? Colors.grey
-                                                            : Colors.red,
+                                                        },
+                                                        icon: Icon(
+                                                          Icons.cancel,
+                                                          color: prestamo
+                                                                          .estado ==
+                                                                      'CANCELADO' ||
+                                                                  prestamo.estado ==
+                                                                      'PAGADO' ||
+                                                                  prestamo.estado ==
+                                                                      'LIQUIDADO'
+                                                              ? Colors.grey
+                                                              : Colors.red,
+                                                        ),
                                                       ),
-                                                    ),
-                                                  ],
+                                                    ],
+                                                  ),
                                                 ),
                                               ),
                                             );

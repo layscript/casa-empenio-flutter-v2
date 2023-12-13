@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
@@ -710,6 +711,18 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
 
     if (loansLocalState?.warrantyPreferences != null) {
       garantiasData = loansLocalState!.warrantyPreferences!.map((e) {
+        List<String?> imagenes = [];
+
+        for (int i = 0; i < 3; i++) {
+          if (e.photoWarranty != null &&
+              e.photoWarranty!.isNotEmpty &&
+              i < e.photoWarranty!.length) {
+            imagenes.add(e.photoWarranty![i].path);
+          } else {
+            imagenes.add(null);
+          }
+        }
+
         return {
           'descripcion': e.description,
           'marca': e.brand,
@@ -721,19 +734,25 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
           'valorizacion': double.parse(e.price == '' ? '0' : e.price!),
           'observaciones': e.warrantyObservations,
           'estado': e.status,
-          'imagen': e.photoWarranty == null || e.photoWarranty?.length == 0
-              ? null
-              : e.photoWarranty?[0].path,
-          'imagen2': e.photoWarranty == null || e.photoWarranty?.length == 1
-              ? null
-              : e.photoWarranty?[1].path,
-          'imagen3': e.photoWarranty == null || e.photoWarranty?.length == 2
-              ? null
-              : e.photoWarranty?[2].path,
+          'imagen': imagenes[0],
+          'imagen2': imagenes[1],
+          'imagen3': imagenes[2],
         };
       }).toList();
     } else {
       garantiasData = state.listWarranty!.map((e) {
+        List<String?> imagenes = [];
+
+        for (int i = 0; i < 3; i++) {
+          if (e.photoWarranty != null &&
+              e.photoWarranty!.isNotEmpty &&
+              i < e.photoWarranty!.length) {
+            imagenes.add(e.photoWarranty![i].path);
+          } else {
+            imagenes.add(null);
+          }
+        }
+
         return {
           'descripcion': e.description,
           'marca': e.brand,
@@ -745,18 +764,14 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
           'valorizacion': double.parse(e.price == '' ? '0' : e.price!),
           'observaciones': e.warrantyObservations,
           'estado': e.status,
-          'imagen': e.photoWarranty == null || e.photoWarranty?.length == 0
-              ? null
-              : e.photoWarranty?[0].path,
-          'imagen2': e.photoWarranty == null || e.photoWarranty?.length == 0
-              ? null
-              : e.photoWarranty?[1].path,
-          'imagen3': e.photoWarranty == null || e.photoWarranty?.length == 0
-              ? null
-              : e.photoWarranty?[2].path,
+          'imagen': imagenes[0],
+          'imagen2': imagenes[1],
+          'imagen3': imagenes[2],
         };
       }).toList();
     }
+
+    log('garantiaaas: ${garantiasData}');
 
     final result = await _loansRepository.saveLoan(
       plazoDias: int.parse(
@@ -786,15 +801,15 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
         createdAt: '',
         imagenUno: (loansLocalState?.imagesClient == null ||
                 loansLocalState?.imagesClient?.length == 0 ||
-                state.phoneClient == null ||
-                state.phoneClient?.length == 0)
+                state.photosClient == null ||
+                state.photosClient?.length == 0)
             ? null
             : loansLocalState?.imagesClient?[0].path ??
                 state.photosClient?[0].path,
         imagenDos: (loansLocalState?.imagesClient == null ||
-                loansLocalState?.imagesClient?.length == 0 ||
-                state.phoneClient == null ||
-                state.phoneClient?.length == 0)
+                loansLocalState?.imagesClient?.length == 1 ||
+                state.photosClient == null ||
+                state.photosClient?.length == 1)
             ? null
             : loansLocalState?.imagesClient?[1].path ??
                 state.photosClient?[1].path,
@@ -822,9 +837,9 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
                   : loansLocalState?.imagesAval?[0].path ??
                       state.photosAval?[0].path,
               imagenDos: (loansLocalState?.imagesAval == null ||
-                      loansLocalState?.imagesAval?.length == 0 ||
+                      loansLocalState?.imagesAval?.length == 1 ||
                       state.photosAval == null ||
-                      state.photosAval?.length == 0)
+                      state.photosAval?.length == 1)
                   ? null
                   : loansLocalState?.imagesAval?[1].path ??
                       state.photosAval?[1].path,

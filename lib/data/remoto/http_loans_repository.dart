@@ -112,6 +112,7 @@ class HttpLoansRepository implements LoansRepository {
         'dni': cliente.dni,
         'celular': cliente.celular,
         'email': cliente.email,
+        'domicilio': cliente.domicilio,
       },
       'aval': aval == null
           ? null
@@ -121,6 +122,7 @@ class HttpLoansRepository implements LoansRepository {
               'dni': aval.dni,
               'celular': aval.celular,
               'email': aval.email,
+              'domicilio': aval.domicilio,
             },
       'bienesGarantia': bienes,
       'usuarioId': usuarioId,
@@ -139,46 +141,49 @@ class HttpLoansRepository implements LoansRepository {
       } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         log('statttuututus code 2: ${map}');
-        final bienesResponse = map['body']['bienesGarantia'];
-        log('statttuututus code 3: ${bienesResponse}');
-        if (cliente.imagenUno != null && cliente.imagenDos != null) {
+        final bienesResponse = map['body']['bienesGarantia'] as List<dynamic>?;
+        log('statttuututus code 3_1: ${bienesResponse}');
+        log('statttuututus code 3_2: ${bienes}');
+
+        log('debugggg aui 1.1.1: ${cliente?.imagenUno}');
+        log('debugggg aui 1.1.2: ${cliente?.imagenDos}');
+        if (cliente.imagenUno != null) {
+          log('debugggg aui 1.1.3: ${cliente.imagenUno}');
+          log('debugggg aui 1.1.4: ${cliente.imagenDos}');
           await updateCustomerPhotos(
             dni: int.parse(cliente.dni ?? '0'),
-            imagenUno: cliente.imagenUno ?? '',
-            imagenDos: cliente.imagenDos ?? '',
+            imagen: cliente.imagenUno!,
+            imagen2: cliente.imagenDos,
           );
         }
 
-        for (var bienResponse in bienesResponse) {
-          log('aksjdljldsakjklads z3.6: ${bienResponse}');
+        if (aval != null && aval.imagenUno != null) {
+          await updateCustomerPhotos(
+            dni: int.parse(aval.dni ?? '0'),
+            imagen: aval.imagenUno!,
+            imagen2: aval.imagenDos,
+          );
+        }
 
-          for (var garantia in bienes) {
-            log('aksjdljldsakjklads z3.7: ${garantia}');
-            final imagenUno = garantia['imagen'] as String?;
-            final imagenDos = garantia['imagen2'] as String?;
-            final imagenTres = garantia['imagen3'] as String?;
-            print('aksjdljldsakjklads 3.1: $imagenUno');
-            print('aksjdljldsakjklads 3.2: $imagenDos');
-            print('aksjdljldsakjklads 3.3: $imagenTres');
-            final mainImage = imagenUno?.trimLeft();
-            print('aksjdljldsakjklads 3.4: $mainImage');
+        log('debugggg aui 1.2');
 
-            if (mainImage != null || mainImage != '') {
-              print('aksjdljldsakjklads 3.5.1: $mainImage');
-              print('aksjdljldsakjklads 3.5.2: ${bienResponse['id']}');
+        if (bienesResponse != null) {
+          log('debugggg aui 1.3');
+          for (var bienResponse in bienesResponse) {
+            final imagenUno = bienResponse['imagen'] as String?;
+            final imagenDos = bienResponse['imagen2'] as String?;
+            final imagenTres = bienResponse['imagen3'] as String?;
 
-              final exito = await updateWarrantyPhotos(
-                idGarantia: bienResponse['id'],
-                imagenUno: imagenUno!.trimLeft(),
-                imagenDos: imagenDos == null ? '' : imagenDos.trimLeft(),
-                imagenTres: imagenTres == null ? '' : imagenTres.trimLeft(),
-              );
+            final exito = await updateWarrantyPhotos(
+              idGarantia: bienResponse['id'],
+              imagen: imagenUno!,
+              imagen2: imagenDos,
+              imagen3: imagenTres,
+            );
 
-              print('aksjdljldsakjklads 3.5.3: ${exito}');
-
-              if (!exito) {
-                return const Left('Ocurrió un problema con las imagenes');
-              }
+            if (!exito) {
+              return const Left(
+                  'Ocurrió un problema con las imágenes de la garantía');
             }
           }
         }
@@ -215,7 +220,6 @@ class HttpLoansRepository implements LoansRepository {
         return Right(contrato);
       }
     } catch (e) {
-      //print('responseee ee: $e');
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -483,35 +487,21 @@ class HttpLoansRepository implements LoansRepository {
     }
   }
 
-  Future<bool> updateCustomerPhotos({
-    required int dni,
+  Future<bool> updateLiquidacionPhotos({
+    required int idPrestamo,
     required String imagenUno,
-    required String imagenDos,
   }) async {
-    if (imagenUno.contains('files/garantias') ||
-        imagenDos.contains('files/garantias')) {
-      return true;
-    }
-
     final imgUno = File(imagenUno);
-    final imgDos = File(imagenDos);
-
     try {
-      final path = '/clientes/clientes/imagenCliente/$dni';
-
+      final path = '/prestamos/prestamos/imagenLiquidar/$idPrestamo';
       FormData formData = FormData.fromMap({
         'imagen': await MultipartFile.fromFile(
           imgUno.path,
           filename: imgUno.path.split('/').last,
         ),
-        'imagen2': await MultipartFile.fromFile(
-          imgDos.path,
-          filename: imgDos.path.split('/').last,
-        )
       });
 
       final response = await _dio.put(path, data: formData);
-
       if (response.statusCode == 201 || response.statusCode == 200) {
         return true;
       } else {
@@ -522,40 +512,41 @@ class HttpLoansRepository implements LoansRepository {
     }
   }
 
-  Future<bool> updateLiquidacionPhotos({
-    required int idPrestamo,
-    required String imagenUno,
-    //required String imagenDos,
+  Future<bool> updateCustomerPhotos({
+    required int dni,
+    required String? imagen,
+    required String? imagen2,
   }) async {
-    if (imagenUno.contains(
-            'files/garantias') /* ||
-        imagenDos.contains('files/garantias') */
-        ) {
-      return true;
-    }
-
-    final imgUno = File(imagenUno);
-    //final imgDos = File(imagenDos);
-
     try {
-      final path = '/prestamos/prestamos/imagenLiquidar/$idPrestamo';
-
-      FormData formData = FormData.fromMap({
-        'imagen': await MultipartFile.fromFile(
-          imgUno.path,
-          filename: imgUno.path.split('/').last,
-        ),
-        /* 'imagen2': await MultipartFile.fromFile(
-          imgDos.path,
-          filename: imgDos.path.split('/').last,
-        ) */
-      });
-
-      final response = await _dio.put(path, data: formData);
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        return true;
+      FormData formData = FormData();
+      if (imagen != null && !imagen.contains('files/')) {
+        final img = File(imagen);
+        formData.files.add(MapEntry(
+            'imagen',
+            await MultipartFile.fromFile(
+              img.path,
+              filename: img.path.split('/').last,
+            )));
+      }
+      if (imagen2 != null && !imagen2.contains('files/')) {
+        final img2 = File(imagen2);
+        formData.files.add(MapEntry(
+            'imagen2',
+            await MultipartFile.fromFile(
+              img2.path,
+              filename: img2.path.split('/').last,
+            )));
+      }
+      if (formData.files.isNotEmpty) {
+        final path = '/clientes/clientes/imagenCliente/$dni';
+        final response = await _dio.put(path, data: formData);
+        if (response.statusCode == 201 || response.statusCode == 200) {
+          return true;
+        } else {
+          return false;
+        }
       } else {
-        return false;
+        return true;
       }
     } catch (e) {
       return false;
@@ -563,67 +554,105 @@ class HttpLoansRepository implements LoansRepository {
   }
 
   Future<bool> updateWarrantyPhotos({
+    required String? imagen,
+    required String? imagen2,
+    required String? imagen3,
     required int idGarantia,
-    required String imagenUno,
-    required String? imagenDos,
-    required String? imagenTres,
   }) async {
-    print('aksjdljldsakjklads 3.5.4');
-    if (imagenUno.contains('files/garantias')) {
-      return true;
+    final data = {
+      'imagen': imagen,
+      'imagen2': imagen2,
+      'imagen3': imagen3,
+      'id': idGarantia,
+    };
+
+    log('statttuututus code 3_4.5: ${data}');
+
+    try {
+      FormData formData = FormData();
+      if (imagen != null && !imagen.contains('files/')) {
+        final img = File(imagen);
+        formData.files.add(MapEntry(
+            'imagen',
+            await MultipartFile.fromFile(
+              img.path,
+              filename: img.path.split('/').last,
+            )));
+      }
+      if (imagen2 != null && !imagen2.contains('files/')) {
+        final img2 = File(imagen2);
+        formData.files.add(MapEntry(
+            'imagen2',
+            await MultipartFile.fromFile(
+              img2.path,
+              filename: img2.path.split('/').last,
+            )));
+      }
+      if (imagen3 != null && !imagen3.contains('files/')) {
+        final img3 = File(imagen3);
+        formData.files.add(MapEntry(
+            'imagen3',
+            await MultipartFile.fromFile(
+              img3.path,
+              filename: img3.path.split('/').last,
+            )));
+      }
+      if (formData.files.isNotEmpty) {
+        final path = '/prestamos/prestamos/imagenGarantia/$idGarantia';
+        final response = await _dio.put(path, data: formData);
+        if (response.statusCode == 201 || response.statusCode == 200) {
+          return true;
+        } else {
+          return false;
+        }
+      } else {
+        return true;
+      }
+    } catch (e) {
+      return false;
     }
+  }
 
-    if (imagenDos != null && imagenDos.contains('files/garantias')) {
-      return true;
-    }
-    print('aksjdljldsakjklads 3.5.5');
-
-    if (imagenTres != null && imagenTres.contains('files/garantias')) {
-      return true;
-    }
-
-    print('aksjdljldsakjklads 3.5.6');
-
-    final imgUno = File(imagenUno);
+  /*  Future<bool> updateWarrantyPhotos({
+    required int idGarantia,
+    required String imagen,
+    required String? imagen2,
+    required String? imagen3,
+  }) async {
+    final imgUno = File(imagen);
     File? imgDos;
     File? imgTres;
 
-    if (imagenDos != null) {
-      imgDos = File(imagenDos);
+    if (imagen2 != null && imagen2.isNotEmpty) {
+      imgDos = File(imagen2);
     }
-
-    if (imagenTres != null) {
-      imgTres = File(imagenTres);
+    if (imagen3 != null && imagen3.isNotEmpty) {
+      imgTres = File(imagen3);
     }
-
-    print('aksjdljldsakjklads 3.5.7.1 : ${imgUno}');
-    print('aksjdljldsakjklads 3.5.7.2 : ${imgDos}');
-    print('aksjdljldsakjklads 3.5.7.3 : ${imgTres}');
 
     try {
       final path = '/prestamos/prestamos/imagenGarantia/$idGarantia';
-      print('aksjdljldsakjklads 3.5.7.4 : ${path}');
+      log('qllqp: $path ==>  ${imagen}');
 
       FormData formData = FormData.fromMap({
-        'imagen': await MultipartFile.fromFile(
-          imgUno.path,
-          filename: imgUno.path.split('/').last,
-        ),
-        /*  if (imagenDos != null)
+        if (!imgUno.path.contains('files'))
+          'imagen': await MultipartFile.fromFile(
+            imgUno.path,
+            filename: imgUno.path.split('/').last,
+          ),
+        if (imgDos != null && !imgDos.path.contains('/files'))
           'imagen2': await MultipartFile.fromFile(
-            imgDos!.path,
+            imgDos.path,
             filename: imgDos.path.split('/').last,
           ),
-        if (imagenTres != null)
+        if (imgTres != null && !imgTres.path.contains('/files'))
           'imagen3': await MultipartFile.fromFile(
-            imgTres!.path,
+            imgTres.path,
             filename: imgTres.path.split('/').last,
-          ) */
+          ),
       });
 
-      print('aksjdljldsakjklads 3.5.7.5 : ${formData}');
       final response = await _dio.put(path, data: formData);
-      print('aksjdljldsakjklads 3.5.7.6 : ${response.statusCode}');
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         return true;
@@ -631,12 +660,11 @@ class HttpLoansRepository implements LoansRepository {
         return false;
       }
     } catch (e) {
-      print('aksjdljldsakjklads 3.5.7.7 : ${e}');
-
+      print('Error: $e');
       return false;
     }
   }
-
+ */
   @override
   Future<Either<String, bool>> updateLoan({
     required int plazoDias,
@@ -664,6 +692,7 @@ class HttpLoansRepository implements LoansRepository {
         'dni': cliente.dni,
         'celular': cliente.celular,
         'email': cliente.email,
+        'domicilio': cliente.domicilio,
       },
       'aval': aval == null
           ? null
@@ -673,6 +702,7 @@ class HttpLoansRepository implements LoansRepository {
               'dni': aval.dni,
               'celular': aval.celular,
               'email': aval.email,
+              'domicilio': aval.domicilio,
             },
       'bienesGarantia': bienes,
       'adminId': usuarioId,
@@ -685,52 +715,58 @@ class HttpLoansRepository implements LoansRepository {
       if (response.statusCode == 201 || response.statusCode == 200) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         log('statttuututus code 2: ${map}');
-        final bienesResponse = map['body']['bienesGarantia'];
+        final bienesResponse = map['body']['bienesGarantia'] as List<dynamic>?;
         log('statttuututus code 3: ${bienesResponse}');
 
-        if (cliente.imagenUno != null && cliente.imagenDos != null) {
+        if (cliente.imagenUno != null) {
           await updateCustomerPhotos(
             dni: int.parse(cliente.dni ?? '0'),
-            imagenUno: cliente.imagenUno ?? '',
-            imagenDos: cliente.imagenDos ?? '',
+            imagen: cliente.imagenUno!,
+            imagen2: cliente.imagenDos,
           );
         }
 
-        log('aksjdljldsakjklads z3.5: ${bienesResponse}');
+        if (aval != null && aval.imagenUno != null) {
+          await updateCustomerPhotos(
+            dni: int.parse(aval.dni ?? '0'),
+            imagen: aval.imagenUno!,
+            imagen2: aval.imagenDos,
+          );
+        }
 
-        for (var bienResponse in bienesResponse) {
-          log('aksjdljldsakjklads z3.6: ${bienResponse}');
+        if (bienesResponse != null) {
+          log('debugggg aui 1.3');
+          for (var bienResponse in bienesResponse) {
+            final imagenUno = bienResponse['imagen'] as String?;
+            final imagenDos = bienResponse['imagen2'] as String?;
+            final imagenTres = bienResponse['imagen3'] as String?;
 
-          for (var garantia in bienes) {
-            log('aksjdljldsakjklads z3.7: ${garantia}');
-            final imagenUno = garantia['imagen'] as String?;
-            final imagenDos = garantia['imagen2'] as String?;
-            final imagenTres = garantia['imagen3'] as String?;
-            print('aksjdljldsakjklads 3.1: $imagenUno');
-            print('aksjdljldsakjklads 3.2: $imagenDos');
-            print('aksjdljldsakjklads 3.3: $imagenTres');
-            final mainImage = imagenUno?.trimLeft();
-            print('aksjdljldsakjklads 3.4: $mainImage');
+            final mapa = {
+              'idGarantia': bienResponse['id'],
+              'imagen': imagenUno,
+              'imagen2': imagenDos,
+              'imagen3': imagenTres,
+            };
 
-            if (mainImage != null || mainImage != '') {
-              print('aksjdljldsakjklads 3.5.1: $mainImage');
-              print('aksjdljldsakjklads 3.5.2: ${bienResponse['id']}');
+            log('mapasaaa: $mapa');
 
-              final exito = await updateWarrantyPhotos(
-                idGarantia: bienResponse['id'],
-                imagenUno: imagenUno!.trimLeft(),
-                imagenDos: imagenDos == null ? '' : imagenDos.trimLeft(),
-                imagenTres: imagenTres == null ? '' : imagenTres.trimLeft(),
+            final exito = await updateWarrantyPhotos(
+              idGarantia: bienResponse['id'],
+              imagen: imagenUno,
+              imagen2: imagenDos,
+              imagen3: imagenTres,
+            );
+
+            print('debugggg aui 1.4: $exito');
+
+            if (!exito) {
+              return const Left(
+                'Ocurrió un problema con las imágenes de la garantía',
               );
-
-              print('aksjdljldsakjklads 3.5.3: ${exito}');
-
-              if (!exito) {
-                return const Left('Ocurrió un problema con las imagenes');
-              }
             }
           }
         }
+
         return const Right(true);
       } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;

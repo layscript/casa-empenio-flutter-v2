@@ -1,9 +1,9 @@
 import 'dart:developer';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
-import 'package:casa_empenio_pe/presentation/app/utils/full_screen_image.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/blocs/loans_bloc/loans_bloc.dart';
 import 'package:flutter/material.dart';
@@ -80,7 +80,8 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
           final oCcy = NumberFormat("#,##0.00", "en_US");
           final loan = state.loanDetails;
 
-          log('kasdklña loan: ${loan.toString()}');
+          log('kasdklña loan 1: ${loan.toString()}');
+          log('kasdklña loan 2: ${loan?.bienesGarantia.toString()}');
 
           if (loan == null) {
             return const Center(
@@ -96,16 +97,15 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '${loan?.cliente?.nombres} ${loan?.cliente?.apellidos}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.normal,
-                            ),
+                      Container(
+                        width: double.infinity,
+                        child: Text(
+                          '${loan?.cliente?.nombres} ${loan?.cliente?.apellidos}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.normal,
                           ),
-                        ],
+                        ),
                       ),
                       const SizedBox(height: 10),
                       Row(
@@ -212,15 +212,15 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                       ),
                       const SizedBox(height: 20),
                       Text(
-                        'Aumentos (${loan.aumentos?.length})',
+                        'Aumentos (${loan.aumentos?.length ?? '0'})',
                         style: const TextStyle(
                           color: AppColors.red,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 10),
-                      if (loan?.aumentos != null)
-                        ...loan!.aumentos!.map((aumento) {
+                      if (loan.aumentos != null)
+                        ...loan.aumentos!.map((aumento) {
                           return Column(
                             children: [
                               const Divider(
@@ -537,7 +537,7 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     const Text(
-                                      "Foto: ",
+                                      "Imagen 1: ",
                                       style: TextStyle(
                                           fontWeight: FontWeight.bold),
                                     ),
@@ -554,12 +554,109 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                         );
                                       },
                                       // TODO:: Revisar bien csmre:v
-                                      child: Image.network(
-                                        '$endPoint/${bien.imagen}',
+                                      child: CachedNetworkImage(
+                                        imageUrl: '$endPoint/${bien.imagen}',
                                         height: 50,
                                         width: 50,
-                                        errorBuilder:
-                                            (context, error, stackTrace) {
+                                        placeholder: (context, url) {
+                                          return const Placeholder(
+                                            fallbackHeight: 50,
+                                            fallbackWidth: 50,
+                                          );
+                                        },
+                                        errorWidget: (context, url, error) {
+                                          return const Placeholder(
+                                            fallbackHeight: 50,
+                                            fallbackWidth: 50,
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              ],
+                              if (bien.imagenDos != '' &&
+                                  bien.imagenDos != null) ...[
+                                const SizedBox(height: 10),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text(
+                                      "Imagen 2: ",
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                FullScreenImage(
+                                              imageUrl: bien.imagenDos ?? '',
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      // TODO:: Revisar bien csmre:v
+                                      child: CachedNetworkImage(
+                                        imageUrl: '$endPoint/${bien.imagenDos}',
+                                        height: 50,
+                                        width: 50,
+                                        placeholder: (context, url) {
+                                          return const Placeholder(
+                                            fallbackHeight: 50,
+                                            fallbackWidth: 50,
+                                          );
+                                        },
+                                        errorWidget: (context, url, error) {
+                                          return const Placeholder(
+                                            fallbackHeight: 50,
+                                            fallbackWidth: 50,
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              ],
+                              if (bien.imagenTres != '' &&
+                                  bien.imagenTres != null) ...[
+                                const SizedBox(height: 10),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text(
+                                      "Imagen 3: ",
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                FullScreenImage(
+                                              imageUrl: bien.imagenTres ?? '',
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: CachedNetworkImage(
+                                        imageUrl:
+                                            '$endPoint/${bien.imagenTres}',
+                                        height: 50,
+                                        width: 50,
+                                        placeholder: (context, url) {
+                                          return const Placeholder(
+                                            fallbackHeight: 50,
+                                            fallbackWidth: 50,
+                                          );
+                                        },
+                                        errorWidget: (context, url, error) {
                                           return const Placeholder(
                                             fallbackHeight: 50,
                                             fallbackWidth: 50,
@@ -647,22 +744,23 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text('Estado: '),
-                          Text('${loan?.estado}'),
+                          Text('${loan.estado}'),
                         ],
                       ),
-                      if (loan?.estado == 'LIQUIDADO') ...[
+                      if (loan.estado == 'LIQUIDADO') ...[
                         const SizedBox(height: 10),
-                        Image.network(
-                          '$endPoint/${loan.imagenLiquidado}',
-                          height: 100,
-                          width: 100,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Placeholder(
-                              fallbackHeight: 50,
-                              fallbackWidth: 50,
-                            );
-                          },
-                        ),
+                        if (loan.imagenLiquidado != null)
+                          Image.network(
+                            '$endPoint/${loan.imagenLiquidado}',
+                            height: 100,
+                            width: 100,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Placeholder(
+                                fallbackHeight: 50,
+                                fallbackWidth: 50,
+                              );
+                            },
+                          ),
                       ],
                       if (loan?.usuario != null)
                         const Divider(
