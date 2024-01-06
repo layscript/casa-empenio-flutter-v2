@@ -41,44 +41,20 @@ class _SalesViewState extends State<SalesView> {
       child: Builder(builder: (context) {
         return BlocConsumer<SalesBloc, SalesState>(
           listener: (context, state) {
-            if (state.status == SalesStatus.loading) {
-            } else {
-              if (false) {
-                //if (state.openBox) {
-                showDialog(
-                  barrierDismissible: false,
-                  context: context,
-                  builder: (_) {
-                    return WillPopScope(
-                      onWillPop: () async => false,
-                      child: AlertDialog(
-                        title: const Text('Alerta'),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Para continuar con el registro necesita abrir caja',
-                              style: TextStyle(
-                                color: AppColors.primaryText,
-                                fontWeight: FontWeight.normal,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            ElevatedButton(
-                              onPressed: () {
-                                context.read<HomeBloc>().add(GoToCajas());
-                                Navigator.pop(context);
-                              },
-                              child: const Text('Ir a caja'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                );
-              }
+            //if (false) {
+            if (state.openBox) {
+              showDialog(
+                barrierDismissible: false,
+                context: context,
+                builder: (_) {
+                  return AlertGoToCaja(
+                    onPressed: () {
+                      context.read<HomeBloc>().add(GoToOpenCaja());
+                      Navigator.pop(context);
+                    },
+                  );
+                },
+              );
             }
           },
           builder: (context, state) {

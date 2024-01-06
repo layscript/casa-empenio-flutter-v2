@@ -25,6 +25,7 @@ class _OpenBoxViewState extends State<OpenBoxView> {
     return BlocListener<CajasBloc, CajasState>(
       listener: (context, state) {
         if (state.isCajasFailure) {
+          Navigator.pop(context);
           ErrorSnackbar.show(
             context,
             state.error ?? 'Ocurrió un error al actualizar',

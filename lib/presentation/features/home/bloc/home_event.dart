@@ -25,4 +25,10 @@ class GoToCategories extends HomeEvent {}
 
 class GoToCajas extends HomeEvent {}
 
+class GoToOpenCaja extends HomeEvent {}
+
 class GoToExpenses extends HomeEvent {}
+
+class GoToHistorial extends HomeEvent {}
+
+class GoToPayUsers extends HomeEvent {}

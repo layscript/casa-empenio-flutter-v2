@@ -14,50 +14,50 @@ class HttpProductRepository implements ProductRepository {
   final Dio _dio;
 
   @override
-  Future<bool> createVehiculo({
+  Future<Either<String, bool>> createVehiculo({
     required Map<String, dynamic> payload,
   }) async {
     const path = '/almacen/bien/vehiculo';
     try {
+      print('saveeeee 0: ${payload}');
+
       final response = await _dio.post<String>(path, data: payload);
+
       print('saveeeee 1: ${response.statusCode}');
       print('saveeeee 2: ${response.data}');
 
-      if (response.statusCode != 201) {
-        final map = json.decode(response.data!) as Map<String, dynamic>;
-        final message = map['message'] ?? 'Ocurrió un error';
-        //return Left(message);
-        return false;
-      } else {
+      if (response.statusCode == 201) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final data = map['body'];
-        if (payload['imagen'] != null && payload['imagen2']) {
-          /*  final result = uploadWarrantyImageProductVehiculo(
-            path: payload['imagen'],
-            idGarantia: data['id'],
-          ); */
-          final result = uploadWarrantyImageProductVehiculo(
+        print('saveeeee 2 -> data: ${data}');
+        if (payload['imagen'] != null || payload['imagen'] != '') {
+          await uploadWarrantyImageProductVehiculo(
             idGarantia: data['id'],
             imagenUno: payload['imagen'],
             imagenDos: payload['imagen2'],
           );
-          return result;
-        } else {
-          return true;
         }
-        //return const Right(true);
+        return const Right(true);
+      } else {
+        print('saveeeee 22.5 -> ${response.data}:');
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+
+        final message = map['message'] ?? 'Ocurrió un error';
+
+        print('saveeeee 22.6 -> $message:');
+
+        return Left(message);
       }
     } catch (e) {
       print('saveeeee 3: ${e}');
+      print('saveeeee 3: ${e.runtimeType}');
 
-      //print('responseee ee: $e');
-      //return const Left('Ocurrió un error 2');
-      return false;
+      return const Left('Ocurrió un error');
     }
   }
 
   @override
-  Future<bool> updateVehiculo({
+  Future<Either<String, bool>> updateVehiculo({
     required Map<String, dynamic> payload,
   }) async {
     final id = payload['id'];
@@ -70,30 +70,21 @@ class HttpProductRepository implements ProductRepository {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final data = map['body'];
         log('saveeeee 55: ${payload}');
-        if (payload['imagen'] != null && payload['imagen2'] != null) {
-          /*  final result = uploadWarrantyImageProductVehiculo(
-            path: payload['imagen'],
-            idGarantia: payload['id'],
-          ); */
-          final result = uploadWarrantyImageProductVehiculo(
+        if (payload['imagen'] != null || payload['imagen'] != '') {
+          await uploadWarrantyImageProductVehiculo(
             idGarantia: payload['id'],
             imagenUno: payload['imagen'],
             imagenDos: payload['imagen2'],
           );
-          return result;
-        } else {
-          return true;
         }
+        return const Right(true);
       } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
-        //return Left(message);
-        return false;
+        return Left(message);
       }
     } catch (e) {
-      //print('responseee ee: $e');
-      //return const Left('Ocurrió un error 2');
-      return false;
+      return const Left('Ocurró un error');
     }
   }
 
@@ -178,7 +169,7 @@ class HttpProductRepository implements ProductRepository {
   }
 
   @override
-  Future<bool> createProduct({
+  Future<Either<String, bool>> createProduct({
     required Map<String, dynamic> payload,
   }) async {
     const path = '/almacen/bien';
@@ -190,43 +181,31 @@ class HttpProductRepository implements ProductRepository {
       if (response.statusCode != 201) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
-        //return Left(message);
-        return false;
+        return Left(message);
       } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final data = map['body'];
         print('saveeeee 3: ${map}');
         print('saveeeee 4: ${data}');
 
-        if (payload['imagen'] != null && payload['imagen2'] != null) {
-          print('saveeeee 5: ${payload}');
-          print('saveeeee 6: ${data}');
-
-          final result = uploadWarrantyImageProductVehiculo(
+        if (payload['imagen'] != null || payload['imagen'] != '') {
+          await uploadWarrantyImageProductVehiculo(
             idGarantia: data['id'],
             imagenUno: payload['imagen'],
             imagenDos: payload['imagen2'],
           );
-
-          print('saveeeee 7: ${result}');
-
-          return result;
-        } else {
-          return true;
         }
+        return const Right(true);
         //return const Right(true);
       }
     } catch (e) {
       print('saveeeee 10: ${e}');
-
-      //print('responseee ee: $e');
-      //return const Left('Ocurrió un error 2');
-      return false;
+      return const Left('Ocurrió un error');
     }
   }
 
   @override
-  Future<bool> updateProduct({
+  Future<Either<String, bool>> updateProduct({
     required Map<String, dynamic> payload,
   }) async {
     final id = payload['id'];
@@ -241,69 +220,63 @@ class HttpProductRepository implements ProductRepository {
 
         final data = map['body'];
         print('saveeeee 2.4: ${data}');
-
-        if (payload['imagen'] != null && payload['imagen2'] != null) {
-          print('saveeeee 2.5: ${payload}');
-
-          final result = uploadWarrantyImageProductVehiculo(
+        if (payload['imagen'] != null || payload['imagen'] != '') {
+          await uploadWarrantyImageProductVehiculo(
             idGarantia: payload['id'],
             imagenUno: payload['imagen'],
             imagenDos: payload['imagen2'],
           );
-
-          print('saveeeee 2.6: ${result}');
-
-          return result;
-        } else {
-          return true;
         }
+        return const Right(true);
       } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
-        //return Left(message);
-        return false;
+        return Left(message);
       }
     } catch (e) {
       //print('responseee ee: $e');
-      //return const Left('Ocurrió un error 2');
-      return false;
+      return const Left('Ocurrió un error');
     }
   }
 
   Future<bool> uploadWarrantyImageProductVehiculo({
     required int idGarantia,
-    required String imagenUno,
-    required String imagenDos,
+    required String? imagenUno,
+    required String? imagenDos,
   }) async {
-    if (imagenUno.contains('files/garantias') ||
-        imagenDos.contains('files/garantias')) {
-      return true;
-    }
-
-    print('skadlkjlsakjlsad 1: ${idGarantia}');
-    print('skadlkjlsakjlsad 2: ${imagenUno}');
-    print('skadlkjlsakjlsad 3: ${imagenDos}');
-
-    final imgUno = File(imagenUno);
-    final imgDos = File(imagenDos);
     try {
-      final path = '/prestamos/prestamos/imagenGarantia/$idGarantia';
+      FormData formData = FormData();
 
-      FormData formData = FormData.fromMap({
-        'imagen': await MultipartFile.fromFile(
-          imgUno.path,
-          filename: imgUno.path.split('/').last,
-        ),
-        'imagen2': await MultipartFile.fromFile(
-          imgDos.path,
-          filename: imgDos.path.split('/').last,
-        ),
-      });
-      final response = await _dio.put(path, data: formData);
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        return true;
+      if (imagenUno != null && !imagenUno.contains('files/')) {
+        final img = File(imagenUno);
+        formData.files.add(MapEntry(
+            'imagen',
+            await MultipartFile.fromFile(
+              img.path,
+              filename: img.path.split('/').last,
+            )));
+      }
+
+      if (imagenDos != null && !imagenDos.contains('files/')) {
+        final img2 = File(imagenDos);
+        formData.files.add(MapEntry(
+            'imagen2',
+            await MultipartFile.fromFile(
+              img2.path,
+              filename: img2.path.split('/').last,
+            )));
+      }
+
+      if (formData.files.isNotEmpty) {
+        final path = '/prestamos/prestamos/imagenGarantia/$idGarantia';
+        final response = await _dio.put(path, data: formData);
+        if (response.statusCode == 201 || response.statusCode == 200) {
+          return true;
+        } else {
+          return false;
+        }
       } else {
-        return false;
+        return true;
       }
     } catch (e) {
       return false;

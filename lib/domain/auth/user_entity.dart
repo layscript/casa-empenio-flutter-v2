@@ -38,11 +38,14 @@ class UserEntity {
   static List<UserEntity> listGetUsersFromMap(
     Map<String, dynamic> map,
   ) {
+    log('debuggg 0: $map');
+
     final list = map['body'][0] as List<dynamic>;
     return list.map((e) => userFromMap(e as Map<String, dynamic>)).toList();
   }
 
   static UserEntity userFromMap(Map<String, dynamic> map) {
+    log('debuggg 1: $map');
     return UserEntity(
       id: map['id'] as int,
       nombre: map['nombre'] as String,
@@ -74,7 +77,7 @@ class UserEntity {
       userName: map['userName'] as String,
       email: map['email'] as String,
       avatar: map['avatar'] as String?,
-      celular: map['celular'] as int,
+      celular: map['celular'] as int?,
       role: RoleEntity.fromJson(map['role']),
       createdAt: '',
       pagos: null,

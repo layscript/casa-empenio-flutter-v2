@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
@@ -32,6 +33,8 @@ class _AddAmountLoanDialogClientState extends State<AddAmountLoanDialogClient> {
 
   @override
   Widget build(BuildContext context) {
+    final preferences = context.read<Preferences>();
+
     return GestureDetector(
       onTap: () => Keyboard.unfocus(context),
       child: AlertDialog(
@@ -168,6 +171,7 @@ class _AddAmountLoanDialogClientState extends State<AddAmountLoanDialogClient> {
                                 idPrestamo: widget.nroPrestamo ?? 0,
                                 monto: double.parse(montoCtrl.text),
                                 obs: obsCtrl.text,
+                                userId: preferences.token?.id.toString() ?? '0',
                               ),
                             );
                       },

@@ -65,7 +65,7 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
       // Success
       (rigth) => emit(
         state.copyWith(
-          openBox: false,
+          openBox: rigth == null ? true : false,
         ),
       ),
     );
@@ -264,7 +264,7 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
 
     print('detaleeesss: ${data}');
 
-    /*  final result = await _salesRepository.createSalesProduct(data);
+    final result = await _salesRepository.createSalesProduct(data);
     if (result) {
       emit(
         state.copyWith(
@@ -281,6 +281,6 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
           selectedProductsSales: null,
         ),
       );
-    } */
+    }
   }
 }

@@ -26,98 +26,103 @@ class ProductsView extends StatelessWidget {
         child: Builder(builder: (context) {
           return BlocConsumer<ProductsBloc, ProductsState>(
             listener: (context, state) {
-              if (state.isProductLoading) {
-                OverlayLoader.show(context);
-              } else {
-                OverlayLoader.hide();
-                if (state.isProductError) {
-                  ErrorSnackbar.show(context, state.error ?? '');
-                }
+              if (state.isProductSuccess) {
+                Navigator.pop(context);
+                context.read<ProductsBloc>().add(GetProducts());
+                SuccessSnackbar.show(
+                  context,
+                  'Producto/Vehiculo Agregado Correctamente',
+                );
+              }
 
-                if (state.isProductSuccess) {
-                  Navigator.pop(context);
-                  context.read<ProductsBloc>().add(GetProducts());
-                  SuccessSnackbar.show(
-                    context,
-                    'Producto/Vehiculo Agregado Correctamente',
-                  );
-                }
-
-                if (state.isProductFailure) {
-                  Navigator.pop(context);
-                  ErrorSnackbar.show(
-                    context,
-                    state.error ?? 'Ocurrió un problema, intentelo de nuevo',
-                  );
-                }
+              if (state.isProductFailure) {
+                Navigator.pop(context);
+                ErrorSnackbar.show(
+                  context,
+                  state.error ?? 'Ocurrió un problema, intentelo de nuevo',
+                );
               }
             },
             builder: (context, state) {
-              return Container(
-                width: double.infinity,
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).viewInsets.bottom,
-                ),
-                child: Stack(
-                  children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      height: MediaQuery.of(context).size.height * 0.9,
-                      padding: const EdgeInsets.only(
-                        bottom: 120,
-                      ),
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            const SizedBox(height: 20),
-                            const Center(
-                              child: Text(
-                                'Lista de Productos',
-                                style: TextStyle(
-                                  color: AppColors.primaryText,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
+              switch (state.productsStatus) {
+                case ProductsStatus.initial || ProductsStatus.loading:
+                  return const ButtonStateLoading();
+
+                case ProductsStatus.error || ProductsStatus.failed:
+                  return ButtonStateError(
+                    onPressed: () {
+                      context.read<ProductsBloc>().add(GetProducts());
+                    },
+                  );
+
+                case ProductsStatus.success || ProductsStatus.loaded:
+                  return Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).viewInsets.bottom,
+                    ),
+                    child: Stack(
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          height: MediaQuery.of(context).size.height * 0.9,
+                          padding: const EdgeInsets.only(
+                            bottom: 120,
+                          ),
+                          child: SingleChildScrollView(
+                            child: Column(
+                              children: [
+                                const SizedBox(height: 20),
+                                const Center(
+                                  child: Text(
+                                    'Lista de Productos',
+                                    style: TextStyle(
+                                      color: AppColors.primaryText,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 20),
-                              child: SearchProducts(),
-                            ),
-                            const SizedBox(height: 20),
-                            if (state.listProducts != null)
-                              ListView.separated(
-                                physics: const NeverScrollableScrollPhysics(),
-                                separatorBuilder: (context, index) =>
-                                    const SizedBox(
-                                  height: 10,
+                                const SizedBox(height: 20),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 20),
+                                  child: SearchProducts(),
                                 ),
-                                shrinkWrap: true,
-                                itemCount: state.listProducts!.length,
-                                itemBuilder: (context, index) {
-                                  final product = state.listProducts![index];
-                                  return ListTile(
-                                    dense: true,
-                                    //leading: product.imagen != null
-                                    leading: false
-                                        ? GestureDetector(
-                                            onTap: () {},
-                                            child: Image.network(
-                                              '$endPoint/${product.imagen}.jpg',
-                                              width: 50,
-                                              height: 50,
-                                              fit: BoxFit.scaleDown,
-                                            ),
-                                          )
-                                        : const SizedBox(
-                                            height: 50,
-                                            width: 50,
-                                            child: Center(
-                                              child: Icon(Icons.image),
-                                            ),
-                                          ),
-                                    /* leading: product.imagen == null
+                                const SizedBox(height: 20),
+                                if (state.listProducts != null)
+                                  ListView.separated(
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    separatorBuilder: (context, index) =>
+                                        const SizedBox(
+                                      height: 10,
+                                    ),
+                                    shrinkWrap: true,
+                                    itemCount: state.listProducts!.length,
+                                    itemBuilder: (context, index) {
+                                      final product =
+                                          state.listProducts![index];
+                                      return ListTile(
+                                        dense: true,
+                                        //leading: product.imagen != null
+                                        leading: false
+                                            ? GestureDetector(
+                                                onTap: () {},
+                                                child: Image.network(
+                                                  '$endPoint/${product.imagen}',
+                                                  width: 50,
+                                                  height: 50,
+                                                  fit: BoxFit.scaleDown,
+                                                ),
+                                              )
+                                            : const SizedBox(
+                                                height: 50,
+                                                width: 50,
+                                                child: Center(
+                                                  child: Icon(Icons.image),
+                                                ),
+                                              ),
+                                        /* leading: product.imagen == null
                                         ? const SizedBox(
                                             height: 50,
                                             width: 50,
@@ -152,141 +157,144 @@ class ProductsView extends StatelessWidget {
                                                     const Icon(Icons.error),
                                               ), */
                                           ), */
-                                    title: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          '${product.descripcion} / ${product.marca} / ${product.modelo}',
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          'Prestamo - N° ${product.prestamo?.codigoFormateado ?? ''}',
-                                          style: const TextStyle(
-                                            color: Colors.blue,
-                                            fontSize: 12,
-                                          ),
-                                        )
-                                      ],
-                                    ),
-                                    subtitle: Text(
-                                      '${product.marca} - ${product.modelo}',
-                                      style: const TextStyle(
-                                        color: AppColors.secondaryText,
-                                      ),
-                                    ),
-                                    trailing: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          '${product.cantidad} Und.',
-                                          style: const TextStyle(
-                                            color: Colors.green,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 5),
-                                        if (product.motor != null)
-                                          SizedBox(
-                                            height: 40,
-                                            child: IconButton(
-                                              onPressed: () {
-                                                showDialog(
-                                                  barrierDismissible: false,
-                                                  context: context,
-                                                  builder: (_) {
-                                                    return ContractsDetailsAlert(
-                                                      product: product,
-                                                    );
-                                                  },
-                                                );
-                                              },
-                                              icon: const FaIcon(
-                                                FontAwesomeIcons.fileInvoice,
-                                                size: 20,
+                                        title: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              '${product.descripcion} / ${product.marca} / ${product.modelo}',
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              'Prestamo - N° ${product.prestamo?.codigoFormateado ?? ''}',
+                                              style: const TextStyle(
                                                 color: Colors.blue,
+                                                fontSize: 12,
+                                              ),
+                                            )
+                                          ],
+                                        ),
+                                        subtitle: Text(
+                                          '${product.marca} - ${product.modelo}',
+                                          style: const TextStyle(
+                                            color: AppColors.secondaryText,
+                                          ),
+                                        ),
+                                        trailing: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              '${product.cantidad} Und.',
+                                              style: const TextStyle(
+                                                color: Colors.green,
                                               ),
                                             ),
-                                          ),
-                                        SizedBox(
-                                          width: 40,
-                                          child: IconButton(
-                                            onPressed: () {
-                                              showDialog(
-                                                barrierDismissible: false,
-                                                context: context,
-                                                builder: (_) {
-                                                  final isProduct =
-                                                      product.motor == null;
+                                            const SizedBox(width: 5),
+                                            if (product.motor != null)
+                                              SizedBox(
+                                                height: 40,
+                                                child: IconButton(
+                                                  onPressed: () {
+                                                    showDialog(
+                                                      barrierDismissible: false,
+                                                      context: context,
+                                                      builder: (_) {
+                                                        return ContractsDetailsAlert(
+                                                          product: product,
+                                                        );
+                                                      },
+                                                    );
+                                                  },
+                                                  icon: const FaIcon(
+                                                    FontAwesomeIcons
+                                                        .fileInvoice,
+                                                    size: 20,
+                                                    color: Colors.blue,
+                                                  ),
+                                                ),
+                                              ),
+                                            SizedBox(
+                                              width: 40,
+                                              child: IconButton(
+                                                onPressed: () {
+                                                  showDialog(
+                                                    barrierDismissible: false,
+                                                    context: context,
+                                                    builder: (_) {
+                                                      final isProduct =
+                                                          product.motor == null;
 
-                                                  return BlocProvider.value(
-                                                    value: context
-                                                        .read<ProductsBloc>(),
-                                                    child: EditProductDialog(
-                                                      product: product,
-                                                      isProduct: isProduct,
-                                                    ),
+                                                      return BlocProvider.value(
+                                                        value: context.read<
+                                                            ProductsBloc>(),
+                                                        child:
+                                                            EditProductDialog(
+                                                          product: product,
+                                                          isProduct: isProduct,
+                                                        ),
+                                                      );
+                                                    },
                                                   );
                                                 },
-                                              );
-                                            },
-                                            icon: const FaIcon(
-                                              FontAwesomeIcons.penToSquare,
-                                              size: 20,
-                                              color: Colors.blue,
+                                                icon: const FaIcon(
+                                                  FontAwesomeIcons.penToSquare,
+                                                  size: 20,
+                                                  color: Colors.blue,
+                                                ),
+                                              ),
                                             ),
-                                          ),
+                                          ],
                                         ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
-                            const SizedBox(height: 15),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Positioned.fill(
-                      top: null,
-                      child: Container(
-                        height: 120,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 26,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          boxShadow: defaultBoxShadow,
-                        ),
-                        child: Center(
-                          child: PrimaryButton(
-                            onPressed: () {
-                              showDialog(
-                                barrierDismissible: false,
-                                context: context,
-                                builder: (_) {
-                                  return BlocProvider.value(
-                                    value: context.read<ProductsBloc>(),
-                                    child: const AddProductDialog(),
-                                  );
-                                },
-                              );
-                            },
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                FaIcon(FontAwesomeIcons.circlePlus),
-                                SizedBox(width: 10),
-                                Text('Agregar Producto'),
+                                      );
+                                    },
+                                  ),
+                                const SizedBox(height: 15),
                               ],
                             ),
                           ),
                         ),
-                      ),
+                        Positioned.fill(
+                          top: null,
+                          child: Container(
+                            height: 120,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 26,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.white,
+                              boxShadow: defaultBoxShadow,
+                            ),
+                            child: Center(
+                              child: PrimaryButton(
+                                onPressed: () {
+                                  showDialog(
+                                    barrierDismissible: false,
+                                    context: context,
+                                    builder: (_) {
+                                      return BlocProvider.value(
+                                        value: context.read<ProductsBloc>(),
+                                        child: const AddProductDialog(),
+                                      );
+                                    },
+                                  );
+                                },
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    FaIcon(FontAwesomeIcons.circlePlus),
+                                    SizedBox(width: 10),
+                                    Text('Agregar Producto'),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              );
+                  );
+              }
             },
           );
         }),

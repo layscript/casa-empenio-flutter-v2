@@ -12,7 +12,7 @@ class HttpExpensesRepository implements ExpensesRepository {
   final Dio _dio;
 
   @override
-  Future<bool> createExpense({
+  Future<Either<String, bool>> createExpense({
     required int id,
     required String obs,
     required double monto,
@@ -29,20 +29,12 @@ class HttpExpensesRepository implements ExpensesRepository {
       if (response.statusCode != 201) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
-        return false;
-/*         
- */
+        return Left(message);
       } else {
-        return true;
-        //final map = json.decode(response.data!) as Map<String, dynamic>;
-/*         return true;
- */
+        return const Right(true);
       }
     } catch (e) {
-      return false;
-      //print('responseee ee: $e');
-/*       return false;
- */
+      return const Left('Ocurrió un error');
     }
   }
 

@@ -1,6 +1,7 @@
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/notify/view/notify_view.dart';
 import 'package:casa_empenio_pe/presentation/features/home/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -19,6 +20,20 @@ class HomeView extends StatelessWidget {
             backgroundColor: AppColors.blue,
             title: const Text('Casa de Empeño'),
             centerTitle: true,
+            actions: [
+              IconButton(
+                onPressed: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const NotifyView()));
+                },
+                icon: const Icon(
+                  Icons.notifications_active_sharp,
+                  color: Colors.deepOrangeAccent,
+                ),
+              ),
+            ],
           ),
           drawer: const AppDrawer(),
           body: BlocBuilder<HomeBloc, HomeState>(
@@ -53,6 +68,15 @@ class HomeView extends StatelessWidget {
 
                 case 9:
                   return const ExpensesView();
+
+                case 10:
+                  return const HistorialView();
+
+                case 11:
+                  return const OpenCajaView();
+
+                case 12:
+                  return const PayUserView();
               }
               return const SizedBox();
             },

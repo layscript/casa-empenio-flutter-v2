@@ -12,7 +12,7 @@ class HttpCajaRepository implements CajaRepository {
   final Dio _dio;
 
   @override
-  Future<bool> closeCaja({
+  Future<Either<String, bool>> closeCaja({
     required int userId,
     required double monto,
     required String obs,
@@ -29,14 +29,13 @@ class HttpCajaRepository implements CajaRepository {
       if (response.statusCode != 201) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
-        return false;
+        return Left(message);
       } else {
         //final map = json.decode(response.data!) as Map<String, dynamic>;
-        return true;
+        return const Right(true);
       }
     } catch (e) {
-      //print('responseee ee: $e');
-      return false;
+      return const Left('Ocurrió un error');
     }
   }
 
@@ -70,10 +69,13 @@ class HttpCajaRepository implements CajaRepository {
   }
 
   @override
-  Future<Either<String, CajaEntity>> getCajaOfTheDay() async {
+  Future<Either<String, CajaEntity?>> getCajaOfTheDay() async {
     const path = '/finanza/caja/actual';
     try {
       final response = await _dio.get<String>(path);
+      print('xxxxdebuggg 1: ${response.statusCode}');
+      print('xxxxdebuggg 2: ${response.data}');
+
       if (response.statusCode != 200) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
@@ -84,7 +86,7 @@ class HttpCajaRepository implements CajaRepository {
         if (body != null) {
           return Right(CajaEntity.getCajaFromMap(body));
         } else {
-          return const Left('No hay caja abierta');
+          return const Right(null);
         }
       }
     } catch (e) {
@@ -99,7 +101,7 @@ class HttpCajaRepository implements CajaRepository {
   }
 
   @override
-  Future<bool> openCaja({
+  Future<Either<String, bool>> openCaja({
     required int userId,
     required double monto,
     required String obs,
@@ -116,14 +118,14 @@ class HttpCajaRepository implements CajaRepository {
       if (response.statusCode != 201) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
-        return false;
+        return Left(message);
       } else {
         //final map = json.decode(response.data!) as Map<String, dynamic>;
-        return true;
+        return const Right(true);
       }
     } catch (e) {
       //print('responseee ee: $e');
-      return false;
+      return const Left('Ocurrió un error');
     }
   }
 }

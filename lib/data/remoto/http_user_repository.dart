@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:dartz/dartz.dart';
@@ -102,6 +103,9 @@ class HttpUserRepository implements UserRepository {
     final path = '/usuarios/?limit=$limit&offset=$offset';
     try {
       final response = await _dio.get<String>(path);
+      log('debugggg 1: ${response.statusCode}');
+      log('debugggg 2: ${response.data}');
+
       if (response.statusCode != 200) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
@@ -111,6 +115,7 @@ class HttpUserRepository implements UserRepository {
         return Right(UserEntity.listGetUsersFromMap(map));
       }
     } catch (e) {
+      log('debugggg 3: ${e}');
       return const Left('Ocurrió un error con el servidor');
     }
   }

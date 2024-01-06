@@ -285,7 +285,10 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     Emitter<ReportsState> emit,
   ) async {
     emit(state.copyWith(statusDetails: ReportsStatus.loading));
-    final result = await _loansRepository.getLoan(id: event.value);
+    final result = await _loansRepository.getLoan(
+      id: event.value,
+      userId: null,
+    );
     result.fold(
       (message) {
         emit(state.copyWith(statusDetails: ReportsStatus.error));

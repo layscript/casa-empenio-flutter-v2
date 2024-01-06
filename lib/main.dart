@@ -55,6 +55,15 @@ Future<void> main() async {
         RepositoryProvider(
           create: (context) => _expensesRepository,
         ),
+        RepositoryProvider(
+          create: (context) => _historialRepository,
+        ),
+        RepositoryProvider(
+          create: (context) => _motionRepository,
+        ),
+        RepositoryProvider(
+          create: (context) => _solicitudRepository,
+        ),
       ],
       child: MultiBlocProvider(
         providers: [

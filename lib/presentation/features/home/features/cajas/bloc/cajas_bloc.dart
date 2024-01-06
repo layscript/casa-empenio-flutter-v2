@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:casa_empenio_pe/domain/caja/caja_entity.dart';
 import 'package:casa_empenio_pe/domain/caja/caja_repository.dart';
-import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 
@@ -28,13 +27,15 @@ class CajasBloc extends Bloc<CajasEvent, CajasState> {
   ) async {
     emit(state.copyWith(cajasStatus: CajasStatus.loading));
 
-    final result = await Future.wait([
+    /*   final result = await Future.wait([
       _cajaRepository.getAllCajas(),
       _cajaRepository.getCajaOfTheDay(),
     ]);
 
     final firstResult = result[0] as Either<String, List<CajaEntity>>;
-    final secondResult = result[1] as Either<String, CajaEntity>;
+    final secondResult = result[1] as Either<String, CajaEntity>; */
+
+    final firstResult = await _cajaRepository.getAllCajas();
 
     firstResult.fold(
       (error) => emit(
@@ -46,13 +47,13 @@ class CajasBloc extends Bloc<CajasEvent, CajasState> {
       (list) => emit(
         state.copyWith(
           cajasStatus: CajasStatus.loaded,
-          listCajas: list,
+          listCajas: list.where((e) => e.estado != 'Abierta').toList(),
           error: null,
         ),
       ),
     );
 
-    secondResult.fold(
+    /*  secondResult.fold(
       (error) => emit(
         state.copyWith(
           cajasStatus: CajasStatus.error,
@@ -66,7 +67,7 @@ class CajasBloc extends Bloc<CajasEvent, CajasState> {
           error: null,
         ),
       ),
-    );
+    ); */
   }
 
   Future<void> _onGetCajasOfTheDay(
@@ -108,19 +109,19 @@ class CajasBloc extends Bloc<CajasEvent, CajasState> {
       obs: event.obs,
     );
 
-    if (result) {
-      emit(
+    result.fold(
+      (error) => emit(
+        state.copyWith(
+          error: error,
+          cajasStatus: CajasStatus.failure,
+        ),
+      ),
+      (success) => emit(
         state.copyWith(
           cajasStatus: CajasStatus.success,
         ),
-      );
-    } else {
-      emit(
-        state.copyWith(
-          cajasStatus: CajasStatus.failure,
-        ),
-      );
-    }
+      ),
+    );
   }
 
   Future<void> _onOpenBox(
@@ -139,22 +140,20 @@ class CajasBloc extends Bloc<CajasEvent, CajasState> {
       obs: event.obs,
     );
 
-    if (result) {
-      emit(
+    result.fold(
+      (error) => emit(
+        state.copyWith(
+          error: error,
+          cajasStatus: CajasStatus.failure,
+          movements: state.movements,
+        ),
+      ),
+      (success) => emit(
         state.copyWith(
           cajasStatus: CajasStatus.success,
           movements: state.movements,
-          error: null,
         ),
-      );
-    } else {
-      emit(
-        state.copyWith(
-          cajasStatus: CajasStatus.failure,
-          movements: state.movements,
-          error: null,
-        ),
-      );
-    }
+      ),
+    );
   }
 }

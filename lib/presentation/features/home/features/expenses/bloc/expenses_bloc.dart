@@ -8,10 +8,10 @@ part 'expenses_event.dart';
 part 'expenses_state.dart';
 
 class ExpensesBloc extends Bloc<ExpensesEvent, ExpensesState> {
-  ExpensesBloc(
-      {required ExpensesRepository expensesRepository,
-      required CajaRepository cajaRepository})
-      : _expensesRepository = expensesRepository,
+  ExpensesBloc({
+    required ExpensesRepository expensesRepository,
+    required CajaRepository cajaRepository,
+  })  : _expensesRepository = expensesRepository,
         _cajaRepository = cajaRepository,
         super(const ExpensesState()) {
     on<GetExpenses>(_onGetExpenses);
@@ -60,20 +60,19 @@ class ExpensesBloc extends Bloc<ExpensesEvent, ExpensesState> {
       monto: double.parse(event.monto),
     );
 
-    if (result) {
-      emit(
+    result.fold(
+      (error) => emit(
+        state.copyWith(
+          expensesStatus: ExpensesStatus.failure,
+          error: error,
+        ),
+      ),
+      (success) => emit(
         state.copyWith(
           expensesStatus: ExpensesStatus.success,
         ),
-      );
-    } else {
-      emit(
-        state.copyWith(
-          expensesStatus: ExpensesStatus.failure,
-          error: 'Ocurrió un problema al registrar',
-        ),
-      );
-    }
+      ),
+    );
   }
 
   Future<void> _onGetCashExpensesStatus(
@@ -91,7 +90,7 @@ class ExpensesBloc extends Bloc<ExpensesEvent, ExpensesState> {
       // Success
       (rigth) => emit(
         state.copyWith(
-          openBox: false,
+          openBox: rigth == null ? true : false,
         ),
       ),
     );

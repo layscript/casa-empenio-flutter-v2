@@ -24,6 +24,7 @@ final CustomerRepository _customerRepository = HttpCustomerRepository(
 
 final LoansRepository _loansRepository = HttpLoansRepository(
   dio: _client,
+  customerRepository: _customerRepository,
 );
 
 final ReportsRepository _reportsRepository = HttpReportsRepository(
@@ -43,6 +44,18 @@ final CajaRepository _cajaRepository = HttpCajaRepository(
 );
 
 final ExpensesRepository _expensesRepository = HttpExpensesRepository(
+  dio: _client,
+);
+
+final HistorialRepository _historialRepository = HttpHistorialRepository(
+  dio: _client,
+);
+
+final MotionRepository _motionRepository = HttpMotionRepository(
+  dio: _client,
+);
+
+final SolicitudRepository _solicitudRepository = HttpSolicitudRepository(
   dio: _client,
 );
 

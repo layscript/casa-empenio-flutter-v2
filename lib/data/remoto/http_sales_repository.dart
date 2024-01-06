@@ -67,7 +67,9 @@ class HttpSalesRepository implements SalesRepository {
           'ventaId': map['id'],
         };
 
-        final responseFactura = await _dio.post(
+        print('veveveentaaa: $parsedMap');
+
+        /* final responseFactura = await _dio.post(
           '/facturacion/facturacion/venta',
           data: parsedMap,
         );
@@ -76,7 +78,8 @@ class HttpSalesRepository implements SalesRepository {
           return false;
         } else {
           return true;
-        }
+        } */
+        return true;
       }
     } catch (e) {
       return false;

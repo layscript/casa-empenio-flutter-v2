@@ -15,18 +15,18 @@ abstract class ProductRepository {
     required String criterio,
   });
 
-  Future<bool> createVehiculo({
+  Future<Either<String, bool>> createVehiculo({
     required Map<String, dynamic> payload,
   });
-  Future<bool> updateVehiculo({
-    required Map<String, dynamic> payload,
-  });
-
-  Future<bool> createProduct({
+  Future<Either<String, bool>> updateVehiculo({
     required Map<String, dynamic> payload,
   });
 
-  Future<bool> updateProduct({
+  Future<Either<String, bool>> createProduct({
+    required Map<String, dynamic> payload,
+  });
+
+  Future<Either<String, bool>> updateProduct({
     required Map<String, dynamic> payload,
   });
 }

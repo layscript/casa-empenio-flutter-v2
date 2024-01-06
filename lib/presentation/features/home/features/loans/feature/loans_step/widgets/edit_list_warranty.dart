@@ -36,7 +36,7 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
   bool isValidMarcaWarranty = false;
   bool isValidModeloWarranty = false;
   bool isValidColorWarranty = false;
-  bool isValidSerieWarranty = false;
+  /* bool isValidSerieWarranty = false; */
   bool isValidObservationWarranty = false;
   bool isValidPriceWarranty = false;
   bool isValidCategories = false;
@@ -65,7 +65,7 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
     isValidColorWarranty = loansState.color != null ? true : false;
 
     serieWarrantyCtrl.text = loansState.serie ?? '';
-    isValidSerieWarranty = loansState.serie != null ? true : false;
+    /* isValidSerieWarranty = loansState.serie != null ? true : false; */
 
     observationWarrantyCtrl.text = loansState.warrantyObservations ?? '';
     isValidObservationWarranty =
@@ -241,7 +241,7 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
         AppTextFormField(
           labelText: 'Serie',
           controller: serieWarrantyCtrl,
-          isValid: (value) {
+          /*  isValid: (value) {
             setState(() {
               isValidSerieWarranty = value;
             });
@@ -249,7 +249,7 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
           validator: (value) {
             if (value!.isEmpty) return 'Campo Requerido';
             return null;
-          },
+          }, */
         ),
         const SizedBox(height: 15),
         AppTextFormField(
@@ -388,7 +388,7 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
                   isValidMarcaWarranty &&
                   isValidModeloWarranty &&
                   isValidColorWarranty &&
-                  isValidSerieWarranty &&
+                  /* isValidSerieWarranty && */
                   isValidObservationWarranty &&
                   isValidPriceWarranty /* &&
                   (selectedPhotos?.length == 3) */

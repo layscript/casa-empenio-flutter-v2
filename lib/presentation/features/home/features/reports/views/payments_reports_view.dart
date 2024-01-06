@@ -151,6 +151,10 @@ class _PaymentsReportsViewState extends State<PaymentsReportsView> {
                                                           context.read(),
                                                       cajaRepository:
                                                           context.read(),
+                                                      preferences:
+                                                          context.read(),
+                                                      solicitudRepository:
+                                                          context.read(),
                                                     ),
                                                     child: ReportsDetailView(
                                                       document: prestamo
@@ -229,6 +233,12 @@ class _PaymentsReportsViewState extends State<PaymentsReportsView> {
                                                                         context
                                                                             .read(),
                                                                     cajaRepository:
+                                                                        context
+                                                                            .read(),
+                                                                    preferences:
+                                                                        context
+                                                                            .read(),
+                                                                    solicitudRepository:
                                                                         context
                                                                             .read(),
                                                                   ),
@@ -423,6 +433,10 @@ class _PaymentsReportsViewState extends State<PaymentsReportsView> {
                                                       loansRepository:
                                                           context.read(),
                                                       cajaRepository:
+                                                          context.read(),
+                                                      preferences:
+                                                          context.read(),
+                                                      solicitudRepository:
                                                           context.read(),
                                                     ),
                                                     child: ReportsDetailView(

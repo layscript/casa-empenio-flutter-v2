@@ -12,9 +12,12 @@ import 'package:image_picker/image_picker.dart';
 class HttpLoansRepository implements LoansRepository {
   const HttpLoansRepository({
     required Dio dio,
-  }) : _dio = dio;
+    required CustomerRepository customerRepository,
+  })  : _dio = dio,
+        _customerRepository = customerRepository;
 
   final Dio _dio;
+  final CustomerRepository _customerRepository;
 
   @override
   Future<Either<String, int>> getLastCode() async {
@@ -37,7 +40,10 @@ class HttpLoansRepository implements LoansRepository {
   }
 
   @override
-  Future<Either<String, LoansEntity>> getLoan({required int id}) async {
+  Future<Either<String, LoansEntity>> getLoan({
+    required int id,
+    required int? userId,
+  }) async {
     final path = '/prestamos/prestamos/$id';
     try {
       final response = await _dio.get<String>(path);
@@ -48,6 +54,13 @@ class HttpLoansRepository implements LoansRepository {
         return Left(message);
       } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
+        if (userId != null) {
+          await _customerRepository.createHistory(
+            accion: 'VISUALIZAR',
+            detalle: 'ver detalle del prestamo con el codigo: $id',
+            usuarioId: userId,
+          );
+        }
         return Right(LoansEntity.getLoanFromMap(map['body']));
       }
     } catch (e) {
@@ -58,6 +71,7 @@ class HttpLoansRepository implements LoansRepository {
   @override
   Future<Either<String, List<LoansEntity>>> getLoans({
     required String criterio,
+    required int? userId,
   }) async {
     final path = '/prestamos/prestamos/criterio/$criterio';
     try {
@@ -69,6 +83,13 @@ class HttpLoansRepository implements LoansRepository {
       } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final body = map['body'];
+        if (userId != null) {
+          await _customerRepository.createHistory(
+            accion: 'BUSQUEDA',
+            detalle: 'busqueda en prestamos con el criterio: $criterio',
+            usuarioId: userId,
+          );
+        }
         return Right(LoansEntity.listGetSalesDetailFromMap(body));
       }
     } catch (e) {
@@ -139,6 +160,14 @@ class HttpLoansRepository implements LoansRepository {
         final message = map['message'] ?? 'Ocurrió un error';
         return Left(message);
       } else {
+        // Crear historial
+        await _customerRepository.createHistory(
+          accion: 'CREAR',
+          detalle:
+              'crear prestamo con el codigo: ${json.decode(response.data!)['body']['codigo']}',
+          usuarioId: int.parse(usuarioId),
+        );
+
         final map = json.decode(response.data!) as Map<String, dynamic>;
         log('statttuututus code 2: ${map}');
         final bienesResponse = map['body']['bienesGarantia'] as List<dynamic>?;
@@ -168,23 +197,23 @@ class HttpLoansRepository implements LoansRepository {
         log('debugggg aui 1.2');
 
         if (bienesResponse != null) {
-          log('debugggg aui 1.3');
+          log('debugggg aui 1.33: ${bienesResponse}');
+
           for (var bienResponse in bienesResponse) {
             final imagenUno = bienResponse['imagen'] as String?;
-            final imagenDos = bienResponse['imagen2'] as String?;
-            final imagenTres = bienResponse['imagen3'] as String?;
+            if (imagenUno != null) {
+              final imagenDos = bienResponse['imagen2'] as String?;
+              final imagenTres = bienResponse['imagen3'] as String?;
 
-            final exito = await updateWarrantyPhotos(
-              idGarantia: bienResponse['id'],
-              imagen: imagenUno!,
-              imagen2: imagenDos,
-              imagen3: imagenTres,
-            );
-
-            if (!exito) {
-              return const Left(
-                  'Ocurrió un problema con las imágenes de la garantía');
+              await updateWarrantyPhotos(
+                idGarantia: bienResponse['id'],
+                imagen: imagenUno!,
+                imagen2: imagenDos,
+                imagen3: imagenTres,
+              );
             }
+
+            log('debugggg aui 1.34: ${imagenUno}');
           }
         }
 
@@ -220,6 +249,7 @@ class HttpLoansRepository implements LoansRepository {
         return Right(contrato);
       }
     } catch (e) {
+      log('erreroerpoierioper 1: $e');
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -242,6 +272,11 @@ class HttpLoansRepository implements LoansRepository {
       print('saveeeee 2: ${response.data}');
 
       if (response.statusCode == 201 || response.statusCode == 200) {
+        await _customerRepository.createHistory(
+          accion: 'PAGAR',
+          detalle: 'realizar el pago del prestamo del codigo: $codigo',
+          usuarioId: int.parse(userId),
+        );
         return true;
       } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
@@ -261,6 +296,7 @@ class HttpLoansRepository implements LoansRepository {
     required int codigo,
     required double monto,
     required String observaciones,
+    required String userId,
   }) async {
     const path = '/prestamos/prestamos/aumentarMonto';
     final payload = {
@@ -278,6 +314,12 @@ class HttpLoansRepository implements LoansRepository {
       } else {
         //final map = json.decode(response.data!) as Map<String, dynamic>;
         //return const Right(true);
+        //
+        await _customerRepository.createHistory(
+          accion: 'AGREGAR MONTO',
+          detalle: 'Agregar monto del prestamo del codigo: $codigo',
+          usuarioId: int.parse(userId),
+        );
         return true;
       }
     } catch (e) {
@@ -361,6 +403,7 @@ class HttpLoansRepository implements LoansRepository {
     required String fullName,
     required String? direccion,
     required int idPrestamo,
+    required String userId,
   }) async {
     final payload = {
       'dni': dni,
@@ -381,6 +424,12 @@ class HttpLoansRepository implements LoansRepository {
         final message = map['message'] ?? 'Ocurrió un error';
         return false;
       } else {
+        await _customerRepository.createHistory(
+          accion: 'GENERAR BOLETA',
+          detalle:
+              'Generar boleta electrónica del prestamo del codigo: $idPrestamo',
+          usuarioId: int.parse(userId),
+        );
         return true;
         //final map = json.decode(response.data!) as Map<String, dynamic>;
         //return const Right(true);
@@ -456,6 +505,7 @@ class HttpLoansRepository implements LoansRepository {
     required int id,
     required int idPrestamo,
     required List<XFile>? photos,
+    required String userId,
   }) async {
     final path = '/prestamos/prestamos/liquidar/$id';
 
@@ -472,6 +522,14 @@ class HttpLoansRepository implements LoansRepository {
             idPrestamo: idPrestamo,
             imagenUno: photos!.first.path,
           );
+
+          await _customerRepository.createHistory(
+            accion: 'LIQUIDAR',
+            detalle:
+                'realizar la liquidacion del prestamo del codigo: $idPrestamo',
+            usuarioId: int.parse(userId),
+          );
+
           return result;
         }
       } else {
@@ -609,6 +667,8 @@ class HttpLoansRepository implements LoansRepository {
         return true;
       }
     } catch (e) {
+      log('erreroerpoierioper 2: $e');
+
       return false;
     }
   }
@@ -714,6 +774,12 @@ class HttpLoansRepository implements LoansRepository {
       final response = await _dio.put<String>(path, data: payload);
       if (response.statusCode == 201 || response.statusCode == 200) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
+        await _customerRepository.createHistory(
+          accion: 'ACTUALIZAR',
+          detalle: 'actualizar prestamo del codigo: $idLoan',
+          usuarioId: int.parse(usuarioId),
+        );
+
         log('statttuututus code 2: ${map}');
         final bienesResponse = map['body']['bienesGarantia'] as List<dynamic>?;
         log('statttuututus code 3: ${bienesResponse}');
@@ -782,6 +848,7 @@ class HttpLoansRepository implements LoansRepository {
   @override
   Future<bool> deleteLoan({
     required int idLoan,
+    required String userId,
   }) async {
     final path = '/prestamos/prestamos/$idLoan';
     try {
@@ -791,6 +858,11 @@ class HttpLoansRepository implements LoansRepository {
         final message = map['message'] ?? 'Ocurrió un error';
         return false;
       } else {
+        await _customerRepository.createHistory(
+          accion: 'ELIMINAR',
+          detalle: 'eliminar el prestamo con el codigo: $idLoan',
+          usuarioId: int.parse(userId),
+        );
         //final map = json.decode(response.data!) as Map<String, dynamic>;
         return true;
       }

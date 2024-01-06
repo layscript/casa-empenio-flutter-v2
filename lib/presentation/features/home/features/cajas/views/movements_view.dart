@@ -1,5 +1,6 @@
 import 'package:casa_empenio_pe/domain/caja/caja_entity.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/cajas/widgets/leading_download_cajas.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -18,7 +19,12 @@ class MovementsView extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.blue,
-        title: Text('Movimientos de Caja ($id)'),
+        title: const Text('Movimientos de Caja'),
+        actions: [
+          LeadingDownloadCajas(
+            movimientos: movimientos,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -26,6 +32,7 @@ class MovementsView extends StatelessWidget {
             ListView.builder(
               shrinkWrap: true,
               itemCount: movimientos.length,
+              physics: const NeverScrollableScrollPhysics(),
               itemBuilder: (context, index) {
                 final movimiento = movimientos[index];
                 return ExpansionTile(
@@ -48,19 +55,6 @@ class MovementsView extends StatelessWidget {
                     Row(
                       children: [
                         const Text(
-                          'Observaciones: ',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(movimiento?.observaciones ?? ''),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        const Text(
                           'Tipo: ',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
@@ -68,6 +62,19 @@ class MovementsView extends StatelessWidget {
                         ),
                         const Spacer(),
                         Text(movimiento?.tipo?.descripcion ?? ''),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        const Text(
+                          'Observaciones: ',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(movimiento?.observaciones ?? ''),
                       ],
                     ),
                   ],

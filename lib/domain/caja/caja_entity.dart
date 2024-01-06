@@ -10,6 +10,8 @@ class CajaEntity {
     required this.montoCierreReal,
     required this.montoCierreTeorico,
     required this.montoDiferencia,
+    required this.totalIngresos,
+    required this.totalEgresos,
     required this.estado,
     required this.observaciones,
     required this.eliminado,
@@ -28,6 +30,8 @@ class CajaEntity {
   final String? montoCierreReal;
   final String? montoCierreTeorico;
   final String? montoDiferencia;
+  final String? totalIngresos;
+  final String? totalEgresos;
   final String? estado;
   final String? observaciones;
   final bool? eliminado;
@@ -53,6 +57,8 @@ class CajaEntity {
       montoCierreReal: map['montoCierreReal'],
       montoCierreTeorico: map['montoCierreTeorico'],
       montoDiferencia: map['montoDiferencia'],
+      totalEgresos: map['totalEgresos'],
+      totalIngresos: map['totalIngresos'],
       estado: map['estado'],
       observaciones: map['observaciones'],
       eliminado: map['eliminado'],

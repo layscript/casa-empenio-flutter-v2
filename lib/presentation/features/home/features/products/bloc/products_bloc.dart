@@ -55,10 +55,12 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
 
     resultCategories.fold(
       (error) => emit(
-        state.copyWith(listCategories: []),
+        state.copyWith(
+          listCategories: state.listCategories ?? [],
+        ),
       ),
       (listCategories) => emit(
-        state.copyWith(listCategories: listCategories),
+        state.copyWith(listCategories: state.listCategories ?? listCategories),
       ),
     );
 
@@ -96,9 +98,8 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
     Emitter<ProductsState> emit,
   ) async {
     emit(_loadingState);
-    bool result;
     if (event.id == null) {
-      result = await _productRepository.createVehiculo(
+      final result = await _productRepository.createVehiculo(
         payload: {
           'descripcion': event.descripcion,
           'marca': event.marca,
@@ -117,8 +118,22 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
           'categoria': event.categoria,
         },
       );
+
+      result.fold(
+        (error) => emit(
+          state.copyWith(
+            error: error,
+            productsStatus: ProductsStatus.failed,
+          ),
+        ),
+        (success) => emit(
+          state.copyWith(
+            productsStatus: ProductsStatus.success,
+          ),
+        ),
+      );
     } else {
-      result = await _productRepository.updateVehiculo(
+      final result = await _productRepository.updateVehiculo(
         payload: {
           'id': event.id,
           'descripcion': event.descripcion,
@@ -138,18 +153,18 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
           'categoria': event.categoria,
         },
       );
-    }
 
-    if (result) {
-      emit(
-        state.copyWith(
-          productsStatus: ProductsStatus.success,
+      result.fold(
+        (error) => emit(
+          state.copyWith(
+            error: error,
+            productsStatus: ProductsStatus.failed,
+          ),
         ),
-      );
-    } else {
-      emit(
-        state.copyWith(
-          productsStatus: ProductsStatus.failed,
+        (success) => emit(
+          state.copyWith(
+            productsStatus: ProductsStatus.success,
+          ),
         ),
       );
     }
@@ -159,18 +174,9 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
     SaveProduct event,
     Emitter<ProductsState> emit,
   ) async {
-    /*  emit(_loadingState);
-    await Future.delayed(Duration(seconds: 2));
-    emit(
-      state.copyWith(
-        productsStatus: ProductsStatus.failed,
-      ),
-    ); */
-
     emit(_loadingState);
-    bool? result;
     if (event.id == null) {
-      result = await _productRepository.createProduct(
+      final result = await _productRepository.createProduct(
         payload: {
           'descripcion': event.descripcion,
           'marca': event.marca,
@@ -184,8 +190,22 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
           'cantidad': event.cantidad,
         },
       );
+
+      result.fold(
+        (error) => emit(
+          state.copyWith(
+            error: error,
+            productsStatus: ProductsStatus.failed,
+          ),
+        ),
+        (success) => emit(
+          state.copyWith(
+            productsStatus: ProductsStatus.success,
+          ),
+        ),
+      );
     } else {
-      result = await _productRepository.updateProduct(
+      final result = await _productRepository.updateProduct(
         payload: {
           'id': event.id,
           'descripcion': event.descripcion,
@@ -200,18 +220,18 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
           'cantidad': event.cantidad,
         },
       );
-    }
 
-    if (result) {
-      emit(
-        state.copyWith(
-          productsStatus: ProductsStatus.success,
+      result.fold(
+        (error) => emit(
+          state.copyWith(
+            error: error,
+            productsStatus: ProductsStatus.failed,
+          ),
         ),
-      );
-    } else {
-      emit(
-        state.copyWith(
-          productsStatus: ProductsStatus.failed,
+        (success) => emit(
+          state.copyWith(
+            productsStatus: ProductsStatus.success,
+          ),
         ),
       );
     }

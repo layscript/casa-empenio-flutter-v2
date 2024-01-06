@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/error_snackbar.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/overlay_loader.dart';
@@ -15,6 +16,8 @@ class DeleteLoanDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final preferences = context.read<Preferences>();
+
     return BlocListener<LoansBloc, LoansState>(
       listener: (context, state) {
         if (state.isLoansDeleteLoading) {
@@ -58,7 +61,10 @@ class DeleteLoanDialog extends StatelessWidget {
           TextButton(
             onPressed: () {
               context.read<LoansBloc>().add(
-                    DeleteLoanById(idLoan),
+                    DeleteLoanById(
+                      idLoan: idLoan,
+                      userId: preferences.token?.id.toString() ?? '0',
+                    ),
                   );
             },
             child: const Text(

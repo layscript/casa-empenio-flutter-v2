@@ -1,5 +1,7 @@
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/loans/feature/loans_step/bloc/loans_step_bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AppStepper extends StatelessWidget {
   const AppStepper({
@@ -76,48 +78,57 @@ class AppStepper extends StatelessWidget {
                         final surpassSelected = i < selectedIndex;
                         return MapEntry(
                           i,
-                          SizedBox(
-                            width: 90,
-                            child: Column(
-                              crossAxisAlignment: i == 0
-                                  ? CrossAxisAlignment.start
-                                  : i == 1
-                                      ? CrossAxisAlignment.center
-                                      : CrossAxisAlignment.end,
-                              children: [
-                                Center(
-                                  child: Container(
-                                    width: 30,
-                                    height: 30,
-                                    decoration: BoxDecoration(
-                                      // border: Border.all(
-                                      //   color: isSelected
-                                      //       ? Colors.transparent
-                                      //       : AppColors.disabledButton,
-                                      // ),
-                                      color: isSelected || surpassSelected
-                                          ? AppColors.blue
-                                          : AppColors.disabledButton,
-                                      shape: BoxShape.circle,
+                          GestureDetector(
+                            onTap: () {
+                              context.read<LoansStepBloc>().add(
+                                    ChangeIndexLoans(
+                                      index: i,
                                     ),
-                                    child: Center(
-                                      child: Text(
-                                        surpassSelected ? '✓' : '${i + 1}',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          color: isSelected
-                                              ? Colors.white
-                                              : surpassSelected
-                                                  ? Colors.white
-                                                  : Colors.white,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
+                                  );
+                            },
+                            child: SizedBox(
+                              width: 90,
+                              child: Column(
+                                crossAxisAlignment: i == 0
+                                    ? CrossAxisAlignment.start
+                                    : i == 1
+                                        ? CrossAxisAlignment.center
+                                        : CrossAxisAlignment.end,
+                                children: [
+                                  Center(
+                                    child: Container(
+                                      width: 30,
+                                      height: 30,
+                                      decoration: BoxDecoration(
+                                        // border: Border.all(
+                                        //   color: isSelected
+                                        //       ? Colors.transparent
+                                        //       : AppColors.disabledButton,
+                                        // ),
+                                        color: isSelected || surpassSelected
+                                            ? AppColors.blue
+                                            : AppColors.disabledButton,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          surpassSelected ? '✓' : '${i + 1}',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: isSelected
+                                                ? Colors.white
+                                                : surpassSelected
+                                                    ? Colors.white
+                                                    : Colors.white,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         );

@@ -78,10 +78,12 @@ class AddAmountLoan extends LoansEvent {
     required this.idPrestamo,
     required this.monto,
     required this.obs,
+    required this.userId,
   });
   final int idPrestamo;
   final double monto;
   final String obs;
+  final String userId;
 }
 
 class CreateInvoiceLoans extends LoansEvent {
@@ -90,12 +92,14 @@ class CreateInvoiceLoans extends LoansEvent {
     required this.fullName,
     required this.direccion,
     required this.idPrestamo,
+    required this.userId,
   });
 
   final String dni;
   final String fullName;
   final String? direccion;
   final int idPrestamo;
+  final String userId;
 }
 
 class UpdateAllLoan extends LoansEvent {
@@ -127,8 +131,12 @@ class UpdateAllLoan extends LoansEvent {
 }
 
 class DeleteLoanById extends LoansEvent {
-  const DeleteLoanById(this.idLoan);
+  const DeleteLoanById({
+    required this.idLoan,
+    required this.userId,
+  });
   final int idLoan;
+  final String userId;
 }
 
 class UpdateStatusLoanById extends LoansEvent {
@@ -138,4 +146,16 @@ class UpdateStatusLoanById extends LoansEvent {
   });
   final int idLoan;
   final String value;
+}
+
+class CreateSolicitud extends LoansEvent {
+  const CreateSolicitud({
+    required this.prestamoId,
+    required this.estado,
+    required this.usuarioId,
+  });
+
+  final String prestamoId;
+  final String estado;
+  final int usuarioId;
 }

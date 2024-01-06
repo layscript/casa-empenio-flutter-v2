@@ -115,12 +115,24 @@ class AppDrawer extends StatelessWidget {
               },
             ),
             ListTile(
+              tileColor: homeState.index == 11 ? Colors.black12 : null,
+              leading: const FaIcon(
+                FontAwesomeIcons.boxOpen,
+                size: 20,
+              ),
+              title: const Text('Abrir Caja'),
+              onTap: () {
+                context.read<HomeBloc>().add(GoToOpenCaja());
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
               tileColor: homeState.index == 8 ? Colors.black12 : null,
               leading: const FaIcon(
                 FontAwesomeIcons.expeditedssl,
                 size: 20,
               ),
-              title: const Text('Cajas'),
+              title: const Text('Lista de Cajas'),
               onTap: () {
                 context.read<HomeBloc>().add(GoToCajas());
                 Navigator.pop(context);
@@ -135,6 +147,30 @@ class AppDrawer extends StatelessWidget {
               title: const Text('Gastos'),
               onTap: () {
                 context.read<HomeBloc>().add(GoToExpenses());
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              tileColor: homeState.index == 10 ? Colors.black12 : null,
+              leading: const FaIcon(
+                FontAwesomeIcons.clockRotateLeft,
+                size: 20,
+              ),
+              title: const Text('Historial'),
+              onTap: () {
+                context.read<HomeBloc>().add(GoToHistorial());
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              tileColor: homeState.index == 12 ? Colors.black12 : null,
+              leading: const FaIcon(
+                FontAwesomeIcons.paypal,
+                size: 20,
+              ),
+              title: const Text('Pagos a Personales'),
+              onTap: () {
+                context.read<HomeBloc>().add(GoToPayUsers());
                 Navigator.pop(context);
               },
             ),

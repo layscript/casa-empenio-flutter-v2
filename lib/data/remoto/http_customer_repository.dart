@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
@@ -14,6 +13,7 @@ class HttpCustomerRepository implements CustomerRepository {
   @override
   Future<Either<String, CustomerEntity>> getCustomerByDni({
     required String dni,
+    required int? userId,
   }) async {
     final path = '/clientes/clientes/dni/$dni';
     try {
@@ -26,7 +26,15 @@ class HttpCustomerRepository implements CustomerRepository {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final body = map['body'] != null;
 
-        if (!body) return const Left('El cliente no existe 1');
+        if (!body) return const Left('El cliente no existe');
+        if (userId != null) {
+          await createHistory(
+            accion: 'BUSQUEDA',
+            detalle: 'busqueda en prestamos con el dni: $dni',
+            usuarioId: userId,
+          );
+        }
+
         return Right(CustomerEntity.getCustomerFromMap(map['body']));
       }
     } catch (e) {
@@ -47,7 +55,7 @@ class HttpCustomerRepository implements CustomerRepository {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final body = map['body'] != null;
 
-        if (!body) return const Left('El cliente no existe 2');
+        if (!body) return const Left('El cliente no existe');
         return Right(CustomerEntity.listGetCustomerFromMap(map['body']));
       }
     } catch (e) {
@@ -75,7 +83,7 @@ class HttpCustomerRepository implements CustomerRepository {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final body = map['body'] != null;
 
-        if (!body) return const Left('El cliente no existe 3');
+        if (!body) return const Left('El cliente no existe');
         final data = map['body']['data'];
         return Right(CustomerSunatEntity.getCustomerSunatFromMap(data));
       }
@@ -83,6 +91,30 @@ class HttpCustomerRepository implements CustomerRepository {
       print('djdjdjdjd 3');
 
       return const Left('Ocurrió un error');
+    }
+  }
+
+  @override
+  Future<bool> createHistory({
+    required String accion,
+    required String detalle,
+    required int usuarioId,
+  }) async {
+    const path = '/historial';
+    final payload = {
+      'accion': accion,
+      'detalle': detalle,
+      'usuarioId': usuarioId,
+    };
+    try {
+      final response = await _dio.post<String>(path, data: payload);
+      if (response.statusCode != 201) {
+        return false;
+      } else {
+        return true;
+      }
+    } catch (e) {
+      return false;
     }
   }
 }

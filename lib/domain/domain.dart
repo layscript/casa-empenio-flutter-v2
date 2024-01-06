@@ -9,6 +9,9 @@ export 'categories/categories_repository.dart';
 export 'expenses/expenses_entity.dart';
 export 'expenses/expenses_repository.dart';
 
+export 'historial/historial_entity.dart';
+export 'historial/historial_repository.dart';
+
 export 'preferences/preferences_entity.dart';
 export 'preferences/preferences.dart';
 
@@ -29,6 +32,9 @@ export 'customer/customer_sunat_entity.dart';
 export 'loans/loans_entity.dart';
 export 'loans/loans_repository.dart';
 
+export 'motion/motion.entity.dart';
+export 'motion/motion_repository.dart';
+
 export 'pay/pay_entity.dart';
 
 export 'increase/increase_entity.dart';
@@ -39,3 +45,6 @@ export 'reports/reports_repository.dart';
 export 'sales/sales_repository.dart';
 export 'sales/sales_detail_entity.dart';
 export 'sales/sales_entity.dart';
+
+export 'solicitud/solicitud_entity.dart';
+export 'solicitud/solicitud_repository.dart';

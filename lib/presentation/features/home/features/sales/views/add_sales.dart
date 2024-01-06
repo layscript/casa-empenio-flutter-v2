@@ -73,7 +73,7 @@ class AddFormSales extends StatelessWidget {
 
                   case SalesStatus.error:
                     return const Center(
-                      child: Text('Ocurrió un error'),
+                      child: Text('No pudimos obtener datos del DNI'),
                     );
 
                   case SalesStatus.success:
@@ -187,14 +187,14 @@ class AddFormSales extends StatelessWidget {
                                               .selectedProducts?.imagen ==
                                           null
                                       ? const SizedBox(
-                                          width: 50,
-                                          height: 50,
+                                          width: 40,
+                                          height: 40,
                                           child: Placeholder(),
                                         )
                                       : Image.network(
                                           '$endPoint/${selectedProduct.selectedProducts?.imagen}',
-                                          width: 50,
-                                          height: 50,
+                                          width: 40,
+                                          height: 40,
                                           fit: BoxFit.cover,
                                         ),
                                   title: Column(

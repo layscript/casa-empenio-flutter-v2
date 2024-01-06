@@ -3,7 +3,7 @@ import 'package:dartz/dartz.dart';
 
 abstract class ExpensesRepository {
   Future<Either<String, List<ExpensesEntity>>> getAllExpenses();
-  Future<bool> createExpense({
+  Future<Either<String, bool>> createExpense({
     required int id,
     required String obs,
     required double monto,

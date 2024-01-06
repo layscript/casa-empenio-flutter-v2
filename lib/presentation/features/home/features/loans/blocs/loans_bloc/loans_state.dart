@@ -36,6 +36,11 @@ enum LoansStatus {
   updateStatusLoanLoading,
   updateStatusLoanSuccess,
   updateStatusLoanError,
+
+  //
+  updateLoansLoading,
+  updateLoansSuccess,
+  updateLoansError,
 }
 
 class LoansState extends Equatable {
@@ -46,6 +51,7 @@ class LoansState extends Equatable {
     this.loansStatus = LoansStatus.initial,
     this.loansSearchStatus = LoansStatus.initial,
     this.loansRenewStatus = LoansStatus.initial,
+    this.solicitudStatus = LoansStatus.initial,
     this.customer,
     this.searchCustomer,
     this.customerSunat,
@@ -60,6 +66,7 @@ class LoansState extends Equatable {
   final LoansStatus loansStatus;
   final LoansStatus loansSearchStatus;
   final LoansStatus? loansRenewStatus;
+  final LoansStatus? solicitudStatus;
   final CustomerEntity? customer;
   final CustomerEntity? searchCustomer;
   final CustomerSunatEntity? customerSunat;
@@ -114,9 +121,16 @@ class LoansState extends Equatable {
   bool get isLoansUpdateStatusSuccess =>
       loansStatus == LoansStatus.updateStatusLoanSuccess;
 
-  bool get isLoansRenevLoading => loansRenewStatus == LoansStatus.loading;
-  bool get isLoansRenevError => loansRenewStatus == LoansStatus.error;
-  bool get isLoansRenevSuccess => loansRenewStatus == LoansStatus.loaded;
+  bool get isLoansRenevLoading =>
+      loansRenewStatus == LoansStatus.updateLoansLoading;
+  bool get isLoansRenevError =>
+      loansRenewStatus == LoansStatus.updateLoansError;
+  bool get isLoansRenevSuccess =>
+      loansRenewStatus == LoansStatus.updateLoansSuccess;
+
+  bool get isSolicitudLoading => solicitudStatus == LoansStatus.loading;
+  bool get isSolicitudError => solicitudStatus == LoansStatus.error;
+  bool get isSolicitudSuccess => solicitudStatus == LoansStatus.loaded;
 
   String fullNamesCustomerSunat() {
     return '${customerSunat?.nombre} ${customerSunat?.apellidoPaterno} ${customerSunat?.apellidoMaterno}';
@@ -138,6 +152,7 @@ class LoansState extends Equatable {
     LoansStatus? loansStatus,
     LoansStatus? loansSearchStatus,
     LoansStatus? loansRenewStatus,
+    LoansStatus? solicitudStatus,
     CustomerEntity? customer,
     CustomerEntity? searchCustomer,
     CustomerSunatEntity? customerSunat,
@@ -154,6 +169,7 @@ class LoansState extends Equatable {
         searchCustomer: searchCustomer ?? this.searchCustomer,
         customerSunat: customerSunat ?? this.customerSunat,
         loansStatus: loansStatus ?? this.loansStatus,
+        solicitudStatus: solicitudStatus ?? this.solicitudStatus,
         loansSearchStatus: loansSearchStatus ?? this.loansSearchStatus,
         loanDetails: loanDetails ?? this.loanDetails,
         listCategories: listCategories ?? this.listCategories,
@@ -166,6 +182,7 @@ class LoansState extends Equatable {
         typeSearch,
         searchText,
         loansStatus,
+        solicitudStatus,
         loansSearchStatus,
         customer,
         searchCustomer,

@@ -8,9 +8,11 @@ abstract class LoansRepository {
   Future<Either<String, int>> getLastCode();
   Future<Either<String, LoansEntity>> getLoan({
     required int id,
+    required int? userId,
   });
   Future<Either<String, List<LoansEntity>>> getLoans({
     required String criterio,
+    required int? userId,
   });
   Future<Either<String, ContratoEntity>> saveLoan({
     required int plazoDias,
@@ -41,7 +43,10 @@ abstract class LoansRepository {
     required int idLoan,
     required String value,
   });
-  Future<bool> deleteLoan({required int idLoan});
+  Future<bool> deleteLoan({
+    required int idLoan,
+    required String userId,
+  });
 
   Future<Either<String, ReportsPaymentEntity>> getPayments({
     required int id,
@@ -57,12 +62,14 @@ abstract class LoansRepository {
     required int id,
     required int idPrestamo,
     required List<XFile>? photos,
+    required String userId,
   });
 
   Future<bool> addAmountLoan({
     required int codigo,
     required double monto,
     required String observaciones,
+    required String userId,
   });
 
   Future<Uint8List> createInvoicePdf({required String url});
@@ -73,6 +80,7 @@ abstract class LoansRepository {
     required String fullName,
     required String? direccion,
     required int idPrestamo,
+    required String userId,
   });
 
   Future<bool> uploadWarrantyImage({

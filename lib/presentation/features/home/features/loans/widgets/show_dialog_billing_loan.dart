@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
@@ -35,6 +36,8 @@ class _ShowDialogBillingLoanState extends State<ShowDialogBillingLoan> {
 
   @override
   Widget build(BuildContext context) {
+    final preferences = context.read<Preferences>();
+
     return GestureDetector(
       onTap: () => Keyboard.unfocus(context),
       child: BlocConsumer<LoansBloc, LoansState>(
@@ -198,6 +201,9 @@ class _ShowDialogBillingLoanState extends State<ShowDialogBillingLoan> {
                                           fullName: '---',
                                           direccion: null,
                                           idPrestamo: widget.nroPrestamo ?? 0,
+                                          userId: preferences.token?.id
+                                                  .toString() ??
+                                              '0',
                                         ),
                                       );
                                 } else {
@@ -211,6 +217,9 @@ class _ShowDialogBillingLoanState extends State<ShowDialogBillingLoan> {
                                                   ?.domicilio?.direccion ??
                                               '',
                                           idPrestamo: widget.nroPrestamo ?? 0,
+                                          userId: preferences.token?.id
+                                                  .toString() ??
+                                              '0',
                                         ),
                                       );
                                 }

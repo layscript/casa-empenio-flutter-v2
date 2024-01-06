@@ -45,10 +45,14 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
 
     result.fold(
       (error) {
-        emit(_errorState(error));
+        emit(
+          _errorState(error),
+        );
       },
       (users) {
-        emit(_successState(users));
+        emit(
+          _successState(users),
+        );
       },
     );
   }

@@ -161,6 +161,7 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
   Future<void> _getPrestamo() async {
     final pres = await context.read<LoansRepository>().getLoan(
           id: widget.idPrestamo,
+          userId: null,
         );
     if (mounted) {
       setState(() {
@@ -298,8 +299,10 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
     setState(() {
       _isLoadingDni = true;
     });
-    final cliente =
-        await context.read<CustomerRepository>().getCustomerByDni(dni: value);
+    final cliente = await context.read<CustomerRepository>().getCustomerByDni(
+          dni: value,
+          userId: null,
+        );
 
     cliente.fold(
       (l) {

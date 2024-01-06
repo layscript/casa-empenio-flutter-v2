@@ -170,6 +170,10 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                                             context.read(),
                                                         cajaRepository:
                                                             context.read(),
+                                                        preferences:
+                                                            context.read(),
+                                                        solicitudRepository:
+                                                            context.read(),
                                                       ),
                                                       child: ReportsDetailView(
                                                         document: aumento
@@ -311,6 +315,10 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                                         loansRepository:
                                                             context.read(),
                                                         cajaRepository:
+                                                            context.read(),
+                                                        preferences:
+                                                            context.read(),
+                                                        solicitudRepository:
                                                             context.read(),
                                                       ),
                                                       child: ReportsDetailView(
