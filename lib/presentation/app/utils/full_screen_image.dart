@@ -13,7 +13,7 @@ class FullScreenImage extends StatelessWidget {
     return FadeInImage.assetNetwork(
         fit: BoxFit.fitWidth,
         placeholder: 'assets/image/loading.gif',
-        image: '$endPoint/$imageUrl');
+        image: '$endPointPrincipal/$imageUrl');
   }
 }
 

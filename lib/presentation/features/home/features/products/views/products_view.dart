@@ -109,7 +109,7 @@ class ProductsView extends StatelessWidget {
                                             ? GestureDetector(
                                                 onTap: () {},
                                                 child: Image.network(
-                                                  '$endPoint/${product.imagen}',
+                                                  '$endPointPrincipal/${product.imagen}',
                                                   width: 50,
                                                   height: 50,
                                                   fit: BoxFit.scaleDown,

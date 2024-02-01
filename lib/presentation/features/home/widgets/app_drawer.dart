@@ -20,6 +20,16 @@ class AppDrawer extends StatelessWidget {
           padding: EdgeInsets.zero,
           children: [
             const AppDrawerHeader(),
+            const SizedBox(height: 10),
+            const Center(
+              child: Text(
+                '(Mayta Atalaya - Principal)',
+                style: TextStyle(
+                  fontSize: 11,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
             ListTile(
               tileColor: homeState.index == 0 ? Colors.black12 : null,
               leading: const FaIcon(

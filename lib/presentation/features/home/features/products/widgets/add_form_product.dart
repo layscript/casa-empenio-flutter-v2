@@ -220,7 +220,7 @@ class _AddFormProductState extends State<AddFormProduct> {
                     ), */
                     selectedPhotosProduct![i].path.contains('files/garantias')
                         ? Image.network(
-                            '$endPoint/${selectedPhotosProduct?[i].path}',
+                            '$endPointPrincipal/${selectedPhotosProduct?[i].path}',
                             width: 70,
                             height: 70,
                           )

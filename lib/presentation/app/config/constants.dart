@@ -6,13 +6,17 @@ import 'package:url_launcher/url_launcher.dart';
 //const endPoint = 'http://161.132.38.162:31032';
 //const endPoint = 'http://192.168.195.118:4000';
 //const endPoint = 'http://192.168.18.143:4000';
-const endPoint = 'https://casa-empenio-backend-v2-production.up.railway.app';
+const endPointPrincipal =
+    'https://casa-empenio-backend-v2-production.up.railway.app';
+
+const endPointSucursal1 =
+    'https://casa-empenio-sucursal-production.up.railway.app';
 
 const downloadFactura =
     'https://facturacion.beyzon.dev/public/api/getFile?nombreFile=';
 
 const appTitle = 'Casa de Empeño';
-const appVersion = 'v. 1.0.0';
+const appVersion = 'v. 2.0.0';
 
 const invalidEmptyValue = 'Es requerido';
 const invalidEmail = 'El correo electrónico no es válido';

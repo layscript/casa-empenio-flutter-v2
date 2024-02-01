@@ -555,7 +555,7 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                       },
                                       // TODO:: Revisar bien csmre:v
                                       child: CachedNetworkImage(
-                                        imageUrl: '$endPoint/${bien.imagen}',
+                                        imageUrl: '$endPointPrincipal/${bien.imagen}',
                                         height: 50,
                                         width: 50,
                                         placeholder: (context, url) {
@@ -601,7 +601,7 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                       },
                                       // TODO:: Revisar bien csmre:v
                                       child: CachedNetworkImage(
-                                        imageUrl: '$endPoint/${bien.imagenDos}',
+                                        imageUrl: '$endPointPrincipal/${bien.imagenDos}',
                                         height: 50,
                                         width: 50,
                                         placeholder: (context, url) {
@@ -647,7 +647,7 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                       },
                                       child: CachedNetworkImage(
                                         imageUrl:
-                                            '$endPoint/${bien.imagenTres}',
+                                            '$endPointPrincipal/${bien.imagenTres}',
                                         height: 50,
                                         width: 50,
                                         placeholder: (context, url) {
@@ -751,7 +751,7 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                         const SizedBox(height: 10),
                         if (loan.imagenLiquidado != null)
                           Image.network(
-                            '$endPoint/${loan.imagenLiquidado}',
+                            '$endPointPrincipal/${loan.imagenLiquidado}',
                             height: 100,
                             width: 100,
                             errorBuilder: (context, error, stackTrace) {

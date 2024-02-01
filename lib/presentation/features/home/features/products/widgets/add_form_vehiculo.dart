@@ -382,7 +382,7 @@ class _AddFormVehiculoState extends State<AddFormVehiculo> {
                   children: [
                     selectedPhotosVehiculo![i].path.contains('files/garantias')
                         ? Image.network(
-                            '$endPoint/${selectedPhotosVehiculo?[i].path}',
+                            '$endPointPrincipal/${selectedPhotosVehiculo?[i].path}',
                             width: 70,
                             height: 70,
                           )

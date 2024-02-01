@@ -969,7 +969,7 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
                                                         ? Expanded(
                                                             child:
                                                                 Image.network(
-                                                              '$endPoint/${_garantiasControllers[index][key]}',
+                                                              '$endPointPrincipal/${_garantiasControllers[index][key]}',
                                                               width: 90,
                                                               height: 90,
                                                               errorBuilder:
@@ -1290,7 +1290,7 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
                         if (selectedPhotosClient!.isNotEmpty &&
                             selectedPhotosClient![i].path.contains('files'))
                           Image.network(
-                            '$endPoint/${selectedPhotosClient?[i].path}',
+                            '$endPointPrincipal/${selectedPhotosClient?[i].path}',
                             width: 70,
                             height: 70,
                           ),
@@ -1480,7 +1480,7 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
                         if (selectedPhotosAval!.isNotEmpty &&
                             selectedPhotosAval![i].path.contains('files'))
                           Image.network(
-                            '$endPoint/${selectedPhotosAval?[i].path}',
+                            '$endPointPrincipal/${selectedPhotosAval?[i].path}',
                             width: 70,
                             height: 70,
                           ),

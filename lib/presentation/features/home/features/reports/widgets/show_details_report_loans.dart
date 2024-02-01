@@ -418,7 +418,7 @@ class _ShowDetailsReportLoansState extends State<ShowDetailsReportLoans> {
                                         );
                                       },
                                       child: Image.network(
-                                        '$endPoint/${prenda.imagen}.jpg',
+                                        '$endPointPrincipal/${prenda.imagen}.jpg',
                                         height: 50,
                                         width: 50,
                                       ),

@@ -192,7 +192,7 @@ class AddFormSales extends StatelessWidget {
                                           child: Placeholder(),
                                         )
                                       : Image.network(
-                                          '$endPoint/${selectedProduct.selectedProducts?.imagen}',
+                                          '$endPointPrincipal/${selectedProduct.selectedProducts?.imagen}',
                                           width: 40,
                                           height: 40,
                                           fit: BoxFit.cover,

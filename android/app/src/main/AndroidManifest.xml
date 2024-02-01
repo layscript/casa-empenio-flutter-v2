@@ -21,9 +21,9 @@
     </queries>
 
     <application
-        android:label="casa_empenio_pe"
+        android:label="Casa de Empeño v2"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/launcher_icon">
         <activity
             android:name=".MainActivity"
             android:exported="true"
