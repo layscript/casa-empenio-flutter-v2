@@ -123,7 +123,7 @@ class _CajasViewState extends State<CajasView> {
                                         ),
                                         const Spacer(),
                                         Text(
-                                          'S/.${caja.montoApertura}',
+                                          'S/.${caja.montoCierreReal}',
                                         ),
                                       ],
                                     ),
