@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
@@ -12,29 +13,40 @@ class HomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.read<Preferences>().token;
+
     return BlocProvider(
       create: (context) => HomeBloc(),
       child: Builder(builder: (context) {
         return Scaffold(
           appBar: AppBar(
+            iconTheme: const IconThemeData(color: AppColors.white),
             backgroundColor: AppColors.blue,
-            title: const Text('Casa de Empeño'),
+            title: const Text(
+              'Casa de Empeño',
+              style: TextStyle(
+                color: AppColors.white,
+              ),
+            ),
             centerTitle: true,
             actions: [
-              IconButton(
-                onPressed: () {
-                  Navigator.push(
+              if (auth?.role?.nombre == 'Administrador')
+                IconButton(
+                  onPressed: () {
+                    Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => const NotifyView()));
-                },
-                icon: const Icon(
-                  Icons.notifications_active_sharp,
-                  color: Colors.deepOrangeAccent,
+                          builder: (context) => const NotifyView()),
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.notifications_active_sharp,
+                    color: Colors.deepOrangeAccent,
+                  ),
                 ),
-              ),
             ],
           ),
+          // color blanco del drawer
           drawer: const AppDrawer(),
           body: BlocBuilder<HomeBloc, HomeState>(
             builder: (context, state) {

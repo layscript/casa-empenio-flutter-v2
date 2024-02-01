@@ -79,7 +79,7 @@ class HttpUserRepository implements UserRepository {
 
   @override
   Future<Either<String, bool>> deleteUser({required int idUser}) async {
-    final path = '/usuarios/$idUser}';
+    final path = '/usuarios/$idUser';
     try {
       final response = await _dio.delete<String>(path);
       if (response.statusCode != 200) {
@@ -91,6 +91,7 @@ class HttpUserRepository implements UserRepository {
         return const Right(true);
       }
     } catch (e) {
+      print('asdklñjasjdklasd: $e');
       return const Left('Ocurrió un error con el servidor');
     }
   }

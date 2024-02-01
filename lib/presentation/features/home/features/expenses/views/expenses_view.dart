@@ -21,6 +21,8 @@ class ExpensesView extends StatefulWidget {
 class _ExpensesViewState extends State<ExpensesView> {
   @override
   Widget build(BuildContext context) {
+    final homeBloc = context.read<HomeBloc>();
+
     return BlocProvider(
       lazy: false,
       create: (context) => ExpensesBloc(
@@ -93,6 +95,19 @@ class _ExpensesViewState extends State<ExpensesView> {
               ErrorSnackbar.show(context, state.error ?? '');
             } */
 
+              if (state.openBox == true) {
+                //if (false) {
+                showDialog<bool>(
+                  barrierDismissible: false,
+                  context: context,
+                  builder: (context) {
+                    return const AlertGoToCaja();
+                  },
+                ).then((value) {
+                  homeBloc.add(GoToOpenCaja());
+                });
+              }
+
               if (state.isExpensesFailure) {
                 Navigator.pop(context);
                 ErrorSnackbar.show(context, state.error ?? '');
@@ -101,22 +116,6 @@ class _ExpensesViewState extends State<ExpensesView> {
               if (state.isExpensesSuccess) {
                 Navigator.pop(context, true);
                 SuccessSnackbar.show(context, 'Agregado correctamente');
-              }
-
-              if (state.openBox) {
-                //if (false) {
-                showDialog(
-                  barrierDismissible: false,
-                  context: context,
-                  builder: (_) {
-                    return AlertGoToCaja(
-                      onPressed: () {
-                        context.read<HomeBloc>().add(GoToOpenCaja());
-                        Navigator.pop(context);
-                      },
-                    );
-                  },
-                );
               }
             },
             builder: (context, state) {

@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
@@ -10,6 +11,7 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.read<Preferences>().token;
     final homeState = context.watch<HomeBloc>().state;
 
     return Drawer(
@@ -78,30 +80,32 @@ class AppDrawer extends StatelessWidget {
                 Navigator.pop(context);
               },
             ),
-            ListTile(
-              tileColor: homeState.index == 5 ? Colors.black12 : null,
-              leading: const FaIcon(
-                FontAwesomeIcons.user,
-                size: 20,
+            if (auth?.role?.nombre == 'Administrador')
+              ListTile(
+                tileColor: homeState.index == 5 ? Colors.black12 : null,
+                leading: const FaIcon(
+                  FontAwesomeIcons.user,
+                  size: 20,
+                ),
+                title: const Text('Usuarios'),
+                onTap: () {
+                  context.read<HomeBloc>().add(GoToUsers());
+                  Navigator.pop(context);
+                },
               ),
-              title: const Text('Usuarios'),
-              onTap: () {
-                context.read<HomeBloc>().add(GoToUsers());
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              tileColor: homeState.index == 6 ? Colors.black12 : null,
-              leading: const FaIcon(
-                FontAwesomeIcons.piggyBank,
-                size: 20,
+            if (auth?.role?.nombre == 'Administrador')
+              ListTile(
+                tileColor: homeState.index == 6 ? Colors.black12 : null,
+                leading: const FaIcon(
+                  FontAwesomeIcons.piggyBank,
+                  size: 20,
+                ),
+                title: const Text('Interes'),
+                onTap: () {
+                  context.read<HomeBloc>().add(GoToInterests());
+                  Navigator.pop(context);
+                },
               ),
-              title: const Text('Interes'),
-              onTap: () {
-                context.read<HomeBloc>().add(GoToInterests());
-                Navigator.pop(context);
-              },
-            ),
             ListTile(
               tileColor: homeState.index == 7 ? Colors.black12 : null,
               leading: const FaIcon(
@@ -114,66 +118,71 @@ class AppDrawer extends StatelessWidget {
                 Navigator.pop(context);
               },
             ),
-            ListTile(
-              tileColor: homeState.index == 11 ? Colors.black12 : null,
-              leading: const FaIcon(
-                FontAwesomeIcons.boxOpen,
-                size: 20,
+            if (auth?.role?.nombre == 'Administrador')
+              ListTile(
+                tileColor: homeState.index == 11 ? Colors.black12 : null,
+                leading: const FaIcon(
+                  FontAwesomeIcons.boxOpen,
+                  size: 20,
+                ),
+                title: const Text('Abrir Caja'),
+                onTap: () {
+                  context.read<HomeBloc>().add(GoToOpenCaja());
+                  Navigator.pop(context);
+                },
               ),
-              title: const Text('Abrir Caja'),
-              onTap: () {
-                context.read<HomeBloc>().add(GoToOpenCaja());
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              tileColor: homeState.index == 8 ? Colors.black12 : null,
-              leading: const FaIcon(
-                FontAwesomeIcons.expeditedssl,
-                size: 20,
+            if (auth?.role?.nombre == 'Administrador')
+              ListTile(
+                tileColor: homeState.index == 8 ? Colors.black12 : null,
+                leading: const FaIcon(
+                  FontAwesomeIcons.expeditedssl,
+                  size: 20,
+                ),
+                title: const Text('Lista de Cajas'),
+                onTap: () {
+                  context.read<HomeBloc>().add(GoToCajas());
+                  Navigator.pop(context);
+                },
               ),
-              title: const Text('Lista de Cajas'),
-              onTap: () {
-                context.read<HomeBloc>().add(GoToCajas());
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              tileColor: homeState.index == 9 ? Colors.black12 : null,
-              leading: const FaIcon(
-                FontAwesomeIcons.ccDinersClub,
-                size: 20,
+            if (auth?.role?.nombre == 'Administrador')
+              ListTile(
+                tileColor: homeState.index == 9 ? Colors.black12 : null,
+                leading: const FaIcon(
+                  FontAwesomeIcons.ccDinersClub,
+                  size: 20,
+                ),
+                title: const Text('Gastos'),
+                onTap: () {
+                  context.read<HomeBloc>().add(GoToExpenses());
+                  Navigator.pop(context);
+                },
               ),
-              title: const Text('Gastos'),
-              onTap: () {
-                context.read<HomeBloc>().add(GoToExpenses());
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              tileColor: homeState.index == 10 ? Colors.black12 : null,
-              leading: const FaIcon(
-                FontAwesomeIcons.clockRotateLeft,
-                size: 20,
+            if (auth?.role?.nombre == 'Administrador')
+              ListTile(
+                tileColor: homeState.index == 10 ? Colors.black12 : null,
+                leading: const FaIcon(
+                  FontAwesomeIcons.clockRotateLeft,
+                  size: 20,
+                ),
+                title: const Text('Historial'),
+                onTap: () {
+                  context.read<HomeBloc>().add(GoToHistorial());
+                  Navigator.pop(context);
+                },
               ),
-              title: const Text('Historial'),
-              onTap: () {
-                context.read<HomeBloc>().add(GoToHistorial());
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              tileColor: homeState.index == 12 ? Colors.black12 : null,
-              leading: const FaIcon(
-                FontAwesomeIcons.paypal,
-                size: 20,
+            if (auth?.role?.nombre == 'Administrador')
+              ListTile(
+                tileColor: homeState.index == 12 ? Colors.black12 : null,
+                leading: const FaIcon(
+                  FontAwesomeIcons.paypal,
+                  size: 20,
+                ),
+                title: const Text('Pagos a Personales'),
+                onTap: () {
+                  context.read<HomeBloc>().add(GoToPayUsers());
+                  Navigator.pop(context);
+                },
               ),
-              title: const Text('Pagos a Personales'),
-              onTap: () {
-                context.read<HomeBloc>().add(GoToPayUsers());
-                Navigator.pop(context);
-              },
-            ),
             const Divider(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -207,8 +216,9 @@ class AppDrawerHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authBloc = context.watch<AuthBloc>().state;
-    final isAuthenticated = authBloc is Authenticated;
+    //final authBloc = context.watch<AuthBloc>().state;
+    //final isAuthenticated = authBloc is Authenticated;
+    final auth = context.read<Preferences>().token;
 
     return DrawerHeader(
       margin: EdgeInsets.zero,
@@ -219,21 +229,21 @@ class AppDrawerHeader extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (isAuthenticated) ...[
-              if (authBloc.user.avatar == null)
+            if (auth != null) ...[
+              if (auth.avatar == null)
                 const FlutterLogo(
                   size: 60,
                 )
               else
                 Image.network(
-                  authBloc.user.avatar!,
+                  auth.avatar!,
                   width: 60,
                   height: 60,
                   fit: BoxFit.cover,
                 ),
               const SizedBox(height: 10),
               Text(
-                '${authBloc.user.nombre} ${authBloc.user.apellido}',
+                '${auth.nombre} ${auth.apellido}',
                 maxLines: 1,
                 style: const TextStyle(
                   color: AppColors.primaryText,
@@ -242,7 +252,7 @@ class AppDrawerHeader extends StatelessWidget {
                 ),
               ),
               Text(
-                '${authBloc.user.role?.nombre} ',
+                '${auth.role?.nombre} ',
                 style: const TextStyle(
                   color: AppColors.primaryText,
                   fontSize: 13,

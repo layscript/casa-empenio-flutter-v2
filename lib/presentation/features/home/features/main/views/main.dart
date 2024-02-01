@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/features/home/home.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,8 @@ class MainView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.read<Preferences>().token;
+
     return SingleChildScrollView(
       child: Column(
         children: [
@@ -60,20 +63,22 @@ class MainView extends StatelessWidget {
                 text: 'Productos',
                 icon: FontAwesomeIcons.cartArrowDown,
               ),
-              _ItemGrid(
-                onTap: () => context.read<HomeBloc>().add(
-                      GoToUsers(),
-                    ),
-                text: 'Usuarios',
-                icon: FontAwesomeIcons.user,
-              ),
-              _ItemGrid(
-                onTap: () => context.read<HomeBloc>().add(
-                      GoToInterests(),
-                    ),
-                text: 'Interéses',
-                icon: FontAwesomeIcons.piggyBank,
-              ),
+              if (auth?.role?.nombre == 'Administrador')
+                _ItemGrid(
+                  onTap: () => context.read<HomeBloc>().add(
+                        GoToUsers(),
+                      ),
+                  text: 'Usuarios',
+                  icon: FontAwesomeIcons.user,
+                ),
+              if (auth?.role?.nombre == 'Administrador')
+                _ItemGrid(
+                  onTap: () => context.read<HomeBloc>().add(
+                        GoToInterests(),
+                      ),
+                  text: 'Interéses',
+                  icon: FontAwesomeIcons.piggyBank,
+                ),
               _ItemGrid(
                 onTap: () => context.read<HomeBloc>().add(
                       GoToCategories(),
@@ -81,41 +86,46 @@ class MainView extends StatelessWidget {
                 text: 'Categorías',
                 icon: FontAwesomeIcons.screwdriverWrench,
               ),
-              _ItemGrid(
-                onTap: () => context.read<HomeBloc>().add(
-                      GoToExpenses(),
-                    ),
-                text: 'Gastos',
-                icon: FontAwesomeIcons.ccDinersClub,
-              ),
-              _ItemGrid(
-                onTap: () => context.read<HomeBloc>().add(
-                      GoToHistorial(),
-                    ),
-                text: 'Historial',
-                icon: FontAwesomeIcons.clockRotateLeft,
-              ),
-              _ItemGrid(
-                onTap: () => context.read<HomeBloc>().add(
-                      GoToOpenCaja(),
-                    ),
-                text: 'Abrir Caja',
-                icon: FontAwesomeIcons.boxOpen,
-              ),
-              _ItemGrid(
-                onTap: () => context.read<HomeBloc>().add(
-                      GoToCajas(),
-                    ),
-                text: 'Lista de Cajas',
-                icon: FontAwesomeIcons.expeditedssl,
-              ),
-              _ItemGrid(
-                onTap: () => context.read<HomeBloc>().add(
-                      GoToPayUsers(),
-                    ),
-                text: 'Pagos a Personales',
-                icon: FontAwesomeIcons.paypal,
-              ),
+              if (auth?.role?.nombre == 'Administrador')
+                _ItemGrid(
+                  onTap: () => context.read<HomeBloc>().add(
+                        GoToExpenses(),
+                      ),
+                  text: 'Gastos',
+                  icon: FontAwesomeIcons.ccDinersClub,
+                ),
+              if (auth?.role?.nombre == 'Administrador')
+                _ItemGrid(
+                  onTap: () => context.read<HomeBloc>().add(
+                        GoToHistorial(),
+                      ),
+                  text: 'Historial',
+                  icon: FontAwesomeIcons.clockRotateLeft,
+                ),
+              if (auth?.role?.nombre == 'Administrador')
+                _ItemGrid(
+                  onTap: () => context.read<HomeBloc>().add(
+                        GoToOpenCaja(),
+                      ),
+                  text: 'Abrir Caja',
+                  icon: FontAwesomeIcons.boxOpen,
+                ),
+              if (auth?.role?.nombre == 'Administrador')
+                _ItemGrid(
+                  onTap: () => context.read<HomeBloc>().add(
+                        GoToCajas(),
+                      ),
+                  text: 'Lista de Cajas',
+                  icon: FontAwesomeIcons.expeditedssl,
+                ),
+              if (auth?.role?.nombre == 'Administrador')
+                _ItemGrid(
+                  onTap: () => context.read<HomeBloc>().add(
+                        GoToPayUsers(),
+                      ),
+                  text: 'Pagos a Personales',
+                  icon: FontAwesomeIcons.paypal,
+                ),
             ],
           ),
         ],

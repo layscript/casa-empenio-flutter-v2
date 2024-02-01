@@ -52,7 +52,7 @@ class SalesState extends Equatable {
     required this.selectedProductsSales,
   });
 
-  final bool openBox;
+  final bool? openBox;
   final SalesStatus status;
   final SalesStatus addStatus;
   final SalesStatus saveStatus;
@@ -89,7 +89,7 @@ class SalesState extends Equatable {
     List<ProductSales>? selectedProductsSales,
   }) =>
       SalesState(
-        openBox: openBox ?? this.openBox,
+        openBox: openBox,
         status: status ?? this.status,
         addStatus: addStatus ?? this.addStatus,
         saveStatus: saveStatus ?? this.saveStatus,

@@ -124,7 +124,6 @@ class HttpCajaRepository implements CajaRepository {
         return const Right(true);
       }
     } catch (e) {
-      //print('responseee ee: $e');
       return const Left('Ocurrió un error');
     }
   }

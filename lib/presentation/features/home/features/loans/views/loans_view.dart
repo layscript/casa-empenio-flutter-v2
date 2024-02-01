@@ -26,6 +26,8 @@ class LoansView extends StatefulWidget {
 class _LoansViewState extends State<LoansView> {
   @override
   Widget build(BuildContext context) {
+    final homeBloc = context.read<HomeBloc>();
+
     return BlocProvider(
       lazy: false,
       create: (context) => LoansBloc(
@@ -62,20 +64,17 @@ class _LoansViewState extends State<LoansView> {
                 ErrorSnackbar.show(context, state.error ?? '');
               }
             } */
-            if (state.openBox) {
+            if (state.openBox == true) {
               //if (false) {
               showDialog(
                 barrierDismissible: false,
                 context: context,
-                builder: (_) {
-                  return AlertGoToCaja(
-                    onPressed: () {
-                      context.read<HomeBloc>().add(GoToOpenCaja());
-                      Navigator.pop(context);
-                    },
-                  );
+                builder: (context) {
+                  return const AlertGoToCaja();
                 },
-              );
+              ).then((value) {
+                homeBloc.add(GoToOpenCaja());
+              });
             }
           }, builder: (context, state) {
             switch (state.loansStatus) {
@@ -379,7 +378,6 @@ class _LoansViewState extends State<LoansView> {
                                                 ),
                                               ),
                                               if (auth.user.role?.id != 2)
-
                                                 //Editar
                                                 SizedBox(
                                                   height: 38,
@@ -723,7 +721,7 @@ class _LoansViewState extends State<LoansView> {
                                                                 0,
                                                           );
 
-                                                      if (user?.role?.nombre !=
+                                                      if (user?.role?.nombre ==
                                                               'Usuario' &&
                                                           result &&
                                                           mounted) {

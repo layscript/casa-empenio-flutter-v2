@@ -201,7 +201,6 @@ class _LoanClientViewState extends State<LoanClientView> {
                                   ),
                                 ),
                                 if (auth.user.role?.id != 2)
-
                                   //Editar
                                   SizedBox(
                                     height: 38,
@@ -293,9 +292,39 @@ class _LoanClientViewState extends State<LoanClientView> {
                                     width: 38,
                                     child: IconButton(
                                       padding: EdgeInsets.zero,
-                                      onPressed: () {
-                                        // TODO:: falta validar
-                                        print('jskladljda');
+                                      onPressed: () async {
+                                        print('sadjklsadjklsdakjsad 2.1');
+                                        // YA ESTÁ CERRADO asi que renuevo
+                                        final result =
+                                            await showModalBottomSheet<bool?>(
+                                          isDismissible: false,
+                                          context: context,
+                                          builder: (_) {
+                                            return BlocProvider.value(
+                                              value: context.read<LoansBloc>(),
+                                              child: Padding(
+                                                padding: MediaQuery.of(context)
+                                                    .viewInsets,
+                                                child: EditLoanBottomSheet(
+                                                  idPrestamo:
+                                                      prestamo?.codigo ?? 0,
+                                                  isNuevo: true,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        );
+                                        print('sadjklsadjklsdakjsad 2.2');
+
+                                        if (result != null && mounted) {
+                                          print('sadjklsadjklsdakjsad 2.3');
+
+                                          context.read<LoansBloc>().add(
+                                                GetLoansByDni(
+                                                  value: state.searchText,
+                                                ),
+                                              );
+                                        }
                                       },
                                       icon: const Icon(
                                         Icons.new_label,

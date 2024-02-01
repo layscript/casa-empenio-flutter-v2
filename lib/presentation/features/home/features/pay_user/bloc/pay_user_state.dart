@@ -17,7 +17,7 @@ class PayUserState extends Equatable {
     this.error,
   });
 
-  final bool openBox;
+  final bool? openBox;
   final PayUserStatus payUserStatus;
   final List<MotionEntity>? listPayments;
   final String? error;
@@ -29,7 +29,7 @@ class PayUserState extends Equatable {
     String? error,
   }) =>
       PayUserState(
-        openBox: openBox ?? this.openBox,
+        openBox: openBox,
         payUserStatus: payUserStatus ?? this.payUserStatus,
         listPayments: listPayments ?? this.listPayments,
         error: error,

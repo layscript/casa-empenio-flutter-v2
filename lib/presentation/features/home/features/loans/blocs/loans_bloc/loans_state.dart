@@ -60,7 +60,7 @@ class LoansState extends Equatable {
     this.listCategories,
   });
 
-  final bool openBox;
+  final bool? openBox;
   final bool? typeSearch;
   final String searchText;
   final LoansStatus loansStatus;
@@ -161,7 +161,7 @@ class LoansState extends Equatable {
     List<CategoriesEntity>? listCategories,
   }) =>
       LoansState(
-        openBox: openBox ?? this.openBox,
+        openBox: openBox,
         typeSearch: typeSearch ?? this.typeSearch,
         searchText: searchText ?? this.searchText,
         error: error ?? this.error,

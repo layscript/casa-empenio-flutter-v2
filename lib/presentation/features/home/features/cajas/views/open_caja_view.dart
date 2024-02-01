@@ -77,14 +77,16 @@ class _OpenCajaViewState extends State<OpenCajaView> {
                               label: 'Monto de Apertura',
                               value: movimiento.montoApertura.toString(),
                             ),
-                            CustomRow(
-                              label: 'Total Ingresos',
-                              value: movimiento.totalIngresos.toString(),
-                            ),
-                            CustomRow(
-                              label: 'Total Egresos',
-                              value: movimiento.totalEgresos.toString(),
-                            ),
+                            if (movimiento.totalIngresos != null)
+                              CustomRow(
+                                label: 'Total Ingresos',
+                                value: movimiento.totalIngresos.toString(),
+                              ),
+                            if (movimiento.totalEgresos != null)
+                              CustomRow(
+                                label: 'Total Egresos',
+                                value: movimiento.totalEgresos.toString(),
+                              ),
                             CustomRow(
                               label: 'Estado',
                               value: movimiento.estado.toString(),

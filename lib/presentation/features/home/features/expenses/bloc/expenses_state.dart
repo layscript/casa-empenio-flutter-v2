@@ -17,7 +17,7 @@ class ExpensesState extends Equatable {
     this.error,
   });
 
-  final bool openBox;
+  final bool? openBox;
   final ExpensesStatus expensesStatus;
   final List<ExpensesEntity>? listExpenses;
   final String? error;
@@ -34,7 +34,7 @@ class ExpensesState extends Equatable {
     String? error,
   }) =>
       ExpensesState(
-        openBox: openBox ?? this.openBox,
+        openBox: openBox,
         expensesStatus: expensesStatus ?? this.expensesStatus,
         listExpenses: listExpenses ?? this.listExpenses,
         error: error,

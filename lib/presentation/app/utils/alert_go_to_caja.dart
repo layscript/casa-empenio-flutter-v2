@@ -2,8 +2,7 @@ import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:flutter/material.dart';
 
 class AlertGoToCaja extends StatelessWidget {
-  const AlertGoToCaja({super.key, required this.onPressed});
-  final void Function()? onPressed;
+  const AlertGoToCaja({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -24,11 +23,7 @@ class AlertGoToCaja extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             ElevatedButton(
-              /* onPressed: () {
-                context.read<HomeBloc>().add(GoToCajas());
-                Navigator.pop(context);
-              }, */
-              onPressed: onPressed,
+              onPressed: () => Navigator.pop(context),
               child: const Text('Ir a caja'),
             ),
           ],

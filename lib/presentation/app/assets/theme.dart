@@ -9,6 +9,7 @@ const _defaultTextStyle = TextStyle(
 ThemeData buildTheme(BuildContext context) {
   final themeData = Theme.of(context);
   return ThemeData(
+    useMaterial3: false,
     dividerTheme: const DividerThemeData(
       color: AppColors.divider,
       space: 1,

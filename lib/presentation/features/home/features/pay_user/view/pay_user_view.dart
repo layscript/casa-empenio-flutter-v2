@@ -21,6 +21,8 @@ class PayUserView extends StatefulWidget {
 class _PayUserViewState extends State<PayUserView> {
   @override
   Widget build(BuildContext context) {
+    final homeBloc = context.read<HomeBloc>();
+
     return BlocProvider(
       lazy: false,
       create: (context) => PayUserBloc(
@@ -43,20 +45,17 @@ class _PayUserViewState extends State<PayUserView> {
                 SuccessSnackbar.show(context, 'Agregado correctamente');
               }
 
-              if (state.openBox) {
+              if (state.openBox == true) {
                 //if (false) {
                 showDialog(
                   barrierDismissible: false,
                   context: context,
-                  builder: (_) {
-                    return AlertGoToCaja(
-                      onPressed: () {
-                        context.read<HomeBloc>().add(GoToOpenCaja());
-                        Navigator.pop(context);
-                      },
-                    );
+                  builder: (context) {
+                    return const AlertGoToCaja();
                   },
-                );
+                ).then((value) {
+                  homeBloc.add(GoToOpenCaja());
+                });
               }
             },
             builder: (context, state) {
