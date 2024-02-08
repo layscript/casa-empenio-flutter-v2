@@ -40,8 +40,11 @@ class HttpInterestsRepository implements InterestsRepository {
     required int idInterest,
   }) async {
     final path = '/configuraciones/intereses/$idInterest}';
+    print('debugg delete 1: ${path}');
     try {
       final response = await _dio.delete<String>(path);
+      print('debugg delete 2: ${response.statusCode}');
+      print('debugg delete 3: ${response.data}');
       if (response.statusCode != 200) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
@@ -51,6 +54,7 @@ class HttpInterestsRepository implements InterestsRepository {
         return const Right(true);
       }
     } catch (e) {
+      print('debugg delete 4: ${e}');
       //print('responseee ee: $e');
       return const Left('Ocurrió un error con el servidor');
     }

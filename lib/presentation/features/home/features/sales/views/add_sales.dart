@@ -9,9 +9,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:quantity_input/quantity_input.dart';
 
-class AddFormSales extends StatelessWidget {
+class AddFormSales extends StatefulWidget {
   const AddFormSales({super.key});
 
+  @override
+  State<AddFormSales> createState() => _AddFormSalesState();
+}
+
+class _AddFormSalesState extends State<AddFormSales> {
   @override
   Widget build(BuildContext context) {
     final authBloc = context.read<AuthBloc>().state as Authenticated;
@@ -43,7 +48,7 @@ class AddFormSales extends StatelessWidget {
             const SearchCustomerSales(),
             const SizedBox(height: 20),
             BlocConsumer<SalesBloc, SalesState>(
-              listener: (context, state) {
+              listener: (context, state) async {
                 if (state.isSaveSalesLoading) {
                   OverlayLoader.show(context);
                 } else {
@@ -60,7 +65,12 @@ class AddFormSales extends StatelessWidget {
                       context,
                       'Venta generada correctamente',
                     );
-                    Navigator.pop(context, true);
+
+                    // Despues  de 1500 milisegundos redirigir a la vista de ventas
+                    await Future.delayed(const Duration(milliseconds: 1500));
+                    if (mounted) {
+                      Navigator.pop(context);
+                    }
                   }
                 }
               },

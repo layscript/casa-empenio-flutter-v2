@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -262,7 +263,7 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
       'usuarioId': event.userId,
     };
 
-    print('detaleeesss: ${data}');
+    log('detaleeesss: ${data}');
 
     final result = await _salesRepository.createSalesProduct(data);
     if (result) {

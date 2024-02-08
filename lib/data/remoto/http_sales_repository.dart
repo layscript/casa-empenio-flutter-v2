@@ -59,19 +59,23 @@ class HttpSalesRepository implements SalesRepository {
     const path = '/almacen/ventas/';
     try {
       final response = await _dio.post<String>(path, data: payload);
+      print('asdasdasdsadasdasa 1: ${response.data}');
+      print('asdasdasdsadasdasa 2: ${response.statusCode}');
+
       if (response.statusCode != 201) {
         return false;
       } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
+        print('veveveentaaa 1: $map');
+
         final parsedMap = {
-          'ventaId': map['id'],
+          'ventaId': map['body']['id'],
         };
 
-        print('veveveentaaa: $parsedMap');
+        print('veveveentaaa 2: $parsedMap');
 
         // TODOOOO:: Facturación
-
-        /* final responseFactura = await _dio.post(
+        final responseFactura = await _dio.post(
           '/facturacion/facturacion/venta',
           data: parsedMap,
         );
@@ -80,10 +84,11 @@ class HttpSalesRepository implements SalesRepository {
           return false;
         } else {
           return true;
-        } */
-        return true;
+        }
+        //return true;
       }
     } catch (e) {
+      print('asdasdasdsadasdasa 3: $e');
       return false;
     }
   }
