@@ -3,13 +3,17 @@ import 'dart:convert';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 class HttpSolicitudRepository implements SolicitudRepository {
   const HttpSolicitudRepository({
     required Dio dio,
-  }) : _dio = dio;
+    required SentryClient sentry,
+  })  : _dio = dio,
+        _sentry = sentry;
 
   final Dio _dio;
+  final SentryClient _sentry;
 
   @override
   Future<Either<String, bool>> createSolicitud({
@@ -33,7 +37,11 @@ class HttpSolicitudRepository implements SolicitudRepository {
       } else {
         return const Right(true);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return const Left('Ocurrió un error');
     }
   }
@@ -52,7 +60,11 @@ class HttpSolicitudRepository implements SolicitudRepository {
       } else {
         return const Right(true);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return const Left('Ocurrió un error');
     }
   }
@@ -75,7 +87,11 @@ class HttpSolicitudRepository implements SolicitudRepository {
 
         return Right(SolicitudEntity.listGetSolicitudFromMap(body));
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       print('stateee code 4: ${e}');
 
       return const Left('Ocurrió un error');
@@ -106,7 +122,11 @@ class HttpSolicitudRepository implements SolicitudRepository {
         //final map = json.decode(response.data!) as Map<String, dynamic>;
         return const Right(true);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return const Left('Ocurrió un error');
     }
   }
@@ -129,7 +149,11 @@ class HttpSolicitudRepository implements SolicitudRepository {
         final isStatusPending = map['body']?['estado'] == 'PENDIENTE';
         return isStatusPending;
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return false;
     }
   }

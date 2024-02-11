@@ -52,9 +52,7 @@ class LoansStepView extends StatelessWidget {
                         ),
                         TextButton(
                           onPressed: () {
-                            context
-                                .read<Preferences>()
-                                .removeLoansPreferences();
+                            preferences.removeLoansPreferences();
                             Navigator.pop(context);
                             Navigator.pop(context);
                           },
@@ -75,27 +73,45 @@ class LoansStepView extends StatelessWidget {
           interestsRepository: context.read(),
           preferences: context.read(),
           categoriesRepository: context.read(),
+          sentry: context.read(),
         )..add(GetLastCodeLoans()),
         child: Builder(
           builder: (context) {
             return BlocConsumer<LoansStepBloc, LoansStepState>(
               listener: (context, state) {
-                if (state.isLoansStepLoading) {
-                  OverlayLoader.show(context);
+                print('stateeee: ${state.isLoansStepStatusSavedLoading}');
+                if (state.isLoansStepStatusSavedLoading) {
+                  /* OverlayLoader.show(context); */
+                  LoadingDialog.show(context, 'Guardando...');
                 } else {
-                  OverlayLoader.hide();
-                  if (state.isLoansStepError) {
-                    ErrorSnackbar.show(
+                  /* OverlayLoader.hide(); */
+
+                  if (state.isLoansStepStatusSavedError) {
+                    Navigator.pop(context);
+                    ErrorDialog.show(
+                      context,
+                      state.message ?? 'Ocurrió un error, intentelo de nuevo.',
+                    );
+                    /*  ErrorSnackbar.show(
                       context,
                       state.message ?? 'Ocurrió un error, intentelo más tarde',
-                    );
+                    ); */
                   }
-                  if (state.isLoansStepSuccess) {
-                    SuccessSnackbar.show(
+                  if (state.isLoansStepStatusSavedSuccess) {
+                    Navigator.pop(context);
+                    SuccessDialog.show(
                       context,
                       'Guardado correctamente',
+                      onPressed: () {
+                        Navigator.pop(context);
+                        preferences.removeLoansPreferences();
+                        Navigator.pop(context, true);
+                      },
                     );
-                    Navigator.pop(context, true);
+                    /* SuccessSnackbar.show(
+                      context,
+                      'Guardado correctamente',
+                    ); */
                   }
                 }
               },

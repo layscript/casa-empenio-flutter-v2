@@ -16,4 +16,10 @@ abstract class CajaRepository {
     required double monto,
     required String obs,
   });
+
+  Future<Either<String, bool>> aumentarMonto({
+    required int userId,
+    required double monto,
+    required String obs,
+  });
 }

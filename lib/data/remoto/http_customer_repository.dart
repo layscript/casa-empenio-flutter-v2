@@ -2,13 +2,17 @@ import 'dart:convert';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 class HttpCustomerRepository implements CustomerRepository {
   const HttpCustomerRepository({
     required Dio dio,
-  }) : _dio = dio;
+    required SentryClient sentry,
+  })  : _sentry = sentry,
+        _dio = dio;
 
   final Dio _dio;
+  final SentryClient _sentry;
 
   @override
   Future<Either<String, CustomerEntity>> getCustomerByDni({
@@ -37,7 +41,11 @@ class HttpCustomerRepository implements CustomerRepository {
 
         return Right(CustomerEntity.getCustomerFromMap(map['body']));
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return const Left('Ocurrió un error');
     }
   }
@@ -58,7 +66,11 @@ class HttpCustomerRepository implements CustomerRepository {
         if (!body) return const Left('El cliente no existe');
         return Right(CustomerEntity.listGetCustomerFromMap(map['body']));
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return const Left('Ocurrió un error');
     }
   }
@@ -87,9 +99,12 @@ class HttpCustomerRepository implements CustomerRepository {
         final data = map['body']['data'];
         return Right(CustomerSunatEntity.getCustomerSunatFromMap(data));
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('djdjdjdjd 3');
-
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return const Left('Ocurrió un error');
     }
   }
@@ -113,7 +128,11 @@ class HttpCustomerRepository implements CustomerRepository {
       } else {
         return true;
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return false;
     }
   }

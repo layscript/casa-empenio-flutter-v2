@@ -5,8 +5,10 @@ class ButtonStateError extends StatelessWidget {
   const ButtonStateError({
     super.key,
     required this.onPressed,
+    this.message,
   });
   final void Function()? onPressed;
+  final String? message;
 
   @override
   Widget build(BuildContext context) {
@@ -16,8 +18,8 @@ class ButtonStateError extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Ocurrió un error, vuelva a intentarlo',
+            Text(
+              message ?? 'Ocurrió un error, vuelva a intentarlo',
             ),
             const SizedBox(height: 10),
             SecondaryButton(

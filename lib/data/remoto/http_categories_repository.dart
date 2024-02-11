@@ -3,13 +3,17 @@ import 'dart:convert';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 class HttpCategoriesRepository implements CategoriesRepository {
   const HttpCategoriesRepository({
     required Dio dio,
-  }) : _dio = dio;
+    required SentryClient sentry,
+  })  : _dio = dio,
+        _sentry = sentry;
 
   final Dio _dio;
+  final SentryClient _sentry;
 
   @override
   Future<bool> createCategory({
@@ -29,8 +33,12 @@ class HttpCategoriesRepository implements CategoriesRepository {
         //final map = json.decode(response.data!) as Map<String, dynamic>;
         return true;
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       //print('responseee ee: $e');
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return false;
     }
   }
@@ -50,8 +58,12 @@ class HttpCategoriesRepository implements CategoriesRepository {
         //final map = json.decode(response.data!) as Map<String, dynamic>;
         return true;
       }
-    } catch (e) {
-      //print('responseee ee: $e');
+    } catch (e, stackTrace) {
+      //print('responseee ee: $e')
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return false;
     }
   }
@@ -69,8 +81,12 @@ class HttpCategoriesRepository implements CategoriesRepository {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         return Right(CategoriesEntity.listGetCategoriesFromMap(map));
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       //print('responseee ee: $e');
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -94,7 +110,11 @@ class HttpCategoriesRepository implements CategoriesRepository {
         //final map = json.decode(response.data!) as Map<String, dynamic>;
         return true;
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return false;
     }
   }

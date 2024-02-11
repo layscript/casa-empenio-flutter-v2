@@ -34,3 +34,15 @@ class OpenBox extends CajasEvent {
   final String monto;
   final String obs;
 }
+
+class IncreaseBox extends CajasEvent {
+  const IncreaseBox({
+    required this.id,
+    required this.monto,
+    required this.obs,
+  });
+
+  final int id;
+  final String monto;
+  final String obs;
+}

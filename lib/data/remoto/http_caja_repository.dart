@@ -3,13 +3,17 @@ import 'dart:convert';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 class HttpCajaRepository implements CajaRepository {
   const HttpCajaRepository({
     required Dio dio,
-  }) : _dio = dio;
+    required SentryClient sentry,
+  })  : _dio = dio,
+        _sentry = sentry;
 
   final Dio _dio;
+  final SentryClient _sentry;
 
   @override
   Future<Either<String, bool>> closeCaja({
@@ -34,7 +38,11 @@ class HttpCajaRepository implements CajaRepository {
         //final map = json.decode(response.data!) as Map<String, dynamic>;
         return const Right(true);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return const Left('Ocurrió un error');
     }
   }
@@ -61,8 +69,12 @@ class HttpCajaRepository implements CajaRepository {
         print('errpororor 2: $body');
         return Right(CajaEntity.listGetCajaFromMap(body));
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('errpororor 33: $e');
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       //print('responseee ee: $e');
       return const Left('Ocurrió un error con el servidor');
     }
@@ -89,7 +101,11 @@ class HttpCajaRepository implements CajaRepository {
           return const Right(null);
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -123,7 +139,43 @@ class HttpCajaRepository implements CajaRepository {
         //final map = json.decode(response.data!) as Map<String, dynamic>;
         return const Right(true);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
+      return const Left('Ocurrió un error');
+    }
+  }
+
+  @override
+  Future<Either<String, bool>> aumentarMonto({
+    required int userId,
+    required double monto,
+    required String obs,
+  }) async {
+    const path = '/finanza/caja/aumentarMonto';
+    final payload = {
+      'usuarioId': userId,
+      'monto': monto,
+      'observaciones': obs,
+    };
+
+    try {
+      final response = await _dio.post<String>(path, data: payload);
+      if (response.statusCode != 201) {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final message = map['message'] ?? 'Ocurrió un error';
+        return Left(message);
+      } else {
+        //final map = json.decode(response.data!) as Map<String, dynamic>;
+        return const Right(true);
+      }
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return const Left('Ocurrió un error');
     }
   }

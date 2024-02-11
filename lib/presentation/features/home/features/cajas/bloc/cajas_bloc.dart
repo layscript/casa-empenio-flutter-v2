@@ -17,6 +17,7 @@ class CajasBloc extends Bloc<CajasEvent, CajasState> {
     on<GetCajasOfTheDay>(_onGetCajasOfTheDay);
     on<CloseBox>(_onCloseBox);
     on<OpenBox>(_onOpenBox);
+    on<IncreaseBox>(_onIncreaseBox);
   }
 
   final CajaRepository _cajaRepository;
@@ -155,5 +156,46 @@ class CajasBloc extends Bloc<CajasEvent, CajasState> {
         ),
       ),
     );
+  }
+
+  Future<void> _onIncreaseBox(
+    IncreaseBox event,
+    Emitter<CajasState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        cajasStatus: CajasStatus.loading,
+        movements: state.movements,
+      ),
+    );
+    final result = await _cajaRepository.aumentarMonto(
+      userId: event.id,
+      monto: double.parse(event.monto),
+      obs: event.obs,
+    );
+
+    result.fold(
+      (error) => emit(
+        state.copyWith(
+          error: error,
+          cajasStatus: CajasStatus.failure,
+          movements: state.movements,
+        ),
+      ),
+      (success) => emit(
+        state.copyWith(
+          cajasStatus: CajasStatus.success,
+          movements: state.movements,
+        ),
+      ),
+    );
+
+    /* Future.delayed(const Duration(seconds: 2), () {});
+    emit(
+      state.copyWith(
+        cajasStatus: CajasStatus.success,
+        movements: state.movements,
+      ),
+    ); */
   }
 }

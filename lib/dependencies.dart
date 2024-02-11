@@ -10,53 +10,77 @@ final _client = Dio(
   ),
 );
 
-final UserRepository _userRepository = HttpUserRepository(dio: _client);
+final _sentry = SentryClient(
+  SentryOptions(
+    dsn:
+        'https://2cc28a2e8d321ac9df7e149ae5e1f3f7@o4504110333558784.ingest.sentry.io/4506718787076096',
+  ),
+);
 
-final InterestsRepository _interestsRepository =
-    HttpInterestsRepository(dio: _client);
+final UserRepository _userRepository = HttpUserRepository(
+  dio: _client,
+  sentry: _sentry,
+);
 
-final ProductRepository _productRepository =
-    HttpProductRepository(dio: _client);
+final InterestsRepository _interestsRepository = HttpInterestsRepository(
+  dio: _client,
+  sentry: _sentry,
+);
+
+final ProductRepository _productRepository = HttpProductRepository(
+  dio: _client,
+  sentry: _sentry,
+);
 
 final CustomerRepository _customerRepository = HttpCustomerRepository(
   dio: _client,
+  sentry: _sentry,
 );
 
 final LoansRepository _loansRepository = HttpLoansRepository(
   dio: _client,
   customerRepository: _customerRepository,
+  sentry: _sentry,
 );
 
 final ReportsRepository _reportsRepository = HttpReportsRepository(
   dio: _client,
+  sentry: _sentry,
 );
 
 final SalesRepository _salesRepository = HttpSalesRepository(
   dio: _client,
+  sentry: _sentry,
 );
 
 final CategoriesRepository _categoriesRepository = HttpCategoriesRepository(
   dio: _client,
+  sentry: _sentry,
 );
 
 final CajaRepository _cajaRepository = HttpCajaRepository(
   dio: _client,
+  sentry: _sentry,
 );
 
 final ExpensesRepository _expensesRepository = HttpExpensesRepository(
   dio: _client,
+  sentry: _sentry,
 );
 
 final HistorialRepository _historialRepository = HttpHistorialRepository(
   dio: _client,
+  sentry: _sentry,
 );
 
 final MotionRepository _motionRepository = HttpMotionRepository(
   dio: _client,
+  sentry: _sentry,
 );
 
 final SolicitudRepository _solicitudRepository = HttpSolicitudRepository(
   dio: _client,
+  sentry: _sentry,
 );
 
 /* final _firebase = FirebaseAuth.instance;

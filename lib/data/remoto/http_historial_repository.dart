@@ -3,13 +3,17 @@ import 'dart:convert';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 class HttpHistorialRepository implements HistorialRepository {
   const HttpHistorialRepository({
     required Dio dio,
-  }) : _dio = dio;
+    required SentryClient sentry,
+  })  : _sentry = sentry,
+        _dio = dio;
 
   final Dio _dio;
+  final SentryClient _sentry;
 
   @override
   Future<Either<String, List<HistorialEntity>?>> getHistorialByUser({
@@ -33,7 +37,11 @@ class HttpHistorialRepository implements HistorialRepository {
           return Right(HistorialEntity.listGetHistorialFromMap(map));
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       print('responseee ee: $e');
       return const Left('Ocurrió un error con el servidor');
     }

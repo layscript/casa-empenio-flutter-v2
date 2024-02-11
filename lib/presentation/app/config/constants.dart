@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-//const endPoint = 'http://161.132.38.162:31032';
+const endPointPrincipal = 'http://161.132.38.162:31032';
 //const endPoint = 'http://192.168.195.118:4000';
 //const endPoint = 'http://192.168.18.143:4000';
-const endPointPrincipal =
-    'https://casa-empenio-backend-v2-production.up.railway.app';
+//const endPointPrincipal =
+//'https://casa-empenio-backend-v2-production.up.railway.app';
 
 const endPointSucursal1 =
     'https://casa-empenio-sucursal-production.up.railway.app';

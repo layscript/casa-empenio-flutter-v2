@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 part 'loans_step_event.dart';
 part 'loans_step_state.dart';
@@ -18,10 +19,12 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
     required InterestsRepository interestsRepository,
     required CategoriesRepository categoriesRepository,
     required Preferences preferences,
+    required SentryClient sentry,
   })  : _loansRepository = loansRepository,
         _interestsRepository = interestsRepository,
         _preferences = preferences,
         _categoriesRepository = categoriesRepository,
+        _sentry = sentry,
         super(const LoansStepState()) {
     // NEWWWW
 
@@ -78,6 +81,7 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
   final InterestsRepository _interestsRepository;
   final CategoriesRepository _categoriesRepository;
   final Preferences _preferences;
+  final SentryClient _sentry;
 
   void _onChangeIndexLoans(
     ChangeIndexLoans event,
@@ -699,171 +703,184 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
     SaveAllLoan event,
     Emitter<LoansStepState> emit,
   ) async {
-    /*  emit(state.copyWith(loansStepStatus: LoansStepStatus.loading));
+    /*  emit(state.copyWith(loansStepStatusSaved: LoansStepStatus.loading));
     await Future.delayed(const Duration(seconds: 3));
-    emit(state.copyWith(loansStepStatus: LoansStepStatus.success)); */
+    emit(state.copyWith(loansStepStatusSaved: LoansStepStatus.success)); */
 
-    emit(state.copyWith(loansStepStatus: LoansStepStatus.loading));
+    try {
+      emit(state.copyWith(loansStepStatusSaved: LoansStepStatus.loading));
 
-    List<Map<String, Object?>> garantiasData;
+      List<Map<String, Object?>> garantiasData;
 
-    final loansLocalState = _preferences.getLoansPreferences;
+      final loansLocalState = _preferences.getLoansPreferences;
 
-    if (loansLocalState?.warrantyPreferences != null) {
-      garantiasData = loansLocalState!.warrantyPreferences!.map((e) {
-        List<String?> imagenes = [];
+      if (loansLocalState?.warrantyPreferences != null) {
+        garantiasData = loansLocalState!.warrantyPreferences!.map((e) {
+          List<String?> imagenes = [];
 
-        for (int i = 0; i < 3; i++) {
-          if (e.photoWarranty != null &&
-              e.photoWarranty!.isNotEmpty &&
-              i < e.photoWarranty!.length) {
-            imagenes.add(e.photoWarranty![i].path);
-          } else {
-            imagenes.add(null);
+          for (int i = 0; i < 3; i++) {
+            if (e.photoWarranty != null &&
+                e.photoWarranty!.isNotEmpty &&
+                i < e.photoWarranty!.length) {
+              imagenes.add(e.photoWarranty![i].path);
+            } else {
+              imagenes.add(null);
+            }
           }
-        }
 
-        return {
-          'descripcion': e.description,
-          'marca': e.brand,
-          'modelo': e.model,
-          'placa': e.placa,
-          'categoria': e.category?.descripcion ?? '',
-          'color': e.color,
-          'serie': e.serie,
-          'valorizacion': double.parse(e.price == '' ? '0' : e.price!),
-          'observaciones': e.warrantyObservations,
-          'estado': e.status,
-          'imagen': imagenes[0],
-          'imagen2': imagenes[1],
-          'imagen3': imagenes[2],
-        };
-      }).toList();
-    } else {
-      garantiasData = state.listWarranty!.map((e) {
-        List<String?> imagenes = [];
+          return {
+            'descripcion': e.description,
+            'marca': e.brand,
+            'modelo': e.model,
+            'placa': e.placa,
+            'categoria': e.category?.descripcion ?? '',
+            'color': e.color,
+            'serie': e.serie,
+            'valorizacion': double.parse(e.price == '' ? '0' : e.price!),
+            'observaciones': e.warrantyObservations,
+            'estado': e.status,
+            'imagen': imagenes[0],
+            'imagen2': imagenes[1],
+            'imagen3': imagenes[2],
+          };
+        }).toList();
+      } else {
+        garantiasData = state.listWarranty!.map((e) {
+          List<String?> imagenes = [];
 
-        for (int i = 0; i < 3; i++) {
-          if (e.photoWarranty != null &&
-              e.photoWarranty!.isNotEmpty &&
-              i < e.photoWarranty!.length) {
-            imagenes.add(e.photoWarranty![i].path);
-          } else {
-            imagenes.add(null);
+          for (int i = 0; i < 3; i++) {
+            if (e.photoWarranty != null &&
+                e.photoWarranty!.isNotEmpty &&
+                i < e.photoWarranty!.length) {
+              imagenes.add(e.photoWarranty![i].path);
+            } else {
+              imagenes.add(null);
+            }
           }
-        }
 
-        return {
-          'descripcion': e.description,
-          'marca': e.brand,
-          'modelo': e.model,
-          'placa': e.placa,
-          'categoria': e.category?.descripcion ?? '',
-          'color': e.color,
-          'serie': e.serie,
-          'valorizacion': double.parse(e.price == '' ? '0' : e.price!),
-          'observaciones': e.warrantyObservations,
-          'estado': e.status,
-          'imagen': imagenes[0],
-          'imagen2': imagenes[1],
-          'imagen3': imagenes[2],
-        };
-      }).toList();
-    }
+          return {
+            'descripcion': e.description,
+            'marca': e.brand,
+            'modelo': e.model,
+            'placa': e.placa,
+            'categoria': e.category?.descripcion ?? '',
+            'color': e.color,
+            'serie': e.serie,
+            'valorizacion': double.parse(e.price == '' ? '0' : e.price!),
+            'observaciones': e.warrantyObservations,
+            'estado': e.status,
+            'imagen': imagenes[0],
+            'imagen2': imagenes[1],
+            'imagen3': imagenes[2],
+          };
+        }).toList();
+      }
 
-    log('garantiaaas: ${garantiasData}');
+      log('garantiaaas: ${garantiasData}');
 
-    final result = await _loansRepository.saveLoan(
-      plazoDias: int.parse(
-        loansLocalState?.deadline ?? state.deadlines!,
-      ),
-      interes: double.parse(
-        loansLocalState?.interest?.intereses ?? state.interestRate!.intereses,
-      ),
-      fechaPago: state.paymentDateWithoutFormatt!,
-      monto: double.parse(
-        loansLocalState?.amount ?? state.amount!,
-      ),
-      observaciones: loansLocalState?.observations ?? state.observations!,
-      cliente: CustomerEntity(
-        dni: loansLocalState?.documentClient ?? state.documentClient,
-        nombres: loansLocalState?.fullNamesClient ?? state.fullNamesClient,
-        apellidos:
-            loansLocalState?.fullLastNamesClient ?? state.fullLastNamesClient,
-        domicilio: loansLocalState?.domicilioClient ?? state.homeClient,
-        email: loansLocalState?.emailClient ?? state.emailClient,
-        celular: loansLocalState?.phoneClient ?? state.phoneClient,
-        prestamos: null,
-        prestamosAval: null,
-        pagos: null,
-        ventas: null,
-        updatedAt: '',
-        createdAt: '',
-        imagenUno: (loansLocalState?.imagesClient == null ||
-                loansLocalState?.imagesClient?.length == 0 ||
-                state.photosClient == null ||
-                state.photosClient?.length == 0)
-            ? null
-            : loansLocalState?.imagesClient?[0].path ??
-                state.photosClient?[0].path,
-        imagenDos: (loansLocalState?.imagesClient == null ||
-                loansLocalState?.imagesClient?.length == 1 ||
-                state.photosClient == null ||
-                state.photosClient?.length == 1)
-            ? null
-            : loansLocalState?.imagesClient?[1].path ??
-                state.photosClient?[1].path,
-      ),
-      aval: loansLocalState?.isAval == true || state.isAval == true
-          ? CustomerEntity(
-              dni: loansLocalState?.documentAval ?? state.documentAval,
-              nombres: loansLocalState?.fullNamesAval ?? state.fullNamesAval,
-              apellidos:
-                  loansLocalState?.fullLastNamesAval ?? state.fullLastNamesAval,
-              domicilio: loansLocalState?.domicilioAval ?? state.homeAval,
-              email: loansLocalState?.emailAval ?? state.emailAval,
-              celular: loansLocalState?.phoneAval ?? state.phoneAval,
-              prestamos: null,
-              prestamosAval: null,
-              pagos: null,
-              ventas: null,
-              updatedAt: '',
-              createdAt: '',
-              imagenUno: (loansLocalState?.imagesAval == null ||
-                      loansLocalState?.imagesAval?.length == 0 ||
-                      state.photosAval == null ||
-                      state.photosAval?.length == 0)
-                  ? null
-                  : loansLocalState?.imagesAval?[0].path ??
-                      state.photosAval?[0].path,
-              imagenDos: (loansLocalState?.imagesAval == null ||
-                      loansLocalState?.imagesAval?.length == 1 ||
-                      state.photosAval == null ||
-                      state.photosAval?.length == 1)
-                  ? null
-                  : loansLocalState?.imagesAval?[1].path ??
-                      state.photosAval?[1].path,
-            )
-          : null,
-      bienes: garantiasData,
-      usuarioId: event.userId,
-    );
-
-    result.fold(
-      (error) => emit(
-        state.copyWith(
-          loansStepStatus: LoansStepStatus.error,
+      final result = await _loansRepository.saveLoan(
+        plazoDias: int.parse(
+          loansLocalState?.deadline ?? state.deadlines!,
         ),
-      ),
-      (success) {
-        _preferences.removeLoansPreferences();
-        emit(
+        interes: double.parse(
+          loansLocalState?.interest?.intereses ?? state.interestRate!.intereses,
+        ),
+        fechaPago: state.paymentDateWithoutFormatt!,
+        monto: double.parse(
+          loansLocalState?.amount ?? state.amount!,
+        ),
+        observaciones:
+            loansLocalState?.observations ?? state.observations ?? '',
+        cliente: CustomerEntity(
+          dni: loansLocalState?.documentClient ?? state.documentClient,
+          nombres: loansLocalState?.fullNamesClient ?? state.fullNamesClient,
+          apellidos:
+              loansLocalState?.fullLastNamesClient ?? state.fullLastNamesClient,
+          domicilio: loansLocalState?.domicilioClient ?? state.homeClient,
+          email: loansLocalState?.emailClient ?? state.emailClient,
+          celular: loansLocalState?.phoneClient ?? state.phoneClient,
+          prestamos: null,
+          prestamosAval: null,
+          pagos: null,
+          ventas: null,
+          updatedAt: '',
+          createdAt: '',
+          imagenUno: (loansLocalState?.imagesClient == null ||
+                  loansLocalState?.imagesClient?.length == 0 ||
+                  state.photosClient == null ||
+                  state.photosClient?.length == 0)
+              ? null
+              : loansLocalState?.imagesClient?[0].path ??
+                  state.photosClient?[0].path,
+          imagenDos: (loansLocalState?.imagesClient == null ||
+                  loansLocalState?.imagesClient?.length == 1 ||
+                  state.photosClient == null ||
+                  state.photosClient?.length == 1)
+              ? null
+              : loansLocalState?.imagesClient?[1].path ??
+                  state.photosClient?[1].path,
+        ),
+        aval: loansLocalState?.isAval == true || state.isAval == true
+            ? CustomerEntity(
+                dni: loansLocalState?.documentAval ?? state.documentAval,
+                nombres: loansLocalState?.fullNamesAval ?? state.fullNamesAval,
+                apellidos: loansLocalState?.fullLastNamesAval ??
+                    state.fullLastNamesAval,
+                domicilio: loansLocalState?.domicilioAval ?? state.homeAval,
+                email: loansLocalState?.emailAval ?? state.emailAval,
+                celular: loansLocalState?.phoneAval ?? state.phoneAval,
+                prestamos: null,
+                prestamosAval: null,
+                pagos: null,
+                ventas: null,
+                updatedAt: '',
+                createdAt: '',
+                imagenUno: (loansLocalState?.imagesAval == null ||
+                        loansLocalState?.imagesAval?.length == 0 ||
+                        state.photosAval == null ||
+                        state.photosAval?.length == 0)
+                    ? null
+                    : loansLocalState?.imagesAval?[0].path ??
+                        state.photosAval?[0].path,
+                imagenDos: (loansLocalState?.imagesAval == null ||
+                        loansLocalState?.imagesAval?.length == 1 ||
+                        state.photosAval == null ||
+                        state.photosAval?.length == 1)
+                    ? null
+                    : loansLocalState?.imagesAval?[1].path ??
+                        state.photosAval?[1].path,
+              )
+            : null,
+        bienes: garantiasData,
+        usuarioId: event.userId,
+      );
+
+      result.fold(
+        (error) => emit(
           state.copyWith(
-            loansStepStatus: LoansStepStatus.success,
+            loansStepStatusSaved: LoansStepStatus.error,
+            message: error,
           ),
-        );
-      },
-    );
+        ),
+        (success) => emit(
+          state.copyWith(
+            loansStepStatusSaved: LoansStepStatus.success,
+            message: '',
+          ),
+        ),
+      );
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
+      emit(
+        state.copyWith(
+          loansStepStatusSaved: LoansStepStatus.error,
+          message: 'Ocurrió un error, intentelo más tarde',
+        ),
+      );
+    }
   }
 
   void _onSaveFirstStepOne(

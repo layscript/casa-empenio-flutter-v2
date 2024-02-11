@@ -31,7 +31,7 @@ class _LoansStepTwoViewState extends State<LoansStepTwoView> {
   bool isValidAmountLoan = false;
   bool isValidDeadlinesLoan = false;
   bool isValidInterestRate = false;
-  bool isValidObservationsLoan = false;
+  //bool isValidObservationsLoan = false;
 
   @override
   void initState() {
@@ -78,11 +78,11 @@ class _LoansStepTwoViewState extends State<LoansStepTwoView> {
             ? true
             : false;
 
-    isValidObservationsLoan = loansState.observations != null
+    /* isValidObservationsLoan = loansState.observations != null
         ? true
         : localState?.observations != null
             ? true
-            : false;
+            : false; */
 
     totalProfit = localState?.totalProfit;
     totalToPay = localState?.totalToPay;
@@ -192,7 +192,7 @@ class _LoansStepTwoViewState extends State<LoansStepTwoView> {
                     color: AppColors.black,
                   ),
                 ),
-                labelText: 'Monto a prestar',
+                labelText: 'Monto a prestar (requerido)',
                 keyboardType: TextInputType.number,
                 controller: amountLoanCtrl,
                 onChanged: (e) {
@@ -214,7 +214,7 @@ class _LoansStepTwoViewState extends State<LoansStepTwoView> {
             Expanded(
               child: AppTextFormField(
                 //textDirection: TextDirection.rtl,
-                labelText: 'Plazos',
+                labelText: 'Plazos (requerido)',
                 suffix: const Text(
                   ' Dia(s)',
                   style: TextStyle(
@@ -290,7 +290,7 @@ class _LoansStepTwoViewState extends State<LoansStepTwoView> {
                     preferences.setLoansPreferences(newState);
                   }
                 },
-                labelText: 'Tasa de Interes',
+                labelText: 'Tasa de Interes (requerido)',
                 items: loansState.listInterests != null
                     ? loansState.listInterests!
                         .map(
@@ -320,21 +320,21 @@ class _LoansStepTwoViewState extends State<LoansStepTwoView> {
         ),
         const SizedBox(height: 15),
         AppTextFormField(
-          labelText: 'Observaciones',
+          labelText: 'Observaciones (opcional)',
           controller: observationsLoanCtrl,
-          isValid: (value) {
+          /*  isValid: (value) {
             setState(() {
               isValidObservationsLoan = value;
             });
-          },
+          }, */
           onChanged: (e) {
             final newState = localState.copyWith(observations: e);
             preferences.setLoansPreferences(newState);
           },
-          validator: (value) {
+          /* validator: (value) {
             if (value!.isEmpty) return 'Campo Requerido';
             return null;
-          },
+          }, */
         ),
         const SizedBox(height: 15),
         if (totalProfit != null && totalToPay != null) ...[
@@ -381,8 +381,8 @@ class _LoansStepTwoViewState extends State<LoansStepTwoView> {
         PrimaryButton(
           onPressed: isValidAmountLoan &&
                   isValidDeadlinesLoan &&
-                  isValidInterestRate &&
-                  isValidObservationsLoan
+                  isValidInterestRate /* &&
+                  isValidObservationsLoan */
               ? () {
                   context.read<LoansStepBloc>().add(
                         SaveSecondStepOne(
@@ -396,7 +396,7 @@ class _LoansStepTwoViewState extends State<LoansStepTwoView> {
                       );
                 }
               : null,
-          child: const Text('Continuar'),
+          child: const Text('Continuar para guardar'),
         )
       ],
     );

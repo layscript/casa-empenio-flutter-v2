@@ -87,6 +87,7 @@ class WarrantyState {
 class LoansStepState extends Equatable {
   const LoansStepState({
     this.loansStepStatus = LoansStepStatus.initial,
+    this.loansStepStatusSaved = LoansStepStatus.initial,
     this.message,
     this.index = 0,
     this.isAval = false,
@@ -133,6 +134,7 @@ class LoansStepState extends Equatable {
   });
 
   final LoansStepStatus loansStepStatus;
+  final LoansStepStatus loansStepStatusSaved;
   final String? message;
   final int index;
   final bool? isAval;
@@ -188,6 +190,14 @@ class LoansStepState extends Equatable {
   bool get isLoansStepError => loansStepStatus == LoansStepStatus.error;
   bool get isLoansStepSuccess => loansStepStatus == LoansStepStatus.success;
 
+  bool get isLoansStepStatusSavedLoading =>
+      loansStepStatusSaved == LoansStepStatus.loading;
+
+  bool get isLoansStepStatusSavedError =>
+      loansStepStatusSaved == LoansStepStatus.error;
+
+  bool get isLoansStepStatusSavedSuccess =>
+      loansStepStatusSaved == LoansStepStatus.success;
   //
 
   /*  @override
@@ -237,6 +247,7 @@ class LoansStepState extends Equatable {
   LoansStepState copyWith({
     int? lastCode,
     LoansStepStatus? loansStepStatus,
+    LoansStepStatus? loansStepStatusSaved,
     int? index,
     String? message,
     bool? isAval,
@@ -283,6 +294,7 @@ class LoansStepState extends Equatable {
   }) =>
       LoansStepState(
         loansStepStatus: loansStepStatus ?? this.loansStepStatus,
+        loansStepStatusSaved: loansStepStatusSaved ?? this.loansStepStatusSaved,
         message: message ?? this.message,
         index: index ?? this.index,
         isAval: isAval ?? this.isAval,
@@ -415,6 +427,7 @@ class LoansStepState extends Equatable {
   @override
   List<Object?> get props => [
         loansStepStatus,
+        loansStepStatusSaved,
         message,
         isAval,
         index,

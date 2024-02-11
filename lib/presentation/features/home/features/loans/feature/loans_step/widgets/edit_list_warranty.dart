@@ -115,7 +115,7 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
       children: [
         const SizedBox(height: 15),
         AppTextFormField(
-          labelText: 'Descripcion',
+          labelText: 'Descripcion (requerido)',
           controller: descriptionWarrantyCtrl,
           isValid: (value) {
             setState(() {
@@ -132,7 +132,7 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
           children: [
             Expanded(
               child: AppDropdownButtonFormField<CategoriesEntity?>(
-                labelText: 'Categoría',
+                labelText: 'Categoría (requerido)',
                 value: categories,
                 onChanged: (value) {
                   setState(() {
@@ -155,7 +155,7 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
             const SizedBox(width: 10),
             Expanded(
               child: AppTextFormField(
-                labelText: 'Placa',
+                labelText: 'Placa (opcional)',
                 controller: placaWarrantyCtrl,
               ),
             ),
@@ -166,7 +166,7 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
           children: [
             Expanded(
               child: AppTextFormField(
-                labelText: 'Marca',
+                labelText: 'Marca (requerido)',
                 controller: marcaWarrantyCtrl,
                 isValid: (value) {
                   setState(() {
@@ -182,7 +182,7 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
             const SizedBox(width: 10),
             Expanded(
               child: AppTextFormField(
-                labelText: 'Modelo',
+                labelText: 'Modelo (requerido)',
                 controller: modeloWarrantyCtrl,
                 isValid: (value) {
                   setState(() {
@@ -202,7 +202,7 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
           children: [
             Expanded(
               child: AppTextFormField(
-                labelText: 'Color',
+                labelText: 'Color (requerido)',
                 controller: colorWarrantyCtrl,
                 isValid: (value) {
                   setState(() {
@@ -218,7 +218,7 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
             const SizedBox(width: 10),
             Expanded(
               child: AppDropdownButtonFormField<String?>(
-                labelText: 'Estado',
+                labelText: 'Estado (requerido)',
                 value: statusWarranty,
                 onChanged: (value) {
                   setState(() {
@@ -239,7 +239,7 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
         ),
         const SizedBox(height: 15),
         AppTextFormField(
-          labelText: 'Serie',
+          labelText: 'Serie (opcional)',
           controller: serieWarrantyCtrl,
           /*  isValid: (value) {
             setState(() {
@@ -253,7 +253,7 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
         ),
         const SizedBox(height: 15),
         AppTextFormField(
-          labelText: 'Observaciones',
+          labelText: 'Observaciones (requerido)',
           controller: observationWarrantyCtrl,
           isValid: (value) {
             setState(() {
@@ -273,7 +273,7 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
               color: AppColors.black,
             ),
           ),
-          labelText: 'Precio Referencial',
+          labelText: 'Precio Referencial (requerido)',
           keyboardType: TextInputType.number,
           controller: priceWarrantyCtrl,
           isValid: (value) {

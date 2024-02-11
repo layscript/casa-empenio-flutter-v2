@@ -5,13 +5,17 @@ import 'dart:io';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 class HttpProductRepository implements ProductRepository {
   const HttpProductRepository({
     required Dio dio,
-  }) : _dio = dio;
+    required SentryClient sentry,
+  })  : _sentry = sentry,
+        _dio = dio;
 
   final Dio _dio;
+  final SentryClient _sentry;
 
   @override
   Future<Either<String, bool>> createVehiculo({
@@ -48,7 +52,11 @@ class HttpProductRepository implements ProductRepository {
 
         return Left(message);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       print('saveeeee 3: ${e}');
       print('saveeeee 3: ${e.runtimeType}');
 
@@ -83,7 +91,11 @@ class HttpProductRepository implements ProductRepository {
         final message = map['message'] ?? 'Ocurrió un error';
         return Left(message);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return const Left('Ocurró un error');
     }
   }
@@ -118,8 +130,12 @@ class HttpProductRepository implements ProductRepository {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         return Right(ProductEntity.listGetProductsFromMap(map));
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       //print('responseee ee: $e');
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -140,7 +156,11 @@ class HttpProductRepository implements ProductRepository {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         return Right(ProductEntity.listGetProductsFromMap(map));
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       //print('responseee ee: $e');
       return const Left('Ocurrió un error con el servidor');
     }
@@ -162,7 +182,11 @@ class HttpProductRepository implements ProductRepository {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         return Right(ProductEntity.listGetProductsFromMap(map));
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       //print('responseee ee: $e');
       return const Left('Ocurrió un error con el servidor');
     }
@@ -198,7 +222,11 @@ class HttpProductRepository implements ProductRepository {
         return const Right(true);
         //return const Right(true);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       print('saveeeee 10: ${e}');
       return const Left('Ocurrió un error');
     }
@@ -233,7 +261,11 @@ class HttpProductRepository implements ProductRepository {
         final message = map['message'] ?? 'Ocurrió un error';
         return Left(message);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       //print('responseee ee: $e');
       return const Left('Ocurrió un error');
     }
@@ -278,7 +310,11 @@ class HttpProductRepository implements ProductRepository {
       } else {
         return true;
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return false;
     }
   }

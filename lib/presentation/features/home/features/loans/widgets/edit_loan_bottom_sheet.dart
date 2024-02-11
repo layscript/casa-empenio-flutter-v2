@@ -945,30 +945,35 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
                                           labelText: 'Precio Referencial',
                                         ),
                                         const SizedBox(height: 15),
-                                        Row(
-                                          children: keys.map((key) {
-                                            return GestureDetector(
-                                              onTap: () {
-                                                _seleccionarNuevaImagen(
-                                                  index,
-                                                  key,
-                                                );
-                                              },
-                                              child: Stack(
-                                                children: [
-                                                  if (_garantiasControllers[
-                                                              index][key] !=
-                                                          null &&
+                                        SizedBox(
+                                          //color: Colors.red,
+                                          width: 300,
+                                          height: 100,
+                                          child: Row(
+                                            children: keys.map((key) {
+                                              /*  print(
+                                                  'jkasdjkladkljs 11: ${_garantiasControllers[index][key] != null}');
+                    
+                                              print(
+                                                  'jkasdjkladkljs 22: ${_garantiasControllers[index][key]?.contains('files/')}');
+                     */
+                                              return GestureDetector(
+                                                onTap: () {
+                                                  _seleccionarNuevaImagen(
+                                                    index,
+                                                    key,
+                                                  );
+                                                },
+                                                child: Stack(
+                                                  children: [
+                                                    if (_garantiasControllers[
+                                                            index][key] !=
+                                                        null)
                                                       _garantiasControllers[
-                                                              index][key] !=
-                                                          '')
-                                                    _garantiasControllers[index]
-                                                                [key]!
-                                                            .contains(
-                                                                'files/garantias')
-                                                        ? Expanded(
-                                                            child:
-                                                                Image.network(
+                                                                  index][key]
+                                                              ?.contains(
+                                                                  'files/')
+                                                          ? Image.network(
                                                               '$endPointPrincipal/${_garantiasControllers[index][key]}',
                                                               width: 90,
                                                               height: 90,
@@ -977,98 +982,118 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
                                                                       error,
                                                                       stackTrace) {
                                                                 return Container(
-                                                                  margin: const EdgeInsets
+                                                                  margin:
+                                                                      const EdgeInsets
                                                                           .only(
-                                                                      right:
-                                                                          10),
+                                                                          right:
+                                                                              10),
                                                                   child: Image
                                                                       .asset(
+                                                                    width: 90,
+                                                                    height: 90,
                                                                     AppIcons
                                                                         .notFound,
-                                                                    width: 80,
                                                                   ),
                                                                 );
                                                               },
-                                                            ),
-                                                          )
-                                                        : Expanded(
-                                                            child: Image.file(
+                                                            )
+                                                          : Image.file(
                                                               File(
                                                                   _garantiasControllers[
                                                                           index]
-                                                                      [key]!),
+                                                                      [key]),
                                                               width: 90,
                                                               height: 90,
+                                                              errorBuilder:
+                                                                  (context,
+                                                                      error,
+                                                                      stackTrace) {
+                                                                return Container(
+                                                                  margin:
+                                                                      const EdgeInsets
+                                                                          .only(
+                                                                          right:
+                                                                              10),
+                                                                  child: Image
+                                                                      .asset(
+                                                                    width: 90,
+                                                                    height: 90,
+                                                                    AppIcons
+                                                                        .notFound,
+                                                                  ),
+                                                                );
+                                                              },
+                                                            )
+                                                    else
+                                                      Container(
+                                                        margin: const EdgeInsets
+                                                            .only(
+                                                          right: 7,
+                                                        ),
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .all(4),
+                                                        width: 85,
+                                                        height: 85,
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(10),
+                                                          color: AppColors.blue,
+                                                        ),
+                                                        child: const Center(
+                                                          child: Text(
+                                                            'Subir Imagen',
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                            style: TextStyle(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
                                                             ),
-                                                          )
-                                                  else
-                                                    Container(
-                                                      margin:
-                                                          const EdgeInsets.only(
-                                                        right: 7,
-                                                      ),
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                              4),
-                                                      width: 85,
-                                                      height: 85,
-                                                      decoration: BoxDecoration(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(10),
-                                                        color: AppColors.blue,
-                                                      ),
-                                                      child: const Center(
-                                                        child: Text(
-                                                          'Subir Imagen',
-                                                          textAlign:
-                                                              TextAlign.center,
-                                                          style: TextStyle(
-                                                            color: Colors.white,
-                                                            fontWeight:
-                                                                FontWeight.w600,
                                                           ),
                                                         ),
                                                       ),
-                                                    ),
-                                                  if (_garantiasControllers[
-                                                              index][key] !=
-                                                          null &&
-                                                      _garantiasControllers[
-                                                              index][key] !=
-                                                          '')
-                                                    Positioned(
-                                                      top: 0,
-                                                      right: 5,
-                                                      child: GestureDetector(
-                                                        onTap: () {
-                                                          _eliminarImagen(
-                                                              index, key);
-                                                        },
-                                                        child: Container(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .all(2),
-                                                          decoration:
-                                                              BoxDecoration(
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        10),
-                                                            color: Colors.red,
-                                                          ),
-                                                          child: const Icon(
-                                                            Icons.close,
-                                                            color: Colors.white,
-                                                            size: 20,
+                                                    if (_garantiasControllers[
+                                                            index][key] !=
+                                                        null)
+                                                      Positioned(
+                                                        top: 0,
+                                                        right: 5,
+                                                        child: GestureDetector(
+                                                          onTap: () {
+                                                            _eliminarImagen(
+                                                                index, key);
+                                                          },
+                                                          child: Container(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .all(2),
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          10),
+                                                              color: Colors.red,
+                                                            ),
+                                                            child: const Icon(
+                                                              Icons.close,
+                                                              color:
+                                                                  Colors.white,
+                                                              size: 20,
+                                                            ),
                                                           ),
                                                         ),
                                                       ),
-                                                    ),
-                                                ],
-                                              ),
-                                            );
-                                          }).toList(),
+                                                  ],
+                                                ),
+                                              );
+                                            }).toList(),
+                                          ),
                                         ),
                                         const SizedBox(height: 60),
                                       ],
@@ -1544,186 +1569,189 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
       ),
       child: Form(
         key: _formKeyPrestamo,
-        child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          Row(
-            children: [
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.50 - 27.5,
-                child: AppTextFormField(
-                  enabled: false,
-                  controller: _codigoPrestamoController,
-                  //textDirection: TextDirection.rtl,
-                  keyboardType: TextInputType.number,
-                  labelText: 'Código Préstamo',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Row(
+              children: [
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.50 - 27.5,
+                  child: AppTextFormField(
+                    enabled: false,
+                    controller: _codigoPrestamoController,
+                    //textDirection: TextDirection.rtl,
+                    keyboardType: TextInputType.number,
+                    labelText: 'Código Préstamo',
+                  ),
                 ),
-              ),
-              const SizedBox(width: 15),
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.50 - 27.5,
-                child: AppTextFormField(
-                  enabled: false,
-                  //textDirection: TextDirection.rtl,
-                  controller: _fechaPrestamoController,
-                  labelText: 'Fecha',
+                const SizedBox(width: 15),
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.50 - 27.5,
+                  child: AppTextFormField(
+                    enabled: false,
+                    //textDirection: TextDirection.rtl,
+                    controller: _fechaPrestamoController,
+                    labelText: 'Fecha',
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 15),
-          Row(
-            children: [
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.50 - 27.5,
-                child: AppTextFormField(
-                  onChanged: (value) {
-                    final monto = double.tryParse(value) ?? 0;
-                    final porcentaje = _valorTasaPrestamo;
-                    final interes = monto * porcentaje / 100;
-                    final total = monto + interes;
-                    setState(() {
-                      _montoPagarPrestamo = total;
-                      _gananciaPrestamo = interes;
-                    });
-                  },
-                  //autovalidateMode: AutovalidateMode.onUserInteraction,
-                  validator: (value) {
-                    if (value?.isEmpty ?? true) {
-                      return 'El campo es requerido';
-                    }
-                    return null;
-                  },
-                  controller: _montoPrestamoController,
-                  //textDirection: TextDirection.rtl,
-                  keyboardType: TextInputType.number,
-                  /*  decoration: const InputDecoration(
+              ],
+            ),
+            const SizedBox(height: 15),
+            Row(
+              children: [
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.50 - 27.5,
+                  child: AppTextFormField(
+                    onChanged: (value) {
+                      final monto = double.tryParse(value) ?? 0;
+                      final porcentaje = _valorTasaPrestamo;
+                      final interes = monto * porcentaje / 100;
+                      final total = monto + interes;
+                      setState(() {
+                        _montoPagarPrestamo = total;
+                        _gananciaPrestamo = interes;
+                      });
+                    },
+                    //autovalidateMode: AutovalidateMode.onUserInteraction,
+                    validator: (value) {
+                      if (value?.isEmpty ?? true) {
+                        return 'El campo es requerido';
+                      }
+                      return null;
+                    },
+                    controller: _montoPrestamoController,
+                    //textDirection: TextDirection.rtl,
+                    keyboardType: TextInputType.number,
+                    /*  decoration: const InputDecoration(
                     prefix: Text('S/.'),
                     labelText: 'Monto a prestar',
                   ), */
-                  preffix: const Text('S/. '),
-                  labelText: 'Monto a prestar',
+                    preffix: const Text('S/. '),
+                    labelText: 'Monto a prestar',
+                  ),
                 ),
-              ),
-              const SizedBox(width: 15),
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.50 - 27.5,
-                child: AppTextFormField(
-                  //autovalidateMode: AutovalidateMode.onUserInteraction,
-                  validator: (value) {
-                    if (value?.isEmpty ?? true) {
-                      return 'El campo es requerido';
-                    }
-                    return null;
-                  },
-                  onChanged: (value) {
-                    setState(() {
-                      fechaPago = now.add(
-                        Duration(
-                            days: int.parse(value == '' ? '0' : value) - 1),
-                      );
-                    });
-                    _fechaPagoPrestamoController.text =
-                        DateFormat('dd/MM/yyyy').format(fechaPago);
-                  },
-                  controller: _plazosPrestamoController,
-                  //textDirection: TextDirection.rtl,
-                  keyboardType: TextInputType.number,
-                  labelText: 'Plazos',
-                  suffix: const Text('Dia(s)'),
+                const SizedBox(width: 15),
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.50 - 27.5,
+                  child: AppTextFormField(
+                    //autovalidateMode: AutovalidateMode.onUserInteraction,
+                    validator: (value) {
+                      if (value?.isEmpty ?? true) {
+                        return 'El campo es requerido';
+                      }
+                      return null;
+                    },
+                    onChanged: (value) {
+                      setState(() {
+                        fechaPago = now.add(
+                          Duration(
+                              days: int.parse(value == '' ? '0' : value) - 1),
+                        );
+                      });
+                      _fechaPagoPrestamoController.text =
+                          DateFormat('dd/MM/yyyy').format(fechaPago);
+                    },
+                    controller: _plazosPrestamoController,
+                    //textDirection: TextDirection.rtl,
+                    keyboardType: TextInputType.number,
+                    labelText: 'Plazos',
+                    suffix: const Text('Dia(s)'),
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 15),
-          Row(
-            children: [
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.50 - 27.5,
-                child: AppDropdownButtonFormField<double?>(
-                  value: _valorTasaPrestamo == 0 ? null : _valorTasaPrestamo,
-                  labelText: 'Tasa de Interés',
-                  items: intereses
-                      .map((e) => DropdownMenuItem<double?>(
-                            value: double.parse(e.intereses),
-                            child: Text("${e.intereses} %"),
-                          ))
-                      .toList(),
-                  onChanged: (value) {
-                    final monto =
-                        double.tryParse(_montoPrestamoController.text) ?? 0;
-                    final porcentaje = double.parse(value.toString());
-                    final interes = monto * porcentaje / 100;
-                    final total = monto + interes;
-                    setState(() {
-                      _valorTasaPrestamo = porcentaje;
-                      _montoPagarPrestamo = total;
-                      _gananciaPrestamo = interes;
-                    });
-                  },
+              ],
+            ),
+            const SizedBox(height: 15),
+            Row(
+              children: [
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.50 - 27.5,
+                  child: AppDropdownButtonFormField<double?>(
+                    value: _valorTasaPrestamo == 0 ? null : _valorTasaPrestamo,
+                    labelText: 'Tasa de Interés',
+                    items: intereses
+                        .map((e) => DropdownMenuItem<double?>(
+                              value: double.parse(e.intereses),
+                              child: Text("${e.intereses} %"),
+                            ))
+                        .toList(),
+                    onChanged: (value) {
+                      final monto =
+                          double.tryParse(_montoPrestamoController.text) ?? 0;
+                      final porcentaje = double.parse(value.toString());
+                      final interes = monto * porcentaje / 100;
+                      final total = monto + interes;
+                      setState(() {
+                        _valorTasaPrestamo = porcentaje;
+                        _montoPagarPrestamo = total;
+                        _gananciaPrestamo = interes;
+                      });
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(width: 15),
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.50 - 27.5,
-                child: AppTextFormField(
-                  enabled: false,
-                  controller: _fechaPagoPrestamoController,
-                  //textDirection: TextDirection.rtl,
-                  labelText: 'Fecha de Pago',
-                  /* decoration: const InputDecoration(
+                const SizedBox(width: 15),
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.50 - 27.5,
+                  child: AppTextFormField(
+                    enabled: false,
+                    controller: _fechaPagoPrestamoController,
+                    //textDirection: TextDirection.rtl,
+                    labelText: 'Fecha de Pago',
+                    /* decoration: const InputDecoration(
                     labelText: 'Fecha de Pago',
                   ), */
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 15),
-          AppTextFormField(
-            /*  minLines: 1,
+              ],
+            ),
+            const SizedBox(height: 15),
+            AppTextFormField(
+              /*  minLines: 1,
             maxLines: 8, */
-            controller: _observacionesPrestamoController,
-            /*  decoration: const InputDecoration(
+              controller: _observacionesPrestamoController,
+              /*  decoration: const InputDecoration(
               labelText: 'Observaciones',
             ), */
-            labelText: 'Observaciones',
-          ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              const SizedBox(
-                width: 120,
-                child: Text(
-                  'Ganancia:',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
+              labelText: 'Observaciones',
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                const SizedBox(
+                  width: 120,
+                  child: Text(
+                    'Ganancia:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ),
-              Expanded(
-                child: Text('S/. ${oCcy.format(_gananciaPrestamo)}'),
-              )
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            //textDirection: TextDirection!.LTR!,
-            children: [
-              const SizedBox(
-                width: 120,
-                child: Text(
-                  'Total a pagar:',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text('S/. ${oCcy.format(_gananciaPrestamo)}'),
+                )
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              //textDirection: TextDirection!.LTR!,
+              children: [
+                const SizedBox(
+                  width: 120,
+                  child: Text(
+                    'Total a pagar:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ),
-              Expanded(
-                child: Text('S/. ${oCcy.format(_montoPagarPrestamo)}'),
-              )
-            ],
-          ),
-        ]),
+                Expanded(
+                  child: Text('S/. ${oCcy.format(_montoPagarPrestamo)}'),
+                )
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

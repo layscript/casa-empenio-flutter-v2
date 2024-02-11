@@ -4,13 +4,17 @@ import 'dart:developer';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 class HttpReportsRepository implements ReportsRepository {
   const HttpReportsRepository({
     required Dio dio,
-  }) : _dio = dio;
+    required SentryClient sentry,
+  })  : _dio = dio,
+        _sentry = sentry;
 
   final Dio _dio;
+  final SentryClient _sentry;
 
   @override
   Future<bool> cancelLoan({
@@ -24,7 +28,11 @@ class HttpReportsRepository implements ReportsRepository {
       } else {
         return false;
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return false;
     }
   }
@@ -69,7 +77,11 @@ class HttpReportsRepository implements ReportsRepository {
         final result = LoansEntity.listGetSalesDetailFromMap(map['body']);
         return Right(result);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -111,7 +123,11 @@ class HttpReportsRepository implements ReportsRepository {
             ReportsContractsEntity.listGetReportsContractsFromMap(map['body']);
         return Right(result);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -156,7 +172,11 @@ class HttpReportsRepository implements ReportsRepository {
         final result = LoansEntity.listGetSalesDetailFromMap(map['body']);
         return Right(result);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -202,7 +222,11 @@ class HttpReportsRepository implements ReportsRepository {
             ReportsPaymentEntity.listGetReportsPaymentFromMap(map['body']);
         return Right(result);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -223,7 +247,11 @@ class HttpReportsRepository implements ReportsRepository {
       } else {
         return false;
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return false;
     }
   }

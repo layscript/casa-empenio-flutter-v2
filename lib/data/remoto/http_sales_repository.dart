@@ -4,10 +4,17 @@ import 'dart:developer';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 class HttpSalesRepository implements SalesRepository {
-  const HttpSalesRepository({required Dio dio}) : _dio = dio;
+  const HttpSalesRepository({
+    required Dio dio,
+    required SentryClient sentry,
+  })  : _sentry = sentry,
+        _dio = dio;
+
   final Dio _dio;
+  final SentryClient _sentry;
   @override
   Future<Either<String, List<SalesEntity>>> getSalesByRangeDate({
     required DateTime inicio,
@@ -49,7 +56,11 @@ class HttpSalesRepository implements SalesRepository {
 
         return Right(result);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -87,7 +98,11 @@ class HttpSalesRepository implements SalesRepository {
         }
         //return true;
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       print('asdasdasdsadasdasa 3: $e');
       return false;
     }

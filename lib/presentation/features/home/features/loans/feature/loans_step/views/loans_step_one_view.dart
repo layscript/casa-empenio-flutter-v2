@@ -426,7 +426,7 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
             Expanded(
               child: AppTextFormField(
                 controller: documentClientCtrl,
-                labelText: 'DNI',
+                labelText: 'DNI (requerido)',
                 keyboardType: TextInputType.number,
                 maxLength: 8,
                 onChanged: (e) => onChangeDocumentClient(
@@ -449,7 +449,7 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
             const SizedBox(width: 10),
             Expanded(
               child: AppTextFormField(
-                labelText: 'Nombres',
+                labelText: 'Nombres (requerido)',
                 controller: namesClientCtrl,
                 onChanged: (e) => onChangeNamesClient(
                   value: e,
@@ -475,7 +475,7 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
             Expanded(
               child: AppTextFormField(
                 maxLength: 9,
-                labelText: 'Celular',
+                labelText: 'Celular (requerido)',
                 preffix: const Text('(+51)'),
                 controller: phoneClientCtrl,
                 keyboardType: TextInputType.phone,
@@ -498,7 +498,7 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
             const SizedBox(width: 10),
             Expanded(
               child: AppTextFormField(
-                labelText: 'Apellidos',
+                labelText: 'Apellidos (requerido)',
                 controller: lastNamesClientCtrl,
                 onChanged: (e) => onChangeLastNamesClient(
                   value: e,
@@ -520,7 +520,7 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
         ),
         const SizedBox(height: 15),
         AppTextFormField(
-          labelText: 'Correo Electrónico',
+          labelText: 'Correo Electrónico (opcional)',
           keyboardType: TextInputType.emailAddress,
           controller: emailClientCtrl,
           inputFormatters: removeBlankSpaces,
@@ -532,7 +532,7 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
         ),
         const SizedBox(height: 15),
         AppTextFormField(
-          labelText: 'Domicilio',
+          labelText: 'Domicilio (requerido)',
           controller: domicilioClientCtrl,
           onChanged: (e) => onChangeDomicilioClient(
             value: e,
@@ -569,7 +569,7 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
                     preferences: preferences,
                   ),
                   child: Text(
-                    'Subir Imagen (${2 - selectedPhotosClient!.length})',
+                    'Subir Imagen (${2 - selectedPhotosClient!.length}) - opcional',
                   ),
                 ),
               ),
@@ -609,7 +609,7 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
                   Expanded(
                     child: AppTextFormField(
                       controller: documentAvalCtrl,
-                      labelText: 'DNI',
+                      labelText: 'DNI (requerido)',
                       keyboardType: TextInputType.number,
                       maxLength: 8,
                       onChanged: (e) => onChangeDocumentAval(
@@ -632,7 +632,7 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: AppTextFormField(
-                      labelText: 'Nombres',
+                      labelText: 'Nombres (requerido)',
                       controller: namesAvalCtrl,
                       onChanged: (e) => onChangeNamesAval(
                         value: e,
@@ -658,7 +658,7 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
                   Expanded(
                     child: AppTextFormField(
                       maxLength: 9,
-                      labelText: 'Celular',
+                      labelText: 'Celular (requerido)',
                       preffix: const Text('(+51)'),
                       controller: phoneAvalCtrl,
                       keyboardType: TextInputType.phone,
@@ -681,7 +681,7 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: AppTextFormField(
-                      labelText: 'Apellidos',
+                      labelText: 'Apellidos (requerido)',
                       controller: lastNamesAvaltCtrl,
                       onChanged: (e) => onChangeLastNamesAval(
                         value: e,
@@ -703,7 +703,7 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
               ),
               const SizedBox(height: 15),
               AppTextFormField(
-                labelText: 'Correo Electrónico',
+                labelText: 'Correo Electrónico (opcional)',
                 keyboardType: TextInputType.emailAddress,
                 inputFormatters: removeBlankSpaces,
                 controller: emailAvalCtrl,
@@ -715,7 +715,7 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
               ),
               const SizedBox(height: 15),
               AppTextFormField(
-                labelText: 'Domicilio',
+                labelText: 'Domicilio (requerido)',
                 controller: domicilioAvalCtrl,
                 onChanged: (e) => onChangeDomicilioAval(
                   value: e,
@@ -752,7 +752,7 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
                           preferences: preferences,
                         ),
                         child: Text(
-                          'Subir Imagen (${2 - selectedPhotosAval!.length})',
+                          'Subir Imagen (${2 - selectedPhotosAval!.length}) - opcional',
                         ),
                       ),
                     ),
@@ -821,7 +821,7 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
                           );
                     }
               : null,
-          child: const Text('Continuar'),
+          child: const Text('Continuar para guardar'),
         ),
         const SizedBox(height: 35),
       ],

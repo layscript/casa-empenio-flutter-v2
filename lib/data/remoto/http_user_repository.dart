@@ -4,13 +4,17 @@ import 'dart:developer';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 class HttpUserRepository implements UserRepository {
   const HttpUserRepository({
     required Dio dio,
-  }) : _dio = dio;
+    required SentryClient sentry,
+  })  : _sentry = sentry,
+        _dio = dio;
 
   final Dio _dio;
+  final SentryClient _sentry;
 
   @override
   Future<Either<String, UserEntity>> logIn({
@@ -33,7 +37,11 @@ class HttpUserRepository implements UserRepository {
         final data = map['body'];
         return Right(UserEntity.userFromMap(data));
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -72,7 +80,11 @@ class HttpUserRepository implements UserRepository {
         //final map = json.decode(response.data!) as Map<String, dynamic>;
         return const Right(true);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -90,8 +102,12 @@ class HttpUserRepository implements UserRepository {
         //final map = json.decode(response.data!) as Map<String, dynamic>;
         return const Right(true);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('asdklñjasjdklasd: $e');
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -115,8 +131,12 @@ class HttpUserRepository implements UserRepository {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         return Right(UserEntity.listGetUsersFromMap(map));
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       log('debugggg 3: ${e}');
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -158,7 +178,11 @@ class HttpUserRepository implements UserRepository {
         //final map = json.decode(response.data!) as Map<String, dynamic>;
         return const Right(true);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return const Left('Ocurrió un error con el servidor');
     }
   }

@@ -2,8 +2,7 @@ import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/cajas/views/movements_view.dart';
-import 'package:casa_empenio_pe/presentation/features/home/features/cajas/widgets/close_box.dart';
-import 'package:casa_empenio_pe/presentation/features/home/features/cajas/widgets/open_box.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/cajas/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -96,6 +95,34 @@ class _OpenCajaViewState extends State<OpenCajaView> {
                               value: movimiento.observaciones.toString(),
                             ),
                             if (movimiento.movimientos!.isNotEmpty) ...[
+                              const SizedBox(height: 15),
+                              ElevatedButton(
+                                style: const ButtonStyle(
+                                  backgroundColor: MaterialStatePropertyAll(
+                                    AppColors.primaryText,
+                                  ),
+                                ),
+                                onPressed: () async {
+                                  final result = await showDialog<bool>(
+                                    context: context,
+                                    barrierDismissible: false,
+                                    builder: (_) {
+                                      return BlocProvider.value(
+                                        value: context.read<CajasBloc>(),
+                                        child: const IncreaseBoxView(),
+                                      );
+                                    },
+                                  );
+                                  if (result != null && mounted) {
+                                    context
+                                        .read<CajasBloc>()
+                                        .add(GetCajasOfTheDay());
+                                  }
+                                },
+                                child: const Text(
+                                  'Aumentar Monto',
+                                ),
+                              ),
                               const SizedBox(height: 15),
                               SecondaryButton(
                                 onPressed: () {

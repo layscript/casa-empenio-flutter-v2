@@ -82,7 +82,11 @@ class _LoansViewState extends State<LoansView> {
                 return const ButtonStateLoading();
 
               case LoansStatus.error:
+                print('errrorr 1: ${state.loansStatus}');
+                print('errrorr 2: ${state.error}');
+
                 return ButtonStateError(
+                  message: state.error,
                   onPressed: () {
                     context.read<LoansBloc>().add(GetCashStatus());
                   },
@@ -551,14 +555,12 @@ class _LoansViewState extends State<LoansView> {
                                                       if (result != null &&
                                                           mounted) {
                                                         //TODO :: Cargar todo
-                                                        context
-                                                            .read<LoansBloc>()
-                                                            .add(
-                                                              GetLoansByDni(
-                                                                value: state
-                                                                    .searchText,
-                                                              ),
-                                                            );
+                                                        loansBloc.add(
+                                                          GetLoansByDni(
+                                                            value: state
+                                                                .searchText,
+                                                          ),
+                                                        );
                                                       }
                                                     },
                                                     icon: const Icon(
@@ -601,14 +603,12 @@ class _LoansViewState extends State<LoansView> {
                                                       if (result != null &&
                                                           mounted) {
                                                         //TODO :: Cargar todo
-                                                        context
-                                                            .read<LoansBloc>()
-                                                            .add(
-                                                              GetLoansByDni(
-                                                                value: state
-                                                                    .searchText,
-                                                              ),
-                                                            );
+                                                        loansBloc.add(
+                                                          GetLoansByDni(
+                                                            value: state
+                                                                .searchText,
+                                                          ),
+                                                        );
                                                       }
                                                     },
                                                     icon: Icon(
@@ -854,14 +854,12 @@ class _LoansViewState extends State<LoansView> {
 
                                                       if (result != null &&
                                                           mounted) {
-                                                        context
-                                                            .read<LoansBloc>()
-                                                            .add(
-                                                              GetLoansByDni(
-                                                                value: state
-                                                                    .searchText,
-                                                              ),
-                                                            );
+                                                        loansBloc.add(
+                                                          GetLoansByDni(
+                                                            value: state
+                                                                .searchText,
+                                                          ),
+                                                        );
                                                       }
                                                     },
                                                     icon: const Icon(
@@ -899,11 +897,19 @@ class _LoansViewState extends State<LoansView> {
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
                                 PrimaryButton(
-                                  onPressed: () {
-                                    Navigator.pushNamed(
+                                  onPressed: () async {
+                                    final result = await Navigator.pushNamed(
                                       context,
                                       LoansStepView.route,
                                     );
+
+                                    /* if (result != null) {
+                                      loansBloc.add(
+                                        GetLoansByDni(
+                                          value: state.searchText,
+                                        ),
+                                      );
+                                    } */
                                   },
                                   child: const Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
