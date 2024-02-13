@@ -328,6 +328,19 @@ class _LoansViewState extends State<LoansView> {
                                                         fontSize: 12,
                                                       ),
                                                     ),
+                                                    if (prestamo.isRenewed !=
+                                                            null &&
+                                                        prestamo.isRenewed ==
+                                                            true)
+                                                      const Text(
+                                                        'RENOVADO',
+                                                        style: TextStyle(
+                                                          color: Colors.purple,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                          fontSize: 12,
+                                                        ),
+                                                      ),
                                                     if (state.typeSearch ==
                                                         false)
                                                       Text(
@@ -512,9 +525,55 @@ class _LoansViewState extends State<LoansView> {
                                                   width: 38,
                                                   child: IconButton(
                                                     padding: EdgeInsets.zero,
-                                                    onPressed: () {
-                                                      // TODO:: falta validar
-                                                      print('jskladljda');
+                                                    onPressed: () async {
+                                                      print(
+                                                          'debugggg renovar usuario');
+                                                      final result =
+                                                          await showModalBottomSheet<
+                                                              bool?>(
+                                                        isDismissible: false,
+                                                        isScrollControlled:
+                                                            false,
+                                                        context: context,
+                                                        builder: (_) {
+                                                          return BlocProvider
+                                                              .value(
+                                                            value: context.read<
+                                                                LoansBloc>(),
+                                                            child: Padding(
+                                                              padding: MediaQuery
+                                                                      .of(context)
+                                                                  .viewInsets,
+                                                              child:
+                                                                  EditLoanBottomSheet(
+                                                                idPrestamo:
+                                                                    prestamo?.codigo ??
+                                                                        0,
+                                                                isNuevo: true,
+                                                              ),
+                                                            ),
+                                                          );
+                                                        },
+                                                      );
+
+                                                      if (result != null &&
+                                                          mounted) {
+                                                        //TODO :: Cargar todo
+                                                        await Future.delayed(
+                                                                const Duration(
+                                                                    milliseconds:
+                                                                        300))
+                                                            .then((value) {
+                                                          context
+                                                              .read<LoansBloc>()
+                                                              .add(
+                                                                GetLoansByDni(
+                                                                  value: state
+                                                                      .searchText,
+                                                                ),
+                                                              );
+                                                        });
+                                                      }
                                                     },
                                                     icon: const Icon(
                                                       Icons.new_label,
@@ -903,13 +962,13 @@ class _LoansViewState extends State<LoansView> {
                                       LoansStepView.route,
                                     );
 
-                                    /* if (result != null) {
+                                    if (mounted) {
                                       loansBloc.add(
                                         GetLoansByDni(
                                           value: state.searchText,
                                         ),
                                       );
-                                    } */
+                                    }
                                   },
                                   child: const Row(
                                     mainAxisAlignment: MainAxisAlignment.center,

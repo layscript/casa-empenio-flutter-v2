@@ -29,6 +29,7 @@ class LoansEntity {
     required this.usuario,
     required this.eliminado,
     required this.bienesGarantia,
+    required this.isRenewed,
   });
 
   final int? codigo;
@@ -56,6 +57,7 @@ class LoansEntity {
   final TicketEntity? boleta;
   final List<CreditNoteEntity>? notaCredito;
   final List<WarrantyEntity>? bienesGarantia;
+  final bool? isRenewed;
 
   @override
   String toString() {
@@ -85,6 +87,7 @@ boleta: $boleta,
 notaCredito: $notaCredito,
 bienesGarantia: $bienesGarantia,
 eliminado: $eliminado,
+isRenewed: $isRenewed,
 ''';
   }
 
@@ -142,6 +145,7 @@ eliminado: $eliminado,
               map['bienesGarantia'] as List<dynamic>,
             )
           : null,
+      isRenewed: map['isRenewed'] as bool?,
     );
   }
 }

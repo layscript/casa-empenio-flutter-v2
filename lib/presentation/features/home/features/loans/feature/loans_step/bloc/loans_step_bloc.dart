@@ -779,6 +779,7 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
       log('garantiaaas: ${garantiasData}');
 
       final result = await _loansRepository.saveLoan(
+        renew: false,
         plazoDias: int.parse(
           loansLocalState?.deadline ?? state.deadlines!,
         ),

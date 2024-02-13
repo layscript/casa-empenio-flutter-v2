@@ -125,6 +125,7 @@ class HttpLoansRepository implements LoansRepository {
     required CustomerEntity? aval,
     required List<Map<String, dynamic>> bienes,
     required String usuarioId,
+    required bool renew,
   }) async {
     const path = '/prestamos/prestamos';
 
@@ -163,6 +164,7 @@ class HttpLoansRepository implements LoansRepository {
             },
       'bienesGarantia': bienes,
       'usuarioId': usuarioId,
+      'isRenewed': renew,
     };
 
     log('payladolada 1: $payload');
@@ -835,6 +837,7 @@ class HttpLoansRepository implements LoansRepository {
             },
       'bienesGarantia': bienes,
       'adminId': usuarioId,
+      'isRenewed': false,
     };
 
     log('payladolada: $payload');

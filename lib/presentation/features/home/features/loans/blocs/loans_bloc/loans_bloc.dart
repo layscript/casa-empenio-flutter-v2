@@ -373,6 +373,7 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
   ) async {
     emit(state.copyWith(loansRenewStatus: LoansStatus.updateLoansLoading));
 
+    // Renovar
     if (event.isNuevo) {
       final result = await _loansRepository.saveLoan(
         plazoDias: event.plazoDias,
@@ -384,6 +385,7 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
         aval: event.aval.dni == null ? null : event.aval,
         bienes: event.bienes,
         usuarioId: event.userId,
+        renew: true,
       );
       result.fold(
         (error) => emit(

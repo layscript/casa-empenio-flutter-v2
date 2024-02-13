@@ -24,6 +24,7 @@ abstract class LoansRepository {
     required CustomerEntity? aval,
     required List<Map<String, dynamic>> bienes,
     required String usuarioId,
+    required bool renew,
   });
 
   Future<Either<String, bool>> updateLoan({
