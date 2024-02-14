@@ -149,17 +149,20 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
       id: event.value,
       userId: preferences?.id ?? 0,
     );
-    result.fold(
-      (message) => emit(
+    result.fold((message) {
+      print('skjladajlsdkjlasaljksd 1: ${message}');
+      emit(
         _errorState(message),
-      ),
-      (data) => emit(
+      );
+    }, (data) {
+      print('skjladajlsdkjlasaljksd 2: ${data}');
+      emit(
         state.copyWith(
           loansStatus: LoansStatus.loaded,
           loanDetails: data,
         ),
-      ),
-    );
+      );
+    });
   }
 
   Future<void> _onGetDataSunatByDni(
@@ -385,7 +388,8 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
         aval: event.aval.dni == null ? null : event.aval,
         bienes: event.bienes,
         usuarioId: event.userId,
-        renew: true,
+        //renew: true,
+        renew: event.isRenew ?? false,
       );
       result.fold(
         (error) => emit(

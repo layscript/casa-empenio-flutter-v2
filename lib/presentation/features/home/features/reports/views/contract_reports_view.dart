@@ -131,7 +131,8 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                     case ReportsStatus.error:
                                       return const Center(
                                         child: Text(
-                                            'Ocurrió un error, intentelo de nuevo'),
+                                          'Ocurrió un error, intentelo de nuevo',
+                                        ),
                                       );
 
                                     case ReportsStatus.loading:
@@ -300,6 +301,9 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                             final fechaFormateada =
                                                 DateFormat('dd/MM/yyyy - kk:mm')
                                                     .format(fechaCreacion);
+
+                                            print(
+                                                'prestamooo: ${prestamo.isRenewed}');
 
                                             return GestureDetector(
                                               onTap: () {
@@ -482,6 +486,23 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                                               : Colors.red,
                                                         ),
                                                       ),
+                                                      if (prestamo.isRenewed ==
+                                                          true)
+                                                        const CircleAvatar(
+                                                          radius: 10,
+                                                          backgroundColor:
+                                                              Colors.purple,
+                                                          child: Text(
+                                                            'R',
+                                                            style: TextStyle(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                            ),
+                                                          ),
+                                                        )
                                                     ],
                                                   ),
                                                 ),

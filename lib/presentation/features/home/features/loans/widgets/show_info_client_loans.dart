@@ -83,9 +83,18 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
           log('kasdklña loan 1: ${loan.toString()}');
           log('kasdklña loan 2: ${loan?.bienesGarantia.toString()}');
 
-          if (loan == null) {
+          if (loan == null && state.error == null) {
             return const Center(
               child: CircularProgressIndicator(),
+            );
+          } else if (loan == null && state.error != null) {
+            return Center(
+              child: Text(
+                state.error!,
+                style: const TextStyle(
+                  color: AppColors.red,
+                ),
+              ),
             );
           } else {
             return Screenshot(
@@ -212,15 +221,15 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                       ),
                       const SizedBox(height: 20),
                       Text(
-                        'Aumentos (${loan.aumentos?.length ?? '0'})',
+                        'Aumentos (${loan?.aumentos?.length ?? '0'})',
                         style: const TextStyle(
                           color: AppColors.red,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 10),
-                      if (loan.aumentos != null)
-                        ...loan.aumentos!.map((aumento) {
+                      if (loan?.aumentos != null)
+                        ...loan!.aumentos!.map((aumento) {
                           return Column(
                             children: [
                               const Divider(
@@ -301,7 +310,7 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                         }).toList(),
                       const SizedBox(height: 20),
                       Text(
-                        'Bienes en Garantia (${loan.bienesGarantia?.length})',
+                        'Bienes en Garantia (${loan?.bienesGarantia?.length})',
                         style: const TextStyle(
                           color: AppColors.red,
                           fontWeight: FontWeight.bold,
@@ -555,7 +564,8 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                       },
                                       // TODO:: Revisar bien csmre:v
                                       child: CachedNetworkImage(
-                                        imageUrl: '$endPointPrincipal/${bien.imagen}',
+                                        imageUrl:
+                                            '$endPointPrincipal/${bien.imagen}',
                                         height: 50,
                                         width: 50,
                                         placeholder: (context, url) {
@@ -601,7 +611,8 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                       },
                                       // TODO:: Revisar bien csmre:v
                                       child: CachedNetworkImage(
-                                        imageUrl: '$endPointPrincipal/${bien.imagenDos}',
+                                        imageUrl:
+                                            '$endPointPrincipal/${bien.imagenDos}',
                                         height: 50,
                                         width: 50,
                                         placeholder: (context, url) {
@@ -672,7 +683,7 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                         }).toList(),
                       const SizedBox(height: 20),
                       Text(
-                        'Pagos Realizados (${loan.pagos?.length})',
+                        'Pagos Realizados (${loan?.pagos?.length})',
                         style: const TextStyle(
                           color: AppColors.red,
                           fontWeight: FontWeight.bold,
@@ -744,14 +755,14 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text('Estado: '),
-                          Text('${loan.estado}'),
+                          Text('${loan?.estado}'),
                         ],
                       ),
-                      if (loan.estado == 'LIQUIDADO') ...[
+                      if (loan?.estado == 'LIQUIDADO') ...[
                         const SizedBox(height: 10),
-                        if (loan.imagenLiquidado != null)
+                        if (loan?.imagenLiquidado != null)
                           Image.network(
-                            '$endPointPrincipal/${loan.imagenLiquidado}',
+                            '$endPointPrincipal/${loan!.imagenLiquidado}',
                             height: 100,
                             width: 100,
                             errorBuilder: (context, error, stackTrace) {

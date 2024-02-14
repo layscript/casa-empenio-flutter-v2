@@ -508,7 +508,23 @@ class _PaymentsReportsViewState extends State<PaymentsReportsView> {
                                                             .remove_red_eye_outlined,
                                                         color: Colors.blue,
                                                       ),
-                                                    )
+                                                    ),
+                                                    if (pago.prestamo
+                                                            ?.isRenewed ==
+                                                        true)
+                                                      const CircleAvatar(
+                                                        radius: 10,
+                                                        backgroundColor:
+                                                            Colors.purple,
+                                                        child: Text(
+                                                          'R',
+                                                          style: TextStyle(
+                                                            color: Colors.white,
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                          ),
+                                                        ),
+                                                      )
                                                   ],
                                                 ),
                                               ),

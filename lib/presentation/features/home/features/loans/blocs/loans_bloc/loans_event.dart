@@ -104,6 +104,7 @@ class CreateInvoiceLoans extends LoansEvent {
 
 class UpdateAllLoan extends LoansEvent {
   const UpdateAllLoan({
+    required this.isRenew,
     required this.isNuevo,
     required this.userId,
     required this.plazoDias,
@@ -117,6 +118,7 @@ class UpdateAllLoan extends LoansEvent {
     required this.codigo,
   });
 
+  final bool? isRenew;
   final bool isNuevo;
   final String userId;
   final int plazoDias;

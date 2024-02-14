@@ -20,9 +20,11 @@ class EditLoanBottomSheet extends StatefulWidget {
     super.key,
     required this.idPrestamo,
     required this.isNuevo,
+    required this.isRenew,
   });
   final int idPrestamo;
   final bool isNuevo;
+  final bool? isRenew;
 
   @override
   State<EditLoanBottomSheet> createState() => _EditLoanBottomSheetState();
@@ -554,6 +556,7 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
                         ),
                         bienes: garantiasData,
                         codigo: widget.idPrestamo,
+                        isRenew: widget.isRenew,
                       ),
                     );
               },

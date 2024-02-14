@@ -267,8 +267,7 @@ class _LoansViewState extends State<LoansView> {
                                             MaterialPageRoute(
                                               builder: (_) =>
                                                   BlocProvider.value(
-                                                value:
-                                                    context.read<LoansBloc>(),
+                                                value: loansBloc,
                                                 child: LoanClientView(
                                                   document:
                                                       prestamo?.cliente?.dni ??
@@ -375,8 +374,7 @@ class _LoansViewState extends State<LoansView> {
                                                       builder: (_) {
                                                         return BlocProvider
                                                             .value(
-                                                          value: context.read<
-                                                              LoansBloc>(),
+                                                          value: loansBloc,
                                                           child:
                                                               ShowInfoClientLoans(
                                                             nroPrestamo:
@@ -428,6 +426,7 @@ class _LoansViewState extends State<LoansView> {
                                                                           0,
                                                                   isNuevo:
                                                                       false,
+                                                                  isRenew: null,
                                                                 ),
                                                               ),
                                                             );
@@ -456,53 +455,66 @@ class _LoansViewState extends State<LoansView> {
                                                       } else {
                                                         print(
                                                             'sadjklsadjklsdakjsad 2');
-                                                        // YA ESTÁ CERRADO Y PUEDO CREAR UNO NUEVO CON SU MISMA DATA :V
-                                                        final result =
-                                                            await showModalBottomSheet<
-                                                                bool?>(
-                                                          isDismissible: false,
-                                                          isScrollControlled:
-                                                              false,
-                                                          context: context,
-                                                          builder: (_) {
-                                                            return BlocProvider
-                                                                .value(
-                                                              value: context.read<
-                                                                  LoansBloc>(),
-                                                              child: Padding(
-                                                                padding: MediaQuery.of(
-                                                                        context)
-                                                                    .viewInsets,
-                                                                child:
-                                                                    EditLoanBottomSheet(
-                                                                  idPrestamo:
-                                                                      prestamo?.codigo ??
-                                                                          0,
-                                                                  isNuevo: true,
-                                                                ),
-                                                              ),
-                                                            );
-                                                          },
+                                                        // YA ESTÁ CERRADO Y PUEDO CREAR UNO NUEVO/RENOVAR CON SU MISMA DATA :V
+                                                        final optionBottomSheet =
+                                                            await ShowBottomSheetRenewLoan
+                                                                .show(
+                                                          context,
                                                         );
-
-                                                        if (result != null &&
+                                                        if (optionBottomSheet !=
+                                                                null &&
                                                             mounted) {
-                                                          //TODO :: Cargar todo
-                                                          await Future.delayed(
-                                                                  const Duration(
-                                                                      milliseconds:
-                                                                          300))
-                                                              .then((value) {
-                                                            context
-                                                                .read<
-                                                                    LoansBloc>()
-                                                                .add(
-                                                                  GetLoansByDni(
-                                                                    value: state
-                                                                        .searchText,
+                                                          final result =
+                                                              await showModalBottomSheet<
+                                                                  bool?>(
+                                                            isDismissible:
+                                                                false,
+                                                            isScrollControlled:
+                                                                false,
+                                                            context: context,
+                                                            builder: (_) {
+                                                              return BlocProvider
+                                                                  .value(
+                                                                value: context.read<
+                                                                    LoansBloc>(),
+                                                                child: Padding(
+                                                                  padding: MediaQuery.of(
+                                                                          context)
+                                                                      .viewInsets,
+                                                                  child:
+                                                                      EditLoanBottomSheet(
+                                                                    idPrestamo:
+                                                                        prestamo?.codigo ??
+                                                                            0,
+                                                                    isNuevo:
+                                                                        true,
+                                                                    isRenew:
+                                                                        optionBottomSheet,
                                                                   ),
-                                                                );
-                                                          });
+                                                                ),
+                                                              );
+                                                            },
+                                                          );
+
+                                                          if (result != null &&
+                                                              mounted) {
+                                                            //TODO :: Cargar todo
+                                                            await Future.delayed(
+                                                                    const Duration(
+                                                                        milliseconds:
+                                                                            300))
+                                                                .then((value) {
+                                                              context
+                                                                  .read<
+                                                                      LoansBloc>()
+                                                                  .add(
+                                                                    GetLoansByDni(
+                                                                      value: state
+                                                                          .searchText,
+                                                                    ),
+                                                                  );
+                                                            });
+                                                          }
                                                         }
                                                       }
                                                     },
@@ -528,51 +540,64 @@ class _LoansViewState extends State<LoansView> {
                                                     onPressed: () async {
                                                       print(
                                                           'debugggg renovar usuario');
-                                                      final result =
-                                                          await showModalBottomSheet<
-                                                              bool?>(
-                                                        isDismissible: false,
-                                                        isScrollControlled:
-                                                            false,
-                                                        context: context,
-                                                        builder: (_) {
-                                                          return BlocProvider
-                                                              .value(
-                                                            value: context.read<
-                                                                LoansBloc>(),
-                                                            child: Padding(
-                                                              padding: MediaQuery
-                                                                      .of(context)
-                                                                  .viewInsets,
-                                                              child:
-                                                                  EditLoanBottomSheet(
-                                                                idPrestamo:
-                                                                    prestamo?.codigo ??
-                                                                        0,
-                                                                isNuevo: true,
-                                                              ),
-                                                            ),
-                                                          );
-                                                        },
+                                                      final optionBottomSheet =
+                                                          await ShowBottomSheetRenewLoan
+                                                              .show(
+                                                        context,
                                                       );
 
-                                                      if (result != null &&
+                                                      if (optionBottomSheet !=
+                                                              null &&
                                                           mounted) {
-                                                        //TODO :: Cargar todo
-                                                        await Future.delayed(
-                                                                const Duration(
-                                                                    milliseconds:
-                                                                        300))
-                                                            .then((value) {
-                                                          context
-                                                              .read<LoansBloc>()
-                                                              .add(
-                                                                GetLoansByDni(
-                                                                  value: state
-                                                                      .searchText,
+                                                        final result =
+                                                            await showModalBottomSheet<
+                                                                bool?>(
+                                                          isDismissible: false,
+                                                          isScrollControlled:
+                                                              false,
+                                                          context: context,
+                                                          builder: (_) {
+                                                            return BlocProvider
+                                                                .value(
+                                                              value: context.read<
+                                                                  LoansBloc>(),
+                                                              child: Padding(
+                                                                padding: MediaQuery.of(
+                                                                        context)
+                                                                    .viewInsets,
+                                                                child:
+                                                                    EditLoanBottomSheet(
+                                                                  idPrestamo:
+                                                                      prestamo?.codigo ??
+                                                                          0,
+                                                                  isNuevo: true,
+                                                                  isRenew:
+                                                                      optionBottomSheet,
                                                                 ),
-                                                              );
-                                                        });
+                                                              ),
+                                                            );
+                                                          },
+                                                        );
+
+                                                        if (result != null &&
+                                                            mounted) {
+                                                          //TODO :: Cargar todo
+                                                          await Future.delayed(
+                                                                  const Duration(
+                                                                      milliseconds:
+                                                                          300))
+                                                              .then((value) {
+                                                            context
+                                                                .read<
+                                                                    LoansBloc>()
+                                                                .add(
+                                                                  GetLoansByDni(
+                                                                    value: state
+                                                                        .searchText,
+                                                                  ),
+                                                                );
+                                                          });
+                                                        }
                                                       }
                                                     },
                                                     icon: const Icon(

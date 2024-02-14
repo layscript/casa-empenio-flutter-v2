@@ -226,6 +226,7 @@ class _LoanClientViewState extends State<LoanClientView> {
                                                     idPrestamo:
                                                         prestamo?.codigo ?? 0,
                                                     isNuevo: false,
+                                                    isRenew: null,
                                                   ),
                                                 ),
                                               );
@@ -241,37 +242,46 @@ class _LoanClientViewState extends State<LoanClientView> {
                                         } else {
                                           print('sadjklsadjklsdakjsad 2.1');
                                           // YA ESTÁ CERRADO asi que renuevo
-                                          final result =
-                                              await showModalBottomSheet<bool?>(
-                                            isDismissible: false,
-                                            context: context,
-                                            builder: (_) {
-                                              return BlocProvider.value(
-                                                value:
-                                                    context.read<LoansBloc>(),
-                                                child: Padding(
-                                                  padding:
-                                                      MediaQuery.of(context)
-                                                          .viewInsets,
-                                                  child: EditLoanBottomSheet(
-                                                    idPrestamo:
-                                                        prestamo?.codigo ?? 0,
-                                                    isNuevo: true,
-                                                  ),
-                                                ),
-                                              );
-                                            },
+                                          final optionBottomSheet =
+                                              await ShowBottomSheetRenewLoan
+                                                  .show(
+                                            context,
                                           );
-                                          print('sadjklsadjklsdakjsad 2.2');
 
-                                          if (result != null && mounted) {
-                                            print('sadjklsadjklsdakjsad 2.3');
-
-                                            context.read<LoansBloc>().add(
-                                                  GetLoansByDni(
-                                                    value: state.searchText,
+                                          if (optionBottomSheet != null &&
+                                              mounted) {
+                                            final result =
+                                                await showModalBottomSheet<
+                                                    bool?>(
+                                              isDismissible: false,
+                                              context: context,
+                                              builder: (_) {
+                                                return BlocProvider.value(
+                                                  value:
+                                                      context.read<LoansBloc>(),
+                                                  child: Padding(
+                                                    padding:
+                                                        MediaQuery.of(context)
+                                                            .viewInsets,
+                                                    child: EditLoanBottomSheet(
+                                                      idPrestamo:
+                                                          prestamo?.codigo ?? 0,
+                                                      isNuevo: true,
+                                                      isRenew:
+                                                          optionBottomSheet,
+                                                    ),
                                                   ),
                                                 );
+                                              },
+                                            );
+
+                                            if (result != null && mounted) {
+                                              context.read<LoansBloc>().add(
+                                                    GetLoansByDni(
+                                                      value: state.searchText,
+                                                    ),
+                                                  );
+                                            }
                                           }
                                         }
                                       },
@@ -295,35 +305,46 @@ class _LoanClientViewState extends State<LoanClientView> {
                                       onPressed: () async {
                                         print('sadjklsadjklsdakjsad 2.1');
                                         // YA ESTÁ CERRADO asi que renuevo
-                                        final result =
-                                            await showModalBottomSheet<bool?>(
-                                          isDismissible: false,
-                                          context: context,
-                                          builder: (_) {
-                                            return BlocProvider.value(
-                                              value: context.read<LoansBloc>(),
-                                              child: Padding(
-                                                padding: MediaQuery.of(context)
-                                                    .viewInsets,
-                                                child: EditLoanBottomSheet(
-                                                  idPrestamo:
-                                                      prestamo?.codigo ?? 0,
-                                                  isNuevo: true,
-                                                ),
-                                              ),
-                                            );
-                                          },
+                                        final optionBottomSheet =
+                                            await ShowBottomSheetRenewLoan.show(
+                                          context,
                                         );
-                                        print('sadjklsadjklsdakjsad 2.2');
 
-                                        if (result != null && mounted) {
-                                          print('sadjklsadjklsdakjsad 2.3');
-
-                                          context.read<LoansBloc>().add(
-                                                GetLoansByDni(
-                                                  value: state.searchText,
+                                        if (optionBottomSheet != null &&
+                                            mounted) {
+                                          final result =
+                                              await showModalBottomSheet<bool?>(
+                                            isDismissible: false,
+                                            context: context,
+                                            builder: (_) {
+                                              return BlocProvider.value(
+                                                value:
+                                                    context.read<LoansBloc>(),
+                                                child: Padding(
+                                                  padding:
+                                                      MediaQuery.of(context)
+                                                          .viewInsets,
+                                                  child: EditLoanBottomSheet(
+                                                    idPrestamo:
+                                                        prestamo?.codigo ?? 0,
+                                                    isNuevo: true,
+                                                    isRenew: optionBottomSheet,
+                                                  ),
                                                 ),
                                               );
+                                            },
+                                          );
+                                          print('sadjklsadjklsdakjsad 2.2');
+
+                                          if (result != null && mounted) {
+                                            print('sadjklsadjklsdakjsad 2.3');
+
+                                            context.read<LoansBloc>().add(
+                                                  GetLoansByDni(
+                                                    value: state.searchText,
+                                                  ),
+                                                );
+                                          }
                                         }
                                       },
                                       icon: const Icon(

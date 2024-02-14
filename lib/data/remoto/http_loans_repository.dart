@@ -56,12 +56,17 @@ class HttpLoansRepository implements LoansRepository {
     try {
       final response = await _dio.get<String>(path);
 
+      print('responseeeee 11: ${response.data}');
+      print('responseeeee 22: ${response.statusCode}');
+
       if (response.statusCode != 200) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
         return Left(message);
       } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
+        print('responseeeee 2.2: $map');
+
         if (userId != null) {
           await _customerRepository.createHistory(
             accion: 'VISUALIZAR',
@@ -69,9 +74,17 @@ class HttpLoansRepository implements LoansRepository {
             usuarioId: userId,
           );
         }
-        return Right(LoansEntity.getLoanFromMap(map['body']));
+
+        if (map['body'] == null) {
+          return const Left('No hay información registrada');
+        } else {
+          return Right(LoansEntity.getLoanFromMap(map['body']));
+        }
       }
     } catch (e, stackTrace) {
+      print('responseeeee 3: ${e}');
+      print('responseeeee 4: ${stackTrace}');
+
       await _sentry.captureException(
         e,
         stackTrace: stackTrace,
@@ -86,8 +99,12 @@ class HttpLoansRepository implements LoansRepository {
     required int? userId,
   }) async {
     final path = '/prestamos/prestamos/criterio/$criterio';
+    
     try {
       final response = await _dio.get<String>(path);
+      print('responseeeee 1: ${response.data}');
+      print('responseeeee 2: ${response.statusCode}');
+
       if (response.statusCode != 200) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';

@@ -75,8 +75,10 @@ class _ShowDetailsReportLoansState extends State<ShowDetailsReportLoans> {
               child: CircularProgressIndicator(),
             );
           } else if (state.isReportsDetailsError) {
-            return const Center(
-              child: Text('Ocurrió un error, intentelo de nuevo'),
+            return Center(
+              child: Text(
+                state.message ?? 'Ocurrió un error, intentelo de nuevo',
+              ),
             );
           } else if (state.isReportsDetailsSuccess &&
               state.loanDetails != null) {
@@ -418,9 +420,16 @@ class _ShowDetailsReportLoansState extends State<ShowDetailsReportLoans> {
                                         );
                                       },
                                       child: Image.network(
-                                        '$endPointPrincipal/${prenda.imagen}.jpg',
+                                        '$endPointPrincipal/${prenda.imagen}',
                                         height: 50,
                                         width: 50,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                          return const Placeholder(
+                                            fallbackHeight: 50,
+                                            fallbackWidth: 50,
+                                          );
+                                        },
                                       ),
                                     ),
                                   ],

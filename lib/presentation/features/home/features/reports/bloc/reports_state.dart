@@ -30,6 +30,7 @@ class ReportsState extends Equatable {
     required this.statusDetails,
     required this.statusCanceled,
     required this.paymentDetails,
+    required this.message,
   });
 
   final ReportsStatus statusClosedLoans;
@@ -62,6 +63,7 @@ class ReportsState extends Equatable {
   final bool ventaContracts;
   final bool liquidadoContracts;
   final bool canceladoContracts;
+  final String? message;
 
   bool get isReportsClosedLoansLoading =>
       statusClosedLoans == ReportsStatus.loading;
@@ -119,6 +121,7 @@ class ReportsState extends Equatable {
     bool? canceladoContracts,
     LoansEntity? loanDetails,
     ReportsPaymentEntity? paymentDetails,
+    String? message,
   }) =>
       ReportsState(
         statusCanceled: statusCanceled ?? this.statusCanceled,
@@ -147,6 +150,7 @@ class ReportsState extends Equatable {
         canceladoContracts: canceladoContracts ?? this.canceladoContracts,
         loanDetails: loanDetails ?? this.loanDetails,
         paymentDetails: paymentDetails ?? this.paymentDetails,
+        message: message ?? this.message,
       );
 
   @override
@@ -177,5 +181,6 @@ class ReportsState extends Equatable {
         canceladoContracts,
         loanDetails,
         paymentDetails,
+        message,
       ];
 }

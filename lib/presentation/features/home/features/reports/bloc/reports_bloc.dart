@@ -36,6 +36,7 @@ final _initialState = ReportsState(
   vigentContracts: true,
   loanDetails: null,
   paymentDetails: null,
+  message: null,
 );
 
 class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
@@ -291,7 +292,12 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     );
     result.fold(
       (message) {
-        emit(state.copyWith(statusDetails: ReportsStatus.error));
+        emit(
+          state.copyWith(
+            statusDetails: ReportsStatus.error,
+            message: message,
+          ),
+        );
       },
       (data) {
         emit(
