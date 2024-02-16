@@ -195,6 +195,7 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     SavePaymentLoan event,
     Emitter<LoansState> emit,
   ) async {
+    if (state.loansStatus == LoansStatus.loading) return;
     emit(_loadingState);
     final resultPayment = await _loansRepository.savePayment(
       codigo: event.idPrestamo,
@@ -221,6 +222,7 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     SaveSettlementLoan event,
     Emitter<LoansState> emit,
   ) async {
+    if (state.loansStatus == LoansStatus.loading) return;
     emit(_loadingState);
     final resultPayment = await _loansRepository.savePayment(
       codigo: event.idPrestamo,

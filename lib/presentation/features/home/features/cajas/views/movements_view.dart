@@ -84,6 +84,49 @@ class MovementsView extends StatelessWidget {
           ],
         ),
       ),
+      bottomNavigationBar: Builder(
+        builder: (context) {
+          var movimientoDiferencia = 0.0;
+          if (movimientos.isNotEmpty) {
+            for (var movimiento in movimientos) {
+              if (movimiento.suma == true) {
+                movimientoDiferencia +=
+                    double.parse(movimiento.monto.toString());
+              } else {
+                movimientoDiferencia -=
+                    double.parse(movimiento.monto.toString());
+              }
+            }
+          }
+
+          return Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 10,
+            ),
+            color: AppColors.blue,
+            child: Row(
+              children: [
+                const Text(
+                  'Saldo Teórico: ',
+                  style: TextStyle(
+                    color: AppColors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  's/ $movimientoDiferencia',
+                  style: const TextStyle(
+                    color: AppColors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }

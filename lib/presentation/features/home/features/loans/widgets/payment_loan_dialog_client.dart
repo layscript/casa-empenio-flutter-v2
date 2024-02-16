@@ -94,7 +94,7 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                     actions: [
                       TextButton(
                         onPressed: () {
-                          Navigator.pop(context);
+                          //Navigator.pop(context);
                           Navigator.pop(context);
                           Navigator.pop(context, true);
                         },
@@ -148,7 +148,7 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                     actions: [
                       TextButton(
                         onPressed: () {
-                          Navigator.pop(context);
+                          //Navigator.pop(context);
                           Navigator.pop(context);
                         },
                         child: const Text('Aceptar'),
@@ -363,11 +363,12 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                     ],
                     if (liquidar)
                       PrimaryButton(
-                        onPressed: loan?.ganancia != null &&
-                                montoCtrl.text != "" &&
-                                montoCtrl.text != "0" &&
-                                liquidar &&
-                                selectedPhotosLiquidar!.isNotEmpty
+                        onPressed: (loan?.ganancia != null &&
+                                    montoCtrl.text != "" &&
+                                    montoCtrl.text != "0" &&
+                                    liquidar &&
+                                    selectedPhotosLiquidar!.isNotEmpty) &&
+                                state.loansStatus != LoansStatus.loading
                             ? () {
                                 showDialog(
                                   barrierDismissible: false,
@@ -405,20 +406,27 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                                               Colors.blue,
                                             ),
                                           ),
-                                          onPressed: () {
-                                            context.read<LoansBloc>().add(
-                                                  SaveSettlementLoan(
-                                                    idPrestamo:
-                                                        widget.nroPrestamo ?? 0,
-                                                    monto: montoCtrl.text,
-                                                    userId: authBloc.user.id
-                                                        .toString(),
-                                                    codigo: loan?.codigo ?? 0,
-                                                    photos:
-                                                        selectedPhotosLiquidar,
-                                                  ),
-                                                );
-                                          },
+                                          onPressed: state.loansStatus !=
+                                                  LoansStatus.loading
+                                              ? () {
+                                                  Navigator.pop(context);
+                                                  context.read<LoansBloc>().add(
+                                                        SaveSettlementLoan(
+                                                          idPrestamo: widget
+                                                                  .nroPrestamo ??
+                                                              0,
+                                                          monto: montoCtrl.text,
+                                                          userId: authBloc
+                                                              .user.id
+                                                              .toString(),
+                                                          codigo:
+                                                              loan?.codigo ?? 0,
+                                                          photos:
+                                                              selectedPhotosLiquidar,
+                                                        ),
+                                                      );
+                                                }
+                                              : null,
                                           child: const Text(
                                             'Guardar',
                                             style: TextStyle(
@@ -437,8 +445,9 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                     if (!liquidar)
                       PrimaryButton(
                         onPressed: (loan?.ganancia != null &&
-                                montoCtrl.text != "" &&
-                                montoCtrl.text != "0")
+                                    montoCtrl.text != "" &&
+                                    montoCtrl.text != "0") &&
+                                state.loansStatus != LoansStatus.loading
                             ? () {
                                 context.read<LoansBloc>().add(
                                       SavePaymentLoan(

@@ -413,8 +413,7 @@ class _LoansViewState extends State<LoansView> {
                                                           builder: (_) {
                                                             return BlocProvider
                                                                 .value(
-                                                              value: context.read<
-                                                                  LoansBloc>(),
+                                                              value: loansBloc,
                                                               child: Padding(
                                                                 padding: MediaQuery.of(
                                                                         context)
@@ -475,8 +474,8 @@ class _LoansViewState extends State<LoansView> {
                                                             builder: (_) {
                                                               return BlocProvider
                                                                   .value(
-                                                                value: context.read<
-                                                                    LoansBloc>(),
+                                                                value:
+                                                                    loansBloc,
                                                                 child: Padding(
                                                                   padding: MediaQuery.of(
                                                                           context)
@@ -559,8 +558,7 @@ class _LoansViewState extends State<LoansView> {
                                                           builder: (_) {
                                                             return BlocProvider
                                                                 .value(
-                                                              value: context.read<
-                                                                  LoansBloc>(),
+                                                              value: loansBloc,
                                                               child: Padding(
                                                                 padding: MediaQuery.of(
                                                                         context)
@@ -623,8 +621,7 @@ class _LoansViewState extends State<LoansView> {
                                                         builder: (_) {
                                                           return BlocProvider
                                                               .value(
-                                                            value: context.read<
-                                                                LoansBloc>(),
+                                                            value: loansBloc,
                                                             child:
                                                                 PaymentLoanDialogClient(
                                                               nroPrestamo:
@@ -670,8 +667,7 @@ class _LoansViewState extends State<LoansView> {
                                                         builder: (_) {
                                                           return BlocProvider
                                                               .value(
-                                                            value: context.read<
-                                                                LoansBloc>(),
+                                                            value: loansBloc,
                                                             child:
                                                                 AddAmountLoanDialogClient(
                                                               nroPrestamo:
@@ -723,8 +719,7 @@ class _LoansViewState extends State<LoansView> {
                                                           builder: (_) {
                                                             return BlocProvider
                                                                 .value(
-                                                              value: context.read<
-                                                                  LoansBloc>(),
+                                                              value: loansBloc,
                                                               child:
                                                                   ShowDialogBillingLoan(
                                                                 nroPrestamo:
@@ -925,8 +920,7 @@ class _LoansViewState extends State<LoansView> {
                                                         context: context,
                                                         builder: (_) =>
                                                             BlocProvider.value(
-                                                          value: context.read<
-                                                              LoansBloc>(),
+                                                          value: loansBloc,
                                                           child:
                                                               UpdateStatusLoanDialog(
                                                             idLoan: prestamo

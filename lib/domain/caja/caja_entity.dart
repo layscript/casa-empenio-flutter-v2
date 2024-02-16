@@ -126,6 +126,11 @@ class MovimientosEntity {
           : null,
     );
   }
+
+  @override
+  String toString() {
+    return 'MovimientosEntity(id: $id, observaciones: $observaciones, monto: $monto, ventaId: $ventaId, pagoId: $pagoId, prestamoId: $prestamoId, createdBy: $createdBy, suma: $suma, eliminado: $eliminado, createdAt: $createdAt, updatedAt: $updatedAt, tipo: ${tipo?.codigo})';
+  }
 }
 
 class TypeBoxEntity {
