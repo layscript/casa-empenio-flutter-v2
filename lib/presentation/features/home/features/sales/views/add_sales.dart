@@ -32,11 +32,13 @@ class _AddFormSalesState extends State<AddFormSales> {
                 salesBloc.selectedProductsSales!.isEmpty
             ? const SizedBox()
             : FloatingActionButton(
-                onPressed: () => context.read<SalesBloc>().add(
-                      GenerateSalesProduct(
-                        authBloc.user.id,
-                      ),
-                    ),
+                onPressed: salesBloc.isSaveSalesLoading
+                    ? null
+                    : () => context.read<SalesBloc>().add(
+                          GenerateSalesProduct(
+                            authBloc.user.id,
+                          ),
+                        ),
                 child: const Icon(Icons.add),
               );
       }),

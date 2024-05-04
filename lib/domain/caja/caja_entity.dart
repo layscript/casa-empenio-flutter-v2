@@ -1,4 +1,8 @@
-class CajaEntity {
+import 'dart:developer';
+
+import 'package:equatable/equatable.dart';
+
+class CajaEntity extends Equatable {
   const CajaEntity({
     required this.id,
     required this.fecha,
@@ -39,39 +43,123 @@ class CajaEntity {
   final String? createdAt;
   final List<MovimientosEntity>? movimientos;
 
-  static List<CajaEntity> listGetCajaFromMap(
-    List<dynamic> list,
-  ) {
-    return list.map((e) => getCajaFromMap(e as Map<String, dynamic>)).toList();
-  }
-
-  static CajaEntity getCajaFromMap(Map<String, dynamic> map) {
+  CajaEntity copyWith({
+    int? id,
+    String? fecha,
+    String? horaApertura,
+    int? usuarioApertura,
+    String? montoApertura,
+    String? horaCierre,
+    int? usuarioCierre,
+    String? montoCierreReal,
+    String? montoCierreTeorico,
+    String? montoDiferencia,
+    String? totalIngresos,
+    String? totalEgresos,
+    String? estado,
+    String? observaciones,
+    bool? eliminado,
+    String? updatedAt,
+    String? createdAt,
+    List<MovimientosEntity>? movimientos,
+  }) {
     return CajaEntity(
-      id: map['id'],
-      fecha: map['fecha'],
-      horaApertura: map['horaApertura'],
-      usuarioApertura: map['usuarioApertura'],
-      montoApertura: map['montoApertura'],
-      horaCierre: map['horaCierre'],
-      usuarioCierre: map['usuarioCierre'],
-      montoCierreReal: map['montoCierreReal'],
-      montoCierreTeorico: map['montoCierreTeorico'],
-      montoDiferencia: map['montoDiferencia'],
-      totalEgresos: map['totalEgresos'],
-      totalIngresos: map['totalIngresos'],
-      estado: map['estado'],
-      observaciones: map['observaciones'],
-      eliminado: map['eliminado'],
-      updatedAt: map['updatedAt'],
-      createdAt: map['createdAt'],
-      movimientos: map['movimientos'] != null
-          ? MovimientosEntity.listMovimientosFromMap(map['movimientos'])
-          : null,
+      id: id ?? this.id,
+      fecha: fecha ?? this.fecha,
+      horaApertura: horaApertura ?? this.horaApertura,
+      usuarioApertura: usuarioApertura ?? this.usuarioApertura,
+      montoApertura: montoApertura ?? this.montoApertura,
+      horaCierre: horaCierre ?? this.horaCierre,
+      usuarioCierre: usuarioCierre ?? this.usuarioCierre,
+      montoCierreReal: montoCierreReal ?? this.montoCierreReal,
+      montoCierreTeorico: montoCierreTeorico ?? this.montoCierreTeorico,
+      montoDiferencia: montoDiferencia ?? this.montoDiferencia,
+      totalIngresos: totalIngresos ?? this.totalIngresos,
+      totalEgresos: totalEgresos ?? this.totalEgresos,
+      estado: estado ?? this.estado,
+      observaciones: observaciones ?? this.observaciones,
+      eliminado: eliminado ?? this.eliminado,
+      updatedAt: updatedAt ?? this.updatedAt,
+      createdAt: createdAt ?? this.createdAt,
+      movimientos: movimientos ?? this.movimientos,
     );
   }
+
+  static List<CajaEntity> listGetCajaFromMap(
+    List<dynamic> list,
+    bool newMovimientos,
+  ) {
+    return list
+        .map((e) => getCajaFromMap(
+              e,
+              newMovimientos,
+            ))
+        .toList();
+  }
+
+  static CajaEntity getCajaFromMap(
+    dynamic map,
+    bool newMovimientos,
+  ) {
+    return CajaEntity(
+      id: map?['id'],
+      fecha: map?['fecha'],
+      horaApertura: map?['horaApertura'],
+      usuarioApertura: map?['usuarioApertura'],
+      montoApertura: map?['montoApertura'],
+      horaCierre: map?['horaCierre'],
+      usuarioCierre: map?['usuarioCierre'],
+      montoCierreReal: map?['montoCierreReal'],
+      montoCierreTeorico: map?['montoCierreTeorico'],
+      montoDiferencia: map?['montoDiferencia'],
+      totalEgresos: map?['totalEgresos'],
+      totalIngresos: map?['totalIngresos'],
+      estado: map?['estado'],
+      observaciones: map?['observaciones'],
+      eliminado: map?['eliminado'],
+      updatedAt: map?['updatedAt'],
+      createdAt: map?['createdAt'],
+      movimientos: map?['movimientos'] != null
+          ? MovimientosEntity.listMovimientosFromMap(map?['movimientos'])
+              .where((element) => element.tipo?.descripcion != 'Venta')
+              .toList()
+          : null,
+
+      /* movimientos: map?['movimientos'] != null
+          ? newMovimientos
+              ? MovimientosEntity.listMovimientosFromMap(map?['movimientos'])
+                  .where((element) => element.tipo?.descripcion != 'Venta')
+                  .toList()
+              : MovimientosEntity.listMovimientosFromMap(map?['movimientos'])
+                  .toList()
+          : null, */
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+        id,
+        fecha,
+        horaApertura,
+        usuarioApertura,
+        montoApertura,
+        horaCierre,
+        usuarioCierre,
+        montoCierreReal,
+        montoCierreTeorico,
+        montoDiferencia,
+        totalIngresos,
+        totalEgresos,
+        estado,
+        observaciones,
+        eliminado,
+        updatedAt,
+        createdAt,
+        movimientos,
+      ];
 }
 
-class MovimientosEntity {
+class MovimientosEntity extends Equatable {
   const MovimientosEntity({
     required this.id,
     required this.observaciones,
@@ -99,6 +187,36 @@ class MovimientosEntity {
   final TypeBoxEntity? tipo;
   final String? createdAt;
   final String? updatedAt;
+
+  MovimientosEntity copyWith({
+    int? id,
+    String? observaciones,
+    String? monto,
+    int? ventaId,
+    int? pagoId,
+    int? prestamoId,
+    String? createdBy,
+    bool? suma,
+    bool? eliminado,
+    String? createdAt,
+    String? updatedAt,
+    TypeBoxEntity? tipo,
+  }) {
+    return MovimientosEntity(
+      id: id ?? this.id,
+      observaciones: observaciones ?? this.observaciones,
+      monto: monto ?? this.monto,
+      ventaId: ventaId ?? this.ventaId,
+      pagoId: pagoId ?? this.pagoId,
+      prestamoId: prestamoId ?? this.prestamoId,
+      createdBy: createdBy ?? this.createdBy,
+      suma: suma ?? this.suma,
+      eliminado: eliminado ?? this.eliminado,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      tipo: tipo ?? this.tipo,
+    );
+  }
 
   static List<MovimientosEntity> listMovimientosFromMap(
     List<dynamic> list,
@@ -131,9 +249,25 @@ class MovimientosEntity {
   String toString() {
     return 'MovimientosEntity(id: $id, observaciones: $observaciones, monto: $monto, ventaId: $ventaId, pagoId: $pagoId, prestamoId: $prestamoId, createdBy: $createdBy, suma: $suma, eliminado: $eliminado, createdAt: $createdAt, updatedAt: $updatedAt, tipo: ${tipo?.codigo})';
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        observaciones,
+        monto,
+        ventaId,
+        pagoId,
+        prestamoId,
+        createdBy,
+        suma,
+        eliminado,
+        createdAt,
+        updatedAt,
+        tipo,
+      ];
 }
 
-class TypeBoxEntity {
+class TypeBoxEntity extends Equatable {
   const TypeBoxEntity({
     required this.id,
     required this.codigo,
@@ -150,6 +284,24 @@ class TypeBoxEntity {
   final String? createdAt;
   final String? updatedAt;
 
+  TypeBoxEntity copyWith({
+    int? id,
+    String? codigo,
+    String? descripcion,
+    bool? eliminado,
+    String? createdAt,
+    String? updatedAt,
+  }) {
+    return TypeBoxEntity(
+      id: id ?? this.id,
+      codigo: codigo ?? this.codigo,
+      descripcion: descripcion ?? this.descripcion,
+      eliminado: eliminado ?? this.eliminado,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
   static TypeBoxEntity getTypeFromMap(Map<String, dynamic> map) {
     return TypeBoxEntity(
       id: map['id'],
@@ -160,4 +312,14 @@ class TypeBoxEntity {
       descripcion: map['descripcion'],
     );
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        codigo,
+        descripcion,
+        eliminado,
+        createdAt,
+        updatedAt,
+      ];
 }

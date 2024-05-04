@@ -1,4 +1,6 @@
+import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/full_screen_image.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/reports/bloc/reports_bloc.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/reports/widgets/show_details_report_loans.dart';
 import 'package:flutter/material.dart';
@@ -39,7 +41,6 @@ class _ShowDetailsReportPayState extends State<ShowDetailsReportPay> {
           );
         } else if (state.isReportsDetailsSuccess) {
           final pago = state.paymentDetails;
-          print('lsdkajlaksd: ${pago?.fecha}');
           return AlertDialog(
             title: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -77,12 +78,53 @@ class _ShowDetailsReportPayState extends State<ShowDetailsReportPay> {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          '${pago?.prestamo?.cliente?.nombres} ${pago?.prestamo?.cliente?.apellidos}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
+                        Expanded(
+                          child: Text(
+                            '${pago?.prestamo?.cliente?.nombres} ${pago?.prestamo?.cliente?.apellidos}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.normal,
+                            ),
                           ),
                         ),
+                        const SizedBox(width: 10),
+                        if (pago?.prestamo?.cliente?.imagenUno != null)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(30),
+                            child: GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => FullScreenImage(
+                                      imageUrl:
+                                          pago?.prestamo?.cliente?.imagenUno ??
+                                              '',
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Image.network(
+                                '$endPointPrincipal/${pago?.prestamo?.cliente?.imagenUno}',
+                                width: 60,
+                                height: 60,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Placeholder(
+                                    fallbackHeight: 60,
+                                    fallbackWidth: 60,
+                                  );
+                                },
+                              ),
+                            ),
+                          )
+                        else
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(30),
+                            child: Image.asset(
+                              AppIcons.notFound,
+                              width: 60,
+                              height: 60,
+                            ),
+                          ),
                       ],
                     ),
                     const SizedBox(height: 10),
@@ -100,10 +142,11 @@ class _ShowDetailsReportPayState extends State<ShowDetailsReportPay> {
                         ),
                         IconButton(
                           onPressed: () async {
+                            final phone = pago?.prestamo?.cliente?.celular;
                             await customLaunchUrl(
                               Uri(
                                 scheme: 'tel',
-                                path: pago?.prestamo?.cliente?.celular,
+                                path: phone,
                               ),
                             );
                           },

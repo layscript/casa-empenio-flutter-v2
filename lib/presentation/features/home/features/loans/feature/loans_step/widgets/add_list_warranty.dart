@@ -81,7 +81,6 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
   }
 
   void getPhoto(List<XFile>? photo) {
-    print('getttt photoo: ${photo}');
     setState(() {
       selectedPhotos = photo ?? [];
     });
@@ -94,7 +93,6 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
 
   @override
   Widget build(BuildContext context) {
-    print('asdkjasd: ${selectedPhotos}');
     final loansState = context.watch<LoansStepBloc>().state;
     final preferences = context.read<Preferences>();
     final localState =

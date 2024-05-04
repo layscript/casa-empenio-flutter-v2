@@ -31,7 +31,6 @@ class ShowListWarranty extends StatelessWidget {
           itemCount: listWarranty!.length,
           itemBuilder: (context, index) {
             final warranty = listWarranty![index];
-            print('lksjadjlads: ${warranty?.id}');
 
             return ExpansionTile(
               title: Text('Garantía: ${index + 1}'),

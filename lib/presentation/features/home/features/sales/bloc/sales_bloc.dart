@@ -215,29 +215,14 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
     GenerateSalesProduct event,
     Emitter<SalesState> emit,
   ) async {
-    // TODO:: FALTA GUARDAR VENTAAA
-
-    /* final detalles = state.selectedProductsSales!.map((e) {
-      return {
-        'cantidad': e.cantidad,
-        'precio': e.precio,
-        'bienGarantiaId': e.selectedProducts?.id,
-        'gastoAdicional': e.gastoAdicional,
-        'observaciones': e.observaciones,
-      };
-    }).toList();
-
-    
-
-    print('detaleeesss: ${detalles}'); */
-
-    /*   emit(
+    if (state.isSaveSalesLoading == true) return;
+    emit(
       state.copyWith(
         saveStatus: SalesStatus.loading,
         customer: state.customer,
         selectedProductsSales: state.selectedProductsSales,
       ),
-    ); */
+    );
 
     List<Map<String, dynamic>> detalles = state.selectedProductsSales!.map((e) {
       return {
@@ -263,7 +248,6 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
       'usuarioId': event.userId,
     };
 
-    log('detaleeesss: ${data}');
 
     final result = await _salesRepository.createSalesProduct(data);
     if (result) {

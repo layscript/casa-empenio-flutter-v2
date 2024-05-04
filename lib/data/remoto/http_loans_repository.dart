@@ -55,18 +55,12 @@ class HttpLoansRepository implements LoansRepository {
     final path = '/prestamos/prestamos/$id';
     try {
       final response = await _dio.get<String>(path);
-
-      print('responseeeee 11: ${response.data}');
-      print('responseeeee 22: ${response.statusCode}');
-
       if (response.statusCode != 200) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
         return Left(message);
       } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
-        print('responseeeee 2.2: $map');
-
         if (userId != null) {
           await _customerRepository.createHistory(
             accion: 'VISUALIZAR',
@@ -82,9 +76,6 @@ class HttpLoansRepository implements LoansRepository {
         }
       }
     } catch (e, stackTrace) {
-      print('responseeeee 3: ${e}');
-      print('responseeeee 4: ${stackTrace}');
-
       await _sentry.captureException(
         e,
         stackTrace: stackTrace,
@@ -99,12 +90,9 @@ class HttpLoansRepository implements LoansRepository {
     required int? userId,
   }) async {
     final path = '/prestamos/prestamos/criterio/$criterio';
-    
+
     try {
       final response = await _dio.get<String>(path);
-      print('responseeeee 1: ${response.data}');
-      print('responseeeee 2: ${response.statusCode}');
-
       if (response.statusCode != 200) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
@@ -126,7 +114,6 @@ class HttpLoansRepository implements LoansRepository {
         e,
         stackTrace: stackTrace,
       );
-      print('skjladajlsdkjlasaljksd: ${e}');
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -184,12 +171,9 @@ class HttpLoansRepository implements LoansRepository {
       'isRenewed': renew,
     };
 
-    log('payladolada 1: $payload');
-    log('payladolada 2: $bienes');
 
     try {
       final response = await _dio.post<String>(path, data: payload);
-      log('statttuututus code 1: ${response.statusCode}');
       if (response.statusCode != 201) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
@@ -204,16 +188,9 @@ class HttpLoansRepository implements LoansRepository {
         );
 
         final map = json.decode(response.data!) as Map<String, dynamic>;
-        log('statttuututus code 2: ${map}');
         final bienesResponse = map['body']['bienesGarantia'] as List<dynamic>?;
-        log('statttuututus code 3_1: ${bienesResponse}');
-        log('statttuututus code 3_2: ${bienes}');
 
-        log('debugggg aui 1.1.1: ${cliente?.imagenUno}');
-        log('debugggg aui 1.1.2: ${cliente?.imagenDos}');
         if (cliente.imagenUno != null) {
-          log('debugggg aui 1.1.3: ${cliente.imagenUno}');
-          log('debugggg aui 1.1.4: ${cliente.imagenDos}');
           await updateCustomerPhotos(
             dni: int.parse(cliente.dni ?? '0'),
             imagen: cliente.imagenUno!,
@@ -229,10 +206,7 @@ class HttpLoansRepository implements LoansRepository {
           );
         }
 
-        log('debugggg aui 1.2');
-
         if (bienesResponse != null) {
-          log('debugggg aui 1.33: ${bienesResponse}');
 
           for (var bienResponse in bienesResponse) {
             final imagenUno = bienResponse['imagen'] as String?;
@@ -248,7 +222,6 @@ class HttpLoansRepository implements LoansRepository {
               );
             }
 
-            log('debugggg aui 1.34: ${imagenUno}');
           }
         }
 
@@ -288,7 +261,6 @@ class HttpLoansRepository implements LoansRepository {
         e,
         stackTrace: stackTrace,
       );
-      log('erreroerpoierioper 1: $e');
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -298,6 +270,8 @@ class HttpLoansRepository implements LoansRepository {
     required int codigo,
     required double monto,
     required String userId,
+    required List<XFile>? photos,
+    required bool? efectivo,
   }) async {
     const path = '/prestamos/pagos';
     final payload = {
@@ -305,12 +279,20 @@ class HttpLoansRepository implements LoansRepository {
       'prestamoId': codigo,
       'usuarioId': userId,
     };
+
+    if (efectivo != null) {
+      payload['efectivo'] = efectivo;
+    }
     try {
       final response = await _dio.post<String>(path, data: payload);
-      print('saveeeee 1: ${response.statusCode}');
-      print('saveeeee 2: ${response.data}');
-
       if (response.statusCode == 201 || response.statusCode == 200) {
+        if (photos != null) {
+          await updatePagosPhotos(
+            idPrestamo: codigo,
+            imagenUno: photos.first.path,
+          );
+        }
+
         await _customerRepository.createHistory(
           accion: 'PAGAR',
           detalle: 'realizar el pago del prestamo del codigo: $codigo',
@@ -340,6 +322,7 @@ class HttpLoansRepository implements LoansRepository {
     required double monto,
     required String observaciones,
     required String userId,
+    required List<XFile>? photos,
   }) async {
     const path = '/prestamos/prestamos/aumentarMonto';
     final payload = {
@@ -359,6 +342,13 @@ class HttpLoansRepository implements LoansRepository {
         //final map = json.decode(response.data!) as Map<String, dynamic>;
         //return const Right(true);
         //
+        if (photos != null) {
+          await updateAumentosPhotos(
+            idPrestamo: codigo,
+            imagenUno: photos.first.path,
+          );
+        }
+
         await _customerRepository.createHistory(
           accion: 'AGREGAR MONTO',
           detalle: 'Agregar monto del prestamo del codigo: $codigo',
@@ -476,9 +466,6 @@ class HttpLoansRepository implements LoansRepository {
 
     try {
       final response = await _dio.post<String>(path, data: payload);
-      print('skjaldjsadkla 1: ${response.statusCode}');
-      print('skjaldjsadkla 2:   ${response.data}');
-
       if (response.statusCode != 201) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
@@ -553,10 +540,8 @@ class HttpLoansRepository implements LoansRepository {
         )
       });
 
-      log('statttuututus code 6: ${formData}');
 
       final response = await _dio.put(path, data: formData);
-      log('statttuututus code 7: ${response.statusCode}');
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         return true;
@@ -583,9 +568,6 @@ class HttpLoansRepository implements LoansRepository {
 
     try {
       final response = await _dio.put<String>(path);
-      print('saveeeee 1.1: ${response.statusCode}');
-      print('saveeeee 2.2: ${response.data}');
-
       if (response.statusCode == 201 || response.statusCode == 200) {
         if (photos?.length == 0) {
           return true;
@@ -617,6 +599,66 @@ class HttpLoansRepository implements LoansRepository {
       );
       //print('responseee ee: $e');
       //return const Left('Ocurrió un error 2');
+      return false;
+    }
+  }
+
+// TODO:: Probar Aca 1
+  Future<bool> updatePagosPhotos({
+    required int idPrestamo,
+    required String imagenUno,
+  }) async {
+    final imgUno = File(imagenUno);
+    try {
+      final path = '/prestamos/prestamos/imagenPagos/$idPrestamo';
+      FormData formData = FormData.fromMap({
+        'imagen': await MultipartFile.fromFile(
+          imgUno.path,
+          filename: imgUno.path.split('/').last,
+        ),
+      });
+
+      final response = await _dio.put(path, data: formData);
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
+      return false;
+    }
+  }
+
+// TODO:: Probar Aca 2
+  Future<bool> updateAumentosPhotos({
+    required int idPrestamo,
+    required String imagenUno,
+  }) async {
+    final imgUno = File(imagenUno);
+    try {
+      final path = '/prestamos/prestamos/imagenAumentos/$idPrestamo';
+      FormData formData = FormData.fromMap({
+        'imagen': await MultipartFile.fromFile(
+          imgUno.path,
+          filename: imgUno.path.split('/').last,
+        ),
+      });
+
+      final response = await _dio.put(path, data: formData);
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
       return false;
     }
   }
@@ -708,7 +750,6 @@ class HttpLoansRepository implements LoansRepository {
       'id': idGarantia,
     };
 
-    log('statttuututus code 3_4.5: ${data}');
 
     try {
       FormData formData = FormData();
@@ -755,7 +796,6 @@ class HttpLoansRepository implements LoansRepository {
         e,
         stackTrace: stackTrace,
       );
-      log('erreroerpoierioper 2: $e');
 
       return false;
     }
@@ -780,7 +820,6 @@ class HttpLoansRepository implements LoansRepository {
 
     try {
       final path = '/prestamos/prestamos/imagenGarantia/$idGarantia';
-      log('qllqp: $path ==>  ${imagen}');
 
       FormData formData = FormData.fromMap({
         if (!imgUno.path.contains('files'))
@@ -857,7 +896,6 @@ class HttpLoansRepository implements LoansRepository {
       'isRenewed': false,
     };
 
-    log('payladolada: $payload');
 
     try {
       final response = await _dio.put<String>(path, data: payload);
@@ -869,9 +907,7 @@ class HttpLoansRepository implements LoansRepository {
           usuarioId: int.parse(usuarioId),
         );
 
-        log('statttuututus code 2: ${map}');
         final bienesResponse = map['body']['bienesGarantia'] as List<dynamic>?;
-        log('statttuututus code 3: ${bienesResponse}');
 
         if (cliente.imagenUno != null) {
           await updateCustomerPhotos(
@@ -890,7 +926,6 @@ class HttpLoansRepository implements LoansRepository {
         }
 
         if (bienesResponse != null) {
-          log('debugggg aui 1.3');
           for (var bienResponse in bienesResponse) {
             final imagenUno = bienResponse['imagen'] as String?;
             final imagenDos = bienResponse['imagen2'] as String?;
@@ -903,7 +938,6 @@ class HttpLoansRepository implements LoansRepository {
               'imagen3': imagenTres,
             };
 
-            log('mapasaaa: $mapa');
 
             final exito = await updateWarrantyPhotos(
               idGarantia: bienResponse['id'],
@@ -911,8 +945,6 @@ class HttpLoansRepository implements LoansRepository {
               imagen2: imagenDos,
               imagen3: imagenTres,
             );
-
-            print('debugggg aui 1.4: $exito');
 
             if (!exito) {
               return const Left(
@@ -958,6 +990,34 @@ class HttpLoansRepository implements LoansRepository {
         );
         //final map = json.decode(response.data!) as Map<String, dynamic>;
         return true;
+      }
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
+      //print('responseee ee: $e');
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> anularLoan({
+    required int idLoan,
+    required String userId,
+  }) async {
+    final path = '/prestamos/prestamos/anularPrestamo/$idLoan';
+    try {
+      final response = await _dio.put<String>(path);
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        await _customerRepository.createHistory(
+          accion: 'ANULAR',
+          detalle: 'anular el prestamo con el codigo: $idLoan',
+          usuarioId: int.parse(userId),
+        );
+        return true;
+      } else {
+        return false;
       }
     } catch (e, stackTrace) {
       await _sentry.captureException(

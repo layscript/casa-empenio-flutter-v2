@@ -18,7 +18,6 @@ class HistorialEntity {
   static List<HistorialEntity> listGetHistorialFromMap(
     Map<String, dynamic> map,
   ) {
-    log('mapaaaaa 1: $map');
     final list = map['body']?[0] as List<dynamic>;
 
     return list

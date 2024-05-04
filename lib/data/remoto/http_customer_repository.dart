@@ -83,24 +83,17 @@ class HttpCustomerRepository implements CustomerRepository {
     try {
       final response = await _dio.get<String>(path);
       if (response.statusCode != 200) {
-        print('djdjdjdjd 1');
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
-        print('djdjdjdjd 1.1 : ${message}');
-
         return Left(message);
       } else {
-        print('djdjdjdjd 2');
-
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final body = map['body'] != null;
-
         if (!body) return const Left('El cliente no existe');
         final data = map['body']['data'];
         return Right(CustomerSunatEntity.getCustomerSunatFromMap(data));
       }
     } catch (e, stackTrace) {
-      print('djdjdjdjd 3');
       await _sentry.captureException(
         e,
         stackTrace: stackTrace,

@@ -7,13 +7,18 @@ import 'package:equatable/equatable.dart';
 part 'expenses_event.dart';
 part 'expenses_state.dart';
 
+final _initialState = ExpensesState(
+  startExpenses: DateTime.now().subtract(const Duration(days: 1)),
+  endExpenses: DateTime.now(),
+);
+
 class ExpensesBloc extends Bloc<ExpensesEvent, ExpensesState> {
   ExpensesBloc({
     required ExpensesRepository expensesRepository,
     required CajaRepository cajaRepository,
   })  : _expensesRepository = expensesRepository,
         _cajaRepository = cajaRepository,
-        super(const ExpensesState()) {
+        super(_initialState) {
     on<GetExpenses>(_onGetExpenses);
     on<SaveExpense>(_onSaveExpense);
     on<GetCashExpensesStatus>(_onGetCashExpensesStatus);
@@ -35,12 +40,31 @@ class ExpensesBloc extends Bloc<ExpensesEvent, ExpensesState> {
           error: error,
         ),
       ),
-      (list) => emit(
-        state.copyWith(
-          expensesStatus: ExpensesStatus.loaded,
-          listExpenses: list,
-        ),
-      ),
+      (list) {
+        final newList = list.where((element) {
+          final date = DateTime.parse(element.createdAt!);
+          return date.isAfter(event.start ?? state.startExpenses) &&
+              date.isBefore(event.end ?? state.endExpenses);
+        }).toList();
+
+        // Sumar los montos de newList
+
+        final totalGastos = newList.fold<double>(
+          0,
+          (previousValue, element) =>
+              previousValue + double.parse(element.monto ?? '0.00'),
+        );
+
+        emit(
+          state.copyWith(
+            expensesStatus: ExpensesStatus.loaded,
+            listExpenses: newList,
+            startExpenses: event.start ?? state.startExpenses,
+            endExpenses: event.end ?? state.endExpenses,
+            totalGastos: totalGastos,
+          ),
+        );
+      },
     );
   }
 

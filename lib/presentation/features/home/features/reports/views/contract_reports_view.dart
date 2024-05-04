@@ -1,17 +1,13 @@
-import 'dart:io';
+import 'dart:developer';
 
+import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
-import 'package:casa_empenio_pe/presentation/features/home/features/reports/bloc/reports_bloc.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/reports/views/reports_detail_view.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/reports/widgets/widgets.dart';
-import 'package:excel/excel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:open_file/open_file.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 class ContractReportsView extends StatefulWidget {
   const ContractReportsView({super.key});
@@ -31,11 +27,12 @@ class _ContractReportsViewState extends State<ContractReportsView> {
           ),
         );
   }
+  // TODO:: Falta fitlrar y queda
 
   @override
   Widget build(BuildContext context) {
     final reportsBloc = context.watch<ReportsBloc>().state;
-
+    final auth = context.read<Preferences>().token;
     return LayoutBuilder(
       builder: (context, constraints) {
         return Container(
@@ -104,6 +101,31 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      Container(
+                        //color: Colors.purple,
+                        margin: const EdgeInsets.only(top: 5),
+                        height: constraints.maxHeight * 0.05,
+                        width: double.infinity,
+                        child: DropdownButton<CategoriesEntity?>(
+                          underline: const SizedBox(),
+                          isDense: true,
+                          hint: const Text('Seleccione una categoria'),
+                          value: reportsBloc.selectedCategory,
+                          items: reportsBloc.listCategories
+                              .map(
+                                (e) => DropdownMenuItem(
+                                  value: e,
+                                  child: Text(e.descripcion),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            context.read<ReportsBloc>().add(
+                                  ChangeCategoryEvent(value),
+                                );
+                          },
+                        ),
+                      ),
                       Container(
                         //color: Colors.green,
                         width: double.infinity,
@@ -219,13 +241,87 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                                       ),
                                                     ],
                                                   ),
-                                                  trailing: Text(
-                                                    DateFormat('dd/MM/yyyy')
-                                                        .format(
-                                                      DateTime.parse(
-                                                        aumento.fecha ?? '',
+                                                  trailing: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      IconButton(
+                                                        onPressed: () {
+                                                          showDialog(
+                                                            barrierDismissible:
+                                                                false,
+                                                            context: context,
+                                                            builder: (_) {
+                                                              return AlertDialog(
+                                                                title:
+                                                                    const Text(
+                                                                  'Eliminar Aumento',
+                                                                ),
+                                                                content:
+                                                                    const Text(
+                                                                  '¿Está seguro de eliminar este aumento?',
+                                                                  style:
+                                                                      TextStyle(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .normal,
+                                                                  ),
+                                                                ),
+                                                                actions: [
+                                                                  TextButton(
+                                                                    onPressed:
+                                                                        () {
+                                                                      Navigator.pop(
+                                                                          context);
+                                                                    },
+                                                                    child: const Text(
+                                                                        'Cancelar'),
+                                                                  ),
+                                                                  TextButton(
+                                                                    onPressed:
+                                                                        () {
+                                                                      context
+                                                                          .read<
+                                                                              ReportsBloc>()
+                                                                          .add(
+                                                                            DeleteIncreaseEvent(
+                                                                              aumento.id,
+                                                                              auth?.id,
+                                                                            ),
+                                                                          );
+
+                                                                      Navigator.pop(
+                                                                          context);
+                                                                    },
+                                                                    child:
+                                                                        const Text(
+                                                                      'Aceptar',
+                                                                      style:
+                                                                          TextStyle(
+                                                                        color: Colors
+                                                                            .red,
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              );
+                                                            },
+                                                          );
+                                                        },
+                                                        icon: const Icon(
+                                                          Icons.delete,
+                                                          color: Colors.red,
+                                                        ),
                                                       ),
-                                                    ),
+                                                      Text(
+                                                        DateFormat('dd/MM/yyyy')
+                                                            .format(
+                                                          DateTime.parse(
+                                                            aumento.fecha ?? '',
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
                                               ),
@@ -245,7 +341,7 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                       Container(
                         //color: Colors.yellow,
                         width: double.infinity,
-                        height: constraints.maxHeight * 0.40,
+                        height: constraints.maxHeight * 0.30,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
@@ -261,7 +357,7 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                             const SizedBox(height: 10),
                             Container(
                               //color: Colors.red,
-                              height: constraints.maxHeight * 0.35,
+                              height: constraints.maxHeight * 0.25,
                               child: BlocBuilder<ReportsBloc, ReportsState>(
                                 builder: (context, state) {
                                   switch (state.statusLoans) {

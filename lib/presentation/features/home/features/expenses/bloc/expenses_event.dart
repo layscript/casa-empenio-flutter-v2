@@ -9,7 +9,15 @@ sealed class ExpensesEvent extends Equatable {
 
 class GetCashExpensesStatus extends ExpensesEvent {}
 
-class GetExpenses extends ExpensesEvent {}
+class GetExpenses extends ExpensesEvent {
+  const GetExpenses({
+    required this.start,
+    required this.end,
+  });
+
+  final DateTime? start;
+  final DateTime? end;
+}
 
 class SaveExpense extends ExpensesEvent {
   const SaveExpense({

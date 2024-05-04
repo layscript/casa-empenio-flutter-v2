@@ -5,6 +5,8 @@ abstract class ProductRepository {
   Future<Either<String, List<ProductEntity>>> getProducts({
     required int type,
     required String criterio,
+    required int limit,
+    required int offset,
   });
 
   Future<Either<String, List<ProductEntity>>> getProductsLimitFree({

@@ -2,6 +2,7 @@ import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/historial/view/historial_user_details_view.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/historial/view/historial_user_ventas_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -15,6 +16,7 @@ class HistorialView extends StatelessWidget {
       create: (context) => HistorialBloc(
         userRepository: context.read(),
         historialRepository: context.read(),
+        salesRepository: context.read(),
       )..add(GetAllHistorialEvent()),
       child: Builder(builder: (context) {
         return BlocBuilder<HistorialBloc, HistorialState>(
@@ -63,19 +65,6 @@ class HistorialView extends StatelessWidget {
                             itemBuilder: (context, index) {
                               final user = state.listUsers![index];
                               return ListTile(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => BlocProvider.value(
-                                        value: context.read<HistorialBloc>(),
-                                        child: HistorialUserDetailsView(
-                                          userId: user.id,
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
                                 title: Row(
                                   children: [
                                     Expanded(
@@ -104,8 +93,51 @@ class HistorialView extends StatelessWidget {
                                     ),
                                   ],
                                 ),
-                                trailing: const Icon(
-                                  Icons.keyboard_arrow_right,
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // Icono de reportes
+                                    IconButton(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => BlocProvider.value(
+                                              value:
+                                                  context.read<HistorialBloc>(),
+                                              child: HistorialUserVentasView(
+                                                userId: user.id,
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      icon: const Icon(
+                                        Icons.sim_card_download_sharp,
+                                        color: AppColors.red,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => BlocProvider.value(
+                                              value:
+                                                  context.read<HistorialBloc>(),
+                                              child: HistorialUserDetailsView(
+                                                userId: user.id,
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      icon: const Icon(
+                                        Icons.search,
+                                        color: AppColors.blue,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               );
                             },

@@ -79,7 +79,6 @@ class LoansStepView extends StatelessWidget {
           builder: (context) {
             return BlocConsumer<LoansStepBloc, LoansStepState>(
               listener: (context, state) {
-                print('stateeee: ${state.isLoansStepStatusSavedLoading}');
                 if (state.isLoansStepStatusSavedLoading) {
                   /* OverlayLoader.show(context); */
                   LoadingDialog.show(context, 'Guardando...');
@@ -87,7 +86,7 @@ class LoansStepView extends StatelessWidget {
                   /* OverlayLoader.hide(); */
 
                   if (state.isLoansStepStatusSavedError) {
-                    Navigator.pop(context);
+                    Navigator.pop(context, null);
                     ErrorDialog.show(
                       context,
                       state.message ?? 'Ocurrió un error, intentelo de nuevo.',
@@ -105,7 +104,7 @@ class LoansStepView extends StatelessWidget {
                       onPressed: () {
                         Navigator.pop(context);
                         preferences.removeLoansPreferences();
-                        Navigator.pop(context, true);
+                        Navigator.pop(context, state.documentClient);
                       },
                     );
                     /* SuccessSnackbar.show(

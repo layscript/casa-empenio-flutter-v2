@@ -62,6 +62,7 @@ class CustomerEntity {
   }
 
   static CustomerEntity getCustomerFromMap(Map<String, dynamic> map) {
+
     return CustomerEntity(
       dni: map['dni'],
       nombres: map['nombres'],

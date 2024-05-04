@@ -46,3 +46,11 @@ class IncreaseBox extends CajasEvent {
   final String monto;
   final String obs;
 }
+
+class DeleteMovement extends CajasEvent {
+  const DeleteMovement({
+    required this.id,
+  });
+
+  final int id;
+}

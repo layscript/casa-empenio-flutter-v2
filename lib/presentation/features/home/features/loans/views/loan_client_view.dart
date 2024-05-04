@@ -240,7 +240,6 @@ class _LoanClientViewState extends State<LoanClientView> {
                                                 );
                                           }
                                         } else {
-                                          print('sadjklsadjklsdakjsad 2.1');
                                           // YA ESTÁ CERRADO asi que renuevo
                                           final optionBottomSheet =
                                               await ShowBottomSheetRenewLoan
@@ -303,7 +302,6 @@ class _LoanClientViewState extends State<LoanClientView> {
                                     child: IconButton(
                                       padding: EdgeInsets.zero,
                                       onPressed: () async {
-                                        print('sadjklsadjklsdakjsad 2.1');
                                         // YA ESTÁ CERRADO asi que renuevo
                                         final optionBottomSheet =
                                             await ShowBottomSheetRenewLoan.show(
@@ -334,11 +332,8 @@ class _LoanClientViewState extends State<LoanClientView> {
                                               );
                                             },
                                           );
-                                          print('sadjklsadjklsdakjsad 2.2');
 
                                           if (result != null && mounted) {
-                                            print('sadjklsadjklsdakjsad 2.3');
-
                                             context.read<LoansBloc>().add(
                                                   GetLoansByDni(
                                                     value: state.searchText,
@@ -373,7 +368,6 @@ class _LoanClientViewState extends State<LoanClientView> {
                                             );
                                           },
                                         );
-                                        print('resuuult: ${result}');
                                         if (result != null && mounted) {
                                           //TODO :: Cargar todo
                                           context.read<LoansBloc>().add(
@@ -410,7 +404,6 @@ class _LoanClientViewState extends State<LoanClientView> {
                                           },
                                         );
 
-                                        print('resuuult: ${result}');
                                         if (result != null && mounted) {
                                           //TODO :: Cargar todo
                                           context.read<LoansBloc>().add(
@@ -452,7 +445,6 @@ class _LoanClientViewState extends State<LoanClientView> {
                                             },
                                           );
 
-                                          print('resuuult: ${result}');
                                           if (result != null && mounted) {
                                             context.read<LoansBloc>().add(
                                                   GetLoansByDni(

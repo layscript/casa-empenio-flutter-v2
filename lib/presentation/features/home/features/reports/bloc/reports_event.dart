@@ -7,6 +7,24 @@ sealed class ReportsEvent extends Equatable {
   List<Object> get props => [];
 }
 
+class GetCategoriesEvent extends ReportsEvent {
+  const GetCategoriesEvent();
+}
+
+class DeleteIncreaseEvent extends ReportsEvent {
+  const DeleteIncreaseEvent(
+    this.id,
+    this.userId,
+  );
+  final int? id;
+  final int? userId;
+}
+
+class ChangeCategoryEvent extends ReportsEvent {
+  const ChangeCategoryEvent(this.category);
+  final CategoriesEntity? category;
+}
+
 class AnularPrestamoLiquidado extends ReportsEvent {
   const AnularPrestamoLiquidado(this.codigo);
   final int? codigo;

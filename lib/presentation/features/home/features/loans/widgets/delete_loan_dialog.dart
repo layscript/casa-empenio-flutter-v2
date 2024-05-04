@@ -11,8 +11,10 @@ class DeleteLoanDialog extends StatelessWidget {
   const DeleteLoanDialog({
     super.key,
     required this.idLoan,
+    this.isAnular = false,
   });
   final int idLoan;
+  final bool isAnular;
 
   @override
   Widget build(BuildContext context) {
@@ -31,46 +33,83 @@ class DeleteLoanDialog extends StatelessWidget {
           if (state.isLoansDeleteSuccess) {
             SuccessSnackbar.show(
               context,
-              'Préstamo Eliminado',
+              state.error ?? 'Préstamo Eliminado',
             );
             Navigator.pop(context, true);
           }
         }
       },
       child: AlertDialog(
-        title: const Text('Eliminar '),
-        content: const Text(
-          '¿Esta seguro que desea eliminar el prestamo?',
-          style: TextStyle(
+        title: Text(
+          isAnular ? 'Anular Préstamo' : 'Eliminar Préstamo',
+          style: const TextStyle(
+            color: AppColors.primaryText,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          isAnular
+              ? '¿Esta seguro que desea anular el prestamo?'
+              : '¿Esta seguro que desea eliminar el prestamo?',
+          style: const TextStyle(
             color: AppColors.primaryText,
             fontWeight: FontWeight.normal,
           ),
         ),
         actions: [
           TextButton(
+            style: TextButton.styleFrom(
+              backgroundColor: AppColors.red,
+            ),
             onPressed: () {
               Navigator.pop(context);
             },
             child: const Text(
               'Cancelar',
               style: TextStyle(
-                color: AppColors.red,
+                color: AppColors.white,
               ),
             ),
           ),
-          TextButton(
-            onPressed: () {
-              context.read<LoansBloc>().add(
-                    DeleteLoanById(
-                      idLoan: idLoan,
-                      userId: preferences.token?.id.toString() ?? '0',
-                    ),
-                  );
-            },
-            child: const Text(
-              'Aceptar',
+          if (!isAnular)
+            TextButton(
+              style: TextButton.styleFrom(
+                backgroundColor: AppColors.blue,
+              ),
+              onPressed: () {
+                context.read<LoansBloc>().add(
+                      DeleteLoanById(
+                        idLoan: idLoan,
+                        userId: preferences.token?.id.toString() ?? '0',
+                      ),
+                    );
+              },
+              child: const Text(
+                'Si, Eliminar',
+                style: TextStyle(
+                  color: AppColors.white,
+                ),
+              ),
             ),
-          ),
+            TextButton(
+              style: TextButton.styleFrom(
+                backgroundColor: AppColors.green,
+              ),
+              onPressed: () {
+                context.read<LoansBloc>().add(
+                      AnularLoanId(
+                        idLoan: idLoan,
+                        userId: preferences.token?.id.toString() ?? '0',
+                      ),
+                    );
+              },
+              child: const Text(
+                'Si, Anular',
+                style: TextStyle(
+                  color: AppColors.white,
+                ),
+              ),
+            ),
         ],
       ),
     );

@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
@@ -485,6 +487,36 @@ class _PaymentsReportsViewState extends State<PaymentsReportsView> {
                                                       MainAxisSize.min,
                                                   children: [
                                                     IconButton(
+                                                      onPressed: () {},
+                                                      icon: pago.efectivo ==
+                                                              true
+                                                          ? const Text(
+                                                              'S/.',
+                                                              style: TextStyle(
+                                                                color: Colors
+                                                                    .green,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                fontSize: 16,
+                                                                fontFamily:
+                                                                    'Roboto',
+                                                              ),
+                                                            )
+                                                          : const Text(
+                                                              'D',
+                                                              style: TextStyle(
+                                                                  color: Colors
+                                                                      .red,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  fontSize: 16,
+                                                                  fontFamily:
+                                                                      'Roboto'),
+                                                            ),
+                                                    ),
+                                                    IconButton(
                                                       onPressed: () {
                                                         showDialog(
                                                           context: context,
@@ -507,6 +539,72 @@ class _PaymentsReportsViewState extends State<PaymentsReportsView> {
                                                         Icons
                                                             .remove_red_eye_outlined,
                                                         color: Colors.blue,
+                                                      ),
+                                                    ),
+                                                    IconButton(
+                                                      onPressed: () async {
+                                                        final result =
+                                                            await showDialog<
+                                                                bool>(
+                                                          context: context,
+                                                          barrierDismissible:
+                                                              false,
+                                                          builder: (_) {
+                                                            return BlocProvider(
+                                                              create:
+                                                                  (context) =>
+                                                                      LoansBloc(
+                                                                customerRepository:
+                                                                    context
+                                                                        .read(),
+                                                                loansRepository:
+                                                                    context
+                                                                        .read(),
+                                                                cajaRepository:
+                                                                    context
+                                                                        .read(),
+                                                                preferences:
+                                                                    context
+                                                                        .read(),
+                                                                solicitudRepository:
+                                                                    context
+                                                                        .read(),
+                                                              ),
+                                                              child:
+                                                                  DeleteLoanDialog(
+                                                                idLoan: pago
+                                                                        .prestamo
+                                                                        ?.codigo ??
+                                                                    0,
+                                                                isAnular: true,
+                                                              ),
+                                                            );
+                                                          },
+                                                        );
+
+                                                        if (result != null &&
+                                                            mounted) {
+                                                          await Future.delayed(
+                                                                  const Duration(
+                                                                      milliseconds:
+                                                                          300))
+                                                              .then((value) {
+                                                            context
+                                                                .read<
+                                                                    ReportsBloc>()
+                                                                .add(
+                                                                  const GetLoadInitialDataPayments(
+                                                                    end: null,
+                                                                    start: null,
+                                                                  ),
+                                                                );
+                                                          });
+                                                        }
+                                                      },
+                                                      icon: const Icon(
+                                                        Icons
+                                                            .remove_circle_rounded,
+                                                        color: Colors.red,
                                                       ),
                                                     ),
                                                     if (pago.prestamo
@@ -549,17 +647,53 @@ class _PaymentsReportsViewState extends State<PaymentsReportsView> {
                 width: double.infinity,
                 height: constraints.maxHeight * 0.08,
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
                   children: [
-                    const Text(
-                      'Pagos Totales ',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Utilidades de Pagos Parciales',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                            'S/. ${oCcy.format(reportsBloc.partialUtilityPayment)}')
+                      ],
                     ),
-                    Text('S/. ${oCcy.format(reportsBloc.totalPayments)}')
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Utilidades de Pagos Completos',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        /* Text(
+                          'S/. ${oCcy.format(reportsBloc.totalProfitsPaymentsDouble)} (${oCcy.format(reportsBloc.totalProfitsPaymentsPorcentaje)}%)',
+                        ), */
+                        Text(
+                          'S/. ${oCcy.format(reportsBloc.fullPaymentUtility)}',
+                        )
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Prestamos Totales ',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text('S/. ${oCcy.format(reportsBloc.totalPayments)}')
+                      ],
+                    ),
                   ],
                 ),
               ),

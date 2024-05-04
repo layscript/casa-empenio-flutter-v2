@@ -10,6 +10,7 @@ class ReportsPaymentEntity {
     required this.usuario,
     required this.updatedAt,
     required this.createdAt,
+    required this.efectivo,
   });
 
   final int? id;
@@ -20,6 +21,7 @@ class ReportsPaymentEntity {
   final UserEntity? usuario;
   final String? updatedAt;
   final String? createdAt;
+  final bool? efectivo;
 
   static List<ReportsPaymentEntity> listGetReportsPaymentFromMap(
     List<dynamic> list,
@@ -46,7 +48,27 @@ class ReportsPaymentEntity {
           : null,
       updatedAt: map['updatedAt'],
       createdAt: map['createdAt'],
+      efectivo: map['efectivo'],
     );
+  }
+
+  static List<ReportsPaymentEntity> filterDistinctByPrestamoCodigo(
+      List<ReportsPaymentEntity> list) {
+    Set<String?> uniqueCodigos = {};
+    List<ReportsPaymentEntity> result = [];
+
+    for (var report in list) {
+      if (uniqueCodigos.add(report.prestamo?.codigo.toString())) {
+        result.add(report);
+      }
+    }
+
+    return result;
+  }
+
+  @override
+  String toString() {
+    return 'ReportsPaymentEntity( prestamo: ${prestamo?.codigoFormateado}  estado: ${prestamo?.estado})';
   }
 }
 
@@ -86,5 +108,10 @@ class ReportsContractsEntity {
             )
           : null,
     );
+  }
+
+  @override
+  String toString() {
+    return 'ReportsContractsEntity( prestamo: ${prestamo?.codigoFormateado}  estado: ${prestamo?.estado})';
   }
 }

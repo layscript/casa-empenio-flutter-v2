@@ -22,9 +22,6 @@ class HttpHistorialRepository implements HistorialRepository {
     final path = '/historial/byUser?limit=10000&userId=$userId';
     try {
       final response = await _dio.get<String>(path);
-      print('debuggg 1: ${response.statusCode}');
-      print('debuggg 2: ${response.data}');
-
       if (response.statusCode != 200) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
@@ -42,7 +39,6 @@ class HttpHistorialRepository implements HistorialRepository {
         e,
         stackTrace: stackTrace,
       );
-      print('responseee ee: $e');
       return const Left('Ocurrió un error con el servidor');
     }
   }

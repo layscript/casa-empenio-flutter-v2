@@ -28,7 +28,6 @@ class SolicitudEntity {
   }
 
   static SolicitudEntity getSolicitudFromMap(Map<String, dynamic> map) {
-    log('kasjdjkldasajsd: 2 ${map}');
     return SolicitudEntity(
       id: map['id'],
       prestamoId: map['prestamoId'],

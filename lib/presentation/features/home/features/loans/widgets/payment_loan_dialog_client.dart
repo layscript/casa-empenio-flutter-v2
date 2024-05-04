@@ -28,6 +28,7 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
 
   bool liquidar = false;
   double restante = 0;
+  bool efectivo = false;
 
   @override
   void initState() {
@@ -285,6 +286,20 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                       },
                     ),
                     const SizedBox(height: 15),
+                    CheckboxMenuButton(
+                      value: efectivo,
+                      onChanged: (e) {
+                        setState(() {
+                          efectivo = e ?? false;
+                        });
+                      },
+                      child: const Text('Pago en efectivo'),
+                    ),
+                    const Text(
+                      '(Si no se selecciona el check, se considerará como pago en depósito)',
+                      style: TextStyle(fontSize: 12, color: Colors.red),
+                    ),
+                    const SizedBox(height: 15),
                     ItemPaymentLoan(
                       title: liquidar ? 'Descuento' : 'Monto restante',
                       value: 'S/. ${oCcy.format(restante)}',
@@ -301,66 +316,66 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                             )
                           : const SizedBox(),
                     const SizedBox(height: 10),
-                    if (liquidar) ...[
-                      Row(
-                        children: [
-                          for (int i = 0;
-                              i < (selectedPhotosLiquidar?.length ?? 0);
-                              i++)
-                            GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  selectedPhotosLiquidar?.removeAt(i);
-                                });
-                              },
-                              child: Stack(
-                                children: [
-                                  Image.file(
-                                    File(selectedPhotosLiquidar![i].path),
-                                    width: 100,
-                                    height: 100,
-                                  ),
-                                  Positioned(
-                                    top: 0,
-                                    right: 0,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(10),
-                                        color: Colors.red,
-                                      ),
-                                      child: const Icon(
-                                        Icons.close,
-                                        color: Colors.white,
-                                      ),
+                    /* if (liquidar) ...[ */
+                    Row(
+                      children: [
+                        for (int i = 0;
+                            i < (selectedPhotosLiquidar?.length ?? 0);
+                            i++)
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                selectedPhotosLiquidar?.removeAt(i);
+                              });
+                            },
+                            child: Stack(
+                              children: [
+                                Image.file(
+                                  File(selectedPhotosLiquidar![i].path),
+                                  width: 100,
+                                  height: 100,
+                                ),
+                                Positioned(
+                                  top: 0,
+                                  right: 0,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(10),
+                                      color: Colors.red,
+                                    ),
+                                    child: const Icon(
+                                      Icons.close,
+                                      color: Colors.white,
                                     ),
                                   ),
-                                ],
-                              ),
-                            ),
-                          if (selectedPhotosLiquidar!.length < 1)
-                            Expanded(
-                              child: SecondaryButton(
-                                onPressed: () async {
-                                  final photo = await ImagePicker().pickImage(
-                                    source: ImageSource.camera,
-                                    imageQuality: 70,
-                                  );
-
-                                  if (photo != null) {
-                                    setState(() {
-                                      selectedPhotosLiquidar?.add(photo);
-                                    });
-                                  }
-                                },
-                                child: Text(
-                                  'Subir Imagen (${1 - selectedPhotosLiquidar!.length})',
                                 ),
+                              ],
+                            ),
+                          ),
+                        if (selectedPhotosLiquidar!.length < 1)
+                          Expanded(
+                            child: SecondaryButton(
+                              onPressed: () async {
+                                final photo = await ImagePicker().pickImage(
+                                  source: ImageSource.camera,
+                                  imageQuality: 70,
+                                );
+
+                                if (photo != null) {
+                                  setState(() {
+                                    selectedPhotosLiquidar?.add(photo);
+                                  });
+                                }
+                              },
+                              child: Text(
+                                'Subir Imagen (${1 - selectedPhotosLiquidar!.length})',
                               ),
                             ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                    ],
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    /* ], */
                     if (liquidar)
                       PrimaryButton(
                         onPressed: (loan?.ganancia != null &&
@@ -423,6 +438,7 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                                                               loan?.codigo ?? 0,
                                                           photos:
                                                               selectedPhotosLiquidar,
+                                                          efectivo: efectivo,
                                                         ),
                                                       );
                                                 }
@@ -446,7 +462,8 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                       PrimaryButton(
                         onPressed: (loan?.ganancia != null &&
                                     montoCtrl.text != "" &&
-                                    montoCtrl.text != "0") &&
+                                    montoCtrl.text != "0" &&
+                                    selectedPhotosLiquidar!.isNotEmpty) &&
                                 state.loansStatus != LoansStatus.loading
                             ? () {
                                 context.read<LoansBloc>().add(
@@ -454,6 +471,10 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                                         idPrestamo: widget.nroPrestamo ?? 0,
                                         monto: montoCtrl.text,
                                         userId: authBloc.user.id.toString(),
+                                        photos: selectedPhotosLiquidar,
+                                        montoRestante: montoRestante.toString(),
+                                        codigo: loan?.codigo ?? 0,
+                                        efectivo: efectivo,
                                       ),
                                     );
                               }

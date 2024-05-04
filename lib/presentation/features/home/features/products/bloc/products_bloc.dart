@@ -46,6 +46,8 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
       _productRepository.getProducts(
         type: 0,
         criterio: '',
+        limit: 10,
+        offset: state.offset,
       ),
       _categoriesRepository.getCategories(),
     ]);
@@ -82,6 +84,8 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
     final result = await _productRepository.getProducts(
       type: 0,
       criterio: event.value,
+      limit: 10,
+      offset: state.offset,
     );
     result.fold(
       (message) {

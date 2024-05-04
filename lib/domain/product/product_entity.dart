@@ -105,7 +105,6 @@ class ProductEntity {
   }
 
   static ProductEntity getProductFromMap(Map<String, dynamic> map) {
-    log('print mapitaaaaa: ${map}');
 
     return ProductEntity(
       id: map['id'] as int?,

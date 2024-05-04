@@ -62,7 +62,6 @@ class WarrantyEntity {
   }
 
   static WarrantyEntity getWarrantyFromMap(Map<String, dynamic> map) {
-    log('kasjdjkldasajsd: 2 ${map}');
     return WarrantyEntity(
       id: map['id'],
       description: map['descripcion'],

@@ -119,7 +119,8 @@ class PdfPreviewFacturaPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Comprobante Electronico'),
         actions: [
-          notaCredito!.isNotEmpty
+          //notaCredito!.isNotEmpty
+          notaCredito?.length != 0
               ? IconButton(
                   onPressed: () {
                     Navigator.of(context).push(

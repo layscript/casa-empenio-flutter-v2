@@ -1,4 +1,5 @@
 import 'package:casa_empenio_pe/domain/contract/contract_entity.dart';
+import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/reports/bloc/reports_bloc.dart';
@@ -93,12 +94,53 @@ class _ShowDetailsReportLoansState extends State<ShowDetailsReportLoans> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            '${prestamo.cliente?.nombres} ${prestamo.cliente?.apellidos}',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          Expanded(
+                            child: Text(
+                              '${prestamo.cliente?.nombres} ${prestamo.cliente?.apellidos}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.normal,
+                              ),
+                            ),
                           ),
+                          const SizedBox(width: 10),
+                          if (prestamo.cliente?.imagenUno != null)
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(30),
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => FullScreenImage(
+                                        imageUrl:
+                                            prestamo.cliente?.imagenUno ?? '',
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Image.network(
+                                  '$endPointPrincipal/${prestamo.cliente?.imagenUno}',
+                                  width: 60,
+                                  height: 60,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Placeholder(
+                                      fallbackHeight: 60,
+                                      fallbackWidth: 60,
+                                    );
+                                  },
+                                ),
+                              ),
+                            )
+                          else
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(30),
+                              child: Image.asset(
+                                AppIcons.notFound,
+                                width: 60,
+                                height: 60,
+                              ),
+                            ),
                         ],
                       ),
                       const SizedBox(
@@ -227,6 +269,26 @@ class _ShowDetailsReportLoansState extends State<ShowDetailsReportLoans> {
                                   Expanded(
                                     child: Text(
                                       prenda.description ?? '',
+                                      overflow: TextOverflow.clip,
+                                      textAlign: TextAlign.end,
+                                      maxLines: 4,
+                                    ),
+                                  )
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    "Categoría: ",
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      prenda.categoria ?? '',
                                       overflow: TextOverflow.clip,
                                       textAlign: TextAlign.end,
                                       maxLines: 4,
@@ -403,7 +465,7 @@ class _ShowDetailsReportLoansState extends State<ShowDetailsReportLoans> {
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     const Text(
-                                      "Foto: ",
+                                      "Foto de Garantia: ",
                                       style: TextStyle(
                                           fontWeight: FontWeight.bold),
                                     ),
@@ -438,9 +500,113 @@ class _ShowDetailsReportLoansState extends State<ShowDetailsReportLoans> {
                             ],
                           );
                         }).toList(),
-                      const SizedBox(
-                        height: 20,
-                      ),
+                      const SizedBox(height: 10),
+                      if (prestamo.imagenLiquidado != null) ...[
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              "Foto de Liquidación: ",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => FullScreenImage(
+                                      imageUrl: prestamo.imagenLiquidado ?? '',
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Image.network(
+                                '$endPointPrincipal/${prestamo.imagenLiquidado}',
+                                height: 50,
+                                width: 50,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Placeholder(
+                                    fallbackHeight: 50,
+                                    fallbackWidth: 50,
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (prestamo.imagenPagos != null) ...[
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              "Foto del Pago: ",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => FullScreenImage(
+                                      imageUrl: prestamo.imagenPagos ?? '',
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Image.network(
+                                '$endPointPrincipal/${prestamo.imagenPagos}',
+                                height: 50,
+                                width: 50,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Placeholder(
+                                    fallbackHeight: 50,
+                                    fallbackWidth: 50,
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (prestamo.imagenAumentos != null) ...[
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              "Foto del Aumento: ",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => FullScreenImage(
+                                      imageUrl: prestamo.imagenAumentos ?? '',
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Image.network(
+                                '$endPointPrincipal/${prestamo.imagenAumentos}',
+                                height: 50,
+                                width: 50,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Placeholder(
+                                    fallbackHeight: 50,
+                                    fallbackWidth: 50,
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: 10),
                       const Text(
                         "Pagos Realizados",
                         style: TextStyle(

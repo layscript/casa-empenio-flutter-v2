@@ -61,13 +61,36 @@ class HttpExpensesRepository implements ExpensesRepository {
         return Right(ExpensesEntity.listGetExpensesFromMap(body));
       }
     } catch (e, stackTrace) {
-      print('errpororor 33: $e');
       //print('responseee ee: $e');
       await _sentry.captureException(
         e,
         stackTrace: stackTrace,
       );
       return const Left('Ocurrió un error con el servidor');
+    }
+  }
+
+  @override
+  Future<Either<String, bool>> deleteExpense({
+    required int id,
+  }) async {
+    final path = '/finanza/movimiento/$id';
+
+    try {
+      final response = await _dio.delete<String>(path);
+      if (response.statusCode != 200) {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final message = map['message'] ?? 'Ocurrió un error';
+        return Left(message);
+      } else {
+        return const Right(true);
+      }
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
+      return const Left('Ocurrió un error');
     }
   }
 }

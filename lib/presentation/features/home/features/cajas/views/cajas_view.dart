@@ -20,6 +20,7 @@ class _CajasViewState extends State<CajasView> {
       lazy: false,
       create: (context) => CajasBloc(
         cajaRepository: context.read(),
+        expensesRepository: context.read(),
       )..add(GetAllCajas()),
       child: Builder(builder: (context) {
         return BlocBuilder<CajasBloc, CajasState>(
@@ -36,6 +37,7 @@ class _CajasViewState extends State<CajasView> {
                 );
 
               case CajasStatus.loaded || CajasStatus.success:
+                final cajaBloc = context.read<CajasBloc>();
                 return SizedBox(
                   width: double.infinity,
                   child: SingleChildScrollView(
@@ -66,11 +68,11 @@ class _CajasViewState extends State<CajasView> {
                               final caja = state.listCajas![index];
                               return ExpansionTile(
                                 title: Text(
-                                  'Caja N°: ${caja.id}',
+                                  'Caja N°: ${caja?.id}',
                                 ),
                                 subtitle: Text(
                                   //'Fecha: ${DateFormat('dd/MM/yyyy - hh:mm').format(DateTime.parse(caja?.createdAt ?? '').toLocal())}',
-                                  'Estado: ${caja.estado}',
+                                  'Estado: ${caja?.estado}',
                                   style: const TextStyle(
                                     fontSize: 13,
                                     color: AppColors.primaryText,
@@ -82,7 +84,7 @@ class _CajasViewState extends State<CajasView> {
                                   bottom: 20,
                                 ),
                                 children: [
-                                  if (caja.estado != 'Abierta') ...[
+                                  if (caja?.estado != 'Abierta') ...[
                                     Row(
                                       children: [
                                         const Text(
@@ -93,7 +95,7 @@ class _CajasViewState extends State<CajasView> {
                                         ),
                                         const Spacer(),
                                         Text(
-                                          'S/.${caja.montoApertura}',
+                                          'S/.${caja?.montoApertura}',
                                         ),
                                       ],
                                     ),
@@ -108,7 +110,7 @@ class _CajasViewState extends State<CajasView> {
                                         ),
                                         const Spacer(),
                                         Text(
-                                          '${caja.fecha} / ${caja.horaApertura}',
+                                          '${caja?.fecha} / ${caja?.horaApertura}',
                                         ),
                                       ],
                                     ),
@@ -123,7 +125,7 @@ class _CajasViewState extends State<CajasView> {
                                         ),
                                         const Spacer(),
                                         Text(
-                                          'S/.${caja.montoCierreReal}',
+                                          'S/.${caja?.montoCierreReal}',
                                         ),
                                       ],
                                     ),
@@ -138,7 +140,7 @@ class _CajasViewState extends State<CajasView> {
                                         ),
                                         const Spacer(),
                                         Text(
-                                          'S/.${caja.montoCierreTeorico}',
+                                          'S/.${caja?.montoCierreTeorico}',
                                         ),
                                       ],
                                     ),
@@ -153,7 +155,7 @@ class _CajasViewState extends State<CajasView> {
                                         ),
                                         const Spacer(),
                                         Text(
-                                          'S/.${caja.montoDiferencia}',
+                                          'S/.${caja?.montoDiferencia}',
                                         ),
                                       ],
                                     ),
@@ -168,7 +170,7 @@ class _CajasViewState extends State<CajasView> {
                                         ),
                                         const Spacer(),
                                         Text(
-                                          '${caja.observaciones}',
+                                          '${caja?.observaciones}',
                                         ),
                                       ],
                                     ),
@@ -183,7 +185,7 @@ class _CajasViewState extends State<CajasView> {
                                         ),
                                         const Spacer(),
                                         Text(
-                                          caja.totalIngresos ?? '',
+                                          caja?.totalIngresos ?? '',
                                         ),
                                       ],
                                     ),
@@ -198,27 +200,38 @@ class _CajasViewState extends State<CajasView> {
                                         ),
                                         const Spacer(),
                                         Text(
-                                          caja.totalEgresos ?? '',
+                                          caja?.totalEgresos ?? '',
                                         ),
                                       ],
                                     ),
                                     const SizedBox(height: 10),
                                   ],
-                                  if (caja.movimientos!.isNotEmpty)
+                                  if (caja != null &&
+                                      caja.movimientos!.isNotEmpty)
                                     SecondaryButton(
-                                      onPressed: () {
-                                        Navigator.push(
+                                      onPressed: () async {
+                                        await Navigator.push(
                                           context,
                                           MaterialPageRoute(
                                             builder: (context) {
-                                              return MovementsView(
-                                                movimientos:
-                                                    caja.movimientos ?? [],
-                                                id: caja.id ?? 0,
+                                              return BlocProvider.value(
+                                                value: cajaBloc,
+                                                child: MovementsView(
+                                                  movimientos:
+                                                      caja.movimientos ?? [],
+                                                  id: caja.id ?? 0,
+                                                  isClosed: true,
+                                                ),
                                               );
                                             },
                                           ),
                                         );
+
+                                        if (mounted) {
+                                          context.read<CajasBloc>().add(
+                                                GetAllCajas(),
+                                              );
+                                        }
                                       },
                                       child: Text(
                                         'Ver Movimientos (${caja.movimientos?.length})',

@@ -22,7 +22,9 @@ class _ReportsViewState extends State<ReportsView> {
       create: (context) => ReportsBloc(
         reportsRepository: context.read(),
         loansRepository: context.read(),
-      ),
+        categoriesRepository: context.read(),
+        expensesRepository: context.read(),
+      )..add(const GetCategoriesEvent()),
       child: Builder(builder: (context) {
         return Padding(
           padding: const EdgeInsets.symmetric(

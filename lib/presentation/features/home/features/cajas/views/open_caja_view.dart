@@ -21,6 +21,7 @@ class _OpenCajaViewState extends State<OpenCajaView> {
       lazy: false,
       create: (context) => CajasBloc(
         cajaRepository: context.read(),
+        expensesRepository: context.read(),
       )..add(GetCajasOfTheDay()),
       child: Builder(builder: (context) {
         return BlocBuilder<CajasBloc, CajasState>(
@@ -38,7 +39,7 @@ class _OpenCajaViewState extends State<OpenCajaView> {
 
               case CajasStatus.loaded || CajasStatus.success:
                 final movimiento = state.movements;
-                print('asdjkasd: ${movimiento?.movimientos}');
+                final cajaBloc = context.read<CajasBloc>();
 
                 return SizedBox(
                   width: double.infinity,
@@ -130,10 +131,14 @@ class _OpenCajaViewState extends State<OpenCajaView> {
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) {
-                                        return MovementsView(
-                                          movimientos:
-                                              movimiento.movimientos ?? [],
-                                          id: movimiento.id ?? 0,
+                                        return BlocProvider.value(
+                                          value: cajaBloc,
+                                          child: MovementsView(
+                                            movimientos:
+                                                movimiento.movimientos ?? [],
+                                            id: movimiento.id ?? 0,
+                                            isClosed: false,
+                                          ),
                                         );
                                       },
                                     ),

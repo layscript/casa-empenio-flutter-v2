@@ -41,6 +41,7 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     on<UpdateAllLoan>(_onUpdateAllLoan);
 
     on<DeleteLoanById>(_onDeleteLoanById);
+    on<AnularLoanId>(_onAnularLoanId);
     on<UpdateStatusLoanById>(_onUpdateStatusLoanById);
 
     on<CreateSolicitud>(_onCreateSolicitud);
@@ -108,7 +109,6 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     result.fold(
       (message) => emit(_errorState(message)),
       (loans) {
-        print('skjladajlsdkjlasaljksd 3: ${loans.length}');
         emit(
           _successState(
             CustomerEntity(
@@ -150,12 +150,10 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
       userId: preferences?.id ?? 0,
     );
     result.fold((message) {
-      print('skjladajlsdkjlasaljksd 1: ${message}');
       emit(
         _errorState(message),
       );
     }, (data) {
-      print('skjladajlsdkjlasaljksd 2: ${data}');
       emit(
         state.copyWith(
           loansStatus: LoansStatus.loaded,
@@ -197,24 +195,57 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
   ) async {
     if (state.loansStatus == LoansStatus.loading) return;
     emit(_loadingState);
-    final resultPayment = await _loansRepository.savePayment(
-      codigo: event.idPrestamo,
-      monto: double.parse(event.monto),
-      userId: event.userId,
-    );
+    if (double.parse(event.monto) >= double.parse(event.montoRestante)) {
+      final resultPayment = await _loansRepository.savePayment(
+        codigo: event.idPrestamo,
+        monto: double.parse(event.monto),
+        userId: event.userId,
+        photos: null,
+        efectivo: event.efectivo,
+      );
 
-    if (resultPayment) {
-      emit(
-        state.copyWith(
-          loansStatus: LoansStatus.paymentSuccess,
-        ),
+      final resultLoand = await _loansRepository.payOffLoan(
+        id: event.codigo,
+        idPrestamo: event.idPrestamo,
+        photos: event.photos,
+        userId: event.userId,
       );
+
+      if (resultPayment && resultLoand) {
+        emit(
+          state.copyWith(
+            loansStatus: LoansStatus.settlementSuccess,
+          ),
+        );
+      } else {
+        emit(
+          state.copyWith(
+            loansStatus: LoansStatus.settlementError,
+          ),
+        );
+      }
     } else {
-      emit(
-        state.copyWith(
-          loansStatus: LoansStatus.paymentError,
-        ),
+      final resultPayment = await _loansRepository.savePayment(
+        codigo: event.idPrestamo,
+        monto: double.parse(event.monto),
+        userId: event.userId,
+        photos: event.photos,
+        efectivo: event.efectivo,
       );
+
+      if (resultPayment) {
+        emit(
+          state.copyWith(
+            loansStatus: LoansStatus.paymentSuccess,
+          ),
+        );
+      } else {
+        emit(
+          state.copyWith(
+            loansStatus: LoansStatus.paymentError,
+          ),
+        );
+      }
     }
   }
 
@@ -228,17 +259,16 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
       codigo: event.idPrestamo,
       monto: double.parse(event.monto),
       userId: event.userId,
+      photos: null,
+      efectivo: event.efectivo,
     );
 
-    print('saljdjkasldads 1: ${resultPayment}');
     final resultLoand = await _loansRepository.payOffLoan(
       id: event.codigo,
       idPrestamo: event.idPrestamo,
       photos: event.photos,
       userId: event.userId,
     );
-
-    print('saljdjkasldads 2: ${resultLoand}');
 
     if (resultPayment && resultLoand) {
       emit(
@@ -265,6 +295,7 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
       monto: event.monto,
       observaciones: event.obs,
       userId: event.userId,
+      photos: event.photos,
     );
     if (result) {
       emit(
@@ -402,9 +433,7 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
         ),
       );
     } else {
-      log('clienteee 1: ${event.cliente.toString()}');
-      log('clienteee 2: ${event.aval.toString()}');
-      log('clienteee 3: ${event.bienes}');
+    
       final result = await _loansRepository.updateLoan(
         plazoDias: event.plazoDias,
         interes: event.interes,
@@ -444,6 +473,29 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     }
   }
 
+  Future<void> _onAnularLoanId(
+    AnularLoanId event,
+    Emitter<LoansState> emit,
+  ) async {
+    emit(state.copyWith(loansStatus: LoansStatus.deleteLoanLoading));
+    final result = await _loansRepository.anularLoan(
+      idLoan: event.idLoan,
+      userId: event.userId,
+    );
+    if (result) {
+      emit(
+        state.copyWith(
+          loansStatus: LoansStatus.deleteLoanSuccess,
+          error: 'Anulado correctamente',
+        ),
+      );
+    } else {
+      emit(
+        state.copyWith(loansStatus: LoansStatus.deleteLoanError),
+      );
+    }
+  }
+
   Future<void> _onUpdateStatusLoanById(
     UpdateStatusLoanById event,
     Emitter<LoansState> emit,
@@ -474,7 +526,6 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
 
     result.fold(
       (err) {
-        print('successs 0: ${err}');
         emit(
           state.copyWith(
             error: err,
@@ -483,7 +534,6 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
         );
       },
       (success) {
-        print('successs 1: ${success}');
         emit(state.copyWith(
           solicitudStatus: LoansStatus.loaded,
         ));

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:casa_empenio_pe/domain/caja/caja_entity.dart';
 import 'package:casa_empenio_pe/domain/caja/caja_repository.dart';
+import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 
@@ -11,16 +12,20 @@ part 'cajas_state.dart';
 class CajasBloc extends Bloc<CajasEvent, CajasState> {
   CajasBloc({
     required CajaRepository cajaRepository,
+    required ExpensesRepository expensesRepository,
   })  : _cajaRepository = cajaRepository,
+        _expensesRepository = expensesRepository,
         super(const CajasState()) {
     on<GetAllCajas>(_onGetAllCajas);
     on<GetCajasOfTheDay>(_onGetCajasOfTheDay);
     on<CloseBox>(_onCloseBox);
     on<OpenBox>(_onOpenBox);
     on<IncreaseBox>(_onIncreaseBox);
+    on<DeleteMovement>(_onDeleteMovement);
   }
 
   final CajaRepository _cajaRepository;
+  final ExpensesRepository _expensesRepository;
 
   Future<void> _onGetAllCajas(
     GetAllCajas event,
@@ -45,13 +50,26 @@ class CajasBloc extends Bloc<CajasEvent, CajasState> {
           error: error,
         ),
       ),
-      (list) => emit(
-        state.copyWith(
-          cajasStatus: CajasStatus.loaded,
-          listCajas: list.where((e) => e.estado != 'Abierta').toList(),
-          error: null,
-        ),
-      ),
+      (list) {
+        final filterCaja = list.where((e) => e.estado != 'Abierta').toList();
+
+        final newFilterCaja = filterCaja.map((e) {
+          final newMovements = e.movimientos!
+              .where((e) =>
+                  e.eliminado == false &&
+                  e.observaciones?.startsWith('Eliminar') == false)
+              .toList();
+          return e.copyWith(movimientos: newMovements);
+        }).toList();
+
+        emit(
+          state.copyWith(
+            cajasStatus: CajasStatus.loaded,
+            listCajas: newFilterCaja,
+            error: null,
+          ),
+        );
+      },
     );
 
     /*  secondResult.fold(
@@ -84,13 +102,29 @@ class CajasBloc extends Bloc<CajasEvent, CajasState> {
           error: error,
         ),
       ),
-      (movements) => emit(
-        state.copyWith(
-          cajasStatus: CajasStatus.loaded,
-          movements: movements,
-          error: null,
-        ),
-      ),
+      (result) {
+        // Traer los movimientos que eliminado sean
+        CajaEntity? caja;
+
+        if (result == null) {
+          caja = null;
+        } else {
+          caja = result.copyWith(
+              movimientos: result.movimientos!
+                  .where((e) =>
+                      e.eliminado == false &&
+                      e.observaciones?.startsWith('Eliminar') == false)
+                  .toList());
+        }
+
+        emit(
+          state.copyWith(
+            cajasStatus: CajasStatus.loaded,
+            movements: caja,
+            error: null,
+          ),
+        );
+      },
     );
   }
 
@@ -162,6 +196,8 @@ class CajasBloc extends Bloc<CajasEvent, CajasState> {
     IncreaseBox event,
     Emitter<CajasState> emit,
   ) async {
+    if (state.cajasStatus == CajasStatus.loading) return;
+
     emit(
       state.copyWith(
         cajasStatus: CajasStatus.loading,
@@ -195,6 +231,48 @@ class CajasBloc extends Bloc<CajasEvent, CajasState> {
       state.copyWith(
         cajasStatus: CajasStatus.success,
         movements: state.movements,
+      ),
+    ); */
+  }
+
+  Future<void> _onDeleteMovement(
+    DeleteMovement event,
+    Emitter<CajasState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        cajasStatus: CajasStatus.loading,
+        movements: state.movements,
+      ),
+    );
+
+    await _expensesRepository.deleteExpense(
+      id: event.id,
+    );
+
+    emit(
+      state.copyWith(
+        cajasStatus: CajasStatus.success,
+        movements: state.movements,
+      ),
+    );
+    /*   final result = await _cajaRepository.deleteMovement(
+      id: event.id,
+    );
+
+    result.fold(
+      (error) => emit(
+        state.copyWith(
+          error: error,
+          cajasStatus: CajasStatus.failure,
+          movements: state.movements,
+        ),
+      ),
+      (success) => emit(
+        state.copyWith(
+          cajasStatus: CajasStatus.success,
+          movements: state.movements,
+        ),
       ),
     ); */
   }

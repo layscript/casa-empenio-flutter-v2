@@ -80,8 +80,6 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
           final oCcy = NumberFormat("#,##0.00", "en_US");
           final loan = state.loanDetails;
 
-          log('kasdklña loan 1: ${loan.toString()}');
-          log('kasdklña loan 2: ${loan?.bienesGarantia.toString()}');
 
           if (loan == null && state.error == null) {
             return const Center(
@@ -106,15 +104,55 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: double.infinity,
-                        child: Text(
-                          '${loan?.cliente?.nombres} ${loan?.cliente?.apellidos}',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.normal,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${loan?.cliente?.nombres} ${loan?.cliente?.apellidos}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.normal,
+                              ),
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 10),
+                          if (loan?.cliente?.imagenUno != null)
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(30),
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => FullScreenImage(
+                                        imageUrl:
+                                            loan?.cliente?.imagenUno ?? '',
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Image.network(
+                                  '$endPointPrincipal/${loan?.cliente?.imagenUno}',
+                                  width: 60,
+                                  height: 60,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Placeholder(
+                                      fallbackHeight: 60,
+                                      fallbackWidth: 60,
+                                    );
+                                  },
+                                ),
+                              ),
+                            )
+                          else
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(30),
+                              child: Image.asset(
+                                AppIcons.notFound,
+                                width: 60,
+                                height: 60,
+                              ),
+                            ),
+                        ],
                       ),
                       const SizedBox(height: 10),
                       Row(
@@ -219,7 +257,113 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 10),
+                      if (loan?.imagenLiquidado != null) ...[
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              "Foto de Liquidación: ",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => FullScreenImage(
+                                      imageUrl: loan?.imagenLiquidado ?? '',
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Image.network(
+                                '$endPointPrincipal/${loan?.imagenLiquidado}',
+                                height: 50,
+                                width: 50,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Placeholder(
+                                    fallbackHeight: 50,
+                                    fallbackWidth: 50,
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (loan?.imagenPagos != null) ...[
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              "Foto del Pago: ",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => FullScreenImage(
+                                      imageUrl: loan?.imagenPagos ?? '',
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Image.network(
+                                '$endPointPrincipal/${loan?.imagenPagos}',
+                                height: 50,
+                                width: 50,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Placeholder(
+                                    fallbackHeight: 50,
+                                    fallbackWidth: 50,
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (loan?.imagenAumentos != null) ...[
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              "Foto del Aumento: ",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => FullScreenImage(
+                                      imageUrl: loan?.imagenAumentos ?? '',
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Image.network(
+                                '$endPointPrincipal/${loan?.imagenAumentos}',
+                                height: 50,
+                                width: 50,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Placeholder(
+                                    fallbackHeight: 50,
+                                    fallbackWidth: 50,
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: 10),
                       Text(
                         'Aumentos (${loan?.aumentos?.length ?? '0'})',
                         style: const TextStyle(
@@ -319,8 +463,6 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                       const SizedBox(height: 10),
                       if (loan?.bienesGarantia != null)
                         ...loan!.bienesGarantia!.map((bien) {
-                          print('jsalkdjklads: ${bien.imagen}');
-
                           return Column(
                             children: [
                               const Divider(
@@ -742,8 +884,16 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                         children: [
                           Text('Telf: ${loan?.cliente?.celular}'),
                           IconButton(
-                            onPressed: () {},
-                            icon: Icon(
+                            onPressed: () async {
+                              final phone = loan?.cliente?.celular;
+                              await customLaunchUrl(
+                                Uri(
+                                  scheme: 'tel',
+                                  path: phone,
+                                ),
+                              );
+                            },
+                            icon: const Icon(
                               Icons.call,
                               color: Colors.green,
                             ),
@@ -867,7 +1017,6 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
               onPressed: () async {
                 final header = await cabeceraController.capture();
                 final body = await bodyController.capture();
-                print('sadadsasd: ${header} - ${body}');
                 if (header != null && body != null) {
                   if (!mounted) return;
                   Navigator.push(

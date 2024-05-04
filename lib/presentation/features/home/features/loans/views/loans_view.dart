@@ -82,9 +82,6 @@ class _LoansViewState extends State<LoansView> {
                 return const ButtonStateLoading();
 
               case LoansStatus.error:
-                print('errrorr 1: ${state.loansStatus}');
-                print('errrorr 2: ${state.error}');
-
                 return ButtonStateError(
                   message: state.error,
                   onPressed: () {
@@ -708,8 +705,6 @@ class _LoansViewState extends State<LoansView> {
                                                     onPressed: () async {
                                                       if (prestamo?.boleta ==
                                                           null) {
-                                                        final dniCustomer =
-                                                            state.customer?.dni;
                                                         final result =
                                                             await showDialog<
                                                                 bool>(
@@ -726,13 +721,15 @@ class _LoansViewState extends State<LoansView> {
                                                                     prestamo
                                                                         ?.codigo,
                                                                 dniCustomer:
-                                                                    dniCustomer,
+                                                                    state
+                                                                        .customer
+                                                                        ?.dni,
                                                               ),
                                                             );
                                                           },
                                                         );
 
-                                                        print(
+                                                        /*  print(
                                                             'resuuult: ${result}');
                                                         if (result != null &&
                                                             mounted) {
@@ -744,7 +741,7 @@ class _LoansViewState extends State<LoansView> {
                                                                       .searchText,
                                                                 ),
                                                               );
-                                                        }
+                                                        } */
                                                       } else {
                                                         // Abrir excel - verde
                                                         Navigator.push(context,
@@ -980,13 +977,13 @@ class _LoansViewState extends State<LoansView> {
                                       context,
                                       LoansStepView.route,
                                     );
-
-                                    if (mounted) {
+                                    if (mounted && result != null) {
                                       loansBloc.add(
                                         GetLoansByDni(
-                                          value: state.searchText,
+                                          value: result as String? ?? '',
                                         ),
                                       );
+                                      return;
                                     }
                                   },
                                   child: const Row(

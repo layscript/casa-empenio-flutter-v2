@@ -11,7 +11,7 @@ class CajasState extends Equatable {
   });
 
   final CajasStatus cajasStatus;
-  final List<CajaEntity>? listCajas;
+  final List<CajaEntity?>? listCajas;
   final CajaEntity? movements;
 
   final String? error;
@@ -24,7 +24,7 @@ class CajasState extends Equatable {
 
   CajasState copyWith({
     CajasStatus? cajasStatus,
-    List<CajaEntity>? listCajas,
+    List<CajaEntity?>? listCajas,
     CajaEntity? movements,
     String? error,
   }) =>

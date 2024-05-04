@@ -26,7 +26,6 @@ class NotifyBloc extends Bloc<NotifyEvent, NotifyState> {
 
     result.fold(
       (error) {
-        print('errrorrr: $error');
         emit(
           state.copyWith(
             notifyStatus: NotifyStatus.error,
@@ -57,7 +56,6 @@ class NotifyBloc extends Bloc<NotifyEvent, NotifyState> {
     );
 
     result.fold((error) {
-      print('errrorrr: $error');
       emit(
         state.copyWith(
           notifyStatus: NotifyStatus.error,

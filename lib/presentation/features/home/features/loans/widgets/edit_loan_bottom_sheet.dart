@@ -168,9 +168,6 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
     if (mounted) {
       setState(() {
         pres.fold((error) => null, (prestamo) {
-          log('dododododmi 1: ${prestamo.cliente?.toString()}');
-          log('dododododmi 2: ${prestamo.aval}');
-
           _nombreClienteController.text = prestamo.cliente?.nombres ?? '';
           _apellidoClienteController.text = prestamo.cliente?.apellidos ?? '';
           _dniClienteController.text = prestamo.cliente?.dni ?? '';
@@ -184,10 +181,6 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
 
           _isAval = prestamo.aval != null &&
               (prestamo.aval?.dni != null && prestamo.aval?.dni != '');
-/* 
-          print('_isAval 1: ${_isAval}');
-          print('_isAval 2: ${prestamo.aval?.dni != null}');
-          print('_isAval 3: ${prestamo.aval?.dni != ''}'); */
 
           if (_isAval) {
             _nombreAvalController.text = prestamo.aval?.nombres ?? '';
@@ -481,7 +474,6 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
               ),
               onPressed: () {
                 final garantiasData = _garantiasControllers.map((e) {
-                  print('imageeen 1: ${e['imagen']}');
                   return {
                     'descripcion': e['descripcion'].text,
                     'marca': e['marca'].text,
@@ -568,7 +560,6 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
   }
 
   CategoriesEntity? parseCategorie(String value) {
-    print('valoooor: ${value}');
     if (value.isEmpty) return null;
 
     final response =
@@ -582,13 +573,10 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
     return BlocListener<LoansBloc, LoansState>(
       listener: (context, state) {
         if (state.isLoansRenevLoading) {
-          print('gogogoges 1');
           OverlayLoader.show(context);
         } else {
           OverlayLoader.hide();
           if (state.isLoansRenevError) {
-            print('gogogoges 2');
-
             showDialog(
               context: context,
               builder: (context) {
@@ -614,8 +602,6 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
           }
 
           if (state.isLoansRenevSuccess) {
-            print('gogogoges 3');
-
             showDialog(
               context: context,
               builder: (context) {
@@ -722,7 +708,6 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
                               itemCount: _garantiasControllers.length,
                               itemBuilder: (context, index) {
                                 final garantia = _garantiasControllers[index];
-                                print('sakldjldas: ${garantia['categoria']}');
                                 if (garantias > _garantiasControllers.length) {
                                   _garantiasControllers.add({
                                     "descripcion": TextEditingController(),
@@ -1167,9 +1152,7 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
 
   Widget _buildFormCliente() {
     if (selectedPhotosClient != null) {
-      for (var element in selectedPhotosClient!) {
-        print('asdasd1: ${element.path}');
-      }
+      for (var element in selectedPhotosClient!) {}
     }
 
     return Container(

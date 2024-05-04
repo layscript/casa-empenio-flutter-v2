@@ -111,6 +111,7 @@ class HttpReportsRepository implements ReportsRepository {
 
     final path =
         '/prestamos/prestamos/aumentos/${inicioParse.toUtc().toIso8601String()}/${finParse.toUtc().toIso8601String()}';
+
     try {
       final response = await _dio.get<String>(path);
       if (response.statusCode != 200) {
@@ -248,6 +249,36 @@ class HttpReportsRepository implements ReportsRepository {
         return false;
       }
     } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> deleteIncrease({
+    required int? id,
+    required int? idUser,
+  }) async {
+    const path = '/prestamos/prestamos/eliminarAumento';
+
+    final payload = {
+      'aumentoId': id,
+      'usuarioId': idUser,
+    };
+
+    try {
+      final response = await _dio.post<String>(path, data: payload);
+
+      if (response.statusCode != 201) {
+        return false;
+      } else {
+        return true;
+      }
+    } catch (e, stackTrace) {
+
       await _sentry.captureException(
         e,
         stackTrace: stackTrace,

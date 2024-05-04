@@ -25,6 +25,8 @@ class LoansEntity {
     required this.aumentos,
     required this.aval,
     required this.imagenLiquidado,
+    required this.imagenPagos,
+    required this.imagenAumentos,
     required this.pagos,
     required this.usuario,
     required this.eliminado,
@@ -51,6 +53,8 @@ class LoansEntity {
   final String? fecha;
   final bool? eliminado;
   final String? imagenLiquidado;
+  final String? imagenAumentos;
+  final String? imagenPagos;
   final String? updatedAt;
   final String? createdAt;
   final List<IncreaseEntity>? aumentos;
@@ -98,8 +102,6 @@ isRenewed: $isRenewed,
   }
 
   static LoansEntity getLoanFromMap(Map<String, dynamic> map) {
-    log('askdjklsadads 2.1: ${map['aval']}');
-    log('askdjklsadads 2.2: ${map['cliente']}');
     return LoansEntity(
       codigo: map['codigo'] as int?,
       codigoFormateado: map['codigoFormateado'] as String?,
@@ -117,6 +119,8 @@ isRenewed: $isRenewed,
       updatedAt: map['updatedAt'] as String?,
       createdAt: map['createdAt'] as String?,
       imagenLiquidado: map['imagenLiquidado'] as String?,
+      imagenPagos: map['imagenPagos'] as String?,
+      imagenAumentos: map['imagenAumentos'] as String?,
       admin: map['admin'] != null ? UserEntity.userFromMap(map['admin']) : null,
       aumentos: map['aumentos'] != null
           ? IncreaseEntity.listIncreaseFromMap(map['aumentos'])

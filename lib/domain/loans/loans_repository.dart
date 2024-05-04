@@ -49,6 +49,11 @@ abstract class LoansRepository {
     required String userId,
   });
 
+  Future<bool> anularLoan({
+    required int idLoan,
+    required String userId,
+  });
+
   Future<Either<String, ReportsPaymentEntity>> getPayments({
     required int id,
   });
@@ -57,6 +62,8 @@ abstract class LoansRepository {
     required int codigo,
     required double monto,
     required String userId,
+    required List<XFile>? photos,
+    required bool? efectivo,
   });
 
   Future<bool> payOffLoan({
@@ -71,6 +78,7 @@ abstract class LoansRepository {
     required double monto,
     required String observaciones,
     required String userId,
+    required List<XFile>? photos,
   });
 
   Future<Uint8List> createInvoicePdf({required String url});

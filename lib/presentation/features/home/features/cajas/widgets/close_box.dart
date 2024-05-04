@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
@@ -71,6 +72,43 @@ class _CloseBoxViewState extends State<CloseBoxView> {
               AppTextFormField(
                 controller: obsCtrl,
                 labelText: 'Observaciones',
+              ),
+              const SizedBox(height: 20),
+              /*  Text(
+                '${state.movements?.movimientos?.length}',
+              ), */
+              Builder(
+                builder: (context) {
+                  final movimientos = state.movements?.movimientos ?? [];
+                  var movimientoDiferencia = 0.0;
+                  if (movimientos.isNotEmpty) {
+                    for (var movimiento in movimientos) {
+                      if (movimiento.suma == true) {
+                        movimientoDiferencia +=
+                            double.parse(movimiento.monto.toString());
+                      } else {
+                        movimientoDiferencia -=
+                            double.parse(movimiento.monto.toString());
+                      }
+                    }
+                  }
+
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.green.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: Text(
+                      'Saldo Teórico: s/.$movimientoDiferencia',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: AppColors.white,
+                      ),
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 20),
               SecondaryButton(

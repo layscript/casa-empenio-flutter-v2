@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:dartz/dartz.dart';
@@ -23,6 +24,9 @@ final _initialState = ReportsState(
   listClosedLoans: const [],
   listLoans: const [],
   totalPayments: 0.0,
+  partialUtilityPayment: 0.0,
+  fullPaymentUtility: 0.0,
+  totalClosedLoans: 0.0,
   listPayments: const [],
   totalIncreases: 0.0,
   totalProfits: 0.0,
@@ -37,14 +41,20 @@ final _initialState = ReportsState(
   loanDetails: null,
   paymentDetails: null,
   message: null,
+  listCategories: const [],
+  selectedCategory: null,
 );
 
 class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
   ReportsBloc({
     required ReportsRepository reportsRepository,
     required LoansRepository loansRepository,
+    required CategoriesRepository categoriesRepository,
+    required ExpensesRepository expensesRepository,
   })  : _reportsRepository = reportsRepository,
         _loansRepository = loansRepository,
+        _categoriesRepository = categoriesRepository,
+        _expensesRepository = expensesRepository,
         super(_initialState) {
     on<GetLoadInitialDataPayments>(_onGetLoadInitialDataPayments);
     on<GetLoadInitialDataContracts>(_onGetLoadInitialDataContracts);
@@ -52,6 +62,9 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     on<GetDetailsReportPay>(_onGetDetailsReportPay);
     on<CancelReportLoan>(_onCancelReportLoan);
     on<AnularPrestamoLiquidado>(_onAnularPrestamoLiquidado);
+    on<GetCategoriesEvent>(_onGetCategoriesEvent);
+    on<ChangeCategoryEvent>(_onChangeCategoryEvent);
+    on<DeleteIncreaseEvent>(_onDeleteIncreaseEvent);
 
     // Tags
     on<ChangeCanceladoContracts>(
@@ -76,6 +89,8 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
 
   final LoansRepository _loansRepository;
   final ReportsRepository _reportsRepository;
+  final CategoriesRepository _categoriesRepository;
+  final ExpensesRepository _expensesRepository;
 
   Future<void> _onGetLoadInitialDataPayments(
     GetLoadInitialDataPayments event,
@@ -114,8 +129,30 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
         ));
       },
       (listLoans) {
+        /*  double totalLoans = 0.0;
+        double totalProfits = 0.0;
+
+        if (prestamos.isNotEmpty) {
+          for (var element in prestamos) {
+            if (element.estado != 'CANCELADO') {
+              // Ganancia totales
+              totalProfits += double.parse(element.ganancia ?? '0.00');
+              // Prestamos totales
+              totalLoans += double.parse(element.monto ?? '0.00');
+            }
+          }
+        } */
+
         emit(state.copyWith(
           listClosedLoans: listLoans,
+          totalClosedLoans: listLoans.fold<double>(
+            0.0,
+            (previousValue, element) {
+              final monto = double.parse(element.monto ?? '0.00');
+              final ganancia = double.parse(element.ganancia ?? '0.00');
+              return previousValue + monto + ganancia;
+            },
+          ),
           statusClosedLoans: ReportsStatus.success,
         ));
       },
@@ -131,15 +168,56 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
       },
       (listPayments) {
         double monto = 0.0;
-        if (listPayments.isNotEmpty) {
-          for (var element in listPayments) {
+        //double gananciaGeneralPorcentaje = 0.0;
+        double partialUtilityPayment = 0.0;
+        double fullPaymentUtility = 0.0;
+
+
+        // Filtrar pagos no cancelados
+        final filterListPayments = listPayments.where((element) {
+          if (element.prestamo?.estado != 'CANCELADO') {
+            return true;
+          } else {
+            return false;
+          }
+        }).toList();
+
+        if (filterListPayments.isNotEmpty) {
+          for (var element in filterListPayments) {
             monto += double.parse(element.monto ?? '0.00');
+
+            final montoPagado = double.parse(element.monto ?? '0.00');
+            final montoAPagarTotal =
+                double.parse(element.prestamo?.monto ?? '0.00') +
+                    double.parse(element.prestamo?.ganancia ?? '0.00');
+
+            if (montoPagado >= montoAPagarTotal) {
+              // Pagó todo
+              /*  gananciaGeneralPorcentaje +=
+                  calcularUtilidadReportsPagoPorcentaje(
+                double.parse(element.prestamo?.monto ?? '0.00'),
+                double.parse(element.monto ?? '0.00'),
+              ); */
+
+              fullPaymentUtility += calcularUtilidadReportsPagoDouble(
+                double.parse(element.prestamo?.monto ?? '0.00'),
+                double.parse(element.monto ?? '0.00'),
+              );
+            } else {
+              // Pago parcial
+              partialUtilityPayment += calcularUtilidadReportsPagoDouble(
+                double.parse(element.prestamo?.monto ?? '0.00'),
+                double.parse(element.monto ?? '0.00'),
+              );
+            }
           }
         }
 
         emit(state.copyWith(
-          listPayments: listPayments,
+          listPayments: filterListPayments,
           totalPayments: monto,
+          partialUtilityPayment: partialUtilityPayment,
+          fullPaymentUtility: fullPaymentUtility,
           statusPayments: ReportsStatus.success,
         ));
       },
@@ -181,10 +259,40 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     );
   }
 
+  double calcularUtilidadReportsPagoPorcentaje(
+    double mPrestamo,
+    double mPago,
+  ) {
+    double utilidad;
+    if (mPrestamo > mPago) {
+      utilidad = mPrestamo - mPago;
+    } else {
+      utilidad = mPago - mPrestamo;
+    }
+    final utilidadPorcentaje = utilidad / mPago;
+    return utilidadPorcentaje;
+  }
+
+  double calcularUtilidadReportsPagoDouble(
+    double mPrestamo,
+    double mPago,
+  ) {
+    double utilidad;
+    if (mPrestamo > mPago) {
+      utilidad = mPrestamo - mPago;
+    } else {
+      utilidad = mPago - mPrestamo;
+    }
+    final utilidadPorcentaje = utilidad / mPago;
+    final utilidadDouble = utilidadPorcentaje * mPago;
+    return utilidadDouble;
+  }
+
   Future<void> _onGetLoadInitialDataContracts(
     GetLoadInitialDataContracts event,
     Emitter<ReportsState> emit,
   ) async {
+
     emit(
       state.copyWith(
         statusIncreases: ReportsStatus.loading,
@@ -252,6 +360,7 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
             totalLoans: totalLoans,
             totalProfits: totalProfits,
             statusLoans: ReportsStatus.success,
+            selectedCategory: null,
           ),
         );
       },
@@ -358,6 +467,8 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     );
   }
 
+  // Se cancela el prestamo cerrado
+
   Future<void> _onAnularPrestamoLiquidado(
     AnularPrestamoLiquidado event,
     Emitter<ReportsState> emit,
@@ -371,5 +482,76 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     } else {
       emit(state.copyWith(statusCanceled: ReportsStatus.error));
     }
+  }
+
+  Future<void> _onGetCategoriesEvent(
+    GetCategoriesEvent event,
+    Emitter<ReportsState> emit,
+  ) async {
+    //emit(state.copyWith(statusCanceled: ReportsStatus.loading));
+    final result = await _categoriesRepository.getCategories();
+    result.fold(
+      (message) {},
+      (categories) {
+        emit(
+          state.copyWith(
+            listCategories: categories,
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _onChangeCategoryEvent(
+    ChangeCategoryEvent event,
+    Emitter<ReportsState> emit,
+  ) async {
+    /*  final newListIncreate = state.listIncrease.where((element) {
+      if (element.prestamo?.bienesGarantia == null) return false;
+      for (var e in element.prestamo!.bienesGarantia!) {
+        if (e.categoria != null) {
+          if (e.categoria == event.category?.descripcion) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }).toList(); */
+
+    final newListLoans = state.listLoans.where((element) {
+      if (element.bienesGarantia == null) return false;
+      for (var e in element.bienesGarantia!) {
+        if (e.categoria != null) {
+          if (e.categoria == event.category?.descripcion) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }).toList();
+
+    emit(
+      state.copyWith(
+        selectedCategory: event.category,
+        listLoans: newListLoans,
+        //listIncrease: newListIncreate,
+      ),
+    );
+  }
+
+  Future<void> _onDeleteIncreaseEvent(
+    DeleteIncreaseEvent event,
+    Emitter<ReportsState> emit,
+  ) async {
+    emit(state.copyWith(statusIncreases: ReportsStatus.loading));
+    await _reportsRepository.deleteIncrease(
+      id: event.id,
+      idUser: event.userId,
+    );
+
+    add(GetLoadInitialDataContracts(
+      start: state.startTimeContracts,
+      end: state.endTimeContracts,
+    ));
   }
 }

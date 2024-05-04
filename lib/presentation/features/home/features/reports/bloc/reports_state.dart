@@ -15,6 +15,9 @@ class ReportsState extends Equatable {
     required this.listClosedLoans,
     required this.listPayments,
     required this.totalPayments,
+    required this.partialUtilityPayment,
+    required this.fullPaymentUtility,
+    required this.totalClosedLoans,
     required this.listLoans,
     required this.totalIncreases,
     required this.totalProfits,
@@ -31,6 +34,8 @@ class ReportsState extends Equatable {
     required this.statusCanceled,
     required this.paymentDetails,
     required this.message,
+    required this.listCategories,
+    required this.selectedCategory,
   });
 
   final ReportsStatus statusClosedLoans;
@@ -46,6 +51,11 @@ class ReportsState extends Equatable {
   final List<LoansEntity> listLoans;
   final List<ReportsPaymentEntity> listPayments;
   final double totalPayments;
+
+  final double partialUtilityPayment;
+  final double fullPaymentUtility;
+
+  final double totalClosedLoans;
   final double totalIncreases;
   final double totalLoans;
 
@@ -64,6 +74,9 @@ class ReportsState extends Equatable {
   final bool liquidadoContracts;
   final bool canceladoContracts;
   final String? message;
+
+  final List<CategoriesEntity> listCategories;
+  final CategoriesEntity? selectedCategory;
 
   bool get isReportsClosedLoansLoading =>
       statusClosedLoans == ReportsStatus.loading;
@@ -110,6 +123,9 @@ class ReportsState extends Equatable {
     DateTime? startTimeContracts,
     DateTime? endTimeContracts,
     double? totalPayments,
+    double? partialUtilityPayment,
+    double? fullPaymentUtility,
+    double? totalClosedLoans,
     double? totalIncreases,
     double? totalProfits,
     double? totalLoans,
@@ -122,6 +138,8 @@ class ReportsState extends Equatable {
     LoansEntity? loanDetails,
     ReportsPaymentEntity? paymentDetails,
     String? message,
+    List<CategoriesEntity>? listCategories,
+    CategoriesEntity? selectedCategory,
   }) =>
       ReportsState(
         statusCanceled: statusCanceled ?? this.statusCanceled,
@@ -137,6 +155,11 @@ class ReportsState extends Equatable {
         listClosedLoans: listClosedLoans ?? this.listClosedLoans,
         listPayments: listPayments ?? this.listPayments,
         totalPayments: totalPayments ?? this.totalPayments,
+        partialUtilityPayment: partialUtilityPayment ??
+            this.partialUtilityPayment,
+        fullPaymentUtility:
+            fullPaymentUtility ?? this.fullPaymentUtility,
+        totalClosedLoans: totalClosedLoans ?? this.totalClosedLoans,
         listLoans: listLoans ?? this.listLoans,
         totalIncreases: totalIncreases ?? this.totalIncreases,
         totalProfits: totalProfits ?? this.totalProfits,
@@ -151,6 +174,8 @@ class ReportsState extends Equatable {
         loanDetails: loanDetails ?? this.loanDetails,
         paymentDetails: paymentDetails ?? this.paymentDetails,
         message: message ?? this.message,
+        listCategories: listCategories ?? this.listCategories,
+        selectedCategory: selectedCategory,
       );
 
   @override
@@ -168,6 +193,9 @@ class ReportsState extends Equatable {
         endTimeContracts,
         listPayments,
         totalPayments,
+        partialUtilityPayment,
+        fullPaymentUtility,
+        totalClosedLoans,
         listLoans,
         totalProfits,
         totalIncreases,
@@ -182,5 +210,7 @@ class ReportsState extends Equatable {
         loanDetails,
         paymentDetails,
         message,
+        listCategories,
+        selectedCategory,
       ];
 }

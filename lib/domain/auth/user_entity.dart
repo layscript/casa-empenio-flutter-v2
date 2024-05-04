@@ -38,14 +38,12 @@ class UserEntity {
   static List<UserEntity> listGetUsersFromMap(
     Map<String, dynamic> map,
   ) {
-    log('debuggg 0: $map');
 
     final list = map['body'][0] as List<dynamic>;
     return list.map((e) => userFromMap(e as Map<String, dynamic>)).toList();
   }
 
   static UserEntity userFromMap(Map<String, dynamic> map) {
-    log('debuggg 1: $map');
     return UserEntity(
       id: map['id'] as int,
       nombre: map['nombre'] as String,

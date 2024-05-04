@@ -64,18 +64,18 @@ class HttpCajaRepository implements CajaRepository {
         return Left(message);
       } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
-        print('errpororor 1: $map');
-        final body = map['body'][0];
-        print('errpororor 2: $body');
-        return Right(CajaEntity.listGetCajaFromMap(body));
+        final body = map['body'][0] as List<dynamic>?;
+        if (body == null) {
+          return const Left('No hay cajas');
+        } else {
+          return Right(CajaEntity.listGetCajaFromMap(body, false));
+        }
       }
     } catch (e, stackTrace) {
-      print('errpororor 33: $e');
       await _sentry.captureException(
         e,
         stackTrace: stackTrace,
       );
-      //print('responseee ee: $e');
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -85,9 +85,6 @@ class HttpCajaRepository implements CajaRepository {
     const path = '/finanza/caja/actual';
     try {
       final response = await _dio.get<String>(path);
-      print('xxxxdebuggg 1: ${response.statusCode}');
-      print('xxxxdebuggg 2: ${response.data}');
-
       if (response.statusCode != 200) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
@@ -96,7 +93,7 @@ class HttpCajaRepository implements CajaRepository {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final body = map['body'];
         if (body != null) {
-          return Right(CajaEntity.getCajaFromMap(body));
+          return Right(CajaEntity.getCajaFromMap(body, false));
         } else {
           return const Right(null);
         }

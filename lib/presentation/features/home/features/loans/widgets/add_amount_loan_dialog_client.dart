@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
@@ -5,6 +7,7 @@ import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/blocs/loans_bloc/loans_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AddAmountLoanDialogClient extends StatefulWidget {
   const AddAmountLoanDialogClient({
@@ -30,6 +33,7 @@ class _AddAmountLoanDialogClientState extends State<AddAmountLoanDialogClient> {
   final montoCtrl = TextEditingController();
   final obsCtrl = TextEditingController();
   bool isMontoValid = false;
+  List<XFile>? selectedPhotosLiquidar = [];
 
   @override
   Widget build(BuildContext context) {
@@ -143,6 +147,64 @@ class _AddAmountLoanDialogClientState extends State<AddAmountLoanDialogClient> {
                       labelText: 'Observación',
                       controller: obsCtrl,
                     ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        for (int i = 0;
+                            i < (selectedPhotosLiquidar?.length ?? 0);
+                            i++)
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                selectedPhotosLiquidar?.removeAt(i);
+                              });
+                            },
+                            child: Stack(
+                              children: [
+                                Image.file(
+                                  File(selectedPhotosLiquidar![i].path),
+                                  width: 100,
+                                  height: 100,
+                                ),
+                                Positioned(
+                                  top: 0,
+                                  right: 0,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(10),
+                                      color: Colors.red,
+                                    ),
+                                    child: const Icon(
+                                      Icons.close,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        if (selectedPhotosLiquidar!.length < 1)
+                          Expanded(
+                            child: SecondaryButton(
+                              onPressed: () async {
+                                final photo = await ImagePicker().pickImage(
+                                  source: ImageSource.camera,
+                                  imageQuality: 70,
+                                );
+
+                                if (photo != null) {
+                                  setState(() {
+                                    selectedPhotosLiquidar?.add(photo);
+                                  });
+                                }
+                              },
+                              child: Text(
+                                'Subir Imagen (${1 - selectedPhotosLiquidar!.length})',
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
               );
@@ -163,7 +225,7 @@ class _AddAmountLoanDialogClientState extends State<AddAmountLoanDialogClient> {
                 ),
               ),
               TextButton(
-                onPressed: !isMontoValid
+                onPressed: !isMontoValid || selectedPhotosLiquidar!.isEmpty
                     ? null
                     : () {
                         context.read<LoansBloc>().add(
@@ -172,6 +234,7 @@ class _AddAmountLoanDialogClientState extends State<AddAmountLoanDialogClient> {
                                 monto: double.parse(montoCtrl.text),
                                 obs: obsCtrl.text,
                                 userId: preferences.token?.id.toString() ?? '0',
+                                photos: selectedPhotosLiquidar,
                               ),
                             );
                       },

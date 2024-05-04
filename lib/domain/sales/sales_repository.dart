@@ -7,5 +7,11 @@ abstract class SalesRepository {
     required DateTime fin,
   });
 
+  Future<Either<String, List<SalesEntity>>> getSalesByUserIdRangeDate({
+    required DateTime inicio,
+    required DateTime fin,
+    required int userId,
+  });
+
   Future<bool> createSalesProduct(Map<String, dynamic> data);
 }

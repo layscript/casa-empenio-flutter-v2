@@ -68,7 +68,6 @@ class HttpMotionRepository implements MotionRepository {
         e,
         stackTrace: stackTrace,
       );
-      print('errpororor 33: $e');
       //print('responseee ee: $e');
       return const Left('Ocurrió un error con el servidor');
     }

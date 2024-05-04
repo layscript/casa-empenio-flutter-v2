@@ -49,7 +49,6 @@ class PayUserBloc extends Bloc<PayUserEvent, PayUserState> {
     SavePayExpense event,
     Emitter<PayUserState> emit,
   ) async {
-    print('asdadsasd: ${event.usuarioId}');
 
     emit(
       state.copyWith(

@@ -15,12 +15,19 @@ class ExpensesState extends Equatable {
     this.expensesStatus = ExpensesStatus.initial,
     this.listExpenses,
     this.error,
+    required this.endExpenses,
+    required this.startExpenses,
+    this.totalGastos,
   });
 
   final bool? openBox;
   final ExpensesStatus expensesStatus;
   final List<ExpensesEntity>? listExpenses;
   final String? error;
+
+  final DateTime startExpenses;
+  final DateTime endExpenses;
+  final double? totalGastos;
 
   bool get isExpensesLoading => expensesStatus == ExpensesStatus.loading;
   bool get isExpensesError => expensesStatus == ExpensesStatus.error;
@@ -32,12 +39,18 @@ class ExpensesState extends Equatable {
     ExpensesStatus? expensesStatus,
     List<ExpensesEntity>? listExpenses,
     String? error,
+    DateTime? startExpenses,
+    DateTime? endExpenses,
+    double? totalGastos,
   }) =>
       ExpensesState(
         openBox: openBox,
         expensesStatus: expensesStatus ?? this.expensesStatus,
         listExpenses: listExpenses ?? this.listExpenses,
         error: error,
+        startExpenses: startExpenses ?? this.startExpenses,
+        endExpenses: endExpenses ?? this.endExpenses,
+        totalGastos: totalGastos ?? this.totalGastos,
       );
 
   @override
@@ -46,5 +59,8 @@ class ExpensesState extends Equatable {
         expensesStatus,
         listExpenses,
         error,
+        startExpenses,
+        endExpenses,
+        totalGastos,
       ];
 }

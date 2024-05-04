@@ -29,72 +29,17 @@ class _ExpensesViewState extends State<ExpensesView> {
         expensesRepository: context.read(),
         cajaRepository: context.read(),
       )
-        ..add(GetExpenses())
+        ..add(
+          const GetExpenses(
+            end: null,
+            start: null,
+          ),
+        )
         ..add(GetCashExpensesStatus()),
       child: Builder(
         builder: (context) {
           return BlocConsumer<ExpensesBloc, ExpensesState>(
             listener: (context, state) {
-              /* if (state.isExpensesLoading) {
-              OverlayLoader.show(context);
-            } else {
-              OverlayLoader.hide();
-              if (state.isExpensesError) {
-                ErrorSnackbar.show(context, state.error ?? '');
-              }
-
-              if (state.isExpensesFailure) {
-                Navigator.pop(context);
-                ErrorSnackbar.show(context, state.error ?? '');
-              }
-
-              if (state.isExpensesSuccess) {
-                Navigator.pop(context, true);
-                SuccessSnackbar.show(context, 'Agregado correctamente');
-              }
-
-              if (state.openBox) {
-                //if (false) {
-                showDialog(
-                  barrierDismissible: false,
-                  context: context,
-                  builder: (_) {
-                    return WillPopScope(
-                      onWillPop: () async => false,
-                      child: AlertDialog(
-                        title: const Text('Alerta'),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Para continuar con el registro necesita abrir caja',
-                              style: TextStyle(
-                                color: AppColors.primaryText,
-                                fontWeight: FontWeight.normal,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            ElevatedButton(
-                              onPressed: () {
-                                context.read<HomeBloc>().add(GoToCajas());
-                                Navigator.pop(context);
-                              },
-                              child: const Text('Ir a caja'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                );
-              }
-            } */
-
-              /*  if (state.isExpensesError) {
-              ErrorSnackbar.show(context, state.error ?? '');
-            } */
-
               if (state.openBox == true) {
                 //if (false) {
                 showDialog<bool>(
@@ -127,7 +72,12 @@ class _ExpensesViewState extends State<ExpensesView> {
                   return ButtonStateError(
                     onPressed: () {
                       context.read<ExpensesBloc>()
-                        ..add(GetExpenses())
+                        ..add(
+                          const GetExpenses(
+                            end: null,
+                            start: null,
+                          ),
+                        )
                         ..add(GetCashExpensesStatus());
                     },
                   );
@@ -161,6 +111,43 @@ class _ExpensesViewState extends State<ExpensesView> {
                                   ),
                                 ),
                                 const SizedBox(height: 20),
+                                ListTile(
+                                  dense: true,
+                                  leading: const Icon(
+                                    Icons.calendar_today,
+                                  ),
+                                  title: FittedBox(
+                                    child: Text(
+                                      'Desde: ${DateFormat('dd/MM/yyyy').format(state.startExpenses)} Hasta: ${DateFormat('dd/MM/yyyy').format(state.endExpenses)}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ),
+                                  trailing: IconButton(
+                                    constraints: const BoxConstraints(),
+                                    onPressed: () async {
+                                      final result = await showDateRangePicker(
+                                        context: context,
+                                        firstDate: DateTime(2022, 1, 1),
+                                        lastDate: DateTime(2030, 12, 31),
+                                        currentDate: DateTime.now(),
+                                        saveText: 'Done',
+                                      );
+
+                                      if (result != null && mounted) {
+                                        context.read<ExpensesBloc>().add(
+                                              GetExpenses(
+                                                start: result.start,
+                                                end: result.end,
+                                              ),
+                                            );
+                                      }
+                                    },
+                                    icon: const Icon(Icons.calendar_today),
+                                  ),
+                                ),
                                 if (state.listExpenses != null)
                                   ListView.separated(
                                     physics:
@@ -232,11 +219,43 @@ class _ExpensesViewState extends State<ExpensesView> {
                                       );
                                     },
                                   ),
-                                const SizedBox(height: 15),
+                                const SizedBox(height: 35),
                               ],
                             ),
                           ),
                         ),
+                        // Total de Gastos anclado
+                        if (state.totalGastos != null)
+                          Positioned(
+                            bottom: 120,
+                            left: 0,
+                            right: 0,
+                            child: Container(
+                              height: 30,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 26,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.lightBlack,
+                                boxShadow: defaultBoxShadow,
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Total de Gastos: s/. ${state.totalGastos?.toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 17,
+                                      color: AppColors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
                         Positioned.fill(
                           top: null,
                           child: Container(
@@ -263,9 +282,12 @@ class _ExpensesViewState extends State<ExpensesView> {
                                   );
 
                                   if (result != null && mounted) {
-                                    context
-                                        .read<ExpensesBloc>()
-                                        .add(GetExpenses());
+                                    context.read<ExpensesBloc>().add(
+                                          const GetExpenses(
+                                            end: null,
+                                            start: null,
+                                          ),
+                                        );
                                   }
                                 },
                                 child: const Row(

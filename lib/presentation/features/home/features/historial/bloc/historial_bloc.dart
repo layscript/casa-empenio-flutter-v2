@@ -1,5 +1,4 @@
-import 'dart:async';
-
+import 'package:casa_empenio_pe/data/data.dart';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
@@ -7,19 +6,28 @@ import 'package:equatable/equatable.dart';
 part 'historial_event.dart';
 part 'historial_state.dart';
 
+final _initialState = HistorialState(
+  startSales: DateTime.now().subtract(const Duration(days: 1)),
+  endSales: DateTime.now(),
+);
+
 class HistorialBloc extends Bloc<HistorialEvent, HistorialState> {
   HistorialBloc({
     required UserRepository userRepository,
     required HistorialRepository historialRepository,
+    required SalesRepository salesRepository,
   })  : _userRepository = userRepository,
         _historialRepository = historialRepository,
-        super(const HistorialState()) {
+        _salesRepository = salesRepository,
+        super(_initialState) {
     on<GetAllHistorialEvent>(_onGetAllHistorialEvent);
     on<GetHistorialByDocumentEvent>(_onGetHistorialByDocumentEvent);
+    on<GetHistorialUserVentasEvent>(_onGetHistorialUserVentasEvent);
   }
 
   final UserRepository _userRepository;
   final HistorialRepository _historialRepository;
+  final SalesRepository _salesRepository;
 
   Future<void> _onGetAllHistorialEvent(
     GetAllHistorialEvent event,
@@ -66,6 +74,33 @@ class HistorialBloc extends Bloc<HistorialEvent, HistorialState> {
         state.copyWith(
           historialDetailsStatus: HistorialStatus.loaded,
           listHistorial: listHistorial,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onGetHistorialUserVentasEvent(
+    GetHistorialUserVentasEvent event,
+    Emitter<HistorialState> emit,
+  ) async {
+    emit(state.copyWith(historialUserVentasStatus: HistorialStatus.loading));
+
+    final result = await _salesRepository.getSalesByUserIdRangeDate(
+      userId: event.userId,
+      inicio: event.start ?? state.startSales,
+      fin: event.end ?? state.endSales,
+    );
+
+    result.fold(
+      (error) => emit(
+        state.copyWith(
+          historialUserVentasStatus: HistorialStatus.error,
+        ),
+      ),
+      (listSales) => emit(
+        state.copyWith(
+          historialUserVentasStatus: HistorialStatus.loaded,
+          listSales: listSales,
         ),
       ),
     );

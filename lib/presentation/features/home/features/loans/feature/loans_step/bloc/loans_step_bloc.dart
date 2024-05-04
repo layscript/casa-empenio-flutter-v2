@@ -380,7 +380,6 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
       newList = [event.value];
     }
 
-    print('jalksdjlkads: ${newList.length}');
     final newStateLocal = event.localState.copyWith(
       warrantyPreferences: newList,
     );
@@ -776,7 +775,6 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
         }).toList();
       }
 
-      log('garantiaaas: ${garantiasData}');
 
       final result = await _loansRepository.saveLoan(
         renew: false,
@@ -867,6 +865,8 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
           state.copyWith(
             loansStepStatusSaved: LoansStepStatus.success,
             message: '',
+            documentClient:
+                loansLocalState?.documentClient ?? state.documentClient,
           ),
         ),
       );

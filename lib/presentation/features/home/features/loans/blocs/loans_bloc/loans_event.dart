@@ -52,10 +52,18 @@ class SavePaymentLoan extends LoansEvent {
     required this.idPrestamo,
     required this.monto,
     required this.userId,
+    required this.photos,
+    required this.montoRestante,
+    required this.codigo,
+    required this.efectivo,
   });
   final int idPrestamo;
   final String monto;
   final String userId;
+  final List<XFile>? photos;
+  final String montoRestante;
+  final int codigo;
+  final bool efectivo;
 }
 
 class SaveSettlementLoan extends LoansEvent {
@@ -65,12 +73,14 @@ class SaveSettlementLoan extends LoansEvent {
     required this.userId,
     required this.codigo,
     required this.photos,
+    required this.efectivo,
   });
   final int idPrestamo;
   final String monto;
   final String userId;
   final int codigo;
   final List<XFile>? photos;
+  final bool efectivo;
 }
 
 class AddAmountLoan extends LoansEvent {
@@ -79,11 +89,13 @@ class AddAmountLoan extends LoansEvent {
     required this.monto,
     required this.obs,
     required this.userId,
+    required this.photos,
   });
   final int idPrestamo;
   final double monto;
   final String obs;
   final String userId;
+  final List<XFile>? photos;
 }
 
 class CreateInvoiceLoans extends LoansEvent {
@@ -134,6 +146,15 @@ class UpdateAllLoan extends LoansEvent {
 
 class DeleteLoanById extends LoansEvent {
   const DeleteLoanById({
+    required this.idLoan,
+    required this.userId,
+  });
+  final int idLoan;
+  final String userId;
+}
+
+class AnularLoanId extends LoansEvent {
+  const AnularLoanId({
     required this.idLoan,
     required this.userId,
   });

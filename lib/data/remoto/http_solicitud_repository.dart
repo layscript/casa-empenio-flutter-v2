@@ -74,8 +74,6 @@ class HttpSolicitudRepository implements SolicitudRepository {
     const path = '/solicitud?limit=1000&offset=0';
     try {
       final response = await _dio.get<String>(path);
-      print('stateee code 1: ${response.statusCode}');
-      print('stateee code 2: ${response.data}');
       if (response.statusCode != 200) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
@@ -83,7 +81,6 @@ class HttpSolicitudRepository implements SolicitudRepository {
       } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final body = map['body'][0];
-        print('stateee code 3: ${body}');
 
         return Right(SolicitudEntity.listGetSolicitudFromMap(body));
       }
@@ -92,7 +89,6 @@ class HttpSolicitudRepository implements SolicitudRepository {
         e,
         stackTrace: stackTrace,
       );
-      print('stateee code 4: ${e}');
 
       return const Left('Ocurrió un error');
     }
@@ -137,8 +133,6 @@ class HttpSolicitudRepository implements SolicitudRepository {
 
     try {
       final response = await _dio.get<String>(path);
-      print('asdasdasd 1: ${response.statusCode}');
-      print('asdasdasd 2: ${response.data}');
 
       if (response.statusCode != 200) {
         return false;

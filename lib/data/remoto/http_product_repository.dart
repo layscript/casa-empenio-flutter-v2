@@ -23,17 +23,11 @@ class HttpProductRepository implements ProductRepository {
   }) async {
     const path = '/almacen/bien/vehiculo';
     try {
-      print('saveeeee 0: ${payload}');
-
       final response = await _dio.post<String>(path, data: payload);
-
-      print('saveeeee 1: ${response.statusCode}');
-      print('saveeeee 2: ${response.data}');
 
       if (response.statusCode == 201) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final data = map['body'];
-        print('saveeeee 2 -> data: ${data}');
         if (payload['imagen'] != null || payload['imagen'] != '') {
           await uploadWarrantyImageProductVehiculo(
             idGarantia: data['id'],
@@ -43,13 +37,8 @@ class HttpProductRepository implements ProductRepository {
         }
         return const Right(true);
       } else {
-        print('saveeeee 22.5 -> ${response.data}:');
         final map = json.decode(response.data!) as Map<String, dynamic>;
-
         final message = map['message'] ?? 'Ocurrió un error';
-
-        print('saveeeee 22.6 -> $message:');
-
         return Left(message);
       }
     } catch (e, stackTrace) {
@@ -57,9 +46,6 @@ class HttpProductRepository implements ProductRepository {
         e,
         stackTrace: stackTrace,
       );
-      print('saveeeee 3: ${e}');
-      print('saveeeee 3: ${e.runtimeType}');
-
       return const Left('Ocurrió un error');
     }
   }
@@ -72,12 +58,9 @@ class HttpProductRepository implements ProductRepository {
     final path = '/almacen/bien/vehiculo/$id';
     try {
       final response = await _dio.put<String>(path, data: payload);
-      print('saveeeee 1.1: ${response.statusCode}');
-      print('saveeeee 2.2: ${response.data}');
       if (response.statusCode == 200) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final data = map['body'];
-        log('saveeeee 55: ${payload}');
         if (payload['imagen'] != null || payload['imagen'] != '') {
           await uploadWarrantyImageProductVehiculo(
             idGarantia: payload['id'],
@@ -104,8 +87,10 @@ class HttpProductRepository implements ProductRepository {
   Future<Either<String, List<ProductEntity>>> getProducts({
     required int type,
     required String criterio,
+    required int limit,
+    required int offset,
   }) async {
-    final query = '?busqueda=$criterio&limit=0&offset=0';
+    final query = '?busqueda=$criterio&limit=1000&offset=0';
     try {
       Response<String> response;
       switch (type) {
@@ -144,7 +129,7 @@ class HttpProductRepository implements ProductRepository {
   Future<Either<String, List<ProductEntity>>> getProductsLimitFree({
     required String criterio,
   }) async {
-    final query = '?busqueda=$criterio&limit=20&offset=0';
+    final query = '?busqueda=$criterio&limit=1000&offset=0';
     final path = '/almacen/bien/limit/libre$query';
     try {
       final response = await _dio.get<String>(path);
@@ -170,7 +155,7 @@ class HttpProductRepository implements ProductRepository {
   Future<Either<String, List<ProductEntity>>> getProductsLimitSales({
     required String criterio,
   }) async {
-    final query = '?busqueda=$criterio&limit=20&offset=0';
+    final query = '?busqueda=$criterio&limit=1000&offset=0';
     final path = '/almacen/bien/limit/venta$query';
     try {
       final response = await _dio.get<String>(path);
@@ -199,9 +184,6 @@ class HttpProductRepository implements ProductRepository {
     const path = '/almacen/bien';
     try {
       final response = await _dio.post<String>(path, data: payload);
-      print('saveeeee 1: ${response.statusCode}');
-      print('saveeeee 2: ${response.data}');
-
       if (response.statusCode != 201) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
@@ -209,9 +191,6 @@ class HttpProductRepository implements ProductRepository {
       } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final data = map['body'];
-        print('saveeeee 3: ${map}');
-        print('saveeeee 4: ${data}');
-
         if (payload['imagen'] != null || payload['imagen'] != '') {
           await uploadWarrantyImageProductVehiculo(
             idGarantia: data['id'],
@@ -227,7 +206,6 @@ class HttpProductRepository implements ProductRepository {
         e,
         stackTrace: stackTrace,
       );
-      print('saveeeee 10: ${e}');
       return const Left('Ocurrió un error');
     }
   }
@@ -240,14 +218,9 @@ class HttpProductRepository implements ProductRepository {
     final path = '/almacen/bien/$id';
     try {
       final response = await _dio.put<String>(path, data: payload);
-      print('saveeeee 1.1: ${response.statusCode}');
-      print('saveeeee 2.2: ${response.data}');
       if (response.statusCode == 200) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
-        print('saveeeee 2.3: ${map}');
-
         final data = map['body'];
-        print('saveeeee 2.4: ${data}');
         if (payload['imagen'] != null || payload['imagen'] != '') {
           await uploadWarrantyImageProductVehiculo(
             idGarantia: payload['id'],

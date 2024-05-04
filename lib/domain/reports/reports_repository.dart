@@ -20,4 +20,9 @@ abstract class ReportsRepository {
   });
   Future<bool> cancelLoan({required int id});
   Future<bool> cancelSettledLoan({required int id});
+
+  Future<bool> deleteIncrease({
+    required int? id,
+    required int? idUser,
+  });
 }

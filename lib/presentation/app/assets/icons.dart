@@ -1,4 +1,4 @@
-const _path = 'assets/icons';
+const _path = 'assets/image';
 
 class AppIcons {
   static const logoEmpenio = '$_path/casa-empenio.png';

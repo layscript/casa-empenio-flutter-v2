@@ -26,7 +26,7 @@ class _SearchProductsState extends State<SearchProducts> {
                     onTap: () {
                       nameCtrl.clear();
                       context.read<ProductsBloc>().add(
-                            GetProducts(),
+                            const GetProducts(),
                           );
                     },
                     child: const Icon(

@@ -8,4 +8,8 @@ abstract class ExpensesRepository {
     required String obs,
     required double monto,
   });
+
+  Future<Either<String, bool>> deleteExpense({
+    required int id,
+  });
 }
