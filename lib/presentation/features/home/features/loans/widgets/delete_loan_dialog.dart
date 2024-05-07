@@ -11,10 +11,10 @@ class DeleteLoanDialog extends StatelessWidget {
   const DeleteLoanDialog({
     super.key,
     required this.idLoan,
-    this.isAnular = false,
+    this.isPayment = false,
   });
   final int idLoan;
-  final bool isAnular;
+  final bool isPayment;
 
   @override
   Widget build(BuildContext context) {
@@ -27,13 +27,16 @@ class DeleteLoanDialog extends StatelessWidget {
         } else {
           OverlayLoader.hide();
           if (state.isLoansDeleteError) {
-            ErrorSnackbar.show(context, 'Ocurrió un problema');
+            ErrorSnackbar.show(
+              context,
+              state.error ?? 'Ocurrió un problema',
+            );
           }
 
           if (state.isLoansDeleteSuccess) {
             SuccessSnackbar.show(
               context,
-              state.error ?? 'Préstamo Eliminado',
+              'Eliminado Correctamente',
             );
             Navigator.pop(context, true);
           }
@@ -41,15 +44,15 @@ class DeleteLoanDialog extends StatelessWidget {
       },
       child: AlertDialog(
         title: Text(
-          isAnular ? 'Anular Préstamo' : 'Eliminar Préstamo',
+          isPayment ? 'Eliminar Pago' : 'Eliminar Préstamo',
           style: const TextStyle(
             color: AppColors.primaryText,
             fontWeight: FontWeight.bold,
           ),
         ),
         content: Text(
-          isAnular
-              ? '¿Esta seguro que desea anular el prestamo?'
+          isPayment
+              ? '¿Esta seguro que desea eliminar el pago?'
               : '¿Esta seguro que desea eliminar el prestamo?',
           style: const TextStyle(
             color: AppColors.primaryText,
@@ -71,7 +74,7 @@ class DeleteLoanDialog extends StatelessWidget {
               ),
             ),
           ),
-          if (!isAnular)
+          if (!isPayment)
             TextButton(
               style: TextButton.styleFrom(
                 backgroundColor: AppColors.blue,
@@ -91,25 +94,25 @@ class DeleteLoanDialog extends StatelessWidget {
                 ),
               ),
             ),
-            TextButton(
-              style: TextButton.styleFrom(
-                backgroundColor: AppColors.green,
-              ),
-              onPressed: () {
-                context.read<LoansBloc>().add(
-                      AnularLoanId(
-                        idLoan: idLoan,
-                        userId: preferences.token?.id.toString() ?? '0',
-                      ),
-                    );
-              },
-              child: const Text(
-                'Si, Anular',
-                style: TextStyle(
-                  color: AppColors.white,
-                ),
+          TextButton(
+            style: TextButton.styleFrom(
+              backgroundColor: AppColors.green,
+            ),
+            onPressed: () {
+              context.read<LoansBloc>().add(
+                    DeletePaymentLoanId(
+                      paymentId: idLoan,
+                      userId: preferences.token?.id.toString() ?? '0',
+                    ),
+                  );
+            },
+            child: const Text(
+              'Si, Eliminar Pago',
+              style: TextStyle(
+                color: AppColors.white,
               ),
             ),
+          ),
         ],
       ),
     );

@@ -42,6 +42,7 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
 
     on<DeleteLoanById>(_onDeleteLoanById);
     on<AnularLoanId>(_onAnularLoanId);
+    on<DeletePaymentLoanId>(_onDeletePaymentLoanId);
     on<UpdateStatusLoanById>(_onUpdateStatusLoanById);
 
     on<CreateSolicitud>(_onCreateSolicitud);
@@ -433,7 +434,6 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
         ),
       );
     } else {
-    
       final result = await _loansRepository.updateLoan(
         plazoDias: event.plazoDias,
         interes: event.interes,
@@ -492,6 +492,40 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     } else {
       emit(
         state.copyWith(loansStatus: LoansStatus.deleteLoanError),
+      );
+    }
+  }
+
+  Future<void> _onDeletePaymentLoanId(
+    DeletePaymentLoanId event,
+    Emitter<LoansState> emit,
+  ) async {
+    emit(state.copyWith(loansStatus: LoansStatus.deleteLoanLoading));
+    try {
+      final result = await _loansRepository.deletePayment(
+        userId: int.parse(event.userId),
+        id: event.paymentId,
+      );
+
+      result.fold(
+        (error) => emit(
+          state.copyWith(
+            loansStatus: LoansStatus.deleteLoanError,
+            error: error,
+          ),
+        ),
+        (success) => emit(
+          state.copyWith(
+            loansStatus: LoansStatus.deleteLoanSuccess,
+          ),
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          loansStatus: LoansStatus.deleteLoanError,
+          error: e.toString(),
+        ),
       );
     }
   }

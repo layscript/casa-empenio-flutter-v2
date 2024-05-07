@@ -171,7 +171,6 @@ class HttpLoansRepository implements LoansRepository {
       'isRenewed': renew,
     };
 
-
     try {
       final response = await _dio.post<String>(path, data: payload);
       if (response.statusCode != 201) {
@@ -207,7 +206,6 @@ class HttpLoansRepository implements LoansRepository {
         }
 
         if (bienesResponse != null) {
-
           for (var bienResponse in bienesResponse) {
             final imagenUno = bienResponse['imagen'] as String?;
             if (imagenUno != null) {
@@ -221,7 +219,6 @@ class HttpLoansRepository implements LoansRepository {
                 imagen3: imagenTres,
               );
             }
-
           }
         }
 
@@ -495,8 +492,9 @@ class HttpLoansRepository implements LoansRepository {
   }
 
   @override
-  Future<Either<String, ReportsPaymentEntity>> getPayments(
-      {required int id}) async {
+  Future<Either<String, ReportsPaymentEntity>> getPayments({
+    required int id,
+  }) async {
     final path = '/prestamos/pagos/$id';
     try {
       final response = await _dio.get<String>(path);
@@ -508,6 +506,40 @@ class HttpLoansRepository implements LoansRepository {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final body = map['body'];
         return Right(ReportsPaymentEntity.getReportsPaymentFromMap(body));
+      }
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
+      //print('responseee ee: $e');
+      return const Left('Ocurrió un error con el servidor');
+    }
+  }
+
+  @override
+  Future<Either<String, bool>> deletePayment({
+    required int id,
+    required int userId,
+  }) async {
+    final path = '/prestamos/pagos/eliminar/$id';
+    final payload = {
+      'usuarioId': userId,
+    };
+
+    try {
+      final response = await _dio.put<String>(
+        path,
+        data: payload,
+      );
+      if (response.statusCode != 200) {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final message = map['message'] ?? 'Ocurrió un error';
+        return Left(message);
+      } else {
+        /*  final map = json.decode(response.data!) as Map<String, dynamic>;
+        final body = map['body']; */
+        return const Right(true);
       }
     } catch (e, stackTrace) {
       await _sentry.captureException(
@@ -539,7 +571,6 @@ class HttpLoansRepository implements LoansRepository {
           filename: img.path.split('/').last,
         )
       });
-
 
       final response = await _dio.put(path, data: formData);
 
@@ -750,7 +781,6 @@ class HttpLoansRepository implements LoansRepository {
       'id': idGarantia,
     };
 
-
     try {
       FormData formData = FormData();
       if (imagen != null && !imagen.contains('files/')) {
@@ -896,7 +926,6 @@ class HttpLoansRepository implements LoansRepository {
       'isRenewed': false,
     };
 
-
     try {
       final response = await _dio.put<String>(path, data: payload);
       if (response.statusCode == 201 || response.statusCode == 200) {
@@ -937,7 +966,6 @@ class HttpLoansRepository implements LoansRepository {
               'imagen2': imagenDos,
               'imagen3': imagenTres,
             };
-
 
             final exito = await updateWarrantyPhotos(
               idGarantia: bienResponse['id'],

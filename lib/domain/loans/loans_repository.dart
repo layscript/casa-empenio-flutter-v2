@@ -58,6 +58,11 @@ abstract class LoansRepository {
     required int id,
   });
 
+  Future<Either<String, bool>> deletePayment({
+    required int id,
+    required int userId,
+  });
+
   Future<bool> savePayment({
     required int codigo,
     required double monto,

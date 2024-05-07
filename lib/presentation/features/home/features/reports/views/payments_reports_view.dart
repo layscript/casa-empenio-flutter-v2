@@ -374,7 +374,7 @@ class _PaymentsReportsViewState extends State<PaymentsReportsView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Prestamos (${reportsBloc.listPayments.length})',
+                          'Pagos (${reportsBloc.listPayments.length})',
                           style: const TextStyle(
                             color: Colors.black,
                             fontWeight: FontWeight.bold,
@@ -572,11 +572,10 @@ class _PaymentsReportsViewState extends State<PaymentsReportsView> {
                                                               ),
                                                               child:
                                                                   DeleteLoanDialog(
-                                                                idLoan: pago
-                                                                        .prestamo
-                                                                        ?.codigo ??
-                                                                    0,
-                                                                isAnular: true,
+                                                                idLoan:
+                                                                    pago.id ??
+                                                                        0,
+                                                                isPayment: true,
                                                               ),
                                                             );
                                                           },

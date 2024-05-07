@@ -188,302 +188,316 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
 
               return SizedBox(
                 width: 320,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 20),
-                    Container(
-                      width: double.infinity,
-                      alignment: Alignment.centerRight,
-                      child: IconButton(
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(
-                          Icons.close,
-                        ),
-                      ),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          liquidar ? 'Liquidar Prestamo' : 'Registrar Pago',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: liquidar ? Colors.red : Colors.black,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: 20),
+                      Container(
+                        width: double.infinity,
+                        alignment: Alignment.centerRight,
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(
+                            Icons.close,
                           ),
                         ),
-                        IconButton(
-                          onPressed: () {
-                            setState(() {
-                              liquidar = !liquidar;
-                            });
-                          },
-                          icon: Icon(
-                            liquidar ? Icons.lock : Icons.lock_clock_sharp,
-                            color: liquidar ? Colors.green : Colors.red,
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            liquidar ? 'Liquidar Prestamo' : 'Registrar Pago',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: liquidar ? Colors.red : Colors.black,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    ItemPaymentLoan(
-                      title: 'Fecha de Pago',
-                      value: DateFormat('dd/MM/yyyy - kk:mm').format(
-                        DateTime.now(),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    ItemPaymentLoan(
-                      title: 'Fecha de Vencimiento',
-                      value: DateFormat('dd/MM/yyyy').format(
-                        loan?.fechaPago == null
-                            ? DateTime.now()
-                            : DateTime.parse(loan!.fechaPago!).toLocal(),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    if (loan?.pagos == null) ...[
-                      const Text(
-                        'Cargando información...',
-                        style: TextStyle(fontSize: 15),
-                      ),
-                      const SizedBox(height: 10),
-                    ],
-                    if (loan?.ganancia != null) ...[
-                      ItemPaymentLoan(
-                        title: 'Deuda Total',
-                        value:
-                            'S/. ${oCcy.format(double.parse(loan!.ganancia.toString()) + double.parse(loan.monto!))}',
-                      ),
-                      const SizedBox(height: 10),
-                      ItemPaymentLoan(
-                        title: 'Deuda Restante',
-                        value: 'S/. ${oCcy.format(montoRestante)}',
-                      ),
-                      const SizedBox(height: 15),
-                    ],
-                    AppTextFormField(
-                      controller: montoCtrl,
-                      labelText: 'Monto a pagar',
-                      keyboardType: TextInputType.number,
-                      preffix: const Text('S/.'),
-                      onChanged: (value) {
-                        if (double.parse(value == '' ? '0' : value) >
-                            montoRestante) {
-                          setState(() {
-                            restante = 0;
-                          });
-                        } else {
-                          setState(() {
-                            restante = montoRestante -
-                                double.parse(value == '' ? '0' : value);
-                          });
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 15),
-                    CheckboxMenuButton(
-                      value: efectivo,
-                      onChanged: (e) {
-                        setState(() {
-                          efectivo = e ?? false;
-                        });
-                      },
-                      child: const Text('Pago en efectivo'),
-                    ),
-                    const Text(
-                      '(Si no se selecciona el check, se considerará como pago en depósito)',
-                      style: TextStyle(fontSize: 12, color: Colors.red),
-                    ),
-                    const SizedBox(height: 15),
-                    ItemPaymentLoan(
-                      title: liquidar ? 'Descuento' : 'Monto restante',
-                      value: 'S/. ${oCcy.format(restante)}',
-                    ),
-                    const SizedBox(height: 16),
-                    if (!liquidar)
-                      restante != 0
-                          ? const Text(
-                              'El monto a pagar no cubre el total de la deuda, se considerará como un pago parcial.',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.red,
-                              ),
-                            )
-                          : const SizedBox(),
-                    const SizedBox(height: 10),
-                    /* if (liquidar) ...[ */
-                    Row(
-                      children: [
-                        for (int i = 0;
-                            i < (selectedPhotosLiquidar?.length ?? 0);
-                            i++)
-                          GestureDetector(
-                            onTap: () {
+                          IconButton(
+                            onPressed: () {
                               setState(() {
-                                selectedPhotosLiquidar?.removeAt(i);
+                                liquidar = !liquidar;
                               });
                             },
-                            child: Stack(
-                              children: [
-                                Image.file(
-                                  File(selectedPhotosLiquidar![i].path),
-                                  width: 100,
-                                  height: 100,
+                            icon: Icon(
+                              liquidar ? Icons.lock : Icons.lock_clock_sharp,
+                              color: liquidar ? Colors.green : Colors.red,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      ItemPaymentLoan(
+                        title: 'Fecha de Pago',
+                        value: DateFormat('dd/MM/yyyy - kk:mm').format(
+                          DateTime.now(),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      ItemPaymentLoan(
+                        title: 'Fecha de Vencimiento',
+                        value: DateFormat('dd/MM/yyyy').format(
+                          loan?.fechaPago == null
+                              ? DateTime.now()
+                              : DateTime.parse(loan!.fechaPago!).toLocal(),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      if (loan?.pagos == null) ...[
+                        const Text(
+                          'Cargando información...',
+                          style: TextStyle(fontSize: 15),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                      if (loan?.ganancia != null) ...[
+                        ItemPaymentLoan(
+                          title: 'Capital',
+                          value:
+                              'S/. ${oCcy.format(double.parse(loan!.monto.toString()))}',
+                        ),
+                        const SizedBox(height: 10),
+                        ItemPaymentLoan(
+                          title: 'Interés',
+                          value:
+                              'S/. ${oCcy.format(double.parse(loan.ganancia.toString()))}',
+                        ),
+                        const SizedBox(height: 10),
+                        ItemPaymentLoan(
+                          title: 'Deuda Total',
+                          value:
+                              'S/. ${oCcy.format(double.parse(loan!.ganancia.toString()) + double.parse(loan.monto!))}',
+                        ),
+                        const SizedBox(height: 10),
+                        ItemPaymentLoan(
+                          title: 'Deuda Restante',
+                          value: 'S/. ${oCcy.format(montoRestante)}',
+                        ),
+                        const SizedBox(height: 15),
+                      ],
+                      AppTextFormField(
+                        controller: montoCtrl,
+                        labelText: 'Monto a pagar',
+                        keyboardType: TextInputType.number,
+                        preffix: const Text('S/.'),
+                        onChanged: (value) {
+                          if (double.parse(value == '' ? '0' : value) >
+                              montoRestante) {
+                            setState(() {
+                              restante = 0;
+                            });
+                          } else {
+                            setState(() {
+                              restante = montoRestante -
+                                  double.parse(value == '' ? '0' : value);
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 15),
+                      CheckboxMenuButton(
+                        value: efectivo,
+                        onChanged: (e) {
+                          setState(() {
+                            efectivo = e ?? false;
+                          });
+                        },
+                        child: const Text('Pago en efectivo'),
+                      ),
+                      const Text(
+                        '(Si no se selecciona el check, se considerará como pago en depósito)',
+                        style: TextStyle(fontSize: 12, color: Colors.red),
+                      ),
+                      const SizedBox(height: 15),
+                      ItemPaymentLoan(
+                        title: liquidar ? 'Descuento' : 'Monto restante',
+                        value: 'S/. ${oCcy.format(restante)}',
+                      ),
+                      const SizedBox(height: 16),
+                      if (!liquidar)
+                        restante != 0
+                            ? const Text(
+                                'El monto a pagar no cubre el total de la deuda, se considerará como un pago parcial.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.red,
                                 ),
-                                Positioned(
-                                  top: 0,
-                                  right: 0,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(10),
-                                      color: Colors.red,
-                                    ),
-                                    child: const Icon(
-                                      Icons.close,
-                                      color: Colors.white,
+                              )
+                            : const SizedBox(),
+                      const SizedBox(height: 10),
+                      /* if (liquidar) ...[ */
+                      Row(
+                        children: [
+                          for (int i = 0;
+                              i < (selectedPhotosLiquidar?.length ?? 0);
+                              i++)
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  selectedPhotosLiquidar?.removeAt(i);
+                                });
+                              },
+                              child: Stack(
+                                children: [
+                                  Image.file(
+                                    File(selectedPhotosLiquidar![i].path),
+                                    width: 100,
+                                    height: 100,
+                                  ),
+                                  Positioned(
+                                    top: 0,
+                                    right: 0,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(10),
+                                        color: Colors.red,
+                                      ),
+                                      child: const Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        if (selectedPhotosLiquidar!.length < 1)
-                          Expanded(
-                            child: SecondaryButton(
-                              onPressed: () async {
-                                final photo = await ImagePicker().pickImage(
-                                  source: ImageSource.camera,
-                                  imageQuality: 70,
-                                );
-
-                                if (photo != null) {
-                                  setState(() {
-                                    selectedPhotosLiquidar?.add(photo);
-                                  });
-                                }
-                              },
-                              child: Text(
-                                'Subir Imagen (${1 - selectedPhotosLiquidar!.length})',
+                                ],
                               ),
                             ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    /* ], */
-                    if (liquidar)
-                      PrimaryButton(
-                        onPressed: (loan?.ganancia != null &&
-                                    montoCtrl.text != "" &&
-                                    montoCtrl.text != "0" &&
-                                    liquidar &&
-                                    selectedPhotosLiquidar!.isNotEmpty) &&
-                                state.loansStatus != LoansStatus.loading
-                            ? () {
-                                showDialog(
-                                  barrierDismissible: false,
-                                  context: context,
-                                  builder: (_) {
-                                    return AlertDialog(
-                                      title: const Text('Liquidar Prestamo'),
-                                      content: const Text(
-                                        '¿Estás seguro que deseas liquidar el préstamo?, esta acción cerrará la deuda y no se podrá deshacer',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.normal,
-                                        ),
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          style: const ButtonStyle(
-                                            backgroundColor:
-                                                MaterialStatePropertyAll(
-                                              Colors.red,
-                                            ),
-                                          ),
-                                          onPressed: () =>
-                                              Navigator.pop(context),
-                                          child: const Text(
-                                            'Regresar',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ),
-                                        TextButton(
-                                          style: const ButtonStyle(
-                                            backgroundColor:
-                                                MaterialStatePropertyAll(
-                                              Colors.blue,
-                                            ),
-                                          ),
-                                          onPressed: state.loansStatus !=
-                                                  LoansStatus.loading
-                                              ? () {
-                                                  Navigator.pop(context);
-                                                  context.read<LoansBloc>().add(
-                                                        SaveSettlementLoan(
-                                                          idPrestamo: widget
-                                                                  .nroPrestamo ??
-                                                              0,
-                                                          monto: montoCtrl.text,
-                                                          userId: authBloc
-                                                              .user.id
-                                                              .toString(),
-                                                          codigo:
-                                                              loan?.codigo ?? 0,
-                                                          photos:
-                                                              selectedPhotosLiquidar,
-                                                          efectivo: efectivo,
-                                                        ),
-                                                      );
-                                                }
-                                              : null,
-                                          child: const Text(
-                                            'Guardar',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        )
-                                      ],
-                                    );
-                                  },
-                                );
-                              }
-                            : null,
-                        child: const Text('Liquidar'),
+                          if (selectedPhotosLiquidar!.length < 1)
+                            Expanded(
+                              child: SecondaryButton(
+                                onPressed: () async {
+                                  final photo = await ImagePicker().pickImage(
+                                    source: ImageSource.camera,
+                                    imageQuality: 70,
+                                  );
+                
+                                  if (photo != null) {
+                                    setState(() {
+                                      selectedPhotosLiquidar?.add(photo);
+                                    });
+                                  }
+                                },
+                                child: Text(
+                                  'Subir Imagen (${1 - selectedPhotosLiquidar!.length})',
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                    if (!liquidar)
-                      PrimaryButton(
-                        onPressed: (loan?.ganancia != null &&
-                                    montoCtrl.text != "" &&
-                                    montoCtrl.text != "0" &&
-                                    selectedPhotosLiquidar!.isNotEmpty) &&
-                                state.loansStatus != LoansStatus.loading
-                            ? () {
-                                context.read<LoansBloc>().add(
-                                      SavePaymentLoan(
-                                        idPrestamo: widget.nroPrestamo ?? 0,
-                                        monto: montoCtrl.text,
-                                        userId: authBloc.user.id.toString(),
-                                        photos: selectedPhotosLiquidar,
-                                        montoRestante: montoRestante.toString(),
-                                        codigo: loan?.codigo ?? 0,
-                                        efectivo: efectivo,
-                                      ),
-                                    );
-                              }
-                            : null,
-                        child: const Text(
-                          'Registrar Pago',
+                      const SizedBox(height: 20),
+                      /* ], */
+                      if (liquidar)
+                        PrimaryButton(
+                          onPressed: (loan?.ganancia != null &&
+                                      montoCtrl.text != "" &&
+                                      montoCtrl.text != "0" &&
+                                      liquidar &&
+                                      selectedPhotosLiquidar!.isNotEmpty) &&
+                                  state.loansStatus != LoansStatus.loading
+                              ? () {
+                                  showDialog(
+                                    barrierDismissible: false,
+                                    context: context,
+                                    builder: (_) {
+                                      return AlertDialog(
+                                        title: const Text('Liquidar Prestamo'),
+                                        content: const Text(
+                                          '¿Estás seguro que deseas liquidar el préstamo?, esta acción cerrará la deuda y no se podrá deshacer',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.normal,
+                                          ),
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            style: const ButtonStyle(
+                                              backgroundColor:
+                                                  MaterialStatePropertyAll(
+                                                Colors.red,
+                                              ),
+                                            ),
+                                            onPressed: () =>
+                                                Navigator.pop(context),
+                                            child: const Text(
+                                              'Regresar',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                          TextButton(
+                                            style: const ButtonStyle(
+                                              backgroundColor:
+                                                  MaterialStatePropertyAll(
+                                                Colors.blue,
+                                              ),
+                                            ),
+                                            onPressed: state.loansStatus !=
+                                                    LoansStatus.loading
+                                                ? () {
+                                                    Navigator.pop(context);
+                                                    context.read<LoansBloc>().add(
+                                                          SaveSettlementLoan(
+                                                            idPrestamo: widget
+                                                                    .nroPrestamo ??
+                                                                0,
+                                                            monto: montoCtrl.text,
+                                                            userId: authBloc
+                                                                .user.id
+                                                                .toString(),
+                                                            codigo:
+                                                                loan?.codigo ?? 0,
+                                                            photos:
+                                                                selectedPhotosLiquidar,
+                                                            efectivo: efectivo,
+                                                          ),
+                                                        );
+                                                  }
+                                                : null,
+                                            child: const Text(
+                                              'Guardar',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          )
+                                        ],
+                                      );
+                                    },
+                                  );
+                                }
+                              : null,
+                          child: const Text('Liquidar'),
                         ),
-                      )
-                  ],
+                      if (!liquidar)
+                        PrimaryButton(
+                          onPressed: (loan?.ganancia != null &&
+                                      montoCtrl.text != "" &&
+                                      montoCtrl.text != "0" &&
+                                      selectedPhotosLiquidar!.isNotEmpty) &&
+                                  state.loansStatus != LoansStatus.loading
+                              ? () {
+                                  context.read<LoansBloc>().add(
+                                        SavePaymentLoan(
+                                          idPrestamo: widget.nroPrestamo ?? 0,
+                                          monto: montoCtrl.text,
+                                          userId: authBloc.user.id.toString(),
+                                          photos: selectedPhotosLiquidar,
+                                          montoRestante: montoRestante.toString(),
+                                          codigo: loan?.codigo ?? 0,
+                                          efectivo: efectivo,
+                                        ),
+                                      );
+                                }
+                              : null,
+                          child: const Text(
+                            'Registrar Pago',
+                          ),
+                        )
+                    ],
+                  ),
                 ),
               );
             }

@@ -162,6 +162,15 @@ class AnularLoanId extends LoansEvent {
   final String userId;
 }
 
+class DeletePaymentLoanId extends LoansEvent {
+  const DeletePaymentLoanId({
+    required this.paymentId,
+    required this.userId,
+  });
+  final int paymentId;
+  final String userId;
+}
+
 class UpdateStatusLoanById extends LoansEvent {
   const UpdateStatusLoanById({
     required this.idLoan,
