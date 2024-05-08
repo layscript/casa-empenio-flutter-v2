@@ -131,6 +131,7 @@ class LoansStepState extends Equatable {
     this.listWarranty,
     this.addListWarranty = false,
     this.photoWarranty,
+    this.cajaId,
   });
 
   final LoansStepStatus loansStepStatus;
@@ -183,6 +184,8 @@ class LoansStepState extends Equatable {
   final List<WarrantyState>? listWarranty;
   final bool addListWarranty;
   final List<XFile>? photoWarranty;
+
+  final int? cajaId;
 
   //
 
@@ -291,6 +294,7 @@ class LoansStepState extends Equatable {
     String? totalProfit,
     List<XFile>? photoWarranty,
     String? placa,
+    int? cajaId,
   }) =>
       LoansStepState(
         loansStepStatus: loansStepStatus ?? this.loansStepStatus,
@@ -339,6 +343,7 @@ class LoansStepState extends Equatable {
         listCategories: listCategories ?? this.listCategories,
         categories: categories ?? this.categories,
         placa: placa ?? this.placa,
+        cajaId: cajaId ?? this.cajaId,
       );
 
   String titleIndexLoans() {
@@ -471,5 +476,6 @@ class LoansStepState extends Equatable {
         listCategories,
         categories,
         placa,
+        cajaId,
       ];
 }

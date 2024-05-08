@@ -494,6 +494,7 @@ class _LoanClientViewState extends State<LoanClientView> {
                                             value: context.read<LoansBloc>(),
                                             child: DeleteLoanDialog(
                                               idLoan: prestamo?.codigo ?? 0,
+                                              idCaja: prestamo?.caja?.id ?? 0,
                                             ),
                                           ),
                                         );

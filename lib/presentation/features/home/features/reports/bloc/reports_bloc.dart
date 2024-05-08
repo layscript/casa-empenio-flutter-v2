@@ -172,7 +172,6 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
         double partialUtilityPayment = 0.0;
         double fullPaymentUtility = 0.0;
 
-
         // Filtrar pagos no cancelados
         final filterListPayments = listPayments.where((element) {
           if (element.prestamo?.estado != 'CANCELADO') {
@@ -292,7 +291,6 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     GetLoadInitialDataContracts event,
     Emitter<ReportsState> emit,
   ) async {
-
     emit(
       state.copyWith(
         statusIncreases: ReportsStatus.loading,
@@ -423,14 +421,21 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     CancelReportLoan event,
     Emitter<ReportsState> emit,
   ) async {
-    // Cancelar prestamo
-    //await _reportsRepository.cancelLoan(id: event.id);
-    emit(state.copyWith(statusCanceled: ReportsStatus.loading));
+    /* emit(state.copyWith(statusCanceled: ReportsStatus.loading));
     final result = await _reportsRepository.cancelLoan(
       id: event.id,
     );
-    /*  await Future.delayed(const Duration(seconds: 2));
-    final result = true; */
+    if (result) {
+      emit(state.copyWith(statusCanceled: ReportsStatus.success));
+    } else {
+      emit(state.copyWith(statusCanceled: ReportsStatus.error));
+    } */
+
+    emit(state.copyWith(statusCanceled: ReportsStatus.loading));
+    final result = await _loansRepository.deleteLoan(
+      idLoan: event.loanId,
+      userId: event.userId,
+    );
     if (result) {
       emit(state.copyWith(statusCanceled: ReportsStatus.success));
     } else {

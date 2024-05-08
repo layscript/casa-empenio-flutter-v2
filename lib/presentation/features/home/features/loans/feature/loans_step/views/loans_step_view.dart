@@ -74,6 +74,7 @@ class LoansStepView extends StatelessWidget {
           preferences: context.read(),
           categoriesRepository: context.read(),
           sentry: context.read(),
+          cajaRepository: context.read(),
         )..add(GetLastCodeLoans()),
         child: Builder(
           builder: (context) {

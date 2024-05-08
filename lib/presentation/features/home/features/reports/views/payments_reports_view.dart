@@ -576,6 +576,7 @@ class _PaymentsReportsViewState extends State<PaymentsReportsView> {
                                                                     pago.id ??
                                                                         0,
                                                                 isPayment: true,
+                                                                idCaja: pago.caja?.id ?? 0
                                                               ),
                                                             );
                                                           },

@@ -1,15 +1,22 @@
-import 'dart:developer';
-
 import 'package:casa_empenio_pe/domain/caja/caja_entity.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
-import 'package:casa_empenio_pe/presentation/features/home/features/cajas/bloc/cajas_bloc.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/cajas/widgets/leading_download_cajas.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/cajas/widgets/widgets.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 
-class MovementsView extends StatelessWidget {
+final list = [
+  'Venta',
+  'Préstamo',
+  'Pago personal',
+  'Pago Otros',
+  'Pago',
+  'Gasto',
+  'Cierre de caja',
+  'Aumento de préstamo',
+  'Apertura de caja',
+];
+
+class MovementsView extends StatefulWidget {
   const MovementsView({
     super.key,
     required this.id,
@@ -22,95 +29,92 @@ class MovementsView extends StatelessWidget {
   final bool isClosed;
 
   @override
+  State<MovementsView> createState() => _MovementsViewState();
+}
+
+class _MovementsViewState extends State<MovementsView>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    _tabController = TabController(length: 2, vsync: this);
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _tabController.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final ingresos = widget.movimientos.where((e) => e.suma == true).toList();
+    final egresos = widget.movimientos.where((e) => e.suma != true).toList();
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.blue,
         title: const Text('Movimientos de Caja'),
         actions: [
           LeadingDownloadCajas(
-            movimientos: movimientos,
+            movimientos: widget.movimientos,
           ),
         ],
       ),
-      body: SingleChildScrollView(
+      body: Padding(
+        padding: const EdgeInsets.all(15),
         child: Column(
           children: [
-            ListView.builder(
-              shrinkWrap: true,
-              itemCount: movimientos.length,
-              physics: const NeverScrollableScrollPhysics(),
-              itemBuilder: (context, index) {
-                final movimiento = movimientos[index];
-
-                return ExpansionTile(
-                  onExpansionChanged: (value) {
-                    log('clicked_movimiento: ${movimiento.toString()}');
-                  },
-                  title: Text(
-                    'Monto: s/ ${movimiento.monto}',
+            Container(
+              height: 45,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(
+                  25.0,
+                ),
+              ),
+              child: TabBar(
+                controller: _tabController,
+                indicator: BoxDecoration(
+                  borderRadius: BorderRadius.circular(
+                    25.0,
                   ),
-                  subtitle: Text(
-                    'Fecha: ${DateFormat('dd/MM/yyyy - hh:mm').format(DateTime.parse(movimiento.createdAt ?? '').toLocal())}',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.primaryText,
-                    ),
+                  color: Colors.green,
+                ),
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.black,
+                tabs: const [
+                  Tab(
+                    text: 'Ingresos',
                   ),
-                  childrenPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                  ).copyWith(
-                    bottom: 20,
+                  Tab(
+                    text: 'Egresos',
                   ),
-                  children: [
-                    Row(
-                      children: [
-                        const Text(
-                          'Tipo: ',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(movimiento?.tipo?.descripcion ?? ''),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        const Text(
-                          'Observaciones: ',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(movimiento?.observaciones ?? ''),
-                      ],
-                    ),
-                    /* if (!isClosed) ...[
-                      const SizedBox(height: 15),
-                      CupertinoButton(
-                        color: AppColors.red,
-                        child: Text('Eliminar Movimiento'),
-                        onPressed: () {
-                          context.read<CajasBloc>().add(
-                                DeleteMovement(
-                                  id: id,
-                                ),
-                              );
-                          Navigator.pop(context, true);
-                        },
-                      ),
-                    ] */
-                  ],
-                );
-              },
+                ],
+              ),
+            ),
+            const SizedBox(height: 5),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  RevenueBox(
+                    movimientos: ingresos,
+                    types: list,
+                  ),
+                  CajaEgresos(
+                    movimientos: egresos,
+                    types: list,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: isClosed
+      /*   bottomNavigationBar: isClosed
           ? null
           : Builder(
               builder: (context) {
@@ -156,6 +160,34 @@ class MovementsView extends StatelessWidget {
                 );
               },
             ),
+    */
+    );
+  }
+}
+
+class CustomChip extends StatelessWidget {
+  const CustomChip({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+  });
+  final String label;
+  final bool selected;
+  final Function(bool)? onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return ChoiceChip(
+      label: Text(
+        label,
+        style: TextStyle(
+          color: selected ? Colors.white : Colors.black,
+        ),
+      ),
+      selected: selected,
+      onSelected: onSelected,
+      selectedColor: Colors.blue[400],
     );
   }
 }

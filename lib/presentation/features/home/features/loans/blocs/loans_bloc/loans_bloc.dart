@@ -203,6 +203,7 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
         userId: event.userId,
         photos: null,
         efectivo: event.efectivo,
+        cajaId: state.cajaId,
       );
 
       final resultLoand = await _loansRepository.payOffLoan(
@@ -232,6 +233,7 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
         userId: event.userId,
         photos: event.photos,
         efectivo: event.efectivo,
+        cajaId: state.cajaId,
       );
 
       if (resultPayment) {
@@ -262,6 +264,7 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
       userId: event.userId,
       photos: null,
       efectivo: event.efectivo,
+      cajaId: state.cajaId,
     );
 
     final resultLoand = await _loansRepository.payOffLoan(
@@ -366,6 +369,7 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
         state.copyWith(
           openBox: rigth == null ? true : false,
           loansStatus: LoansStatus.loaded,
+          cajaId: rigth?.id,
         ),
       ),
     );
@@ -413,6 +417,7 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     // Renovar
     if (event.isNuevo) {
       final result = await _loansRepository.saveLoan(
+        cajaId: state.cajaId,
         plazoDias: event.plazoDias,
         interes: event.interes,
         fechaPago: event.fechaPago,
@@ -462,15 +467,37 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     Emitter<LoansState> emit,
   ) async {
     emit(state.copyWith(loansStatus: LoansStatus.deleteLoanLoading));
-    final result = await _loansRepository.deleteLoan(
-      idLoan: event.idLoan,
-      userId: event.userId,
+
+    final getCajaOfTheDay = await _cajaRepository.getCajaOfTheDay();
+
+    await getCajaOfTheDay.fold(
+      (error) async => emit(
+        state.copyWith(loansStatus: LoansStatus.deleteLoanError),
+      ),
+      (caja) async {
+        if (caja?.id == event.idCaja) {
+          final result = await _loansRepository.deleteLoan(
+            idLoan: event.idLoan,
+            userId: event.userId,
+          );
+          if (result) {
+            emit(state.copyWith(loansStatus: LoansStatus.deleteLoanSuccess));
+          } else {
+            emit(state.copyWith(loansStatus: LoansStatus.deleteLoanError));
+          }
+        } else {
+          emit(
+            state.copyWith(
+              loansStatus: LoansStatus.deleteLoanError,
+              error:
+                  'No se puede eliminar porque no pertenece a la caja actual',
+            ),
+          );
+        }
+      },
     );
-    if (result) {
-      emit(state.copyWith(loansStatus: LoansStatus.deleteLoanSuccess));
-    } else {
-      emit(state.copyWith(loansStatus: LoansStatus.deleteLoanError));
-    }
+
+    /*   */
   }
 
   Future<void> _onAnularLoanId(
@@ -502,29 +529,53 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
   ) async {
     emit(state.copyWith(loansStatus: LoansStatus.deleteLoanLoading));
     try {
-      final result = await _loansRepository.deletePayment(
-        userId: int.parse(event.userId),
-        id: event.paymentId,
-      );
+      final getCajaOfTheDay = await _cajaRepository.getCajaOfTheDay();
 
-      result.fold(
-        (error) => emit(
+      await getCajaOfTheDay.fold(
+        (error) async => emit(
           state.copyWith(
             loansStatus: LoansStatus.deleteLoanError,
             error: error,
           ),
         ),
-        (success) => emit(
-          state.copyWith(
-            loansStatus: LoansStatus.deleteLoanSuccess,
-          ),
-        ),
+        (caja) async {
+          print('cajaa 1: ${caja?.id}');
+          print('cajaa 2: ${event.idCaja}');
+
+          if (caja?.id == event.idCaja) {
+            final result = await _loansRepository.deletePayment(
+              userId: int.parse(event.userId),
+              id: event.paymentId,
+            );
+
+            result.fold(
+              (error) => emit(
+                state.copyWith(
+                  loansStatus: LoansStatus.deleteLoanError,
+                  error: error,
+                ),
+              ),
+              (success) => emit(
+                state.copyWith(
+                  loansStatus: LoansStatus.deleteLoanSuccess,
+                ),
+              ),
+            );
+          } else {
+            emit(
+              state.copyWith(
+                loansStatus: LoansStatus.deleteLoanError,
+                error:
+                    'No se puede eliminar porque no pertenece a la caja actual',
+              ),
+            );
+          }
+        },
       );
     } catch (e) {
       emit(
         state.copyWith(
-          loansStatus: LoansStatus.deleteLoanError,
-          error: e.toString(),
+          loansStatus: LoansStatus.deleteLoanSuccess,
         ),
       );
     }

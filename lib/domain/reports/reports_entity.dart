@@ -11,6 +11,7 @@ class ReportsPaymentEntity {
     required this.updatedAt,
     required this.createdAt,
     required this.efectivo,
+    required this.caja,
   });
 
   final int? id;
@@ -22,6 +23,7 @@ class ReportsPaymentEntity {
   final String? updatedAt;
   final String? createdAt;
   final bool? efectivo;
+  final CajaEntity? caja;
 
   static List<ReportsPaymentEntity> listGetReportsPaymentFromMap(
     List<dynamic> list,
@@ -49,6 +51,10 @@ class ReportsPaymentEntity {
       updatedAt: map['updatedAt'],
       createdAt: map['createdAt'],
       efectivo: map['efectivo'],
+      caja: CajaEntity.getCajaFromMap(
+        map['caja'],
+        false,
+      ),
     );
   }
 

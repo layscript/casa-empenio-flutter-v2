@@ -148,9 +148,11 @@ class DeleteLoanById extends LoansEvent {
   const DeleteLoanById({
     required this.idLoan,
     required this.userId,
+    required this.idCaja,
   });
   final int idLoan;
   final String userId;
+  final int idCaja;
 }
 
 class AnularLoanId extends LoansEvent {
@@ -166,9 +168,11 @@ class DeletePaymentLoanId extends LoansEvent {
   const DeletePaymentLoanId({
     required this.paymentId,
     required this.userId,
+    required this.idCaja,
   });
   final int paymentId;
   final String userId;
+  final int idCaja;
 }
 
 class UpdateStatusLoanById extends LoansEvent {

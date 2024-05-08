@@ -15,12 +15,14 @@ part 'loans_step_state.dart';
 
 class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
   LoansStepBloc({
+    required CajaRepository cajaRepository,
     required LoansRepository loansRepository,
     required InterestsRepository interestsRepository,
     required CategoriesRepository categoriesRepository,
     required Preferences preferences,
     required SentryClient sentry,
-  })  : _loansRepository = loansRepository,
+  })  : _cajaRepository = cajaRepository,
+        _loansRepository = loansRepository,
         _interestsRepository = interestsRepository,
         _preferences = preferences,
         _categoriesRepository = categoriesRepository,
@@ -77,6 +79,7 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
     on<SaveAllLoan>(_onSaveAllLoan);
   }
 
+  final CajaRepository _cajaRepository;
   final LoansRepository _loansRepository;
   final InterestsRepository _interestsRepository;
   final CategoriesRepository _categoriesRepository;
@@ -615,6 +618,7 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
       _loansRepository.getLastCode(),
       _interestsRepository.getInterest(),
       _categoriesRepository.getCategories(),
+      _cajaRepository.getCajaOfTheDay(),
     ]);
 
     final formattedDate = _onGetToday();
@@ -624,6 +628,8 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
 
     final resultListCategories =
         result[2] as Either<String, List<CategoriesEntity>>;
+
+    final resultCajaOfTheDay = result[3] as Either<String, CajaEntity?>;
 
     resultLastCode.fold(
       (error) => emit(
@@ -668,6 +674,22 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
         state.copyWith(
           loansStepStatus: LoansStepStatus.loaded,
           listCategories: listCategories,
+          startDate: formattedDate,
+        ),
+      ),
+    );
+
+    resultCajaOfTheDay.fold(
+      (error) => emit(
+        state.copyWith(
+          loansStepStatus: LoansStepStatus.error,
+          message: error,
+        ),
+      ),
+      (caja) => emit(
+        state.copyWith(
+          loansStepStatus: LoansStepStatus.loaded,
+          cajaId: caja?.id,
           startDate: formattedDate,
         ),
       ),
@@ -775,8 +797,8 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
         }).toList();
       }
 
-
       final result = await _loansRepository.saveLoan(
+        cajaId: state.cajaId,
         renew: false,
         plazoDias: int.parse(
           loansLocalState?.deadline ?? state.deadlines!,

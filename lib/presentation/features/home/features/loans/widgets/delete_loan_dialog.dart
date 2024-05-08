@@ -11,10 +11,12 @@ class DeleteLoanDialog extends StatelessWidget {
   const DeleteLoanDialog({
     super.key,
     required this.idLoan,
+    required this.idCaja,
     this.isPayment = false,
   });
   final int idLoan;
   final bool isPayment;
+  final int idCaja;
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +33,7 @@ class DeleteLoanDialog extends StatelessWidget {
               context,
               state.error ?? 'Ocurrió un problema',
             );
+            Navigator.pop(context, false);
           }
 
           if (state.isLoansDeleteSuccess) {
@@ -84,6 +87,7 @@ class DeleteLoanDialog extends StatelessWidget {
                       DeleteLoanById(
                         idLoan: idLoan,
                         userId: preferences.token?.id.toString() ?? '0',
+                        idCaja: idCaja,
                       ),
                     );
               },
@@ -94,25 +98,27 @@ class DeleteLoanDialog extends StatelessWidget {
                 ),
               ),
             ),
-          TextButton(
-            style: TextButton.styleFrom(
-              backgroundColor: AppColors.green,
-            ),
-            onPressed: () {
-              context.read<LoansBloc>().add(
-                    DeletePaymentLoanId(
-                      paymentId: idLoan,
-                      userId: preferences.token?.id.toString() ?? '0',
-                    ),
-                  );
-            },
-            child: const Text(
-              'Si, Eliminar Pago',
-              style: TextStyle(
-                color: AppColors.white,
+          if (isPayment)
+            TextButton(
+              style: TextButton.styleFrom(
+                backgroundColor: AppColors.green,
+              ),
+              onPressed: () {
+                context.read<LoansBloc>().add(
+                      DeletePaymentLoanId(
+                        paymentId: idLoan,
+                        userId: preferences.token?.id.toString() ?? '0',
+                        idCaja: idCaja,
+                      ),
+                    );
+              },
+              child: const Text(
+                'Si, Eliminar Pago',
+                style: TextStyle(
+                  color: AppColors.white,
+                ),
               ),
             ),
-          ),
         ],
       ),
     );

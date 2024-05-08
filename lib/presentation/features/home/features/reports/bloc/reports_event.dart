@@ -61,8 +61,12 @@ class GetDetailsReportPay extends ReportsEvent {
 }
 
 class CancelReportLoan extends ReportsEvent {
-  const CancelReportLoan(this.id);
-  final int id;
+  const CancelReportLoan({
+    required this.loanId,
+    required this.userId,
+  });
+  final int loanId;
+  final String userId;
 }
 
 // TAGS

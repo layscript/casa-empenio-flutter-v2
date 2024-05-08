@@ -25,6 +25,7 @@ abstract class LoansRepository {
     required List<Map<String, dynamic>> bienes,
     required String usuarioId,
     required bool renew,
+    required int? cajaId,
   });
 
   Future<Either<String, bool>> updateLoan({
@@ -69,6 +70,7 @@ abstract class LoansRepository {
     required String userId,
     required List<XFile>? photos,
     required bool? efectivo,
+    required int? cajaId,
   });
 
   Future<bool> payOffLoan({

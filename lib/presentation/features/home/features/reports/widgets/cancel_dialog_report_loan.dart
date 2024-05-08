@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/domain/preferences/preferences.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/reports/bloc/reports_bloc.dart';
@@ -10,6 +11,8 @@ class CancelDialogReportLoan extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final preferences = context.read<Preferences>().token;
+
     return BlocListener<ReportsBloc, ReportsState>(
       listener: (context, state) {
         if (state.isReportsCanceledLoading) {
@@ -23,7 +26,7 @@ class CancelDialogReportLoan extends StatelessWidget {
                 return AlertDialog(
                   title: const Text('Error'),
                   content: const Text(
-                    'Ocurrió un error al cancelar el prestamo',
+                    'Ocurrió un error al eliminar el prestamo',
                     style: TextStyle(
                         color: AppColors.primaryText,
                         fontWeight: FontWeight.normal),
@@ -47,7 +50,7 @@ class CancelDialogReportLoan extends StatelessWidget {
                 return AlertDialog(
                   title: const Text('Mensaje'),
                   content: const Text(
-                    'Prestamo cancelado correctamente',
+                    'Prestamo eliminado correctamente',
                     style: TextStyle(
                         color: AppColors.primaryText,
                         fontWeight: FontWeight.normal),
@@ -68,9 +71,9 @@ class CancelDialogReportLoan extends StatelessWidget {
         }
       },
       child: AlertDialog(
-        title: const Text('Cancelar Prestamo'),
+        title: const Text('Eliminar Prestamo'),
         content: const Text(
-          '¿Está seguro que desea cancelar el prestamo?',
+          '¿Está seguro que desea eliminar el prestamo?',
           style: TextStyle(
             color: AppColors.primaryText,
             fontWeight: FontWeight.normal,
@@ -90,12 +93,13 @@ class CancelDialogReportLoan extends StatelessWidget {
             onPressed: () {
               context.read<ReportsBloc>().add(
                     CancelReportLoan(
-                      codigo,
+                      loanId: codigo,
+                      userId: preferences?.id.toString() ?? '1',
                     ),
                   );
             },
             child: const Text(
-              'Guardar',
+              'Si, Eliminar',
             ),
           ),
         ],

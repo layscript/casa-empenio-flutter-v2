@@ -130,6 +130,7 @@ class HttpLoansRepository implements LoansRepository {
     required List<Map<String, dynamic>> bienes,
     required String usuarioId,
     required bool renew,
+    required int? cajaId,
   }) async {
     const path = '/prestamos/prestamos';
 
@@ -169,6 +170,7 @@ class HttpLoansRepository implements LoansRepository {
       'bienesGarantia': bienes,
       'usuarioId': usuarioId,
       'isRenewed': renew,
+      'cajaId': cajaId,
     };
 
     try {
@@ -269,12 +271,14 @@ class HttpLoansRepository implements LoansRepository {
     required String userId,
     required List<XFile>? photos,
     required bool? efectivo,
+    required int? cajaId,
   }) async {
     const path = '/prestamos/pagos';
     final payload = {
       'monto': monto,
       'prestamoId': codigo,
       'usuarioId': userId,
+      'cajaId': cajaId,
     };
 
     if (efectivo != null) {
@@ -1003,7 +1007,7 @@ class HttpLoansRepository implements LoansRepository {
     required int idLoan,
     required String userId,
   }) async {
-    final path = '/prestamos/prestamos/$idLoan';
+    final path = '/prestamos/prestamos/$idLoan/$userId';
     try {
       final response = await _dio.delete<String>(path);
       if (response.statusCode != 200) {

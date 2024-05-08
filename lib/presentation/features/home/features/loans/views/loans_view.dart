@@ -633,12 +633,14 @@ class _LoansViewState extends State<LoansView> {
                                                       if (result != null &&
                                                           mounted) {
                                                         //TODO :: Cargar todo
-                                                        loansBloc.add(
-                                                          GetLoansByDni(
-                                                            value: state
-                                                                .searchText,
-                                                          ),
-                                                        );
+                                                        context
+                                                            .read<LoansBloc>()
+                                                            .add(
+                                                              GetLoansByDni(
+                                                                value: state
+                                                                    .searchText,
+                                                              ),
+                                                            );
                                                       }
                                                     },
                                                     icon: const Icon(
@@ -679,13 +681,14 @@ class _LoansViewState extends State<LoansView> {
                                                           'resuuult: ${result}');
                                                       if (result != null &&
                                                           mounted) {
-                                                        //TODO :: Cargar todo
-                                                        loansBloc.add(
-                                                          GetLoansByDni(
-                                                            value: state
-                                                                .searchText,
-                                                          ),
-                                                        );
+                                                        context
+                                                            .read<LoansBloc>()
+                                                            .add(
+                                                              GetLoansByDni(
+                                                                value: state
+                                                                    .searchText,
+                                                              ),
+                                                            );
                                                       }
                                                     },
                                                     icon: Icon(
@@ -881,18 +884,37 @@ class _LoansViewState extends State<LoansView> {
                                                               idLoan: prestamo
                                                                       ?.codigo ??
                                                                   0,
+                                                              idCaja: prestamo
+                                                                      ?.caja
+                                                                      ?.id ??
+                                                                  0,
                                                             ),
                                                           ),
                                                         );
 
                                                         if (result != null &&
                                                             mounted) {
-                                                          loansBloc.add(
-                                                            GetLoansByDni(
-                                                              value: state
-                                                                  .searchText,
-                                                            ),
-                                                          );
+                                                          /*  getData(
+                                                            state.typeSearch,
+                                                            state.searchText,
+                                                          ); */
+                                                          if (state
+                                                                  .typeSearch ==
+                                                              true) {
+                                                            loansBloc.add(
+                                                              GetLoansByDni(
+                                                                value: state
+                                                                    .searchText,
+                                                              ),
+                                                            );
+                                                          } else {
+                                                            loansBloc.add(
+                                                              GetLoansByText(
+                                                                value: state
+                                                                    .searchText,
+                                                              ),
+                                                            );
+                                                          }
                                                         }
                                                       }
                                                     },
@@ -929,12 +951,14 @@ class _LoansViewState extends State<LoansView> {
 
                                                       if (result != null &&
                                                           mounted) {
-                                                        loansBloc.add(
-                                                          GetLoansByDni(
-                                                            value: state
-                                                                .searchText,
-                                                          ),
-                                                        );
+                                                        context
+                                                            .read<LoansBloc>()
+                                                            .add(
+                                                              GetLoansByDni(
+                                                                value: state
+                                                                    .searchText,
+                                                              ),
+                                                            );
                                                       }
                                                     },
                                                     icon: const Icon(

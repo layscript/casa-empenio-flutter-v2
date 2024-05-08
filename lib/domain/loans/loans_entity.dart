@@ -32,6 +32,7 @@ class LoansEntity {
     required this.eliminado,
     required this.bienesGarantia,
     required this.isRenewed,
+    required this.caja,
   });
 
   final int? codigo;
@@ -62,6 +63,7 @@ class LoansEntity {
   final List<CreditNoteEntity>? notaCredito;
   final List<WarrantyEntity>? bienesGarantia;
   final bool? isRenewed;
+  final CajaEntity? caja;
 
   @override
   String toString() {
@@ -92,6 +94,7 @@ notaCredito: $notaCredito,
 bienesGarantia: $bienesGarantia,
 eliminado: $eliminado,
 isRenewed: $isRenewed,
+caja: $caja,
 ''';
   }
 
@@ -150,6 +153,10 @@ isRenewed: $isRenewed,
             )
           : null,
       isRenewed: map['isRenewed'] as bool?,
+      caja: CajaEntity.getCajaFromMap(
+        map['caja'],
+        false,
+      ),
     );
   }
 }

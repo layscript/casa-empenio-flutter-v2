@@ -161,6 +161,9 @@ class _CajasViewState extends State<CajasView> {
                                     ),
                                     const SizedBox(height: 10),
                                     Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.end,
                                       children: [
                                         const Text(
                                           'Observaciones: ',
@@ -168,9 +171,12 @@ class _CajasViewState extends State<CajasView> {
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        const Spacer(),
-                                        Text(
-                                          '${caja?.observaciones}',
+                                        const SizedBox(width: 20),
+                                        Expanded(
+                                          flex: 3,
+                                          child: Text(
+                                            '${caja?.observaciones}',
+                                          ),
                                         ),
                                       ],
                                     ),

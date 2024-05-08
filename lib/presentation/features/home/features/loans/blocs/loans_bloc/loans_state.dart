@@ -58,6 +58,7 @@ class LoansState extends Equatable {
     this.error,
     this.loanDetails,
     this.listCategories,
+    this.cajaId,
   });
 
   final bool? openBox;
@@ -73,6 +74,7 @@ class LoansState extends Equatable {
   final String? error;
   final LoansEntity? loanDetails;
   final List<CategoriesEntity>? listCategories;
+  final int? cajaId;
 
   bool get isLoadingDetailsLoan =>
       loansStatus == LoansStatus.loadingDetailsLoan;
@@ -159,6 +161,7 @@ class LoansState extends Equatable {
     LoansEntity? loanDetails,
     String? error,
     List<CategoriesEntity>? listCategories,
+    int? cajaId,
   }) =>
       LoansState(
         openBox: openBox,
@@ -174,6 +177,7 @@ class LoansState extends Equatable {
         loanDetails: loanDetails ?? this.loanDetails,
         listCategories: listCategories ?? this.listCategories,
         loansRenewStatus: loansRenewStatus ?? this.loansRenewStatus,
+        cajaId: cajaId ?? this.cajaId,
       );
 
   @override
@@ -191,5 +195,6 @@ class LoansState extends Equatable {
         loanDetails,
         listCategories,
         loansRenewStatus,
+        cajaId,
       ];
 }
