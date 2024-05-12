@@ -17,6 +17,7 @@ class HistorialView extends StatelessWidget {
         userRepository: context.read(),
         historialRepository: context.read(),
         salesRepository: context.read(),
+        preferences: context.read(),
       )..add(GetAllHistorialEvent()),
       child: Builder(builder: (context) {
         return BlocBuilder<HistorialBloc, HistorialState>(

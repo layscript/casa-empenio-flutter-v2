@@ -32,6 +32,7 @@ class SaveProduct extends ProductsEvent {
     required this.imagenDos,
     //required this.imagenTres,
     required this.cantidad,
+    required this.sucursalId,
   });
 
   final int? id;
@@ -46,6 +47,7 @@ class SaveProduct extends ProductsEvent {
   final String? imagenDos;
   //final String? imagenTres;
   final int? cantidad;
+  final int sucursalId;
 }
 
 class SaveVehiculo extends ProductsEvent {
@@ -66,6 +68,7 @@ class SaveVehiculo extends ProductsEvent {
     required this.anio,
     required this.motor,
     required this.carroceria,
+    required this.sucursalId,
   });
 
   final int? id;
@@ -84,6 +87,7 @@ class SaveVehiculo extends ProductsEvent {
   final String? anio;
   final String? motor;
   final String? carroceria;
+  final int sucursalId;
 }
 
 /* class GetInterests extends InterestsEvent {}

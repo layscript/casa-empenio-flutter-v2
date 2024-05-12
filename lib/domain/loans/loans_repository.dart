@@ -26,6 +26,7 @@ abstract class LoansRepository {
     required String usuarioId,
     required bool renew,
     required int? cajaId,
+    required int? sucursalId,
   });
 
   Future<Either<String, bool>> updateLoan({
@@ -39,6 +40,8 @@ abstract class LoansRepository {
     required List<Map<String, dynamic>> bienes,
     required String usuarioId,
     required int idLoan,
+    required int? cajaId,
+    required int? sucursalId,
   });
 
   Future<bool> updateStatusLoan({

@@ -17,6 +17,7 @@ class UsersView extends StatelessWidget {
       lazy: false,
       create: (context) => UsersBloc(
         userRepository: context.read(),
+        sucursalRepository: context.read(),
       )..add(
           GetUsers(),
         ),

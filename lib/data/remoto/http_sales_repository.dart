@@ -18,6 +18,7 @@ class HttpSalesRepository implements SalesRepository {
   Future<Either<String, List<SalesEntity>>> getSalesByRangeDate({
     required DateTime inicio,
     required DateTime fin,
+    required int sucursalId,
   }) async {
     final inicioParse = DateTime(
       inicio.year,
@@ -40,6 +41,7 @@ class HttpSalesRepository implements SalesRepository {
     final payload = {
       'fechaInicio': inicioParse.toUtc().toIso8601String(),
       'fechaFin': finParse.toUtc().toIso8601String(),
+      'sucursalId': sucursalId,
     };
 
     const path = '/almacen/ventas/reporte';
@@ -106,6 +108,7 @@ class HttpSalesRepository implements SalesRepository {
     required DateTime inicio,
     required DateTime fin,
     required int userId,
+    required int sucursalId,
   }) async {
     final inicioParse = DateTime(
       inicio.year,
@@ -129,6 +132,7 @@ class HttpSalesRepository implements SalesRepository {
       'fechaInicio': inicioParse.toUtc().toIso8601String(),
       'fechaFin': finParse.toUtc().toIso8601String(),
       'usuarioId': userId,
+      'sucursalId': sucursalId,
     };
 
     const path = '/almacen/ventas/usuario';

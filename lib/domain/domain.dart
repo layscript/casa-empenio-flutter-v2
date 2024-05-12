@@ -15,6 +15,8 @@ export 'historial/historial_repository.dart';
 export 'preferences/preferences_entity.dart';
 export 'preferences/preferences.dart';
 
+export 'sucursal/sucursal.dart';
+
 export 'warranty/warranty_entity.dart';
 
 export 'contract/contract_entity.dart';

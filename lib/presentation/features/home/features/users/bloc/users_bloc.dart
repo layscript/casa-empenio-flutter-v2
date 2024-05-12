@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:casa_empenio_pe/domain/auth/auth.dart';
+import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 
@@ -8,8 +8,11 @@ part 'users_event.dart';
 part 'users_state.dart';
 
 class UsersBloc extends Bloc<UsersEvent, UsersState> {
-  UsersBloc({required UserRepository userRepository})
+  UsersBloc(
+      {required UserRepository userRepository,
+      required SucursalRepository sucursalRepository})
       : _userRepository = userRepository,
+        _sucursalRepository = sucursalRepository,
         super(const UsersState()) {
     on<GetUsers>(_onGetUsers);
     on<SaveUser>(_onSaveUser);
@@ -18,13 +21,19 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
   }
 
   final UserRepository _userRepository;
+  final SucursalRepository _sucursalRepository;
 
   UsersState get _loadingState =>
       state.copyWith(userStatus: UserStatus.loading);
 
-  UsersState _successState(List<UserEntity> users) => state.copyWith(
+  UsersState _successState(
+    List<UserEntity> users,
+    List<SucursalEntity> listSucursales,
+  ) =>
+      state.copyWith(
         userStatus: UserStatus.loaded,
         listUsers: users,
+        listSucursales: listSucursales,
       );
 
   UsersState _errorState(String message) => state.copyWith(
@@ -43,15 +52,18 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
       offset: 0,
     );
 
-    result.fold(
-      (error) {
-        emit(
-          _errorState(error),
-        );
-      },
-      (users) {
-        emit(
-          _successState(users),
+    await result.fold(
+      (error) async => emit(_errorState(error)),
+      (users) async {
+        final getSucursales = await _sucursalRepository.getSucursales();
+        await getSucursales.fold(
+          (error) async => emit(_errorState(error)),
+          (sucursales) async => emit(
+            _successState(
+              users,
+              sucursales,
+            ),
+          ),
         );
       },
     );
@@ -72,6 +84,7 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
       celular: 0,
       rolId: 2,
       password: event.password,
+      sucursalId: event.sucursalId,
     );
 
     result.fold(
@@ -98,6 +111,7 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
       celular: event.celular,
       rolId: event.rolId,
       password: event.password,
+      sucursalId: event.sucursalId,
     );
 
     result.fold(

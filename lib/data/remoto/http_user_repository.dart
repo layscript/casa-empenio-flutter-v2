@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:dartz/dartz.dart';
@@ -56,6 +55,7 @@ class HttpUserRepository implements UserRepository {
     required int celular,
     required int rolId,
     required String password,
+    required int sucursalId,
   }) async {
     const path = '/usuarios';
     final payload = {
@@ -67,6 +67,8 @@ class HttpUserRepository implements UserRepository {
       'celular': celular,
       'rolId': rolId,
       'password': password,
+      'isAdmin': false,
+      'sucursalId': sucursalId,
     };
 
     try {
@@ -147,6 +149,7 @@ class HttpUserRepository implements UserRepository {
     required int celular,
     required int rolId,
     required String? password,
+    required int sucursalId,
   }) async {
     final path = '/usuarios/$id';
     final payload = {
@@ -157,6 +160,7 @@ class HttpUserRepository implements UserRepository {
       'email': email,
       'celular': celular,
       'rolId': rolId,
+      'sucursalId': sucursalId,
     };
 
     if (password != '') {

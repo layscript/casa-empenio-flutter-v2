@@ -874,6 +874,8 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
             : null,
         bienes: garantiasData,
         usuarioId: event.userId,
+        // TODO:: ID SUCURSSCAL
+        sucursalId: _preferences.token?.sucursal?.id ?? 1,
       );
 
       result.fold(

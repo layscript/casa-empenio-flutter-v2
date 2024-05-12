@@ -98,6 +98,7 @@ class _AddFormProductState extends State<AddFormProduct> {
   @override
   Widget build(BuildContext context) {
     final state = context.read<ProductsBloc>().state;
+    final preferences = context.read<Preferences>();
 
     return Column(
       children: [
@@ -283,23 +284,24 @@ class _AddFormProductState extends State<AddFormProduct> {
                   ? () {
                       context.read<ProductsBloc>().add(
                             SaveProduct(
-                              id: widget.data?.id,
-                              descripcion: descripcionGarantiaController.text,
-                              marca: marcaGarantiaController.text,
-                              modelo: modeloGarantiaController.text,
-                              valorizacion: double.parse(
-                                  valorGarantiaController.text == ''
-                                      ? '0'
-                                      : valorGarantiaController.text),
-                              observaciones:
-                                  observacionesGarantiaController.text,
-                              imagen: selectedPhotosProduct?[0].path ?? '',
-                              imagenDos: selectedPhotosProduct?[1].path ?? '',
-                              //imagenTres: selectedPhotosProduct?[2].path ?? '',
-                              cantidad: cantidad,
-                              categoria: categories?.descripcion ?? '',
-                              placa: placaWarrantyCtrl.text,
-                            ),
+                                id: widget.data?.id,
+                                descripcion: descripcionGarantiaController.text,
+                                marca: marcaGarantiaController.text,
+                                modelo: modeloGarantiaController.text,
+                                valorizacion: double.parse(
+                                    valorGarantiaController.text == ''
+                                        ? '0'
+                                        : valorGarantiaController.text),
+                                observaciones:
+                                    observacionesGarantiaController.text,
+                                imagen: selectedPhotosProduct?[0].path ?? '',
+                                imagenDos: selectedPhotosProduct?[1].path ?? '',
+                                //imagenTres: selectedPhotosProduct?[2].path ?? '',
+                                cantidad: cantidad,
+                                categoria: categories?.descripcion ?? '',
+                                placa: placaWarrantyCtrl.text,
+                                sucursalId:
+                                    preferences.token?.sucursal?.id ?? 1),
                           );
                     }
                   : null,

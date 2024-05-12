@@ -120,6 +120,7 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
           'motor': event.motor,
           'carroceria': event.carroceria,
           'categoria': event.categoria,
+          'sucursalId': event.sucursalId,
         },
       );
 
@@ -155,6 +156,7 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
           'motor': event.motor,
           'carroceria': event.carroceria,
           'categoria': event.categoria,
+          'sucursalId': event.sucursalId,
         },
       );
 
@@ -192,6 +194,7 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
           'imagen': event.imagen,
           'imagen2': event.imagenDos,
           'cantidad': event.cantidad,
+          'sucursalId': event.sucursalId,
         },
       );
 
@@ -222,6 +225,7 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
           'imagen': event.imagen,
           'imagen2': event.imagenDos,
           'cantidad': event.cantidad,
+          'sucursalId': event.sucursalId,
         },
       );
 

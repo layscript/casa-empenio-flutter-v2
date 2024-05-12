@@ -1,5 +1,6 @@
 import 'package:casa_empenio_pe/data/data.dart';
 import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:casa_empenio_pe/presentation/features/features.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 
@@ -16,9 +17,11 @@ class HistorialBloc extends Bloc<HistorialEvent, HistorialState> {
     required UserRepository userRepository,
     required HistorialRepository historialRepository,
     required SalesRepository salesRepository,
+    required Preferences preferences,
   })  : _userRepository = userRepository,
         _historialRepository = historialRepository,
         _salesRepository = salesRepository,
+        _preferences = preferences,
         super(_initialState) {
     on<GetAllHistorialEvent>(_onGetAllHistorialEvent);
     on<GetHistorialByDocumentEvent>(_onGetHistorialByDocumentEvent);
@@ -28,6 +31,7 @@ class HistorialBloc extends Bloc<HistorialEvent, HistorialState> {
   final UserRepository _userRepository;
   final HistorialRepository _historialRepository;
   final SalesRepository _salesRepository;
+  final Preferences _preferences;
 
   Future<void> _onGetAllHistorialEvent(
     GetAllHistorialEvent event,
@@ -89,6 +93,8 @@ class HistorialBloc extends Bloc<HistorialEvent, HistorialState> {
       userId: event.userId,
       inicio: event.start ?? state.startSales,
       fin: event.end ?? state.endSales,
+      // TODO:: ID SUCURSSCAL
+      sucursalId: _preferences.token?.sucursal?.id ?? 1,
     );
 
     result.fold(

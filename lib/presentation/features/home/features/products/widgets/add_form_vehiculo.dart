@@ -129,6 +129,7 @@ class _AddFormVehiculoState extends State<AddFormVehiculo> {
   @override
   Widget build(BuildContext context) {
     final state = context.read<ProductsBloc>().state;
+    final preferences = context.read<Preferences>();
 
     return Column(
       children: [
@@ -472,6 +473,7 @@ class _AddFormVehiculoState extends State<AddFormVehiculo> {
                               anio: anioController.text,
                               motor: motorController.text,
                               carroceria: carroceriaController.text,
+                              sucursalId: preferences.token?.sucursal?.id ?? 1,
                             ),
                           );
                     }

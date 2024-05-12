@@ -1,5 +1,6 @@
 // ignore_for_file: prefer_is_empty
 
+import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
@@ -22,6 +23,8 @@ class _SalesViewState extends State<SalesView> {
   @override
   Widget build(BuildContext context) {
     final homeBloc = context.read<HomeBloc>();
+    final preferences = context.read<Preferences>();
+
     return BlocProvider(
       lazy: false,
       create: (context) => SalesBloc(
@@ -31,9 +34,10 @@ class _SalesViewState extends State<SalesView> {
         cajaRepository: context.read(),
       )
         ..add(
-          const GetListSales(
+          GetListSales(
             start: null,
             end: null,
+            sucursalId: preferences.token?.sucursal?.id ?? 1,
           ),
         )
         ..add(
@@ -75,9 +79,14 @@ class _SalesViewState extends State<SalesView> {
                         ),
                         const SizedBox(height: 15),
                         ElevatedButton(
-                          onPressed: () => context
-                              .read<SalesBloc>()
-                              .add(const GetListSales(start: null, end: null)),
+                          onPressed: () => context.read<SalesBloc>().add(
+                                GetListSales(
+                                  start: null,
+                                  end: null,
+                                  sucursalId:
+                                      preferences.token?.sucursal?.id ?? 1,
+                                ),
+                              ),
                           child: const Text('Cargar'),
                         ),
                       ],
@@ -122,6 +131,9 @@ class _SalesViewState extends State<SalesView> {
                                       GetListSales(
                                         start: result.start,
                                         end: result.end,
+                                        sucursalId:
+                                            preferences.token?.sucursal?.id ??
+                                                1,
                                       ),
                                     );
                               }
@@ -148,9 +160,12 @@ class _SalesViewState extends State<SalesView> {
 
                               if (result != null && mounted) {
                                 context.read<SalesBloc>().add(
-                                      const GetListSales(
+                                      GetListSales(
                                         start: null,
                                         end: null,
+                                        sucursalId:
+                                            preferences.token?.sucursal?.id ??
+                                                1,
                                       ),
                                     );
                               }

@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:casa_empenio_pe/domain/domain.dart';
 
 class UserEntity {
@@ -18,6 +16,8 @@ class UserEntity {
     required this.prestamosAdmin,
     required this.updatedAt,
     required this.ventas,
+    required this.isAdmin,
+    required this.sucursal,
   });
 
   final int id;
@@ -34,11 +34,12 @@ class UserEntity {
   final List<SalesEntity>? ventas;
   final String? createdAt;
   final String? updatedAt;
+  final bool? isAdmin;
+  final SucursalEntity? sucursal;
 
   static List<UserEntity> listGetUsersFromMap(
     Map<String, dynamic> map,
   ) {
-
     final list = map['body'][0] as List<dynamic>;
     return list.map((e) => userFromMap(e as Map<String, dynamic>)).toList();
   }
@@ -53,12 +54,18 @@ class UserEntity {
       avatar: map['avatar'] as String?,
       celular: map['celular'] as int?,
       role: map['role'] != null ? roleFromMap(map['role']) : null,
+      isAdmin: map['isAdmin'] as bool?,
       createdAt: null,
       pagos: null,
       prestamos: null,
       prestamosAdmin: null,
       updatedAt: null,
       ventas: null,
+      sucursal: map['sucursal'] != null
+          ? SucursalEntity.sucursalFromMap(
+              map['sucursal'],
+            )
+          : null,
     );
   }
 
@@ -83,6 +90,12 @@ class UserEntity {
       prestamosAdmin: null,
       updatedAt: null,
       ventas: null,
+      isAdmin: map['isAdmin'] as bool?,
+      sucursal: map['sucursal'] != null
+          ? SucursalEntity.sucursalFromMap(
+              map['sucursal'],
+            )
+          : null,
     );
   }
 
@@ -98,7 +111,8 @@ class UserEntity {
       'role': {
         'id': role?.id,
         'nombre': role?.nombre,
-      }
+      },
+      'isAdmin': isAdmin,
     };
   }
 }

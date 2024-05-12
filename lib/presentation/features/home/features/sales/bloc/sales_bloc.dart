@@ -80,6 +80,7 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
     final result = await _salesRepository.getSalesByRangeDate(
       inicio: event.start ?? state.startTimeSales,
       fin: event.end ?? state.endTimeSales,
+      sucursalId: event.sucursalId,
     );
     result.fold(
       (message) => emit(
@@ -246,8 +247,8 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
       'direccion': '${state.customer?.domicilio?.direccion}',
       'dni': '${state.customer?.dni}',
       'usuarioId': event.userId,
+      'sucursalId': event.sucursalId,
     };
-
 
     final result = await _salesRepository.createSalesProduct(data);
     if (result) {

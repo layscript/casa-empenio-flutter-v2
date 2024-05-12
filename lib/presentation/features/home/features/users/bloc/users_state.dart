@@ -7,10 +7,12 @@ class UsersState extends Equatable {
     this.userStatus = UserStatus.initial,
     this.listUsers,
     this.error,
+    this.listSucursales,
   });
 
   final UserStatus userStatus;
   final List<UserEntity>? listUsers;
+  final List<SucursalEntity>? listSucursales;
   final String? error;
 
   bool get isUserLoading => userStatus == UserStatus.loading;
@@ -20,11 +22,13 @@ class UsersState extends Equatable {
     UserStatus? userStatus,
     List<UserEntity>? listUsers,
     String? error,
+    List<SucursalEntity>? listSucursales,
   }) =>
       UsersState(
         error: error ?? this.error,
         listUsers: listUsers ?? this.listUsers,
         userStatus: userStatus ?? this.userStatus,
+        listSucursales: listSucursales ?? this.listSucursales,
       );
 
   @override
@@ -32,5 +36,6 @@ class UsersState extends Equatable {
         userStatus,
         listUsers,
         error,
+        listSucursales
       ];
 }

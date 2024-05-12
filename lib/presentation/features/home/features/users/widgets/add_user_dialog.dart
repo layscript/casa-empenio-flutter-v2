@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
@@ -20,6 +21,7 @@ class _AddUserDialogState extends State<AddUserDialog> {
   final usernameCtrl = TextEditingController();
   final passwordCtrl = TextEditingController();
   final confirmPasswordCtrl = TextEditingController();
+  SucursalEntity? sucursal;
 
   bool fullNamesIsValid = false;
   bool fullLastNamesIsValid = false;
@@ -27,9 +29,12 @@ class _AddUserDialogState extends State<AddUserDialog> {
   bool userIsValid = false;
   bool passwordIsValid = false;
   bool confirmIsValid = false;
+  bool sucursalIsValid = false;
 
   @override
   Widget build(BuildContext context) {
+    final usersBloc = context.read<UsersBloc>();
+
     return AlertDialog(
       scrollable: true,
       title: const Text('Agregar Usuario'),
@@ -98,6 +103,26 @@ class _AddUserDialogState extends State<AddUserDialog> {
             },
             isValid: (value) => setState(() => confirmIsValid = value),
           ),
+          const SizedBox(height: 20),
+          AppDropdownButtonFormField<SucursalEntity?>(
+            value: sucursal,
+            items: usersBloc.state.listSucursales
+                ?.map(
+                  (e) => DropdownMenuItem<SucursalEntity?>(
+                    value: e,
+                    child: Text(e.nombre),
+                  ),
+                )
+                .toList(),
+            onChanged: (e) {
+              setState(() {
+                sucursal = e;
+                sucursalIsValid = true;
+              });
+            },
+            labelText: 'Sucursal',
+          ),
+          const SizedBox(height: 20),
         ],
       ),
       actions: [
@@ -107,7 +132,8 @@ class _AddUserDialogState extends State<AddUserDialog> {
                   !emailIsValid ||
                   !userIsValid ||
                   !passwordIsValid ||
-                  !confirmIsValid
+                  !confirmIsValid ||
+                  !sucursalIsValid
               ? null
               : () {
                   Navigator.pop(context);
@@ -119,6 +145,7 @@ class _AddUserDialogState extends State<AddUserDialog> {
                           username: usernameCtrl.text,
                           password: passwordCtrl.text,
                           confirmPassword: confirmPasswordCtrl.text,
+                          sucursalId: sucursal?.id ?? 1,
                         ),
                       );
                 },

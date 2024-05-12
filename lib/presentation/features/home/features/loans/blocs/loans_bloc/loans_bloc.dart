@@ -429,6 +429,8 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
         usuarioId: event.userId,
         //renew: true,
         renew: event.isRenew ?? false,
+        // TODO:: ID SUCURSSCAL
+        sucursalId: _preferences.token?.sucursal?.id ?? 1,
       );
       result.fold(
         (error) => emit(
@@ -450,6 +452,8 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
         bienes: event.bienes,
         usuarioId: event.userId,
         idLoan: event.codigo,
+        cajaId: state.cajaId ?? 1,
+        sucursalId: _preferences.token?.sucursal?.id ?? 1,
       );
       result.fold(
         (error) => emit(

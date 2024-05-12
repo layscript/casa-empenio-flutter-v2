@@ -15,10 +15,12 @@ class GetListSales extends SalesEvent {
   const GetListSales({
     required this.start,
     required this.end,
+    required this.sucursalId,
   });
 
   final DateTime? start;
   final DateTime? end;
+  final int sucursalId;
 }
 
 class GetCustomerSalesByDni extends SalesEvent {
@@ -60,6 +62,7 @@ class DeleteProductSalesToCart extends SalesEvent {
 }
 
 class GenerateSalesProduct extends SalesEvent {
-  const GenerateSalesProduct(this.userId);
+  const GenerateSalesProduct({required this.userId, required this.sucursalId});
   final int userId;
+  final int sucursalId;
 }

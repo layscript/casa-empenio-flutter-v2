@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
@@ -20,6 +21,7 @@ class _AddFormSalesState extends State<AddFormSales> {
   @override
   Widget build(BuildContext context) {
     final authBloc = context.read<AuthBloc>().state as Authenticated;
+    final preferences = context.read<Preferences>();
 
     return Scaffold(
       appBar: AppBar(
@@ -36,7 +38,9 @@ class _AddFormSalesState extends State<AddFormSales> {
                     ? null
                     : () => context.read<SalesBloc>().add(
                           GenerateSalesProduct(
-                            authBloc.user.id,
+                            // TODO:: ID SUCURSSCAL
+                            sucursalId: preferences.token?.sucursal?.id ?? 1,
+                            userId: authBloc.user.id,
                           ),
                         ),
                 child: const Icon(Icons.add),

@@ -25,6 +25,7 @@ class _EditUserDialogState extends State<EditUserDialog> {
   final usernameCtrl = TextEditingController();
   final passwordCtrl = TextEditingController();
   final confirmPasswordCtrl = TextEditingController();
+  SucursalEntity? sucursal;
 
   bool fullNamesIsValid = false;
   bool fullLastNamesIsValid = false;
@@ -32,6 +33,7 @@ class _EditUserDialogState extends State<EditUserDialog> {
   bool userIsValid = false;
   bool passwordIsValid = false;
   bool confirmIsValid = false;
+  bool sucursalIsValid = false;
 
   @override
   void initState() {
@@ -40,6 +42,7 @@ class _EditUserDialogState extends State<EditUserDialog> {
     fullLastNamesCtrl.text = widget.user.apellido;
     emailCtrl.text = widget.user.email;
     usernameCtrl.text = widget.user.userName;
+    sucursal = widget.user.sucursal;
 
     fullNamesIsValid = true;
     fullLastNamesIsValid = true;
@@ -47,10 +50,13 @@ class _EditUserDialogState extends State<EditUserDialog> {
     userIsValid = true;
     passwordIsValid = true;
     confirmIsValid = true;
+    sucursalIsValid = true;
   }
 
   @override
   Widget build(BuildContext context) {
+    final usersBloc = context.read<UsersBloc>();
+
     return AlertDialog(
       scrollable: true,
       title: const Text('Editar Usuario'),
@@ -119,6 +125,26 @@ class _EditUserDialogState extends State<EditUserDialog> {
             },
             isValid: (value) => setState(() => confirmIsValid = value),
           ),
+          const SizedBox(height: 20),
+          AppDropdownButtonFormField<SucursalEntity?>(
+            value: sucursal,
+            items: usersBloc.state.listSucursales
+                ?.map(
+                  (e) => DropdownMenuItem<SucursalEntity?>(
+                    value: e,
+                    child: Text(e.nombre),
+                  ),
+                )
+                .toList(),
+            onChanged: (e) {
+              setState(() {
+                sucursal = e;
+                sucursalIsValid = true;
+              });
+            },
+            labelText: 'Sucursal',
+          ),
+          const SizedBox(height: 20),
         ],
       ),
       actions: [
@@ -128,7 +154,8 @@ class _EditUserDialogState extends State<EditUserDialog> {
                   !emailIsValid ||
                   !userIsValid ||
                   !passwordIsValid ||
-                  !confirmIsValid
+                  !confirmIsValid ||
+                  !sucursalIsValid
               ? null
               : () {
                   Navigator.pop(context);
@@ -143,6 +170,7 @@ class _EditUserDialogState extends State<EditUserDialog> {
                           username: usernameCtrl.text,
                           password: passwordCtrl.text,
                           confirmPassword: confirmPasswordCtrl.text,
+                          sucursalId: sucursal?.id ?? 1,
                         ),
                       );
                 },

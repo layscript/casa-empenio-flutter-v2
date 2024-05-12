@@ -131,6 +131,7 @@ class HttpLoansRepository implements LoansRepository {
     required String usuarioId,
     required bool renew,
     required int? cajaId,
+    required int? sucursalId,
   }) async {
     const path = '/prestamos/prestamos';
 
@@ -171,6 +172,7 @@ class HttpLoansRepository implements LoansRepository {
       'usuarioId': usuarioId,
       'isRenewed': renew,
       'cajaId': cajaId,
+      'sucursalId': sucursalId,
     };
 
     try {
@@ -898,6 +900,8 @@ class HttpLoansRepository implements LoansRepository {
     required List<Map<String, dynamic>> bienes,
     required String usuarioId,
     required int idLoan,
+    required int? cajaId,
+    required int? sucursalId,
   }) async {
     final path = '/prestamos/prestamos/$idLoan';
 
@@ -928,6 +932,8 @@ class HttpLoansRepository implements LoansRepository {
       'bienesGarantia': bienes,
       'adminId': usuarioId,
       'isRenewed': false,
+      'cajaId': cajaId,
+      'sucursalId': sucursalId,
     };
 
     try {

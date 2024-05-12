@@ -83,6 +83,11 @@ final SolicitudRepository _solicitudRepository = HttpSolicitudRepository(
   sentry: _sentry,
 );
 
+final SucursalRepository _sucursalRepository = HttpSucursalRepository(
+  dio: _client,
+  sentry: _sentry,
+);
+
 /* final _firebase = FirebaseAuth.instance;
 final _google = GoogleSignIn();
 final _facebook = FacebookLogin();

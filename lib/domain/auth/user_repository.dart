@@ -20,6 +20,7 @@ abstract class UserRepository {
     required int celular,
     required int rolId,
     required String password,
+    required int sucursalId,
   });
   Future<Either<String, bool>> updateUser({
     required int id,
@@ -30,6 +31,9 @@ abstract class UserRepository {
     required int celular,
     required int rolId,
     required String? password,
+    required int sucursalId,
   });
-  Future<Either<String, bool>> deleteUser({required int idUser});
+  Future<Either<String, bool>> deleteUser({
+    required int idUser,
+  });
 }
