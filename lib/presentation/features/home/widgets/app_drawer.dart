@@ -102,7 +102,7 @@ class AppDrawer extends StatelessWidget {
                 Navigator.pop(context);
               },
             ),
-            if (auth?.role?.nombre == 'Administrador')
+            /* if (auth?.role?.nombre == 'Administrador')
               ListTile(
                 tileColor: homeState.index == 5 ? Colors.black12 : null,
                 leading: const FaIcon(
@@ -114,7 +114,7 @@ class AppDrawer extends StatelessWidget {
                   context.read<HomeBloc>().add(GoToUsers());
                   Navigator.pop(context);
                 },
-              ),
+              ), */
             if (auth?.role?.nombre == 'Administrador')
               ListTile(
                 tileColor: homeState.index == 6 ? Colors.black12 : null,

@@ -72,14 +72,14 @@ class MainView extends StatelessWidget {
                 text: 'Productos',
                 icon: FontAwesomeIcons.cartArrowDown,
               ),
-              if (auth?.role?.nombre == 'Administrador')
+             /*  if (auth?.role?.nombre == 'Administrador')
                 _ItemGrid(
                   onTap: () => context.read<HomeBloc>().add(
                         GoToUsers(),
                       ),
                   text: 'Usuarios',
                   icon: FontAwesomeIcons.user,
-                ),
+                ), */
               if (auth?.role?.nombre == 'Administrador')
                 _ItemGrid(
                   onTap: () => context.read<HomeBloc>().add(
