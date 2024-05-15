@@ -398,9 +398,6 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                                 DateFormat('dd/MM/yyyy - kk:mm')
                                                     .format(fechaCreacion);
 
-                                            print(
-                                                'prestamooo: ${prestamo.isRenewed}');
-
                                             return GestureDetector(
                                               onTap: () {
                                                 Navigator.push(
@@ -547,6 +544,10 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                                                     codigo:
                                                                         prestamo.codigo ??
                                                                             0,
+                                                                    idCaja: prestamo
+                                                                            .caja
+                                                                            ?.id ??
+                                                                        1,
                                                                   ),
                                                                 );
                                                               },

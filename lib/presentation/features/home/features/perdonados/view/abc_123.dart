@@ -1,4 +1,4 @@
-import 'dart:developer';
+/* import 'dart:developer';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
@@ -682,3 +682,4 @@ class _ContractReportsViewState extends State<ContractReportsView> {
     );
   }
 }
+ */

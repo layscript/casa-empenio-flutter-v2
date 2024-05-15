@@ -6,8 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class CancelDialogReportLoan extends StatelessWidget {
-  const CancelDialogReportLoan({super.key, required this.codigo});
+  const CancelDialogReportLoan({
+    super.key,
+    required this.codigo,
+    required this.idCaja,
+  });
   final int codigo;
+  final int idCaja;
 
   @override
   Widget build(BuildContext context) {
@@ -25,9 +30,9 @@ class CancelDialogReportLoan extends StatelessWidget {
               builder: (context) {
                 return AlertDialog(
                   title: const Text('Error'),
-                  content: const Text(
-                    'Ocurrió un error al eliminar el prestamo',
-                    style: TextStyle(
+                  content: Text(
+                    state.message ?? 'Ocurrió un error al eliminar el prestamo',
+                    style: const TextStyle(
                         color: AppColors.primaryText,
                         fontWeight: FontWeight.normal),
                   ),
@@ -95,6 +100,7 @@ class CancelDialogReportLoan extends StatelessWidget {
                     CancelReportLoan(
                       loanId: codigo,
                       userId: preferences?.id.toString() ?? '1',
+                      idCaja: idCaja,
                     ),
                   );
             },

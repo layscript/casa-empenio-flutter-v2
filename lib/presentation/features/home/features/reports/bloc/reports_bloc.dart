@@ -52,11 +52,13 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     required CategoriesRepository categoriesRepository,
     required ExpensesRepository expensesRepository,
     required Preferences preferences,
+    required CajaRepository cajaRepository,
   })  : _preferences = preferences,
         _reportsRepository = reportsRepository,
         _loansRepository = loansRepository,
         _categoriesRepository = categoriesRepository,
         _expensesRepository = expensesRepository,
+        _cajaRepository = cajaRepository,
         super(_initialState) {
     on<GetLoadInitialDataPayments>(_onGetLoadInitialDataPayments);
     on<GetLoadInitialDataContracts>(_onGetLoadInitialDataContracts);
@@ -94,6 +96,7 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
   final CategoriesRepository _categoriesRepository;
   final ExpensesRepository _expensesRepository;
   final Preferences _preferences;
+  final CajaRepository _cajaRepository;
 
   Future<void> _onGetLoadInitialDataPayments(
     GetLoadInitialDataPayments event,
@@ -432,24 +435,36 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     CancelReportLoan event,
     Emitter<ReportsState> emit,
   ) async {
-    /* emit(state.copyWith(statusCanceled: ReportsStatus.loading));
-    final result = await _reportsRepository.cancelLoan(
-      id: event.id,
-    );
-    if (result) {
-      emit(state.copyWith(statusCanceled: ReportsStatus.success));
-    } else {
-      emit(state.copyWith(statusCanceled: ReportsStatus.error));
-    } */
-
     emit(state.copyWith(statusCanceled: ReportsStatus.loading));
-    final result = await _loansRepository.deleteLoan(
-      idLoan: event.loanId,
-      userId: event.userId,
-    );
-    if (result) {
-      emit(state.copyWith(statusCanceled: ReportsStatus.success));
-    } else {
+    try {
+      final getCajaOfTheDay = await _cajaRepository.getCajaOfTheDay();
+      await getCajaOfTheDay.fold(
+        (error) async => emit(
+          state.copyWith(statusCanceled: ReportsStatus.error),
+        ),
+        (caja) async {
+          if (caja?.id == event.idCaja) {
+            final result = await _loansRepository.deleteLoan(
+              idLoan: event.loanId,
+              userId: event.userId,
+            );
+            if (result) {
+              emit(state.copyWith(statusCanceled: ReportsStatus.success));
+            } else {
+              emit(state.copyWith(statusCanceled: ReportsStatus.error));
+            }
+          } else {
+            emit(
+              state.copyWith(
+                statusCanceled: ReportsStatus.error,
+                message:
+                    'No se puede eliminar porque no pertenece a la caja actual',
+              ),
+            );
+          }
+        },
+      );
+    } catch (e) {
       emit(state.copyWith(statusCanceled: ReportsStatus.error));
     }
   }
