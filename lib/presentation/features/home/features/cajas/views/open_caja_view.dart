@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
@@ -6,6 +8,7 @@ import 'package:casa_empenio_pe/presentation/features/home/features/cajas/widget
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
 class OpenCajaView extends StatefulWidget {
   const OpenCajaView({super.key});
@@ -17,6 +20,7 @@ class OpenCajaView extends StatefulWidget {
 class _OpenCajaViewState extends State<OpenCajaView> {
   @override
   Widget build(BuildContext context) {
+    final oCcy = NumberFormat("#,##0.00", "en_US");
     return BlocProvider(
       lazy: false,
       create: (context) => CajasBloc(
@@ -75,19 +79,9 @@ class _OpenCajaViewState extends State<OpenCajaView> {
                             ),
                             CustomRow(
                               label: 'Monto de Apertura',
-                              value: movimiento.montoApertura.toString(),
+                              value:
+                                  "S/. ${oCcy.format(double.parse(movimiento.montoApertura ?? '0.00'))}",
                             ),
-                            Builder(builder: (context) {
-                              double saldo = 0.0;
-
-                              for (var e in movimiento.movimientos!) {
-                                saldo += double.parse(e.monto ?? '0.00');
-                              }
-                              return CustomRow(
-                                label: 'Saldo Total',
-                                value: saldo.toStringAsFixed(2),
-                              );
-                            }),
                             if (movimiento.totalIngresos != null)
                               CustomRow(
                                 label: 'Total Ingresos',
@@ -106,6 +100,41 @@ class _OpenCajaViewState extends State<OpenCajaView> {
                               label: 'Observaciones',
                               value: movimiento.observaciones.toString(),
                             ),
+                            Builder(builder: (context) {
+                              double saldo = 0.0;
+
+                              for (var e in movimiento.movimientos!) {
+                                saldo += double.parse(e.monto ?? '0.00');
+                              }
+                              // return CustomRow(
+                              //   label: 'Saldo Total',
+                              //   value: saldo.toStringAsFixed(2),
+                              // );
+
+                              return Container(
+                                padding: const EdgeInsets.all(20),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Text(
+                                      'Saldo Actual: ',
+                                      style: TextStyle(
+                                        color: AppColors.black,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 20,
+                                      ),
+                                    ),
+                                    Text(
+                                      'S/.${oCcy.format(saldo)}',
+                                      style: const TextStyle(
+                                        color: AppColors.primaryText,
+                                        fontSize: 20,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
                             if (movimiento.movimientos!.isNotEmpty) ...[
                               const SizedBox(height: 15),
                               ElevatedButton(
@@ -250,23 +279,26 @@ class CustomRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          '$label: ',
-          style: const TextStyle(
-            color: AppColors.black,
-            fontWeight: FontWeight.bold,
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            '$label: ',
+            style: const TextStyle(
+              color: AppColors.black,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        Text(
-          value,
-          style: const TextStyle(
-            color: AppColors.primaryText,
+          Text(
+            value,
+            style: const TextStyle(
+              color: AppColors.primaryText,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
