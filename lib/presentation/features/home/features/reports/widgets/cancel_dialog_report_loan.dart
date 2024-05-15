@@ -25,27 +25,9 @@ class CancelDialogReportLoan extends StatelessWidget {
         } else {
           OverlayLoader.hide();
           if (state.isReportsCanceledError) {
-            showDialog(
-              context: context,
-              builder: (context) {
-                return AlertDialog(
-                  title: const Text('Error'),
-                  content: Text(
-                    state.message ?? 'Ocurrió un error al eliminar el prestamo',
-                    style: const TextStyle(
-                        color: AppColors.primaryText,
-                        fontWeight: FontWeight.normal),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      child: const Text('Aceptar'),
-                    ),
-                  ],
-                );
-              },
+            ErrorSnackbar.show(
+              context,
+              state.message ?? 'Ocurrió un error al eliminar el prestamo',
             );
           }
           if (state.isReportsCanceledSuccess) {
@@ -96,6 +78,7 @@ class CancelDialogReportLoan extends StatelessWidget {
           ),
           TextButton(
             onPressed: () {
+              Navigator.pop(context);
               context.read<ReportsBloc>().add(
                     CancelReportLoan(
                       loanId: codigo,
