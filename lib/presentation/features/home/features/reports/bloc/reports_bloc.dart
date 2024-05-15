@@ -439,9 +439,14 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     try {
       final getCajaOfTheDay = await _cajaRepository.getCajaOfTheDay();
       await getCajaOfTheDay.fold(
-        (error) async => emit(
-          state.copyWith(statusCanceled: ReportsStatus.error),
-        ),
+        (error) async {
+          emit(
+            state.copyWith(
+              statusCanceled: ReportsStatus.error,
+              message: error,
+            ),
+          );
+        },
         (caja) async {
           if (caja?.id == event.idCaja) {
             final result = await _loansRepository.deleteLoan(
