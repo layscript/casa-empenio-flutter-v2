@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:casa_empenio_pe/domain/loans/loans_entity.dart';
 import 'package:equatable/equatable.dart';
 
@@ -12,7 +14,7 @@ class PerdonadosEntity extends Equatable {
   });
 
   final int id;
-  final int monto;
+  final String monto;
   final LoansEntity prestamo;
   final String? createdAt;
   final String? updatedAt;
@@ -28,8 +30,8 @@ class PerdonadosEntity extends Equatable {
 
   static PerdonadosEntity getForgivenessFromMap(Map<String, dynamic> map) {
     return PerdonadosEntity(
-      id: map['id'],
-      monto: map['monto'],
+      id: map['id'] as int,
+      monto: map['monto'] as String,
       prestamo: LoansEntity.getLoanFromMap(
         map['prestamo'],
       ),
