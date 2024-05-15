@@ -6,7 +6,7 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:intl/intl.dart';
-
+import 'package:collection/collection.dart';
 part 'reports_event.dart';
 part 'reports_state.dart';
 
@@ -216,12 +216,36 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
               );
             } else {
               // Pago parcial
-              partialUtilityPayment += calcularUtilidadReportsPagoDouble(
-                double.parse(element.prestamo?.monto ?? '0.00'),
-                double.parse(element.monto ?? '0.00'),
-              );
+              // partialUtilityPayment += calcularUtilidadReportsPagoDoubleParcial(
+              //   double.parse(element.prestamo?.ganancia ?? '0.00'),
+              //   double.parse(element.monto ?? '0.00'),
+              // );
             }
           }
+        }
+
+        // agrupar por prestamo
+        final groupByPrestamo = groupBy<ReportsPaymentEntity, int>(
+          filterListPayments,
+          (obj) => obj.prestamo?.codigo ?? 0,
+        );
+
+        // Calcular utilidad por prestamo
+        for (var element in groupByPrestamo.entries) {
+          final gananciaPrestamo =
+              element.value[0].prestamo?.ganancia ?? '0.00';
+
+          final totalPagos = element.value.fold<double>(
+            0.0,
+            (previousValue, element) {
+              return previousValue + double.parse(element.monto ?? '0.00');
+            },
+          );
+
+          partialUtilityPayment = calcularUtilidadReportsPagoDoubleParcial(
+            double.parse(gananciaPrestamo),
+            totalPagos,
+          );
         }
 
         emit(state.copyWith(
@@ -297,6 +321,16 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     final utilidadPorcentaje = utilidad / mPago;
     final utilidadDouble = utilidadPorcentaje * mPago;
     return utilidadDouble;
+  }
+
+  double calcularUtilidadReportsPagoDoubleParcial(
+    double gPrestamo,
+    double mPago,
+  ) {
+    if (mPago > gPrestamo) {
+      return gPrestamo;
+    }
+    return gPrestamo - mPago;
   }
 
   Future<void> _onGetLoadInitialDataContracts(

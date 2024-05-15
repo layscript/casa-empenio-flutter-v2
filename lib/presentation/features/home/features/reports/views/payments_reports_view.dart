@@ -685,7 +685,7 @@ class _PaymentsReportsViewState extends State<PaymentsReportsView> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          'Prestamos Totales ',
+                          'Pagos Totales ',
                           style: TextStyle(
                             color: Colors.black,
                             fontWeight: FontWeight.bold,
