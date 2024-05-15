@@ -38,9 +38,11 @@ class HttpReportsRepository implements ReportsRepository {
   }
 
   @override
-  Future<Either<String, List<LoansEntity>>> getClosedByRangeDate({
+  Future<Either<String, List<PerdonadosEntity>>> getForgivenessByRangeDate({
     required DateTime inicio,
     required DateTime fin,
+    required int usuarioId,
+    required int sucursalId,
   }) async {
     final inicioParse = DateTime(
       inicio.year,
@@ -63,6 +65,61 @@ class HttpReportsRepository implements ReportsRepository {
     final payload = {
       'fechaInicio': inicioParse.toUtc().toIso8601String(),
       'fechaFin': finParse.toUtc().toIso8601String(),
+      'usuarioId': usuarioId,
+      'sucursalId': sucursalId,
+    };
+
+    const path = '/prestamos/reportes/perdonados';
+    try {
+      final response = await _dio.post<String>(path, data: payload);
+      if (response.statusCode != 201) {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final message = map['message'] ?? 'Ocurrió un error';
+        return Left(message);
+      } else {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final result = PerdonadosEntity.listGetForgivenessFromMap(map['body']);
+        return Right(result);
+      }
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
+      return const Left('Ocurrió un error con el servidor');
+    }
+  }
+
+  @override
+  Future<Either<String, List<LoansEntity>>> getClosedByRangeDate({
+    required DateTime inicio,
+    required DateTime fin,
+    required int usuarioId,
+    required int sucursalId,
+  }) async {
+    final inicioParse = DateTime(
+      inicio.year,
+      inicio.month,
+      inicio.day,
+      0,
+      0,
+      0,
+    );
+
+    final finParse = DateTime(
+      fin.year,
+      fin.month,
+      fin.day,
+      23,
+      59,
+      59,
+    );
+
+    final payload = {
+      'fechaInicio': inicioParse.toUtc().toIso8601String(),
+      'fechaFin': finParse.toUtc().toIso8601String(),
+      'usuarioId': usuarioId,
+      'sucursalId': sucursalId,
     };
 
     const path = '/prestamos/reportes/cerrados';
@@ -137,6 +194,8 @@ class HttpReportsRepository implements ReportsRepository {
   Future<Either<String, List<LoansEntity>>> getLoansByRangeDate({
     required DateTime inicio,
     required DateTime fin,
+    required int usuarioId,
+    required int sucursalId,
   }) async {
     final inicioParse = DateTime(
       inicio.year,
@@ -159,6 +218,8 @@ class HttpReportsRepository implements ReportsRepository {
     final payload = {
       'fechaInicio': inicioParse.toUtc().toIso8601String(),
       'fechaFin': finParse.toUtc().toIso8601String(),
+      'usuarioId': usuarioId,
+      'sucursalId': sucursalId,
     };
 
     const path = '/prestamos/reportes';
@@ -186,6 +247,8 @@ class HttpReportsRepository implements ReportsRepository {
   Future<Either<String, List<ReportsPaymentEntity>>> getPaymentsByRangeDate({
     required DateTime inicio,
     required DateTime fin,
+    required int usuarioId,
+    required int sucursalId,
   }) async {
     final inicioParse = DateTime(
       inicio.year,
@@ -208,6 +271,8 @@ class HttpReportsRepository implements ReportsRepository {
     final payload = {
       'fechaInicio': inicioParse.toUtc().toIso8601String(),
       'fechaFin': finParse.toUtc().toIso8601String(),
+      'usuarioId': usuarioId,
+      'sucursalId': sucursalId,
     };
 
     const path = '/prestamos/reportes/pagos';
@@ -278,7 +343,6 @@ class HttpReportsRepository implements ReportsRepository {
         return true;
       }
     } catch (e, stackTrace) {
-
       await _sentry.captureException(
         e,
         stackTrace: stackTrace,

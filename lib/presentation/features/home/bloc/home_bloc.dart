@@ -19,6 +19,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<GoToExpenses>(_onGoToExpenses);
     on<GoToHistorial>(_onGoToHistorial);
     on<GoToPayUsers>(_onGoToPayUsers);
+    on<GoToPerdonados>(_onGoToPerdonados);
   }
 
   void _onGoToHome(GoToHome event, Emitter<HomeState> emit) {
@@ -71,5 +72,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
   void _onGoToPayUsers(GoToPayUsers event, Emitter<HomeState> emit) {
     emit(state.copyWith(index: 12));
+  }
+
+  void _onGoToPerdonados(GoToPerdonados event, Emitter<HomeState> emit) {
+    emit(state.copyWith(index: 13));
   }
 }

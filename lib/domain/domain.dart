@@ -41,6 +41,8 @@ export 'pay/pay_entity.dart';
 
 export 'increase/increase_entity.dart';
 
+
+export 'reports/perdonados_entity.dart';
 export 'reports/reports_entity.dart';
 export 'reports/reports_repository.dart';
 

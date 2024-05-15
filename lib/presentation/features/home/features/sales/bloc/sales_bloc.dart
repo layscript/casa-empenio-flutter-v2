@@ -26,7 +26,9 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
     required CustomerRepository customerRepository,
     required ProductRepository productRepository,
     required CajaRepository cajaRepository,
-  })  : _salesRepository = salesRepository,
+    required Preferences preferences,
+  })  : _preferences = preferences,
+        _salesRepository = salesRepository,
         _customerRepository = customerRepository,
         _productRepository = productRepository,
         _cajaRepository = cajaRepository,
@@ -50,6 +52,7 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
   final CustomerRepository _customerRepository;
   final ProductRepository _productRepository;
   final CajaRepository _cajaRepository;
+  final Preferences _preferences;
 
   Future<void> _onGetCashSalesStatus(
     GetCashSalesStatus event,
@@ -81,6 +84,7 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
       inicio: event.start ?? state.startTimeSales,
       fin: event.end ?? state.endTimeSales,
       sucursalId: event.sucursalId,
+      userId: _preferences.token?.id ?? 1,
     );
     result.fold(
       (message) => emit(

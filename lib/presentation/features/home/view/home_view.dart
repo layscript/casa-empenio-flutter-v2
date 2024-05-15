@@ -89,6 +89,9 @@ class HomeView extends StatelessWidget {
 
                 case 12:
                   return const PayUserView();
+
+                case 13:
+                  return const PerdonadosView();
               }
               return const SizedBox();
             },

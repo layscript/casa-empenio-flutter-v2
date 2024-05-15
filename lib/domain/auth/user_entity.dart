@@ -113,6 +113,14 @@ class UserEntity {
         'nombre': role?.nombre,
       },
       'isAdmin': isAdmin,
+      'sucursal': {
+        'id': sucursal?.id,
+        'nombre': sucursal?.nombre,
+        'direccion': sucursal?.direccion,
+        'createdAt': sucursal?.createdAt,
+        'updatedAt': sucursal?.updatedAt,
+        'deletedAt': sucursal?.deletedAt,
+      },
     };
   }
 }

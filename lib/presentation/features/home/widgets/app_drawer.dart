@@ -11,7 +11,7 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.read<Preferences>().token;
+    final auth = context.watch<Preferences>().token;
     final homeState = context.watch<HomeBloc>().state;
 
     return Drawer(
@@ -21,10 +21,10 @@ class AppDrawer extends StatelessWidget {
           children: [
             const AppDrawerHeader(),
             const SizedBox(height: 10),
-            const Center(
+            Center(
               child: Text(
-                '(Mayta Atalaya - Principal)',
-                style: TextStyle(
+                '(${auth?.sucursal?.nombre ?? 'Sucursal principal'})',
+                style: const TextStyle(
                   fontSize: 11,
                 ),
               ),
@@ -51,6 +51,18 @@ class AppDrawer extends StatelessWidget {
               title: const Text('Préstamos'),
               onTap: () {
                 context.read<HomeBloc>().add(GoToLoans());
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              tileColor: homeState.index == 13 ? Colors.black12 : null,
+              leading: const FaIcon(
+                FontAwesomeIcons.doorClosed,
+                size: 20,
+              ),
+              title: const Text('Perdonados'),
+              onTap: () {
+                context.read<HomeBloc>().add(GoToPerdonados());
                 Navigator.pop(context);
               },
             ),

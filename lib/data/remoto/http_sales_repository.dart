@@ -19,6 +19,7 @@ class HttpSalesRepository implements SalesRepository {
     required DateTime inicio,
     required DateTime fin,
     required int sucursalId,
+    required int userId,
   }) async {
     final inicioParse = DateTime(
       inicio.year,
@@ -42,6 +43,7 @@ class HttpSalesRepository implements SalesRepository {
       'fechaInicio': inicioParse.toUtc().toIso8601String(),
       'fechaFin': finParse.toUtc().toIso8601String(),
       'sucursalId': sucursalId,
+      'usuarioId': userId,
     };
 
     const path = '/almacen/ventas/reporte';

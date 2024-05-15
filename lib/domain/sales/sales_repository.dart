@@ -6,6 +6,7 @@ abstract class SalesRepository {
     required DateTime inicio,
     required DateTime fin,
     required int sucursalId,
+    required int userId,
   });
 
   Future<Either<String, List<SalesEntity>>> getSalesByUserIdRangeDate({

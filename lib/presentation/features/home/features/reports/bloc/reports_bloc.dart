@@ -51,7 +51,9 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     required LoansRepository loansRepository,
     required CategoriesRepository categoriesRepository,
     required ExpensesRepository expensesRepository,
-  })  : _reportsRepository = reportsRepository,
+    required Preferences preferences,
+  })  : _preferences = preferences,
+        _reportsRepository = reportsRepository,
         _loansRepository = loansRepository,
         _categoriesRepository = categoriesRepository,
         _expensesRepository = expensesRepository,
@@ -91,6 +93,7 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
   final ReportsRepository _reportsRepository;
   final CategoriesRepository _categoriesRepository;
   final ExpensesRepository _expensesRepository;
+  final Preferences _preferences;
 
   Future<void> _onGetLoadInitialDataPayments(
     GetLoadInitialDataPayments event,
@@ -109,14 +112,20 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
       _reportsRepository.getClosedByRangeDate(
         inicio: event.start ?? state.startTimePayments,
         fin: event.end ?? state.endTimePayments,
+        sucursalId: _preferences.token?.id ?? 1,
+        usuarioId: _preferences.token?.id ?? 1,
       ),
       _reportsRepository.getPaymentsByRangeDate(
         inicio: event.start ?? state.startTimePayments,
         fin: event.end ?? state.endTimePayments,
+        sucursalId: _preferences.token?.id ?? 1,
+        usuarioId: _preferences.token?.id ?? 1,
       ),
       _reportsRepository.getLoansByRangeDate(
         inicio: event.start ?? state.startTimePayments,
         fin: event.end ?? state.endTimePayments,
+        sucursalId: _preferences.token?.id ?? 1,
+        usuarioId: _preferences.token?.id ?? 1,
       ),
     ]);
 
@@ -305,6 +314,8 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
       _reportsRepository.getLoansByRangeDate(
         inicio: event.start ?? state.startTimeContracts,
         fin: event.end ?? state.endTimeContracts,
+        sucursalId: _preferences.token?.id ?? 1,
+        usuarioId: _preferences.token?.id ?? 1,
       ),
       _reportsRepository.getIncreasesByRangeDate(
         inicio: event.start ?? state.startTimeContracts,

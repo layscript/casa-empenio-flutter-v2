@@ -44,6 +44,13 @@ class MainView extends StatelessWidget {
               ),
               _ItemGrid(
                 onTap: () => context.read<HomeBloc>().add(
+                      GoToPerdonados(),
+                    ),
+                text: 'Perdonados',
+                icon: FontAwesomeIcons.doorClosed,
+              ),
+              _ItemGrid(
+                onTap: () => context.read<HomeBloc>().add(
                       GoToReports(),
                     ),
                 text: 'Reportes',

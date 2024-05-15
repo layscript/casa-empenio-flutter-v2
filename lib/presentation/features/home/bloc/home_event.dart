@@ -32,3 +32,6 @@ class GoToExpenses extends HomeEvent {}
 class GoToHistorial extends HomeEvent {}
 
 class GoToPayUsers extends HomeEvent {}
+
+class GoToPerdonados extends HomeEvent {}
+

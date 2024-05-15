@@ -34,3 +34,6 @@ export 'main/views/main.dart';
 
 export 'pay_user/view/pay_user_view.dart';
 export 'pay_user/bloc/pay_user_bloc.dart';
+
+export 'perdonados/view/perdonados_view.dart';
+export 'perdonados/bloc/perdonados_bloc.dart';

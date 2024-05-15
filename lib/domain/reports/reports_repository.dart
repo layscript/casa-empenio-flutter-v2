@@ -5,15 +5,29 @@ abstract class ReportsRepository {
   Future<Either<String, List<LoansEntity>>> getLoansByRangeDate({
     required DateTime inicio,
     required DateTime fin,
+    required int usuarioId,
+    required int sucursalId,
   });
   Future<Either<String, List<LoansEntity>>> getClosedByRangeDate({
     required DateTime inicio,
     required DateTime fin,
+    required int usuarioId,
+    required int sucursalId,
   });
   Future<Either<String, List<ReportsPaymentEntity>>> getPaymentsByRangeDate({
     required DateTime inicio,
     required DateTime fin,
+    required int usuarioId,
+    required int sucursalId,
   });
+
+  Future<Either<String, List<PerdonadosEntity>>> getForgivenessByRangeDate({
+    required DateTime inicio,
+    required DateTime fin,
+    required int usuarioId,
+    required int sucursalId,
+  });
+
   Future<Either<String, List<ReportsContractsEntity>>> getIncreasesByRangeDate({
     required DateTime inicio,
     required DateTime fin,

@@ -32,6 +32,7 @@ class _SalesViewState extends State<SalesView> {
         customerRepository: context.read(),
         productRepository: context.read(),
         cajaRepository: context.read(),
+        preferences: context.read(),
       )
         ..add(
           GetListSales(

@@ -24,6 +24,7 @@ class _ReportsViewState extends State<ReportsView> {
         loansRepository: context.read(),
         categoriesRepository: context.read(),
         expensesRepository: context.read(),
+        preferences: context.read(),
       )..add(const GetCategoriesEvent()),
       child: Builder(builder: (context) {
         return Padding(

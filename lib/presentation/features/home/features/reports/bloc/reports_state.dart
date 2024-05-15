@@ -155,10 +155,9 @@ class ReportsState extends Equatable {
         listClosedLoans: listClosedLoans ?? this.listClosedLoans,
         listPayments: listPayments ?? this.listPayments,
         totalPayments: totalPayments ?? this.totalPayments,
-        partialUtilityPayment: partialUtilityPayment ??
-            this.partialUtilityPayment,
-        fullPaymentUtility:
-            fullPaymentUtility ?? this.fullPaymentUtility,
+        partialUtilityPayment:
+            partialUtilityPayment ?? this.partialUtilityPayment,
+        fullPaymentUtility: fullPaymentUtility ?? this.fullPaymentUtility,
         totalClosedLoans: totalClosedLoans ?? this.totalClosedLoans,
         listLoans: listLoans ?? this.listLoans,
         totalIncreases: totalIncreases ?? this.totalIncreases,

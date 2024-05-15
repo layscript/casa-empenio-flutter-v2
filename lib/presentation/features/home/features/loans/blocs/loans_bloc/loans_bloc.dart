@@ -543,9 +543,6 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
           ),
         ),
         (caja) async {
-          print('cajaa 1: ${caja?.id}');
-          print('cajaa 2: ${event.idCaja}');
-
           if (caja?.id == event.idCaja) {
             final result = await _loansRepository.deletePayment(
               userId: int.parse(event.userId),
