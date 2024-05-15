@@ -435,7 +435,6 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     CancelReportLoan event,
     Emitter<ReportsState> emit,
   ) async {
-    // Saldo actual en caja:
     if (state.statusCanceled == ReportsStatus.loading) return;
     emit(state.copyWith(statusCanceled: ReportsStatus.loading));
     try {

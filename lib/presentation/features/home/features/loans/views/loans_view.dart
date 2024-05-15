@@ -77,6 +77,8 @@ class _LoansViewState extends State<LoansView> {
               });
             }
           }, builder: (context, state) {
+            final loansBloc = context.read<LoansBloc>();
+
             switch (state.loansStatus) {
               case LoansStatus.loading || LoansStatus.initial:
                 return const ButtonStateLoading();
@@ -85,12 +87,11 @@ class _LoansViewState extends State<LoansView> {
                 return ButtonStateError(
                   message: state.error,
                   onPressed: () {
-                    context.read<LoansBloc>().add(GetCashStatus());
+                    loansBloc.add(GetCashStatus());
                   },
                 );
 
               case LoansStatus.loaded:
-                final loansBloc = context.read<LoansBloc>();
                 return Container(
                   width: double.infinity,
                   padding: EdgeInsets.only(
@@ -129,10 +130,8 @@ class _LoansViewState extends State<LoansView> {
                                       children: [
                                         Expanded(
                                           child: GestureDetector(
-                                            onTap: () => context
-                                                .read<LoansBloc>()
-                                                .add(const ChangeTypeSearch(
-                                                    true)),
+                                            onTap: () => loansBloc.add(
+                                                const ChangeTypeSearch(true)),
                                             child: Container(
                                               padding: const EdgeInsets.all(10),
                                               decoration: BoxDecoration(
@@ -159,10 +158,8 @@ class _LoansViewState extends State<LoansView> {
                                         const SizedBox(width: 10),
                                         Expanded(
                                           child: GestureDetector(
-                                            onTap: () => context
-                                                .read<LoansBloc>()
-                                                .add(const ChangeTypeSearch(
-                                                    false)),
+                                            onTap: () => loansBloc.add(
+                                                const ChangeTypeSearch(false)),
                                             child: Container(
                                               padding: const EdgeInsets.all(10),
                                               decoration: BoxDecoration(
@@ -399,8 +396,6 @@ class _LoansViewState extends State<LoansView> {
                                                     onPressed: () async {
                                                       if (prestamo?.cerrado ==
                                                           false) {
-                                                        print(
-                                                            'sadjklsadjklsdakjsad 1');
                                                         // TODAVIA NO ESTÁ CERRADO PUEDO EDITAR
                                                         final result =
                                                             await showModalBottomSheet<
@@ -429,23 +424,18 @@ class _LoansViewState extends State<LoansView> {
                                                           },
                                                         );
 
-                                                        if (result != null &&
-                                                            mounted) {
-                                                          //TODO :: Cargar todo
+                                                        if (result != null) {
                                                           await Future.delayed(
                                                                   const Duration(
                                                                       milliseconds:
                                                                           300))
                                                               .then((value) {
-                                                            context
-                                                                .read<
-                                                                    LoansBloc>()
-                                                                .add(
-                                                                  GetLoansByDni(
-                                                                    value: state
-                                                                        .searchText,
-                                                                  ),
-                                                                );
+                                                            loansBloc.add(
+                                                              GetLoansByDni(
+                                                                value: state
+                                                                    .searchText,
+                                                              ),
+                                                            );
                                                           });
                                                         }
                                                       } else {
@@ -492,23 +482,18 @@ class _LoansViewState extends State<LoansView> {
                                                             },
                                                           );
 
-                                                          if (result != null &&
-                                                              mounted) {
-                                                            //TODO :: Cargar todo
+                                                          if (result != null) {
                                                             await Future.delayed(
                                                                     const Duration(
                                                                         milliseconds:
                                                                             300))
                                                                 .then((value) {
-                                                              context
-                                                                  .read<
-                                                                      LoansBloc>()
-                                                                  .add(
-                                                                    GetLoansByDni(
-                                                                      value: state
-                                                                          .searchText,
-                                                                    ),
-                                                                  );
+                                                              loansBloc.add(
+                                                                GetLoansByDni(
+                                                                  value: state
+                                                                      .searchText,
+                                                                ),
+                                                              );
                                                             });
                                                           }
                                                         }
@@ -574,23 +559,19 @@ class _LoansViewState extends State<LoansView> {
                                                           },
                                                         );
 
-                                                        if (result != null &&
-                                                            mounted) {
+                                                        if (result != null) {
                                                           //TODO :: Cargar todo
                                                           await Future.delayed(
                                                                   const Duration(
                                                                       milliseconds:
                                                                           300))
                                                               .then((value) {
-                                                            context
-                                                                .read<
-                                                                    LoansBloc>()
-                                                                .add(
-                                                                  GetLoansByDni(
-                                                                    value: state
-                                                                        .searchText,
-                                                                  ),
-                                                                );
+                                                            loansBloc.add(
+                                                              GetLoansByDni(
+                                                                value: state
+                                                                    .searchText,
+                                                              ),
+                                                            );
                                                           });
                                                         }
                                                       }
@@ -630,17 +611,14 @@ class _LoansViewState extends State<LoansView> {
                                                       );
                                                       print(
                                                           'resuuult: ${result}');
-                                                      if (result != null &&
-                                                          mounted) {
+                                                      if (result != null) {
                                                         //TODO :: Cargar todo
-                                                        context
-                                                            .read<LoansBloc>()
-                                                            .add(
-                                                              GetLoansByDni(
-                                                                value: state
-                                                                    .searchText,
-                                                              ),
-                                                            );
+                                                        loansBloc.add(
+                                                          GetLoansByDni(
+                                                            value: state
+                                                                .searchText,
+                                                          ),
+                                                        );
                                                       }
                                                     },
                                                     icon: const Icon(
@@ -677,18 +655,13 @@ class _LoansViewState extends State<LoansView> {
                                                         },
                                                       );
 
-                                                      print(
-                                                          'resuuult: ${result}');
-                                                      if (result != null &&
-                                                          mounted) {
-                                                        context
-                                                            .read<LoansBloc>()
-                                                            .add(
-                                                              GetLoansByDni(
-                                                                value: state
-                                                                    .searchText,
-                                                              ),
-                                                            );
+                                                      if (result != null) {
+                                                        loansBloc.add(
+                                                          GetLoansByDni(
+                                                            value: state
+                                                                .searchText,
+                                                          ),
+                                                        );
                                                       }
                                                     },
                                                     icon: Icon(
@@ -892,8 +865,7 @@ class _LoansViewState extends State<LoansView> {
                                                           ),
                                                         );
 
-                                                        if (result != null &&
-                                                            mounted) {
+                                                        if (result != null) {
                                                           /*  getData(
                                                             state.typeSearch,
                                                             state.searchText,
@@ -949,16 +921,13 @@ class _LoansViewState extends State<LoansView> {
                                                         ),
                                                       );
 
-                                                      if (result != null &&
-                                                          mounted) {
-                                                        context
-                                                            .read<LoansBloc>()
-                                                            .add(
-                                                              GetLoansByDni(
-                                                                value: state
-                                                                    .searchText,
-                                                              ),
-                                                            );
+                                                      if (result != null) {
+                                                        loansBloc.add(
+                                                          GetLoansByDni(
+                                                            value: state
+                                                                .searchText,
+                                                          ),
+                                                        );
                                                       }
                                                     },
                                                     icon: const Icon(
@@ -1001,7 +970,7 @@ class _LoansViewState extends State<LoansView> {
                                       context,
                                       LoansStepView.route,
                                     );
-                                    if (mounted && result != null) {
+                                    if (result != null) {
                                       loansBloc.add(
                                         GetLoansByDni(
                                           value: result as String? ?? '',
