@@ -525,8 +525,6 @@ class _LoanClientViewState extends State<LoanClientView> {
                                     child: IconButton(
                                       padding: EdgeInsets.zero,
                                       onPressed: () async {
-                                        print(
-                                            'kljasdkljasd: ${prestamo?.codigo}');
                                         final result = await showDialog(
                                           barrierDismissible: false,
                                           context: context,

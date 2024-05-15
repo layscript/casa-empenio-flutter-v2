@@ -939,12 +939,6 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
                                           height: 100,
                                           child: Row(
                                             children: keys.map((key) {
-                                              /*  print(
-                                                  'jkasdjkladkljs 11: ${_garantiasControllers[index][key] != null}');
-                    
-                                              print(
-                                                  'jkasdjkladkljs 22: ${_garantiasControllers[index][key]?.contains('files/')}');
-                     */
                                               return GestureDetector(
                                                 onTap: () {
                                                   _seleccionarNuevaImagen(
@@ -970,11 +964,10 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
                                                                       error,
                                                                       stackTrace) {
                                                                 return Container(
-                                                                  margin:
-                                                                      const EdgeInsets
+                                                                  margin: const EdgeInsets
                                                                           .only(
-                                                                          right:
-                                                                              10),
+                                                                      right:
+                                                                          10),
                                                                   child: Image
                                                                       .asset(
                                                                     width: 90,
@@ -997,11 +990,10 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
                                                                       error,
                                                                       stackTrace) {
                                                                 return Container(
-                                                                  margin:
-                                                                      const EdgeInsets
+                                                                  margin: const EdgeInsets
                                                                           .only(
-                                                                          right:
-                                                                              10),
+                                                                      right:
+                                                                          10),
                                                                   child: Image
                                                                       .asset(
                                                                     width: 90,
