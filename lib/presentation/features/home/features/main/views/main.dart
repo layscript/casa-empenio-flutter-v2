@@ -10,16 +10,18 @@ class MainView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.read<Preferences>().token;
+    final preferences = context.read<Preferences>();
+    final auth = preferences.token;
 
     return SingleChildScrollView(
       child: Column(
         children: [
           const SizedBox(height: 20),
-          const Center(
+          Center(
             child: Text(
-              'BIENVENIDO',
-              style: TextStyle(
+              'Bienvenido a ${preferences.token?.sucursal?.nombre ?? ''}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
                 color: AppColors.primaryText,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -114,7 +116,7 @@ class MainView extends StatelessWidget {
                   onTap: () => context.read<HomeBloc>().add(
                         GoToOpenCaja(),
                       ),
-                  text: 'Abrir Caja',
+                  text: 'Caja',
                   icon: FontAwesomeIcons.boxOpen,
                 ),
               if (auth?.role?.nombre == 'Administrador')

@@ -147,7 +147,7 @@ class AppDrawer extends StatelessWidget {
                   FontAwesomeIcons.boxOpen,
                   size: 20,
                 ),
-                title: const Text('Abrir Caja'),
+                title: const Text('Caja'),
                 onTap: () {
                   context.read<HomeBloc>().add(GoToOpenCaja());
                   Navigator.pop(context);
