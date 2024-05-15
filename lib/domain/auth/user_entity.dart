@@ -37,6 +37,8 @@ class UserEntity {
   final bool? isAdmin;
   final SucursalEntity? sucursal;
 
+  String get fullName => '$nombre $apellido';
+
   static List<UserEntity> listGetUsersFromMap(
     Map<String, dynamic> map,
   ) {

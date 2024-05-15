@@ -142,6 +142,36 @@ class _CajasViewState extends State<CajasView> {
                                       Row(
                                         children: [
                                           const Text(
+                                            'Usuario de Apertura: ',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const Spacer(),
+                                          Text(
+                                            caja?.usuarioApertura?.fullName ?? '',
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Row(
+                                        children: [
+                                          const Text(
+                                            'Usuario de Cierre: ',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const Spacer(),
+                                          Text(
+                                            caja?.usuarioCierre?.fullName ?? '',
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Row(
+                                        children: [
+                                          const Text(
                                             'Fecha y Hora de Apertura: ',
                                             style: TextStyle(
                                               fontWeight: FontWeight.bold,

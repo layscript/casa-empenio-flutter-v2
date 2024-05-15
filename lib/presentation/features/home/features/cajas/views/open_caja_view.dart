@@ -75,7 +75,7 @@ class _OpenCajaViewState extends State<OpenCajaView> {
                             ),
                             CustomRow(
                               label: 'Usuario de Apertura',
-                              value: movimiento.usuarioApertura.toString(),
+                              value: movimiento.usuarioApertura?.fullName ?? '',
                             ),
                             CustomRow(
                               label: 'Monto de Apertura',

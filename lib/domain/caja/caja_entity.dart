@@ -1,5 +1,4 @@
-import 'dart:developer';
-
+import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:equatable/equatable.dart';
 
 class CajaEntity extends Equatable {
@@ -27,10 +26,10 @@ class CajaEntity extends Equatable {
   final int? id;
   final String? fecha;
   final String? horaApertura;
-  final int? usuarioApertura;
+  final UserEntity? usuarioApertura;
   final String? montoApertura;
   final String? horaCierre;
-  final int? usuarioCierre;
+  final UserEntity? usuarioCierre;
   final String? montoCierreReal;
   final String? montoCierreTeorico;
   final String? montoDiferencia;
@@ -47,10 +46,10 @@ class CajaEntity extends Equatable {
     int? id,
     String? fecha,
     String? horaApertura,
-    int? usuarioApertura,
+    UserEntity? usuarioApertura,
     String? montoApertura,
     String? horaCierre,
-    int? usuarioCierre,
+    UserEntity? usuarioCierre,
     String? montoCierreReal,
     String? montoCierreTeorico,
     String? montoDiferencia,
@@ -105,10 +104,10 @@ class CajaEntity extends Equatable {
       id: map?['id'],
       fecha: map?['fecha'],
       horaApertura: map?['horaApertura'],
-      usuarioApertura: map?['usuarioApertura'],
+      usuarioApertura: UserEntity.userFromMap(map?['usuarioApertura']),
       montoApertura: map?['montoApertura'],
       horaCierre: map?['horaCierre'],
-      usuarioCierre: map?['usuarioCierre'],
+      usuarioCierre: UserEntity.userFromMap(map?['usuarioCierre']),
       montoCierreReal: map?['montoCierreReal'],
       montoCierreTeorico: map?['montoCierreTeorico'],
       montoDiferencia: map?['montoDiferencia'],

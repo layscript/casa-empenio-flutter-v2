@@ -55,26 +55,6 @@ class ExpensesEntity {
           ? TypeEntity.getTypeEntityFromMap(map['tipo'])
           : null,
     );
-    /* return CajaEntity(
-      id: map['id'],
-      fecha: map['fecha'],
-      horaApertura: map['horaApertura'],
-      usuarioApertura: map['usuarioApertura'],
-      montoApertura: map['montoApertura'],
-      horaCierre: map['horaCierre'],
-      usuarioCierre: map['usuarioCierre'],
-      montoCierreReal: map['montoCierreReal'],
-      montoCierreTeorico: map['montoCierreTeorico'],
-      montoDiferencia: map['montoDiferencia'],
-      estado: map['estado'],
-      observaciones: map['observaciones'],
-      eliminado: map['eliminado'],
-      updatedAt: map['updatedAt'],
-      createdAt: map['createdAt'],
-      movimientos: map['movimientos'] != null
-          ? MovimientosEntity.listMovimientosFromMap(map['movimientos'])
-          : null,
-    ); */
   }
 }
 
