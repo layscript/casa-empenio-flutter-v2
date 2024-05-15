@@ -72,12 +72,14 @@ class HttpReportsRepository implements ReportsRepository {
     const path = '/prestamos/reportes/perdonados';
     try {
       final response = await _dio.post<String>(path, data: payload);
+
       if (response.statusCode != 201) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
         return Left(message);
       } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
+
         final result = PerdonadosEntity.listGetForgivenessFromMap(map['body']);
         return Right(result);
       }

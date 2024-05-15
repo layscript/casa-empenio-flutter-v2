@@ -12,6 +12,7 @@ final _initialState = PerdonadosState(
   endTimePayments: DateTime.now(),
   status: PerdonadosStatus.initial,
   listPerdonados: const [],
+  message: null,
 );
 
 class PerdonadosBloc extends Bloc<PerdonadosEvent, PerdonadosState> {
@@ -47,18 +48,23 @@ class PerdonadosBloc extends Bloc<PerdonadosEvent, PerdonadosState> {
     );
 
     result.fold(
-      (error) => emit(
-        state.copyWith(
-          listPerdonados: [],
-          status: PerdonadosStatus.error,
-        ),
-      ),
-      (data) => emit(
-        state.copyWith(
-          listPerdonados: data,
-          status: PerdonadosStatus.success,
-        ),
-      ),
+      (error) {
+        emit(
+          state.copyWith(
+            listPerdonados: [],
+            status: PerdonadosStatus.error,
+            message: error,
+          ),
+        );
+      },
+      (data) {
+        emit(
+          state.copyWith(
+            listPerdonados: data,
+            status: PerdonadosStatus.success,
+          ),
+        );
+      },
     );
   }
 }

@@ -439,9 +439,6 @@ class _LoansViewState extends State<LoansView> {
                                                           });
                                                         }
                                                       } else {
-                                                        print(
-                                                            'sadjklsadjklsdakjsad 2');
-                                                        // YA ESTÁ CERRADO Y PUEDO CREAR UNO NUEVO/RENOVAR CON SU MISMA DATA :V
                                                         final optionBottomSheet =
                                                             await ShowBottomSheetRenewLoan
                                                                 .show(
@@ -519,8 +516,6 @@ class _LoansViewState extends State<LoansView> {
                                                   child: IconButton(
                                                     padding: EdgeInsets.zero,
                                                     onPressed: () async {
-                                                      print(
-                                                          'debugggg renovar usuario');
                                                       final optionBottomSheet =
                                                           await ShowBottomSheetRenewLoan
                                                               .show(
@@ -609,8 +604,7 @@ class _LoansViewState extends State<LoansView> {
                                                           );
                                                         },
                                                       );
-                                                      print(
-                                                          'resuuult: ${result}');
+
                                                       if (result != null) {
                                                         //TODO :: Cargar todo
                                                         loansBloc.add(
