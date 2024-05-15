@@ -77,6 +77,17 @@ class _OpenCajaViewState extends State<OpenCajaView> {
                               label: 'Monto de Apertura',
                               value: movimiento.montoApertura.toString(),
                             ),
+                            Builder(builder: (context) {
+                              double saldo = 0.0;
+
+                              for (var e in movimiento.movimientos!) {
+                                saldo += double.parse(e.monto ?? '0.00');
+                              }
+                              return CustomRow(
+                                label: 'Saldo Total',
+                                value: saldo.toStringAsFixed(2),
+                              );
+                            }),
                             if (movimiento.totalIngresos != null)
                               CustomRow(
                                 label: 'Total Ingresos',

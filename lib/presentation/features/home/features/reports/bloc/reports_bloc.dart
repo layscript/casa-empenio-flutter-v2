@@ -469,6 +469,7 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     CancelReportLoan event,
     Emitter<ReportsState> emit,
   ) async {
+    if (state.statusCanceled == ReportsStatus.loading) return;
     emit(state.copyWith(statusCanceled: ReportsStatus.loading));
     try {
       final getCajaOfTheDay = await _cajaRepository.getCajaOfTheDay();
