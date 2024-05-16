@@ -24,7 +24,7 @@ class AnularDialogReport extends StatelessWidget {
           }
           if (state.isReportsCanceledSuccess) {
             SuccessSnackbar.show(context, 'Actualizado correctamente');
-            Navigator.pop(context, true);
+            //Navigator.pop(context, true);
           }
         }
       },

@@ -318,8 +318,7 @@ class _PaymentsReportsViewState extends State<PaymentsReportsView> {
                                                             },
                                                           );
 
-                                                          if (result != null &&
-                                                              mounted) {
+                                                          if (mounted) {
                                                             await Future.delayed(
                                                                     const Duration(
                                                                         milliseconds:
@@ -570,14 +569,16 @@ class _PaymentsReportsViewState extends State<PaymentsReportsView> {
                                                                     context
                                                                         .read(),
                                                               ),
-                                                              child:
-                                                                  DeleteLoanDialog(
-                                                                idLoan:
-                                                                    pago.id ??
-                                                                        0,
-                                                                isPayment: true,
-                                                                idCaja: pago.caja?.id ?? 0
-                                                              ),
+                                                              child: DeleteLoanDialog(
+                                                                  idLoan:
+                                                                      pago.id ??
+                                                                          0,
+                                                                  isPayment:
+                                                                      true,
+                                                                  idCaja: pago
+                                                                          .caja
+                                                                          ?.id ??
+                                                                      0),
                                                             );
                                                           },
                                                         );
