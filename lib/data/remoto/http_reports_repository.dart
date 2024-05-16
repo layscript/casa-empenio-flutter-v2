@@ -291,6 +291,7 @@ class HttpReportsRepository implements ReportsRepository {
         return Right(result);
       }
     } catch (e, stackTrace) {
+      print('aslñkdlakñsdadklskladñs: $e');
       await _sentry.captureException(
         e,
         stackTrace: stackTrace,

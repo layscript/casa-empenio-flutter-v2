@@ -104,10 +104,18 @@ class CajaEntity extends Equatable {
       id: map?['id'],
       fecha: map?['fecha'],
       horaApertura: map?['horaApertura'],
-      usuarioApertura: UserEntity.userFromMap(map?['usuarioApertura']),
+      usuarioApertura: map['usuarioApertura'] != null
+          ? map['usuarioApertura'] is int
+              ? null
+              : UserEntity.userFromMap(map?['usuarioApertura'])
+          : null,
       montoApertura: map?['montoApertura'],
       horaCierre: map?['horaCierre'],
-      usuarioCierre: UserEntity.userFromMap(map?['usuarioCierre']),
+      usuarioCierre: map['usuarioCierre'] != null
+          ? map['usuarioCierre'] is int
+              ? null
+              : UserEntity.userFromMap(map?['usuarioCierre'])
+          : null,
       montoCierreReal: map?['montoCierreReal'],
       montoCierreTeorico: map?['montoCierreTeorico'],
       montoDiferencia: map?['montoDiferencia'],

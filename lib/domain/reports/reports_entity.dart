@@ -36,9 +36,9 @@ class ReportsPaymentEntity {
   static ReportsPaymentEntity getReportsPaymentFromMap(
       Map<String, dynamic> map) {
     return ReportsPaymentEntity(
-      id: map['id'],
-      monto: map['monto'],
-      fecha: map['fecha'],
+      id: map['id'] as int,
+      monto: map['monto'] as String?,
+      fecha: map['fecha'] as String?,
       cliente: map['cliente'] != null
           ? CustomerEntity.getCustomerFromMap(map['cliente'])
           : null,
@@ -51,10 +51,12 @@ class ReportsPaymentEntity {
       updatedAt: map['updatedAt'],
       createdAt: map['createdAt'],
       efectivo: map['efectivo'],
-      caja: CajaEntity.getCajaFromMap(
-        map['caja'],
-        false,
-      ),
+      caja: map['caja'] != null
+          ? CajaEntity.getCajaFromMap(
+              map['caja'],
+              false,
+            )
+          : null,
     );
   }
 

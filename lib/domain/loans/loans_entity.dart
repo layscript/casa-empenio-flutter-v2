@@ -153,10 +153,12 @@ caja: $caja,
             )
           : null,
       isRenewed: map['isRenewed'] as bool?,
-      caja: CajaEntity.getCajaFromMap(
-        map['caja'],
-        false,
-      ),
+      caja: map['caja'] != null
+          ? CajaEntity.getCajaFromMap(
+              map['caja'],
+              false,
+            )
+          : null,
     );
   }
 }
