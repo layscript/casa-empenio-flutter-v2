@@ -31,7 +31,8 @@ class _ContractReportsViewState extends State<ContractReportsView> {
 
   @override
   Widget build(BuildContext context) {
-    final reportsBloc = context.watch<ReportsBloc>().state;
+    final reportsBloc = context.watch<ReportsBloc>();
+    final state = reportsBloc.state;
     final auth = context.read<Preferences>().token;
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -51,12 +52,12 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                       dense: true,
                       contentPadding: EdgeInsets.zero,
                       leading: LeadingDownloadButtonPaymentsContracts(
-                        listIncrease: reportsBloc.listIncrease,
-                        listLoans: reportsBloc.listLoans,
+                        listIncrease: state.listIncrease,
+                        listLoans: state.listLoans,
                       ),
                       title: FittedBox(
                         child: Text(
-                          'Desde: ${DateFormat('dd/MM/yyyy').format(reportsBloc.startTimeContracts)} Hasta: ${DateFormat('dd/MM/yyyy').format(reportsBloc.endTimeContracts)}',
+                          'Desde: ${DateFormat('dd/MM/yyyy').format(state.startTimeContracts)} Hasta: ${DateFormat('dd/MM/yyyy').format(state.endTimeContracts)}',
                         ),
                       ),
                       trailing: IconButton(
@@ -72,12 +73,12 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                           );
 
                           if (result != null && mounted) {
-                            context.read<ReportsBloc>().add(
-                                  GetLoadInitialDataContracts(
-                                    start: result.start,
-                                    end: result.end,
-                                  ),
-                                );
+                            reportsBloc.add(
+                              GetLoadInitialDataContracts(
+                                start: result.start,
+                                end: result.end,
+                              ),
+                            );
                           }
                         },
                         icon: const Icon(Icons.calendar_today),
@@ -110,8 +111,8 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                           underline: const SizedBox(),
                           isDense: true,
                           hint: const Text('Seleccione una categoria'),
-                          value: reportsBloc.selectedCategory,
-                          items: reportsBloc.listCategories
+                          value: state.selectedCategory,
+                          items: state.listCategories
                               .map(
                                 (e) => DropdownMenuItem(
                                   value: e,
@@ -120,9 +121,9 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                               )
                               .toList(),
                           onChanged: (value) {
-                            context.read<ReportsBloc>().add(
-                                  ChangeCategoryEvent(value),
-                                );
+                            reportsBloc.add(
+                              ChangeCategoryEvent(value),
+                            );
                           },
                         ),
                       ),
@@ -135,7 +136,7 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              'Aumentos (${reportsBloc.listIncrease.length})',
+                              'Aumentos (${state.listIncrease.length})',
                               style: const TextStyle(
                                 color: Colors.black,
                                 fontWeight: FontWeight.bold,
@@ -173,11 +174,10 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                       } else {
                                         return ListView.builder(
                                           shrinkWrap: true,
-                                          itemCount:
-                                              reportsBloc.listIncrease.length,
+                                          itemCount: state.listIncrease.length,
                                           itemBuilder: (context, index) {
                                             final aumento =
-                                                reportsBloc.listIncrease[index];
+                                                state.listIncrease[index];
                                             return GestureDetector(
                                               onTap: () {
                                                 Navigator.push(
@@ -280,15 +280,14 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                                                   TextButton(
                                                                     onPressed:
                                                                         () {
-                                                                      context
-                                                                          .read<
-                                                                              ReportsBloc>()
+                                                                      reportsBloc
                                                                           .add(
-                                                                            DeleteIncreaseEvent(
-                                                                              aumento.id,
-                                                                              auth?.id,
-                                                                            ),
-                                                                          );
+                                                                        DeleteIncreaseEvent(
+                                                                          aumento
+                                                                              .id,
+                                                                          auth?.id,
+                                                                        ),
+                                                                      );
 
                                                                       Navigator.pop(
                                                                           context);
@@ -347,7 +346,7 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              'Prestamos (${reportsBloc.listLoans.length})',
+                              'Prestamos (${state.listLoans.length})',
                               style: const TextStyle(
                                 color: Colors.black,
                                 fontWeight: FontWeight.bold,
@@ -384,11 +383,10 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                       } else {
                                         return ListView.builder(
                                           shrinkWrap: true,
-                                          itemCount:
-                                              reportsBloc.listLoans.length,
+                                          itemCount: state.listLoans.length,
                                           itemBuilder: (context, index) {
                                             final prestamo =
-                                                reportsBloc.listLoans[index];
+                                                state.listLoans[index];
                                             final fechaCreacion =
                                                 DateTime.parse(
                                                         prestamo.fecha ?? '')
@@ -475,8 +473,8 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                                             builder: (_) {
                                                               return BlocProvider
                                                                   .value(
-                                                                value: context.read<
-                                                                    ReportsBloc>(),
+                                                                value:
+                                                                    reportsBloc,
                                                                 child:
                                                                     ShowDetailsReportLoans(
                                                                   nroPrestamo:
@@ -527,18 +525,16 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                                                   'LIQUIDADO' &&
                                                               prestamo.estado !=
                                                                   'PAGADO') {
-                                                            final result =
-                                                                await showDialog<
-                                                                    bool?>(
+                                                            await showDialog<
+                                                                bool?>(
                                                               context: context,
                                                               barrierDismissible:
                                                                   false,
                                                               builder: (_) {
                                                                 return BlocProvider
                                                                     .value(
-                                                                  value: context
-                                                                      .read<
-                                                                          ReportsBloc>(),
+                                                                  value:
+                                                                      reportsBloc,
                                                                   child:
                                                                       CancelDialogReportLoan(
                                                                     codigo:
@@ -553,21 +549,12 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                                               },
                                                             );
 
-                                                            if (result !=
-                                                                    null &&
-                                                                mounted) {
-                                                              // Volver a cargar la data
-                                                              context
-                                                                  .read<
-                                                                      ReportsBloc>()
-                                                                  .add(
-                                                                    const GetLoadInitialDataContracts(
-                                                                      end: null,
-                                                                      start:
-                                                                          null,
-                                                                    ),
-                                                                  );
-                                                            }
+                                                            /* reportsBloc.add(
+                                                              const GetLoadInitialDataContracts(
+                                                                end: null,
+                                                                start: null,
+                                                              ),
+                                                            ); */
                                                           }
                                                         },
                                                         icon: Icon(
@@ -644,7 +631,7 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        Text('S/. ${oCcy.format(reportsBloc.totalIncreases)}'),
+                        Text('S/. ${oCcy.format(state.totalIncreases)}'),
                       ],
                     ),
                     Row(
@@ -656,7 +643,7 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        Text('S/. ${oCcy.format(reportsBloc.totalProfits)}'),
+                        Text('S/. ${oCcy.format(state.totalProfits)}'),
                       ],
                     ),
                     Row(
@@ -669,7 +656,7 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                           ),
                         ),
                         Text(
-                          'S/. ${oCcy.format(reportsBloc.totalLoans)}',
+                          'S/. ${oCcy.format(state.totalLoans)}',
                         ),
                       ],
                     )

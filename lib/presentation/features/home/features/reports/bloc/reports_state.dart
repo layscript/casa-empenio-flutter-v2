@@ -2,6 +2,8 @@ part of 'reports_bloc.dart';
 
 enum ReportsStatus { initial, loading, success, error }
 
+enum ReportsContractsStatus { initial, loading, success, error }
+
 class ReportsState extends Equatable {
   const ReportsState({
     required this.statusClosedLoans,
@@ -36,6 +38,7 @@ class ReportsState extends Equatable {
     required this.message,
     required this.listCategories,
     required this.selectedCategory,
+    required this.statusCanceledContracts,
   });
 
   final ReportsStatus statusClosedLoans;
@@ -44,6 +47,7 @@ class ReportsState extends Equatable {
   final ReportsStatus statusLoans;
   final ReportsStatus statusDetails;
   final ReportsStatus statusCanceled;
+  final ReportsContractsStatus statusCanceledContracts;
 
   final DateTime startTimePayments;
   final DateTime endTimePayments;
@@ -107,6 +111,15 @@ class ReportsState extends Equatable {
   bool get isReportsCanceledError => statusCanceled == ReportsStatus.error;
   bool get isReportsCanceledSuccess => statusCanceled == ReportsStatus.success;
 
+  bool get isReportsContractCanceledLoading =>
+      statusCanceledContracts == ReportsContractsStatus.loading;
+
+  bool get isReportsContractCanceledError =>
+      statusCanceledContracts == ReportsContractsStatus.error;
+
+  bool get isReportsContractCanceledSuccess =>
+      statusCanceledContracts == ReportsContractsStatus.success;
+
   ReportsState copyWith({
     ReportsStatus? statusIncreases,
     ReportsStatus? statusLoans,
@@ -140,6 +153,7 @@ class ReportsState extends Equatable {
     String? message,
     List<CategoriesEntity>? listCategories,
     CategoriesEntity? selectedCategory,
+    ReportsContractsStatus? statusCanceledContracts,
   }) =>
       ReportsState(
         statusCanceled: statusCanceled ?? this.statusCanceled,
@@ -175,6 +189,8 @@ class ReportsState extends Equatable {
         message: message ?? this.message,
         listCategories: listCategories ?? this.listCategories,
         selectedCategory: selectedCategory,
+        statusCanceledContracts:
+            statusCanceledContracts ?? this.statusCanceledContracts,
       );
 
   @override
@@ -211,5 +227,6 @@ class ReportsState extends Equatable {
         message,
         listCategories,
         selectedCategory,
+        statusCanceledContracts,
       ];
 }

@@ -48,7 +48,7 @@ abstract class LoansRepository {
     required int idLoan,
     required String value,
   });
-  Future<bool> deleteLoan({
+  Future<Either<String, bool>> deleteLoan({
     required int idLoan,
     required String userId,
   });

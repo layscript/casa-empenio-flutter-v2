@@ -1009,7 +1009,7 @@ class HttpLoansRepository implements LoansRepository {
   }
 
   @override
-  Future<bool> deleteLoan({
+  Future<Either<String, bool>> deleteLoan({
     required int idLoan,
     required String userId,
   }) async {
@@ -1019,15 +1019,14 @@ class HttpLoansRepository implements LoansRepository {
       if (response.statusCode != 200) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
-        return false;
+        return Left(message);
       } else {
         await _customerRepository.createHistory(
           accion: 'ELIMINAR',
           detalle: 'eliminar el prestamo con el codigo: $idLoan',
           usuarioId: int.parse(userId),
         );
-        //final map = json.decode(response.data!) as Map<String, dynamic>;
-        return true;
+        return const Right(true);
       }
     } catch (e, stackTrace) {
       await _sentry.captureException(
@@ -1035,7 +1034,7 @@ class HttpLoansRepository implements LoansRepository {
         stackTrace: stackTrace,
       );
       //print('responseee ee: $e');
-      return false;
+      return Left(e.toString());
     }
   }
 

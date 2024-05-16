@@ -17,6 +17,7 @@ final _initialState = ReportsState(
   statusLoans: ReportsStatus.initial,
   statusDetails: ReportsStatus.initial,
   statusCanceled: ReportsStatus.initial,
+  statusCanceledContracts: ReportsContractsStatus.initial,
   startTimePayments: DateTime.now(),
   endTimePayments: DateTime.now(),
   startTimeContracts: DateTime.now(),
@@ -342,6 +343,10 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
         statusIncreases: ReportsStatus.loading,
         statusLoans: ReportsStatus.loading,
         statusCanceled: ReportsStatus.initial,
+        statusClosedLoans: ReportsStatus.initial,
+        statusDetails: ReportsStatus.initial,
+        statusPayments: ReportsStatus.initial,
+        //statusCanceledContracts: ReportsContractsStatus.initial,
         startTimeContracts: event.start,
         endTimeContracts: event.end,
       ),
@@ -469,35 +474,67 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     CancelReportLoan event,
     Emitter<ReportsState> emit,
   ) async {
-    // TODO:: Revisar bien
-    //if (state.statusCanceled == ReportsStatus.loading) return;
-    //emit(state.copyWith(statusCanceled: ReportsStatus.loading));
+    //if (state.statusCanceledContracts == ReportsContractsStatus.loading) return;
+    /* emit(
+      state.copyWith(
+        statusCanceledContracts: ReportsContractsStatus.loading,
+      ),
+    ); */
+
+    if (state.statusCanceledContracts == ReportsContractsStatus.loading) return;
+
     try {
       final getCajaOfTheDay = await _cajaRepository.getCajaOfTheDay();
       await getCajaOfTheDay.fold(
         (error) async {
           emit(
             state.copyWith(
-              statusCanceled: ReportsStatus.error,
+              statusCanceledContracts: ReportsContractsStatus.error,
               message: error,
             ),
           );
         },
         (caja) async {
           if (caja?.id == event.idCaja) {
-            final result = await _loansRepository.deleteLoan(
+            final response = await _loansRepository.deleteLoan(
               idLoan: event.loanId,
               userId: event.userId,
             );
-            if (result) {
-              emit(state.copyWith(statusCanceled: ReportsStatus.success));
-            } else {
-              emit(state.copyWith(statusCanceled: ReportsStatus.error));
-            }
+
+            await response.fold(
+              (err) async => emit(
+                state.copyWith(
+                  statusCanceledContracts: ReportsContractsStatus.error,
+                  message: err,
+                ),
+              ),
+              (result) async {
+                if (result) {
+                  emit(
+                    state.copyWith(
+                      statusCanceledContracts: ReportsContractsStatus.success,
+                    ),
+                  );
+
+                  add(
+                    const GetLoadInitialDataContracts(
+                      start: null,
+                      end: null,
+                    ),
+                  );
+                } else {
+                  emit(
+                    state.copyWith(
+                      statusCanceledContracts: ReportsContractsStatus.error,
+                    ),
+                  );
+                }
+              },
+            );
           } else {
             emit(
               state.copyWith(
-                statusCanceled: ReportsStatus.error,
+                statusCanceledContracts: ReportsContractsStatus.error,
                 message:
                     'No se puede eliminar porque no pertenece a la caja actual',
               ),
@@ -506,7 +543,8 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
         },
       );
     } catch (e) {
-      emit(state.copyWith(statusCanceled: ReportsStatus.error));
+      emit(state.copyWith(
+          statusCanceledContracts: ReportsContractsStatus.error));
     }
   }
 

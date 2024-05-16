@@ -480,15 +480,27 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
       ),
       (caja) async {
         if (caja?.id == event.idCaja) {
-          final result = await _loansRepository.deleteLoan(
+          final response = await _loansRepository.deleteLoan(
             idLoan: event.idLoan,
             userId: event.userId,
           );
-          if (result) {
-            emit(state.copyWith(loansStatus: LoansStatus.deleteLoanSuccess));
-          } else {
-            emit(state.copyWith(loansStatus: LoansStatus.deleteLoanError));
-          }
+
+          await response.fold(
+            (error) async => emit(
+              state.copyWith(
+                loansStatus: LoansStatus.deleteLoanError,
+                error: error,
+              ),
+            ),
+            (result) async {
+              if (result) {
+                emit(
+                    state.copyWith(loansStatus: LoansStatus.deleteLoanSuccess));
+              } else {
+                emit(state.copyWith(loansStatus: LoansStatus.deleteLoanError));
+              }
+            },
+          );
         } else {
           emit(
             state.copyWith(

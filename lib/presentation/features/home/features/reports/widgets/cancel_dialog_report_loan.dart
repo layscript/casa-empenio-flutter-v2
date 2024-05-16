@@ -20,40 +20,18 @@ class CancelDialogReportLoan extends StatelessWidget {
 
     return BlocListener<ReportsBloc, ReportsState>(
       listener: (context, state) {
-        if (state.isReportsCanceledLoading) {
+        if (state.isReportsContractCanceledLoading) {
           OverlayLoader.show(context);
         } else {
           OverlayLoader.hide();
-          if (state.isReportsCanceledError) {
+          if (state.isReportsContractCanceledError) {
             ErrorSnackbar.show(
               context,
               state.message ?? 'Ocurrió un error al eliminar el prestamo',
             );
           }
-          if (state.isReportsCanceledSuccess) {
-            showDialog(
-              context: context,
-              builder: (context) {
-                return AlertDialog(
-                  title: const Text('Mensaje'),
-                  content: const Text(
-                    'Prestamo eliminado correctamente',
-                    style: TextStyle(
-                        color: AppColors.primaryText,
-                        fontWeight: FontWeight.normal),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        Navigator.pop(context, true);
-                      },
-                      child: const Text('Aceptar'),
-                    ),
-                  ],
-                );
-              },
-            );
+          if (state.isReportsContractCanceledSuccess) {
+            SuccessSnackbar.show(context, 'Eliminado correctamente');
           }
         }
       },
