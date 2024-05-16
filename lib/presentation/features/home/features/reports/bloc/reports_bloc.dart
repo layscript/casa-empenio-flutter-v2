@@ -469,8 +469,9 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     CancelReportLoan event,
     Emitter<ReportsState> emit,
   ) async {
-    if (state.statusCanceled == ReportsStatus.loading) return;
-    emit(state.copyWith(statusCanceled: ReportsStatus.loading));
+    // TODO:: Revisar bien
+    //if (state.statusCanceled == ReportsStatus.loading) return;
+    //emit(state.copyWith(statusCanceled: ReportsStatus.loading));
     try {
       final getCajaOfTheDay = await _cajaRepository.getCajaOfTheDay();
       await getCajaOfTheDay.fold(
@@ -544,7 +545,9 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     AnularPrestamoLiquidado event,
     Emitter<ReportsState> emit,
   ) async {
-    emit(state.copyWith(statusCanceled: ReportsStatus.loading));
+    // TODO:: Revisar bien
+
+    //emit(state.copyWith(statusCanceled: ReportsStatus.loading));
     final result = await _reportsRepository.cancelSettledLoan(
       id: event.codigo ?? 0,
     );
@@ -614,7 +617,8 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     DeleteIncreaseEvent event,
     Emitter<ReportsState> emit,
   ) async {
-    emit(state.copyWith(statusIncreases: ReportsStatus.loading));
+    // TODO:: Revisar bien
+    //emit(state.copyWith(statusIncreases: ReportsStatus.loading));
     await _reportsRepository.deleteIncrease(
       id: event.id,
       idUser: event.userId,

@@ -101,15 +101,19 @@ class _OpenCajaViewState extends State<OpenCajaView> {
                               value: movimiento.observaciones.toString(),
                             ),
                             Builder(builder: (context) {
-                              double saldo = 0.0;
+                              double ingresos = 0.0;
+                              double egresos = 0.0;
+                              double total = 0.0;
 
                               for (var e in movimiento.movimientos!) {
-                                saldo += double.parse(e.monto ?? '0.00');
+                                if (e.suma == true) {
+                                  ingresos += double.parse(e.monto ?? '0.00');
+                                } else {
+                                  egresos += double.parse(e.monto ?? '0.00');
+                                }
                               }
-                              // return CustomRow(
-                              //   label: 'Saldo Total',
-                              //   value: saldo.toStringAsFixed(2),
-                              // );
+
+                              total = ingresos - egresos;
 
                               return Container(
                                 padding: const EdgeInsets.all(20),
@@ -125,7 +129,7 @@ class _OpenCajaViewState extends State<OpenCajaView> {
                                       ),
                                     ),
                                     Text(
-                                      'S/.${oCcy.format(saldo)}',
+                                      'S/.${oCcy.format(total)}',
                                       style: const TextStyle(
                                         color: AppColors.primaryText,
                                         fontSize: 20,
