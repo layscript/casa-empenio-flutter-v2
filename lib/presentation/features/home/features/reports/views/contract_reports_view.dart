@@ -2,6 +2,8 @@ import 'dart:developer';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/overlay_loader.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/reports/views/reports_detail_view.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/reports/widgets/widgets.dart';
@@ -34,6 +36,7 @@ class _ContractReportsViewState extends State<ContractReportsView> {
     final reportsBloc = context.watch<ReportsBloc>();
     final state = reportsBloc.state;
     final auth = context.read<Preferences>().token;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         return Container(
@@ -174,7 +177,8 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                       } else {
                                         return ListView.builder(
                                           shrinkWrap: true,
-                                          itemCount: state.listIncrease.length,
+                                          itemCount:
+                                              state.listIncrease.length,
                                           itemBuilder: (context, index) {
                                             final aumento =
                                                 state.listIncrease[index];
@@ -198,7 +202,8 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                                         solicitudRepository:
                                                             context.read(),
                                                       ),
-                                                      child: ReportsDetailView(
+                                                      child:
+                                                          ReportsDetailView(
                                                         document: aumento
                                                                 .prestamo
                                                                 ?.cliente
@@ -235,7 +240,8 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                                         overflow: TextOverflow
                                                             .ellipsis,
                                                       ),
-                                                      const SizedBox(height: 3),
+                                                      const SizedBox(
+                                                          height: 3),
                                                       Text(
                                                         '${aumento.prestamo?.cliente?.nombres} ${aumento.prestamo?.cliente?.apellidos}',
                                                       ),
@@ -283,8 +289,7 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                                                       reportsBloc
                                                                           .add(
                                                                         DeleteIncreaseEvent(
-                                                                          aumento
-                                                                              .id,
+                                                                          aumento.id,
                                                                           auth?.id,
                                                                         ),
                                                                       );
@@ -297,8 +302,8 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                                                       'Aceptar',
                                                                       style:
                                                                           TextStyle(
-                                                                        color: Colors
-                                                                            .red,
+                                                                        color:
+                                                                            Colors.red,
                                                                       ),
                                                                     ),
                                                                   ),
@@ -313,10 +318,12 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                                         ),
                                                       ),
                                                       Text(
-                                                        DateFormat('dd/MM/yyyy')
+                                                        DateFormat(
+                                                                'dd/MM/yyyy')
                                                             .format(
                                                           DateTime.parse(
-                                                            aumento.fecha ?? '',
+                                                            aumento.fecha ??
+                                                                '',
                                                           ),
                                                         ),
                                                       ),
@@ -393,7 +400,8 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                                     .toLocal();
 
                                             final fechaFormateada =
-                                                DateFormat('dd/MM/yyyy - kk:mm')
+                                                DateFormat(
+                                                        'dd/MM/yyyy - kk:mm')
                                                     .format(fechaCreacion);
 
                                             return GestureDetector(
@@ -416,7 +424,8 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                                         solicitudRepository:
                                                             context.read(),
                                                       ),
-                                                      child: ReportsDetailView(
+                                                      child:
+                                                          ReportsDetailView(
                                                         document: prestamo
                                                                 ?.cliente
                                                                 ?.dni ??
@@ -454,7 +463,8 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                                       Text(
                                                         '$fechaFormateada - ${prestamo.estado}',
                                                       ),
-                                                      const SizedBox(height: 3),
+                                                      const SizedBox(
+                                                          height: 3),
                                                       Text(
                                                         '${prestamo.cliente?.nombres} ${prestamo.cliente?.apellidos}',
                                                       )
@@ -527,7 +537,8 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                                                   'PAGADO') {
                                                             await showDialog<
                                                                 bool?>(
-                                                              context: context,
+                                                              context:
+                                                                  context,
                                                               barrierDismissible:
                                                                   false,
                                                               builder: (_) {
@@ -540,21 +551,20 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                                                     codigo:
                                                                         prestamo.codigo ??
                                                                             0,
-                                                                    idCaja: prestamo
-                                                                            .caja
-                                                                            ?.id ??
-                                                                        1,
+                                                                    idCaja:
+                                                                        prestamo.caja?.id ??
+                                                                            1,
                                                                   ),
                                                                 );
                                                               },
                                                             );
 
                                                             /* reportsBloc.add(
-                                                              const GetLoadInitialDataContracts(
-                                                                end: null,
-                                                                start: null,
-                                                              ),
-                                                            ); */
+                                                                const GetLoadInitialDataContracts(
+                                                                  end: null,
+                                                                  start: null,
+                                                                ),
+                                                              ); */
                                                           }
                                                         },
                                                         icon: Icon(
@@ -570,7 +580,8 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                                               : Colors.red,
                                                         ),
                                                       ),
-                                                      if (prestamo.isRenewed ==
+                                                      if (prestamo
+                                                              .isRenewed ==
                                                           true)
                                                         const CircleAvatar(
                                                           radius: 10,
@@ -579,8 +590,8 @@ class _ContractReportsViewState extends State<ContractReportsView> {
                                                           child: Text(
                                                             'R',
                                                             style: TextStyle(
-                                                              color:
-                                                                  Colors.white,
+                                                              color: Colors
+                                                                  .white,
                                                               fontWeight:
                                                                   FontWeight
                                                                       .bold,

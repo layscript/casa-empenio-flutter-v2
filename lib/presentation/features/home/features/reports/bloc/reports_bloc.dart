@@ -474,14 +474,11 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     CancelReportLoan event,
     Emitter<ReportsState> emit,
   ) async {
-    //if (state.statusCanceledContracts == ReportsContractsStatus.loading) return;
-    /* emit(
+    emit(
       state.copyWith(
         statusCanceledContracts: ReportsContractsStatus.loading,
       ),
-    ); */
-
-    if (state.statusCanceledContracts == ReportsContractsStatus.loading) return;
+    );
 
     try {
       final getCajaOfTheDay = await _cajaRepository.getCajaOfTheDay();
@@ -501,14 +498,14 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
               userId: event.userId,
             );
 
-            await response.fold(
-              (err) async => emit(
+            response.fold(
+              (err) => emit(
                 state.copyWith(
                   statusCanceledContracts: ReportsContractsStatus.error,
                   message: err,
                 ),
               ),
-              (result) async {
+              (result) {
                 if (result) {
                   emit(
                     state.copyWith(

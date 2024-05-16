@@ -11,6 +11,7 @@ class CancelDialogReportLoan extends StatelessWidget {
     required this.codigo,
     required this.idCaja,
   });
+
   final int codigo;
   final int idCaja;
 
@@ -20,56 +21,83 @@ class CancelDialogReportLoan extends StatelessWidget {
 
     return BlocListener<ReportsBloc, ReportsState>(
       listener: (context, state) {
-        if (state.isReportsContractCanceledLoading) {
-          OverlayLoader.show(context);
-        } else {
-          OverlayLoader.hide();
-          if (state.isReportsContractCanceledError) {
-            ErrorSnackbar.show(
-              context,
-              state.message ?? 'Ocurrió un error al eliminar el prestamo',
-            );
-          }
-          if (state.isReportsContractCanceledSuccess) {
-            SuccessSnackbar.show(context, 'Eliminado correctamente');
-          }
+        print('_staeeeeee: ${state.statusCanceledContracts}');
+
+        if (state.isReportsContractCanceledError) {
+          Navigator.pop(context);
+          ErrorSnackbar.show(
+            context,
+            state.message ?? 'Ocurrió un error al eliminar el préstamo',
+          );
+        }
+        if (state.isReportsContractCanceledSuccess) {
+          Navigator.pop(context);
+          SuccessSnackbar.show(context, 'Eliminado correctamente');
         }
       },
       child: AlertDialog(
         title: const Text('Eliminar Prestamo'),
-        content: const Text(
-          '¿Está seguro que desea eliminar el prestamo?',
-          style: TextStyle(
-            color: AppColors.primaryText,
-            fontWeight: FontWeight.normal,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Regresar',
-              style: TextStyle(
-                color: AppColors.red,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.read<ReportsBloc>().add(
-                    CancelReportLoan(
-                      loanId: codigo,
-                      userId: preferences?.id.toString() ?? '1',
-                      idCaja: idCaja,
+        content: BlocBuilder<ReportsBloc, ReportsState>(
+          builder: (context, state) {
+            if (state.isReportsContractCanceledLoading) {
+              return const Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Center(child: CircularProgressIndicator()),
+                ],
+              );
+            }
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  '¿Está seguro que desea eliminar el prestamo?',
+                  style: TextStyle(
+                    color: AppColors.primaryText,
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextButton(
+                      style: ButtonStyle(
+                        backgroundColor: MaterialStateProperty.all(Colors.red),
+                        foregroundColor:
+                            MaterialStateProperty.all(Colors.white),
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text(
+                        'Regresar',
+                      ),
                     ),
-                  );
-            },
-            child: const Text(
-              'Si, Eliminar',
-            ),
-          ),
-        ],
+                    const SizedBox(width: 15),
+                    TextButton(
+                      style: ButtonStyle(
+                        backgroundColor: MaterialStateProperty.all(Colors.blue),
+                        foregroundColor:
+                            MaterialStateProperty.all(Colors.white),
+                      ),
+                      onPressed: state.isReportsContractCanceledLoading
+                          ? null
+                          : () {
+                              context.read<ReportsBloc>().add(
+                                    CancelReportLoan(
+                                      loanId: codigo,
+                                      userId: preferences?.id.toString() ?? '1',
+                                      idCaja: idCaja,
+                                    ),
+                                  );
+                            },
+                      child: const Text('Si, Eliminar'),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
