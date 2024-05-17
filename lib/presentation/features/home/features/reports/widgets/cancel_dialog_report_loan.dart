@@ -22,17 +22,19 @@ class CancelDialogReportLoan extends StatelessWidget {
     return BlocListener<ReportsBloc, ReportsState>(
       listener: (context, state) {
         print('_staeeeeee: ${state.statusCanceledContracts}');
-
         if (state.isReportsContractCanceledError) {
-          Navigator.pop(context);
           ErrorSnackbar.show(
             context,
             state.message ?? 'Ocurrió un error al eliminar el préstamo',
           );
+          Navigator.pop(context);
         }
         if (state.isReportsContractCanceledSuccess) {
+          SuccessSnackbar.show(
+            context,
+            'Eliminado correctamente',
+          );
           Navigator.pop(context);
-          SuccessSnackbar.show(context, 'Eliminado correctamente');
         }
       },
       child: AlertDialog(
@@ -82,6 +84,8 @@ class CancelDialogReportLoan extends StatelessWidget {
                       onPressed: state.isReportsContractCanceledLoading
                           ? null
                           : () {
+                              //Navigator.pop(context);
+
                               context.read<ReportsBloc>().add(
                                     CancelReportLoan(
                                       loanId: codigo,
