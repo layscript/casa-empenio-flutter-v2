@@ -31,6 +31,7 @@ abstract class ReportsRepository {
   Future<Either<String, List<ReportsContractsEntity>>> getIncreasesByRangeDate({
     required DateTime inicio,
     required DateTime fin,
+    required int sucursal,
   });
   Future<bool> cancelLoan({required int id});
   Future<bool> cancelSettledLoan({required int id});

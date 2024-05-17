@@ -81,9 +81,9 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     );
     final preferences = _preferences.token;
     final result = await _customerRepository.getCustomerByDni(
-      dni: event.value,
-      userId: preferences?.id ?? 0,
-    );
+        dni: event.value,
+        userId: preferences?.id ?? 0,
+        sucursal: preferences?.sucursal?.id ?? 1);
     result.fold(
       (message) => emit(_errorState(message)),
       (customer) => emit(_successState(customer)),
@@ -104,9 +104,9 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     );
     final preferences = _preferences.token;
     final result = await _loansRepository.getLoans(
-      criterio: event.value,
-      userId: preferences?.id ?? 0,
-    );
+        criterio: event.value,
+        userId: preferences?.id ?? 0,
+        sucursal: preferences?.sucursal?.id ?? 1);
     result.fold(
       (message) => emit(_errorState(message)),
       (loans) {
@@ -389,9 +389,9 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
 
     final preferences = _preferences.token;
     final result = await _customerRepository.getCustomerByDni(
-      dni: event.value,
-      userId: preferences?.id ?? 0,
-    );
+        dni: event.value,
+        userId: preferences?.id ?? 0,
+        sucursal: preferences?.sucursal?.id ?? 1);
 
     result.fold(
       (error) => emit(

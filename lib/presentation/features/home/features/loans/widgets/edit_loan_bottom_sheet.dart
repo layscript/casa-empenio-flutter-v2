@@ -291,12 +291,15 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
   }
 
   Future<void> _getCliente(String value, String tipo) async {
+    final preferences = context.read<Preferences>().token;
+
     setState(() {
       _isLoadingDni = true;
     });
     final cliente = await context.read<CustomerRepository>().getCustomerByDni(
           dni: value,
           userId: null,
+          sucursal: preferences?.sucursal?.id ?? 1,
         );
 
     cliente.fold(

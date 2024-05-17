@@ -362,6 +362,7 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
       _reportsRepository.getIncreasesByRangeDate(
         inicio: event.start ?? state.startTimeContracts,
         fin: event.end ?? state.endTimeContracts,
+        sucursal: _preferences.token?.sucursal?.id ?? 1,
       ),
     ]);
 

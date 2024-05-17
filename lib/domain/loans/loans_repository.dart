@@ -13,6 +13,7 @@ abstract class LoansRepository {
   Future<Either<String, List<LoansEntity>>> getLoans({
     required String criterio,
     required int? userId,
+    required int sucursal,
   });
   Future<Either<String, ContratoEntity>> saveLoan({
     required int plazoDias,

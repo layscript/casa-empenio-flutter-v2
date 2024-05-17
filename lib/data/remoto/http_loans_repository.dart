@@ -87,9 +87,10 @@ class HttpLoansRepository implements LoansRepository {
   @override
   Future<Either<String, List<LoansEntity>>> getLoans({
     required String criterio,
+    required int sucursal,
     required int? userId,
   }) async {
-    final path = '/prestamos/prestamos/criterio/$criterio';
+    final path = '/prestamos/prestamos/criterio/$criterio/$sucursal';
 
     try {
       final response = await _dio.get<String>(path);

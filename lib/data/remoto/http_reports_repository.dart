@@ -149,6 +149,7 @@ class HttpReportsRepository implements ReportsRepository {
   Future<Either<String, List<ReportsContractsEntity>>> getIncreasesByRangeDate({
     required DateTime inicio,
     required DateTime fin,
+    required int sucursal,
   }) async {
     final inicioParse = DateTime(
       inicio.year,
@@ -169,7 +170,7 @@ class HttpReportsRepository implements ReportsRepository {
     );
 
     final path =
-        '/prestamos/prestamos/aumentos/${inicioParse.toUtc().toIso8601String()}/${finParse.toUtc().toIso8601String()}';
+        '/prestamos/prestamos/aumentos/${inicioParse.toUtc().toIso8601String()}/${finParse.toUtc().toIso8601String()}/$sucursal';
 
     try {
       final response = await _dio.get<String>(path);
