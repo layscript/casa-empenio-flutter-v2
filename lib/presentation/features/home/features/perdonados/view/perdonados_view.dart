@@ -1,3 +1,5 @@
+import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
+import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
 import 'package:flutter/material.dart';
@@ -55,13 +57,9 @@ class PerdonadosView extends StatelessWidget {
               );
 
             case PerdonadosStatus.success:
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                //color: Colors.yellow,
-                width: double.infinity,
-                height: double.infinity,
-                child: SingleChildScrollView(
-                  child: Column(
+              return Stack(
+                children: [
+                  Column(
                     children: [
                       const SizedBox(height: 15),
                       const Text(
@@ -147,7 +145,48 @@ class PerdonadosView extends StatelessWidget {
                       ),
                     ],
                   ),
-                ),
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Builder(builder: (context) {
+                      double total = 0.0;
+                      for (var mov in state.listPerdonados) {
+                        total += double.parse(mov.monto);
+                      }
+
+                      return Container(
+                        decoration: BoxDecoration(
+                            color: AppColors.blue,
+                            boxShadow: defaultBoxShadow,
+                            borderRadius: BorderRadius.circular(10)),
+                        padding: const EdgeInsets.all(7),
+                        margin: const EdgeInsets.all(10),
+                        child: Row(
+                          children: [
+                            const Text(
+                              'Total: ',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.white,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              's/. ${total.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.normal,
+                                color: AppColors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  )
+                ],
               );
             default:
               return const SizedBox();
