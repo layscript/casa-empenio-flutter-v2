@@ -116,19 +116,19 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
       _reportsRepository.getClosedByRangeDate(
         inicio: event.start ?? state.startTimePayments,
         fin: event.end ?? state.endTimePayments,
-        sucursalId: _preferences.token?.id ?? 1,
+        sucursalId: _preferences.token?.sucursal?.id ?? 1,
         usuarioId: _preferences.token?.id ?? 1,
       ),
       _reportsRepository.getPaymentsByRangeDate(
         inicio: event.start ?? state.startTimePayments,
         fin: event.end ?? state.endTimePayments,
-        sucursalId: _preferences.token?.id ?? 1,
+        sucursalId: _preferences.token?.sucursal?.id ?? 1,
         usuarioId: _preferences.token?.id ?? 1,
       ),
       _reportsRepository.getLoansByRangeDate(
         inicio: event.start ?? state.startTimePayments,
         fin: event.end ?? state.endTimePayments,
-        sucursalId: _preferences.token?.id ?? 1,
+        sucursalId: _preferences.token?.sucursal?.id ?? 1,
         usuarioId: _preferences.token?.id ?? 1,
       ),
     ]);
@@ -356,7 +356,7 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
       _reportsRepository.getLoansByRangeDate(
         inicio: event.start ?? state.startTimeContracts,
         fin: event.end ?? state.endTimeContracts,
-        sucursalId: _preferences.token?.id ?? 1,
+        sucursalId: _preferences.token?.sucursal?.id ?? 1,
         usuarioId: _preferences.token?.id ?? 1,
       ),
       _reportsRepository.getIncreasesByRangeDate(
