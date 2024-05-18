@@ -12,6 +12,7 @@ class MainView extends StatelessWidget {
   Widget build(BuildContext context) {
     final preferences = context.read<Preferences>();
     final auth = preferences.token;
+    final isCajera = auth?.id == 8;
 
     return SingleChildScrollView(
       child: Column(
@@ -72,7 +73,7 @@ class MainView extends StatelessWidget {
                 text: 'Productos',
                 icon: FontAwesomeIcons.cartArrowDown,
               ),
-             /*  if (auth?.role?.nombre == 'Administrador')
+              /*  if (auth?.role?.nombre == 'Administrador')
                 _ItemGrid(
                   onTap: () => context.read<HomeBloc>().add(
                         GoToUsers(),
@@ -95,7 +96,7 @@ class MainView extends StatelessWidget {
                 text: 'Categorías',
                 icon: FontAwesomeIcons.screwdriverWrench,
               ),
-              if (auth?.role?.nombre == 'Administrador')
+              if (auth?.role?.nombre == 'Administrador' || isCajera)
                 _ItemGrid(
                   onTap: () => context.read<HomeBloc>().add(
                         GoToExpenses(),
@@ -111,7 +112,7 @@ class MainView extends StatelessWidget {
                   text: 'Historial',
                   icon: FontAwesomeIcons.clockRotateLeft,
                 ),
-              if (auth?.role?.nombre == 'Administrador')
+              if (auth?.role?.nombre == 'Administrador' || isCajera)
                 _ItemGrid(
                   onTap: () => context.read<HomeBloc>().add(
                         GoToOpenCaja(),
@@ -119,7 +120,7 @@ class MainView extends StatelessWidget {
                   text: 'Caja',
                   icon: FontAwesomeIcons.boxOpen,
                 ),
-              if (auth?.role?.nombre == 'Administrador')
+              if (auth?.role?.nombre == 'Administrador' || isCajera)
                 _ItemGrid(
                   onTap: () => context.read<HomeBloc>().add(
                         GoToCajas(),
@@ -127,7 +128,7 @@ class MainView extends StatelessWidget {
                   text: 'Lista de Cajas',
                   icon: FontAwesomeIcons.expeditedssl,
                 ),
-              if (auth?.role?.nombre == 'Administrador')
+              if (auth?.role?.nombre == 'Administrador' || isCajera)
                 _ItemGrid(
                   onTap: () => context.read<HomeBloc>().add(
                         GoToPayUsers(),

@@ -12,6 +12,7 @@ class AppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<Preferences>().token;
+    final isCajera = auth?.id == 8;
     final homeState = context.watch<HomeBloc>().state;
 
     return Drawer(
@@ -140,7 +141,7 @@ class AppDrawer extends StatelessWidget {
                 Navigator.pop(context);
               },
             ),
-            if (auth?.role?.nombre == 'Administrador')
+            if (auth?.role?.nombre == 'Administrador' || isCajera)
               ListTile(
                 tileColor: homeState.index == 11 ? Colors.black12 : null,
                 leading: const FaIcon(
@@ -153,7 +154,7 @@ class AppDrawer extends StatelessWidget {
                   Navigator.pop(context);
                 },
               ),
-            if (auth?.role?.nombre == 'Administrador')
+            if (auth?.role?.nombre == 'Administrador' || isCajera)
               ListTile(
                 tileColor: homeState.index == 8 ? Colors.black12 : null,
                 leading: const FaIcon(
@@ -166,7 +167,7 @@ class AppDrawer extends StatelessWidget {
                   Navigator.pop(context);
                 },
               ),
-            if (auth?.role?.nombre == 'Administrador')
+            if (auth?.role?.nombre == 'Administrador' || isCajera)
               ListTile(
                 tileColor: homeState.index == 9 ? Colors.black12 : null,
                 leading: const FaIcon(
@@ -192,7 +193,7 @@ class AppDrawer extends StatelessWidget {
                   Navigator.pop(context);
                 },
               ),
-            if (auth?.role?.nombre == 'Administrador')
+            if (auth?.role?.nombre == 'Administrador' || isCajera)
               ListTile(
                 tileColor: homeState.index == 12 ? Colors.black12 : null,
                 leading: const FaIcon(

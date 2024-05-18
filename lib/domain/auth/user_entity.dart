@@ -125,6 +125,11 @@ class UserEntity {
       },
     };
   }
+
+  @override
+  String toString() {
+    return 'UserEntity(id: $id, nombre: $nombre, apellido: $apellido, userName: $userName, email: $email, avatar: $avatar, celular: $celular, role: $role, pagos: $pagos, prestamos: $prestamos, createdAt: $createdAt, prestamosAdmin: $prestamosAdmin, updatedAt: $updatedAt, ventas: $ventas, isAdmin: $isAdmin, sucursal: $sucursal)';
+  }
 }
 
 class RoleEntity {
