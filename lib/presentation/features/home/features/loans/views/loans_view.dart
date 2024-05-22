@@ -386,7 +386,8 @@ class _LoansViewState extends State<LoansView> {
                                                   ),
                                                 ),
                                               ),
-                                              if (auth.user.role?.id != 2)
+                                              //if (auth.user.role?.id != 2)
+                                              if (auth.user.isAdmin == true)
                                                 //Editar
                                                 SizedBox(
                                                   height: 38,
@@ -508,7 +509,8 @@ class _LoansViewState extends State<LoansView> {
                                                     ),
                                                   ),
                                                 ),
-                                              if (auth.user.role?.id == 2 &&
+                                              //if (auth.user.role?.id == 2 &&
+                                              if (auth.user.isAdmin == true &&
                                                   prestamo?.cerrado == true)
                                                 SizedBox(
                                                   height: 38,
