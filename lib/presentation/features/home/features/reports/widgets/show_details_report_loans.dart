@@ -1,4 +1,5 @@
 import 'package:casa_empenio_pe/domain/contract/contract_entity.dart';
+import 'package:casa_empenio_pe/domain/preferences/preferences.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
@@ -7,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:screenshot/screenshot.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class ShowDetailsReportLoans extends StatefulWidget {
   const ShowDetailsReportLoans({
@@ -35,6 +35,12 @@ class _ShowDetailsReportLoansState extends State<ShowDetailsReportLoans> {
   Widget build(BuildContext context) {
     final cabeceraController = ScreenshotController();
     final bodyController = ScreenshotController();
+    final authPreferences = context.read<Preferences>().token;
+
+    final nombreSucursal = authPreferences?.sucursal?.nombre;
+    final direccionSucursal = authPreferences?.sucursal?.direccion;
+    final telefonoSucursal = authPreferences?.sucursal?.telefono;
+    final extrasSucursal = authPreferences?.sucursal?.extras;
 
     return AlertDialog(
       title: Screenshot(
@@ -42,22 +48,33 @@ class _ShowDetailsReportLoansState extends State<ShowDetailsReportLoans> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(
+            SizedBox(
               width: double.infinity,
               child: Text(
-                'N.M. MAYTA',
+                nombreSucursal ?? 'N.M. MAYTA',
                 textAlign: TextAlign.center,
               ),
             ),
             const SizedBox(
               height: 10,
             ),
-            const Text('Direccion: Jr. Urubamba y Jr. Iquitos',
-                style: TextStyle(fontSize: 16)),
-            const Text(
-              'Cel.: 920391631',
-              style: TextStyle(fontSize: 16),
+            Text(
+              direccionSucursal ?? 'Direccion: Jr. Urubamba y Jr. Iquitos',
+              style: const TextStyle(fontSize: 16),
             ),
+            Text(
+              'Cel.: ${telefonoSucursal ?? '920391631'}',
+              style: const TextStyle(
+                fontSize: 16,
+              ),
+            ),
+            if (extrasSucursal != null)
+              Text(
+                'Extra.: $extrasSucursal',
+                style: const TextStyle(
+                  fontSize: 16,
+                ),
+              ),
             const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,

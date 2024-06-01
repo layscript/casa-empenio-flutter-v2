@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
@@ -33,8 +31,14 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
 
   @override
   Widget build(BuildContext context) {
+    final authPreferences = context.read<Preferences>().token;
     final cabeceraController = ScreenshotController();
     final bodyController = ScreenshotController();
+
+    final nombreSucursal = authPreferences?.sucursal?.nombre;
+    final direccionSucursal = authPreferences?.sucursal?.direccion;
+    final telefonoSucursal = authPreferences?.sucursal?.telefono;
+    final extrasSucursal = authPreferences?.sucursal?.extras;
 
     return AlertDialog(
       title: Screenshot(
@@ -42,28 +46,35 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(
+            SizedBox(
               width: double.infinity,
               child: Text(
-                'N.M MAYTA',
+                nombreSucursal ?? 'N.M MAYTA',
                 textAlign: TextAlign.center,
               ),
             ),
             const SizedBox(
               height: 10,
             ),
-            const Text(
-              'Dirección: Jr. Urubamba y Jr. Iquitos',
-              style: TextStyle(
+            Text(
+              direccionSucursal ?? 'Dirección: Jr. Urubamba y Jr. Iquitos',
+              style: const TextStyle(
                 fontSize: 16,
               ),
             ),
-            const Text(
-              'Cel.: 920391631',
-              style: TextStyle(
+            Text(
+              'Cel.: ${telefonoSucursal ?? '920391631'}',
+              style: const TextStyle(
                 fontSize: 16,
               ),
             ),
+            if (extrasSucursal != null)
+              Text(
+                'Extra.: $extrasSucursal',
+                style: const TextStyle(
+                  fontSize: 16,
+                ),
+              ),
             const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
@@ -79,7 +90,6 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
         builder: (context, state) {
           final oCcy = NumberFormat("#,##0.00", "en_US");
           final loan = state.loanDetails;
-
 
           if (loan == null && state.error == null) {
             return const Center(

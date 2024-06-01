@@ -7,6 +7,8 @@ class SucursalEntity extends Equatable {
   final String createdAt;
   final String updatedAt;
   final String? deletedAt;
+  final String? telefono;
+  final String? extras;
 
   const SucursalEntity({
     required this.id,
@@ -15,6 +17,8 @@ class SucursalEntity extends Equatable {
     required this.createdAt,
     required this.updatedAt,
     required this.deletedAt,
+    required this.telefono,
+    required this.extras,
   });
 
   static List<SucursalEntity> listGetSucursalesFromMap(
@@ -33,6 +37,8 @@ class SucursalEntity extends Equatable {
       createdAt: map['createdAt'] as String,
       updatedAt: map['updatedAt'] as String,
       deletedAt: map['deletedAt'] as String?,
+      extras: map['extas'] as String?,
+      telefono: map['telefono'] as String?,
     );
   }
 
