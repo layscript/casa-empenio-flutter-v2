@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -88,8 +89,29 @@ class _PlantillaBodyState extends State<PlantillaBody> {
     return pdf;
   }
 
+  guardar() async {
+    final data = await controller.getText();
+
+    final result = await context.read<PlantillaRepository>().setPlantilla(data);
+
+    if (result.isRight()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Plantilla guardada correctamente'),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              'Ocurrió un error: ${result.leftMap((a) => a).getOrElse(() => '')}'),
+        ),
+      );
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext cc) {
     return Column(
       children: [
         Expanded(
@@ -105,78 +127,44 @@ class _PlantillaBodyState extends State<PlantillaBody> {
           ),
         ),
         ElevatedButton(
-            onPressed: () async {
-              final data = await controller.getText();
-
-              final result =
-                  await context.read<PlantillaRepository>().setPlantilla(data);
-
-              if (result.isRight()) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Plantilla guardada correctamente'),
-                  ),
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                        'Ocurrió un error: ${result.leftMap((a) => a).getOrElse(() => '')}'),
-                  ),
-                );
-              }
-            },
-            child: const Text('Guardar')),
-        ElevatedButton(
           onPressed: () async {
-            final editedHtmlContent = await controller.getText();
+            await guardar();
+
+            if (!mounted) return;
             final data = {
-              'fecha': '10 de Mayo de 2024',
-              'nombre': 'Juan Pérez',
-              'dni': '12345678',
-              'domicilio': 'Av. Siempre Viva 123',
-              'prendas': [
+              "numero": 4312,
+              "nombre": "GUISELA GEORGINA GUZMAN SALAZAR",
+              "dni": "47103117",
+              "domicilio": "CALLE LAS PALMERAS MZ. G LT. 9",
+              "fechaVencimiento": "2024-05-07 04:59:59.000Z",
+              "monto": "50.0",
+              "montoPagar": "60.0",
+              "prendas": [
                 {
-                  'nombre': 'Laptop',
-                  'marca': 'Dell',
-                  'modelo': 'XPS 13',
-                  'serie': 'ABC123',
-                  'color': 'Negro',
-                  'estado': 'Bueno',
-                },
-                {
-                  'nombre': 'Laptop',
-                  'marca': 'Dell',
-                  'modelo': 'XPS 13',
-                  'serie': 'ABC123',
-                  'color': 'Negro',
-                  'estado': 'Bueno',
-                },
-                {
-                  'nombre': 'Laptop',
-                  'marca': 'Dell',
-                  'modelo': 'XPS 13',
-                  'serie': 'ABC123',
-                  'color': 'Negro',
-                  'estado': 'Bueno',
+                  "nombre": "Balon de gas Limagas",
+                  "marca": "Limagas",
+                  "modelo": "GAS",
+                  "serie": "",
+                  "color": "Azul",
+                  "estado": "regular"
                 }
               ],
+              "nombreAval": "",
+              "dniAval": "",
+              "interes": "20.0",
+              "fecha": "4 de Junio del 2024"
             };
-            final pdfData = await crearContratoPdf(editedHtmlContent, data);
 
-            setState(() {
-              this.pdfData = pdfData;
-            });
-          },
-          child: const Text('Generar PDF'),
-        ),
-        pdfData != null
-            ? Expanded(
-                child: PdfPreview(
-                  build: (format) => pdfData!,
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => PdfPreviewPage(
+                  contrato: ContratoEntity.fromJson(data),
                 ),
-              )
-            : Container(),
+              ),
+            );
+          },
+          child: const Text('Guardar y Previsualizar'),
+        ),
       ],
     );
   }

@@ -24,6 +24,58 @@ class ContratoEntity {
   final String nombreAval;
   final String dniAval;
   final double interes;
+
+  toJson() {
+    final fecha = DateTime.now();
+
+    final meses = [
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre'
+    ];
+
+    return {
+      'numero': numero,
+      'nombre': nombre,
+      'dni': dni,
+      'domicilio': domicilio,
+      'fechaVencimiento': fechaVencimiento,
+      'monto': monto,
+      'montoPagar': montoPagar,
+      'prendas': prendas.map((e) => e.toJson()).toList(),
+      'nombreAval': nombreAval,
+      'dniAval': dniAval,
+      'interes': interes,
+      'fecha': '${fecha.day} de ${meses[fecha.month - 1]} del ${fecha.year}',
+    };
+  }
+
+  static fromJson(Map<String, dynamic> json) {
+    return ContratoEntity(
+      numero: int.parse(json['numero'].toString()),
+      nombre: json['nombre'],
+      dni: json['dni'],
+      domicilio: json['domicilio'],
+      fechaVencimiento: DateTime.parse(json['fechaVencimiento']),
+      monto: double.parse(json['monto']),
+      montoPagar: double.parse(json['montoPagar']),
+      prendas: (json['prendas'] as List)
+          .map((e) => PrendaEntity.fromJson(e))
+          .toList(),
+      nombreAval: json['nombreAval'],
+      dniAval: json['dniAval'],
+      interes: double.parse(json['interes']),
+    );
+  }
 }
 
 class PrendaEntity {
@@ -42,4 +94,26 @@ class PrendaEntity {
   final String? serie;
   final String? color;
   final String? estado;
+
+  toJson() {
+    return {
+      'nombre': nombre,
+      'marca': marca,
+      'modelo': modelo,
+      'serie': serie,
+      'color': color,
+      'estado': estado,
+    };
+  }
+
+  factory PrendaEntity.fromJson(Map<String, dynamic> json) {
+    return PrendaEntity(
+      nombre: json['nombre'],
+      marca: json['marca'],
+      modelo: json['modelo'],
+      serie: json['serie'],
+      color: json['color'],
+      estado: json['estado'],
+    );
+  }
 }

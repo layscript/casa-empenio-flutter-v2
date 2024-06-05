@@ -30,7 +30,7 @@ class PdfPreviewPage extends StatelessWidget {
           'A4': PdfPageFormat.a4,
         },
         canChangeOrientation: false,
-        build: (context) => CreateContractPdf.crearContratoPdf(contrato),
+        build: (_) => CreateContractPdf.crearContratoPdf(contrato, context),
         canDebug: false,
       ),
     );
