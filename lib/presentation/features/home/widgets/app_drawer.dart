@@ -206,6 +206,19 @@ class AppDrawer extends StatelessWidget {
                   Navigator.pop(context);
                 },
               ),
+            if (auth?.role?.nombre == 'Administrador' || isCajera)
+              ListTile(
+                tileColor: homeState.index == 14 ? Colors.black12 : null,
+                leading: const FaIcon(
+                  FontAwesomeIcons.shop,
+                  size: 20,
+                ),
+                title: const Text('Plantillas'),
+                onTap: () {
+                  context.read<HomeBloc>().add(GoToPlantillas());
+                  Navigator.pop(context);
+                },
+              ),
             const Divider(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),

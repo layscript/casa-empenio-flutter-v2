@@ -6,6 +6,7 @@ export 'http_historial_repository.dart';
 export 'http_interests_repository.dart';
 export 'http_loans_repository.dart';
 export 'http_motion_repository.dart';
+export 'http_plantilla_repository.dart';
 export 'http_product_repository.dart';
 export 'http_reports_repository.dart';
 export 'http_sales_repository.dart';

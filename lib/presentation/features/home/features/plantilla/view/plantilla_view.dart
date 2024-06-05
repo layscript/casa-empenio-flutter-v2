@@ -1,5 +1,7 @@
 import 'dart:typed_data';
+import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 import 'package:html_editor_enhanced/html_editor.dart';
@@ -114,14 +116,28 @@ const html = '''
 </html>
 ''';
 
-class PlantillaView extends StatefulWidget {
+class PlantillaView extends StatelessWidget {
   const PlantillaView({super.key});
 
   @override
-  State<PlantillaView> createState() => _PlantillaViewState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => PlantillaBloc(
+        plantillaRepository: context.read(),
+      ),
+      child: const PlantillaBody(),
+    );
+  }
 }
 
-class _PlantillaViewState extends State<PlantillaView> {
+class PlantillaBody extends StatefulWidget {
+  const PlantillaBody({super.key});
+
+  @override
+  State<PlantillaBody> createState() => _PlantillaBodyState();
+}
+
+class _PlantillaBodyState extends State<PlantillaBody> {
   HtmlEditorController controller = HtmlEditorController();
   String htmlContent = '';
   Uint8List? pdfData;

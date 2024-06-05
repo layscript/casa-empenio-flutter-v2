@@ -2,7 +2,6 @@ import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
-import 'package:casa_empenio_pe/presentation/features/home/features/notify/view/notify_view.dart';
 import 'package:casa_empenio_pe/presentation/features/home/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -103,6 +102,9 @@ class HomeView extends StatelessWidget {
 
                   case 13:
                     return const PerdonadosView();
+
+                  case 14:
+                    return const PlantillaView();
                 }
                 return const SizedBox();
               },

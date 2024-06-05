@@ -136,6 +136,14 @@ class MainView extends StatelessWidget {
                   text: 'Pagos a Personales',
                   icon: FontAwesomeIcons.paypal,
                 ),
+              if (auth?.role?.nombre == 'Administrador' || isCajera)
+                _ItemGrid(
+                  onTap: () => context.read<HomeBloc>().add(
+                        GoToPlantillas(),
+                      ),
+                  text: 'Plantillas',
+                  icon: FontAwesomeIcons.shop,
+                ),
             ],
           ),
         ],

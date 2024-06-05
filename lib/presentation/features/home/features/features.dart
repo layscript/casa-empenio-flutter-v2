@@ -37,3 +37,9 @@ export 'pay_user/bloc/pay_user_bloc.dart';
 
 export 'perdonados/view/perdonados_view.dart';
 export 'perdonados/bloc/perdonados_bloc.dart';
+
+export 'plantilla/bloc/plantilla_bloc.dart';
+export 'plantilla/view/plantilla_view.dart';
+
+export 'notify/bloc/notify_bloc.dart';
+export 'notify/view/notify_view.dart';
