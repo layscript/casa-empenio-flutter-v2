@@ -18,7 +18,7 @@ class HttpPlantillaRepository implements PlantillaRepository {
   @override
   Future<Either<String, String>> getPlantilla() async {
     // TODO: Plantilla 1
-    const path = '';
+    const path = '/configuracion/plantilla/last';
     try {
       final response = await _dio.get<String>(path);
       if (response.statusCode != 200) {
@@ -27,7 +27,7 @@ class HttpPlantillaRepository implements PlantillaRepository {
         return Left(message);
       } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
-        final body = map['body'];
+        final body = map['html'];
         return Right(body);
       }
     } catch (e, stackTrace) {
@@ -42,7 +42,7 @@ class HttpPlantillaRepository implements PlantillaRepository {
   @override
   Future<Either<String, String>> setPlantilla(String url) async {
     // TODO: Plantilla 2
-    const path = '';
+    const path = '/configuracion/plantilla';
     final payload = {
       'html': url,
     };
@@ -54,7 +54,7 @@ class HttpPlantillaRepository implements PlantillaRepository {
         return Left(message);
       } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
-        final data = map['body'];
+        final data = map['html'];
         return Right(data);
       }
     } catch (e, stackTrace) {

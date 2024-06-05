@@ -1,120 +1,11 @@
 import 'dart:typed_data';
+import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 import 'package:html_editor_enhanced/html_editor.dart';
-
-const html = '''
-<!DOCTYPE html>
-<html>
-  <head>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        font-size: 12px;
-      }
-      .title {
-        text-align: center;
-        /* font-weight: bold; */
-        /* font-size: 14px; */
-      }
-      .right-align {
-        text-align: right;
-        margin-top: 20px;
-        margin-bottom: 20px;
-      }
-      .bold {
-        font-weight: bold;
-      }
-      .center {
-        text-align: center;
-      }
-      .table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-      .table,
-      .table th,
-      .table td {
-        border: 1px solid black;
-      }
-      .table th,
-      .table td {
-        padding: 8px;
-        text-align: left;
-      }
-      .signatures {
-        display: flex;
-        justify-content: space-evenly;
-        padding: 20px 0;
-        margin-top: 100px;
-      }
-      .signature {
-        text-align: center;
-      }
-      .interlineado {
-        margin: 0;
-      }
-    </style>
-  </head>
-  <body>
-    <h1 class="title">
-      CONTRATO DE MUTUO A TÍTULO ONEROSO CON GARANTÍA PRENDARIA
-    </h1>
-
-    <p class="right-align">{{fecha}}</p>
-
-    <p>
-      Por el presente documento se hace constar el contrato de MUTUO CON
-      GARANTÍA PRENDARIA DE "VEHÍCULOS, ARTEFACTOS Y OTROS", que celebran de una
-      parte como el MUTUANTE,
-      <span class="bold">NEGOCIOS MÚLTIPLES MAYTA EIRL</span>, identificado con
-      RUC N° 20611213221, debidamente representado por su representante legal,
-      <span class="bold">MAYTA TORRE JOEL MAYCO</span>, identificado con DNI N°
-      46864068, con domicilio fiscal sito en CALLE URUBAMBA MZ 8 LOTE 8 -
-      UCAYALI - ATALAYA; y de la otra parte como EL(LA) MUTUATARIO(A), el(la)
-      Sr(a) <span class="bold">{{nombre}}</span>, identificado(a) con DNI N°
-      <span class="bold">{{dni}}</span>, con domicilio en
-      <span class="bold">{{domicilio}}</span>, de acuerdo a los términos y
-      condiciones siguientes:
-    </p>
-
-    <h2>Tablas de Prendas</h2>
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Nombre</th>
-          <th>Marca</th>
-          <th>Modelo</th>
-          <th>Serie</th>
-          <th>Color</th>
-          <th>Estado</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Aquí se insertarán las filas generadas -->
-      </tbody>
-    </table>
-
-    <div class="signatures">
-      <div class="signature">
-        <p class="interlineado">________</p>
-        <p class="interlineado">FIRMA DEL CLIENTE</p>
-        <p class="interlineado">{{nombre}}</p>
-        <p class="interlineado">DNI: {{dni}}</p>
-      </div>
-      <div class="signature">
-        <p class="interlineado">___________</p>
-        <p class="interlineado">NEGOCIOS MULTIPLES MAYTA E.I.R.L.</p>
-        <p class="interlineado">JOEL MAYCO MAYTA TORRE</p>
-        <p class="interlineado">RUC: 20611213221</p>
-      </div>
-    </div>
-  </body>
-</html>
-''';
 
 class PlantillaView extends StatelessWidget {
   const PlantillaView({super.key});
@@ -149,9 +40,11 @@ class _PlantillaBodyState extends State<PlantillaBody> {
   }
 
   Future<void> loadTemplate() async {
-    final templateContent = html;
+    final templateContent =
+        await context.read<PlantillaRepository>().getPlantilla();
+    ;
     setState(() {
-      htmlContent = templateContent;
+      htmlContent = templateContent.getOrElse(() => '');
       // Esperar un segundo para que el editor cargue el contenido
       Future.delayed(const Duration(seconds: 2), () {
         controller.setText(htmlContent);
@@ -211,6 +104,29 @@ class _PlantillaBodyState extends State<PlantillaBody> {
             ),
           ),
         ),
+        ElevatedButton(
+            onPressed: () async {
+              final data = await controller.getText();
+
+              final result =
+                  await context.read<PlantillaRepository>().setPlantilla(data);
+
+              if (result.isRight()) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Plantilla guardada correctamente'),
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                        'Ocurrió un error: ${result.leftMap((a) => a).getOrElse(() => '')}'),
+                  ),
+                );
+              }
+            },
+            child: const Text('Guardar')),
         ElevatedButton(
           onPressed: () async {
             final editedHtmlContent = await controller.getText();
