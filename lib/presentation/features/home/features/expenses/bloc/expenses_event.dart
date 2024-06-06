@@ -24,8 +24,10 @@ class SaveExpense extends ExpensesEvent {
     required this.obs,
     required this.usuarioId,
     required this.monto,
+    required this.imagenes,
   });
   final String obs;
   final int usuarioId;
   final String monto;
+  final List<XFile>? imagenes;
 }

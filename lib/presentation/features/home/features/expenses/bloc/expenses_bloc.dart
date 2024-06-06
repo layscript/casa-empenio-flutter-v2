@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:image_picker/image_picker.dart';
 
 part 'expenses_event.dart';
 part 'expenses_state.dart';
@@ -16,8 +17,10 @@ class ExpensesBloc extends Bloc<ExpensesEvent, ExpensesState> {
   ExpensesBloc({
     required ExpensesRepository expensesRepository,
     required CajaRepository cajaRepository,
+    required Preferences preferences,
   })  : _expensesRepository = expensesRepository,
         _cajaRepository = cajaRepository,
+        _preferences = preferences,
         super(_initialState) {
     on<GetExpenses>(_onGetExpenses);
     on<SaveExpense>(_onSaveExpense);
@@ -26,13 +29,18 @@ class ExpensesBloc extends Bloc<ExpensesEvent, ExpensesState> {
 
   final ExpensesRepository _expensesRepository;
   final CajaRepository _cajaRepository;
+  final Preferences _preferences;
 
   Future<void> _onGetExpenses(
     GetExpenses event,
     Emitter<ExpensesState> emit,
   ) async {
     emit(state.copyWith(expensesStatus: ExpensesStatus.loading));
-    final result = await _expensesRepository.getAllExpenses();
+    final result = await _expensesRepository.getAllExpenses(
+      fechaInicio: event.start ?? state.startExpenses,
+      fechafin: event.end ?? state.endExpenses,
+      sucursalId: _preferences.token?.sucursal?.id ?? 1,
+    );
     result.fold(
       (error) => emit(
         state.copyWith(
@@ -78,6 +86,54 @@ class ExpensesBloc extends Bloc<ExpensesEvent, ExpensesState> {
       ),
     );
 
+    List<String> images = [];
+
+    if (event.imagenes != null) {
+      for (var img in event.imagenes!) {
+        final url = await _expensesRepository.createImage(path: img.path);
+        url.fold(
+          (error) => emit(
+            state.copyWith(
+              expensesStatus: ExpensesStatus.failure,
+              error: error,
+            ),
+          ),
+          (success) => images.add(success),
+        );
+      }
+
+      if (images.isNotEmpty) {
+        final result = await _expensesRepository.createExpense(
+          id: event.usuarioId,
+          obs: event.obs,
+          monto: double.parse(event.monto),
+          url: images.map((e) {
+            return {'url': e};
+          }).toList(),
+        );
+
+        result.fold(
+          (error) => emit(
+            state.copyWith(
+              expensesStatus: ExpensesStatus.failure,
+              error: error,
+            ),
+          ),
+          (success) => emit(
+            state.copyWith(
+              expensesStatus: ExpensesStatus.success,
+            ),
+          ),
+        );
+      }
+    }
+
+    /* emit(
+      state.copyWith(
+        expensesStatus: ExpensesStatus.loading,
+      ),
+    );
+
     final result = await _expensesRepository.createExpense(
       id: event.usuarioId,
       obs: event.obs,
@@ -96,7 +152,7 @@ class ExpensesBloc extends Bloc<ExpensesEvent, ExpensesState> {
           expensesStatus: ExpensesStatus.success,
         ),
       ),
-    );
+    ); */
   }
 
   Future<void> _onGetCashExpensesStatus(

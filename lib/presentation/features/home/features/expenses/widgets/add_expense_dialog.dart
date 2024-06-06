@@ -3,8 +3,10 @@ import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/expenses/bloc/expenses_bloc.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/loans/feature/loans_step/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AddExpenseDialog extends StatefulWidget {
   const AddExpenseDialog({super.key});
@@ -14,9 +16,23 @@ class AddExpenseDialog extends StatefulWidget {
 }
 
 class _AddExpenseDialogState extends State<AddExpenseDialog> {
+  List<XFile>? selectedPhotosGastos = [];
   final montoCtrl = TextEditingController();
   final obsCtrl = TextEditingController();
   bool isValidMonto = false;
+
+  void onChangePhotosGastos() async {
+    final photo = await ImagePicker().pickImage(
+      source: ImageSource.camera,
+      imageQuality: 70,
+    );
+
+    if (photo != null) {
+      setState(() {
+        selectedPhotosGastos?.add(photo);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,11 +58,35 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
             controller: obsCtrl,
             labelText: 'Observaciones',
           ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              for (int i = 0; i < (selectedPhotosGastos?.length ?? 0); i++)
+                CustomImageClient(
+                  onTap: () {
+                    setState(() {
+                      selectedPhotosGastos?.removeAt(i);
+                    });
+                  },
+                  path: selectedPhotosGastos![i].path,
+                ),
+              if (selectedPhotosGastos!.length < 2)
+                Expanded(
+                  child: SecondaryButton(
+                    onPressed: onChangePhotosGastos,
+                    child: Text(
+                      'Subir Imagen (${2 - selectedPhotosGastos!.length})',
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 20),
         ],
       ),
       actions: [
         TextButton.icon(
-          onPressed: !isValidMonto
+          onPressed: !isValidMonto || !selectedPhotosGastos!.isNotEmpty
               ? null
               : () {
                   context.read<ExpensesBloc>().add(
@@ -54,6 +94,7 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
                           obs: obsCtrl.text,
                           usuarioId: authBloc.user.id,
                           monto: montoCtrl.text,
+                          imagenes: selectedPhotosGastos,
                         ),
                       );
                 },

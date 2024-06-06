@@ -13,6 +13,7 @@ class ExpensesEntity {
     required this.suma,
     required this.eliminado,
     required this.tipo,
+    required this.imagenes,
   });
 
   final int? id;
@@ -28,6 +29,7 @@ class ExpensesEntity {
   final bool? suma;
   final bool? eliminado;
   final TypeEntity? tipo;
+  final List<Imagenes>? imagenes;
 
   static List<ExpensesEntity> listGetExpensesFromMap(
     List<dynamic> list,
@@ -53,6 +55,9 @@ class ExpensesEntity {
       eliminado: map['eliminado'],
       tipo: map['tipo'] != null
           ? TypeEntity.getTypeEntityFromMap(map['tipo'])
+          : null,
+      imagenes: map['imagenes'] != null
+          ? Imagenes.listGetImagenesFromMap(map['imagenes'])
           : null,
     );
   }
@@ -83,6 +88,34 @@ class TypeEntity {
       eliminado: map['eliminado'],
       updatedAt: map['updatedAt'],
       createdAt: map['createdAt'],
+    );
+  }
+}
+
+class Imagenes {
+  final int id;
+  final String url;
+  final String createdAt;
+
+  const Imagenes({
+    required this.id,
+    required this.url,
+    required this.createdAt,
+  });
+
+  static List<Imagenes> listGetImagenesFromMap(
+    List<dynamic> list,
+  ) {
+    return list
+        .map((e) => getImagenesFromMap(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  static Imagenes getImagenesFromMap(Map<String, dynamic> map) {
+    return Imagenes(
+      id: map['id'],
+      createdAt: map['created_at'],
+      url: map['url'],
     );
   }
 }
