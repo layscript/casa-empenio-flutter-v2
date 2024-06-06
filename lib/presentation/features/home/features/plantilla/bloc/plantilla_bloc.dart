@@ -10,20 +10,69 @@ part 'plantilla_state.dart';
 class PlantillaBloc extends Bloc<PlantillaEvent, PlantillaState> {
   PlantillaBloc({required PlantillaRepository plantillaRepository})
       : _plantillaRepository = plantillaRepository,
-        super(PlantillaInitial()) {
+        super(const PlantillaState()) {
     on<GetPlantilla>(_onGetPlantilla);
     on<GeneratePlantilla>(_onGeneratePlantilla);
   }
 
   final PlantillaRepository _plantillaRepository;
 
-  FutureOr<void> _onGetPlantilla(
+  Future<void> _onGetPlantilla(
     GetPlantilla event,
     Emitter<PlantillaState> emit,
-  ) {}
+  ) async {
+    emit(state.copyWith(status: PlantillaStatus.loading));
+    try {
+      final plantilla = await _plantillaRepository.getPlantilla();
+      plantilla.fold(
+        (error) {
+          emit(state.copyWith(status: PlantillaStatus.failure, error: error));
+        },
+        (success) {
+          emit(
+            state.copyWith(
+              status: PlantillaStatus.success,
+              htmlContent: success,
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: PlantillaStatus.failure,
+          error: e.toString(),
+        ),
+      );
+    }
+  }
 
-  FutureOr<void> _onGeneratePlantilla(
+  Future<void> _onGeneratePlantilla(
     GeneratePlantilla event,
     Emitter<PlantillaState> emit,
-  ) {}
+  ) async {
+    try {
+      final plantilla = await _plantillaRepository.setPlantilla(event.url);
+      plantilla.fold(
+        (error) {
+          emit(state.copyWith(status: PlantillaStatus.failure, error: error));
+        },
+        (success) {
+          emit(
+            state.copyWith(
+              status: PlantillaStatus.navigate,
+              htmlContent: success,
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: PlantillaStatus.failure,
+          error: e.toString(),
+        ),
+      );
+    }
+  }
 }

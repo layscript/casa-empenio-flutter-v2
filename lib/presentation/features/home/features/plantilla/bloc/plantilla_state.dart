@@ -1,10 +1,34 @@
 part of 'plantilla_bloc.dart';
 
-sealed class PlantillaState extends Equatable {
-  const PlantillaState();
-  
-  @override
-  List<Object> get props => [];
-}
+enum PlantillaStatus { initial, loading, success, failure, navigate }
 
-final class PlantillaInitial extends PlantillaState {}
+class PlantillaState extends Equatable {
+  const PlantillaState({
+    this.htmlContent = '',
+    this.status = PlantillaStatus.initial,
+    this.error,
+  });
+
+  final String htmlContent;
+  final PlantillaStatus status;
+  final String? error;
+
+  PlantillaState copyWith({
+    String? htmlContent,
+    PlantillaStatus? status,
+    String? error,
+  }) {
+    return PlantillaState(
+      htmlContent: htmlContent ?? this.htmlContent,
+      status: status ?? this.status,
+      error: error,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+        htmlContent,
+        status,
+        error,
+      ];
+}
