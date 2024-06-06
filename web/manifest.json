@@ -1,6 +1,6 @@
 {
-    "name": "casa_empenio_pe",
-    "short_name": "casa_empenio_pe",
+    "name": "casa_empenio_pe_dev",
+    "short_name": "casa_empenio_pe_dev",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

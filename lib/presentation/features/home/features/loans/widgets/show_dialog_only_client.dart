@@ -1,5 +1,5 @@
-/* import 'package:casa_empenio_pe/presentation/features/home/features/loans/blocs/loans_bloc/loans_bloc.dart';
-import 'package:casa_empenio_pe/presentation/features/home/features/loans/widgets/widgets.dart';
+/* import 'package:casa_empenio_pe_dev/presentation/features/home/features/loans/blocs/loans_bloc/loans_bloc.dart';
+import 'package:casa_empenio_pe_dev/presentation/features/home/features/loans/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

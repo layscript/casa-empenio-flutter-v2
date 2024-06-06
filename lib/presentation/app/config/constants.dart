@@ -1,9 +1,10 @@
-import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
+import 'package:casa_empenio_pe_dev/presentation/app/assets/assets.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-const endPointPrincipal = 'http://161.132.38.162:31032';
+// const endPointPrincipal = 'http://161.132.38.162:31032';
+const endPointPrincipal = 'http://192.168.20.199:3000';
 //const endPointPrincipal = 'http://161.132.38.162:31037';
 
 //const endPoint = 'http://192.168.195.118:4000';

@@ -1,4 +1,4 @@
-import 'package:casa_empenio_pe/domain/historial/historial_entity.dart';
+import 'package:casa_empenio_pe_dev/domain/historial/historial_entity.dart';
 import 'package:dartz/dartz.dart';
 
 abstract class HistorialRepository {

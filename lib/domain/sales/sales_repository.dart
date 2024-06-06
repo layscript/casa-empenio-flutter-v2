@@ -1,4 +1,4 @@
-import 'package:casa_empenio_pe/domain/sales/sales_entity.dart';
+import 'package:casa_empenio_pe_dev/domain/sales/sales_entity.dart';
 import 'package:dartz/dartz.dart';
 
 abstract class SalesRepository {

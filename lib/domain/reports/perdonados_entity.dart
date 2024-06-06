@@ -1,6 +1,6 @@
 import 'dart:developer';
 
-import 'package:casa_empenio_pe/domain/loans/loans_entity.dart';
+import 'package:casa_empenio_pe_dev/domain/loans/loans_entity.dart';
 import 'package:equatable/equatable.dart';
 
 class PerdonadosEntity extends Equatable {

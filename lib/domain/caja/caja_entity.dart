@@ -1,4 +1,4 @@
-import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:casa_empenio_pe_dev/domain/domain.dart';
 import 'package:equatable/equatable.dart';
 
 class CajaEntity extends Equatable {

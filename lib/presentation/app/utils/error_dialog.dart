@@ -1,5 +1,5 @@
-import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
-import 'package:casa_empenio_pe/presentation/app/widgets/buttons/buttons.dart';
+import 'package:casa_empenio_pe_dev/presentation/app/assets/assets.dart';
+import 'package:casa_empenio_pe_dev/presentation/app/widgets/buttons/buttons.dart';
 import 'package:flutter/material.dart';
 
 class ErrorDialog extends StatelessWidget {

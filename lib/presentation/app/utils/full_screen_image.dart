@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:casa_empenio_pe/presentation/app/config/config.dart';
+import 'package:casa_empenio_pe_dev/presentation/app/config/config.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 

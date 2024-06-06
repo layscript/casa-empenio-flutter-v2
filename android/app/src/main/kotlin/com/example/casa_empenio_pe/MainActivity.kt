@@ -1,4 +1,4 @@
-package com.example.casa_empenio_pe
+package com.example.casa_empenio_pe_dev
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,10 +1,10 @@
-import 'package:casa_empenio_pe/domain/domain.dart';
-import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
-import 'package:casa_empenio_pe/presentation/app/config/config.dart';
-import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
-import 'package:casa_empenio_pe/presentation/features/auth/auth.dart';
-import 'package:casa_empenio_pe/presentation/features/home/features/sales/bloc/sales_bloc.dart';
-import 'package:casa_empenio_pe/presentation/features/home/features/sales/widgets/widgets.dart';
+import 'package:casa_empenio_pe_dev/domain/domain.dart';
+import 'package:casa_empenio_pe_dev/presentation/app/assets/assets.dart';
+import 'package:casa_empenio_pe_dev/presentation/app/config/config.dart';
+import 'package:casa_empenio_pe_dev/presentation/app/utils/utils.dart';
+import 'package:casa_empenio_pe_dev/presentation/features/auth/auth.dart';
+import 'package:casa_empenio_pe_dev/presentation/features/home/features/sales/bloc/sales_bloc.dart';
+import 'package:casa_empenio_pe_dev/presentation/features/home/features/sales/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';

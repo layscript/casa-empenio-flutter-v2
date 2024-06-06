@@ -1,4 +1,4 @@
-import 'package:casa_empenio_pe/presentation/features/home/features/products/widgets/widgets.dart';
+import 'package:casa_empenio_pe_dev/presentation/features/home/features/products/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 
 class AddProductDialog extends StatefulWidget {

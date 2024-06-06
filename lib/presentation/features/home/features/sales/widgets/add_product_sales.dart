@@ -1,8 +1,8 @@
-import 'package:casa_empenio_pe/domain/domain.dart';
-import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
-import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
-import 'package:casa_empenio_pe/presentation/features/features.dart';
-import 'package:casa_empenio_pe/presentation/features/home/features/sales/bloc/sales_bloc.dart';
+import 'package:casa_empenio_pe_dev/domain/domain.dart';
+import 'package:casa_empenio_pe_dev/presentation/app/utils/utils.dart';
+import 'package:casa_empenio_pe_dev/presentation/app/widgets/widgets.dart';
+import 'package:casa_empenio_pe_dev/presentation/features/features.dart';
+import 'package:casa_empenio_pe_dev/presentation/features/home/features/sales/bloc/sales_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:quantity_input/quantity_input.dart';

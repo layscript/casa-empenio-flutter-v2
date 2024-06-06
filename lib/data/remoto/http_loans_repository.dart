@@ -3,8 +3,8 @@ import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:casa_empenio_pe/domain/domain.dart';
-import 'package:casa_empenio_pe/presentation/app/config/config.dart';
+import 'package:casa_empenio_pe_dev/domain/domain.dart';
+import 'package:casa_empenio_pe_dev/presentation/app/config/config.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';

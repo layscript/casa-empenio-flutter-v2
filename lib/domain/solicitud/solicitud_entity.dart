@@ -1,6 +1,6 @@
 import 'dart:developer';
 
-import 'package:casa_empenio_pe/domain/auth/auth.dart';
+import 'package:casa_empenio_pe_dev/domain/auth/auth.dart';
 
 class SolicitudEntity {
   const SolicitudEntity({
