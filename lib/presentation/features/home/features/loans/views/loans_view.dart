@@ -510,7 +510,7 @@ class _LoansViewState extends State<LoansView> {
                                                   ),
                                                 ),
                                               //if (auth.user.role?.id == 2 &&
-                                              if (auth.user.isAdmin == true &&
+                                              /*   if (auth.user.isAdmin == true &&
                                                   prestamo?.cerrado == true)
                                                 SizedBox(
                                                   height: 38,
@@ -575,10 +575,11 @@ class _LoansViewState extends State<LoansView> {
                                                     },
                                                     icon: const Icon(
                                                       Icons.new_label,
-                                                      color: Colors.purple,
+                                                      color: Colors.yellow,
                                                     ),
                                                   ),
                                                 ),
+                                             */
                                               if (prestamo?.cerrado == false)
                                                 // Pagar prestamo
                                                 SizedBox(
@@ -587,9 +588,7 @@ class _LoansViewState extends State<LoansView> {
                                                   child: IconButton(
                                                     padding: EdgeInsets.zero,
                                                     onPressed: () async {
-                                                      final result =
-                                                          await showDialog<
-                                                              bool>(
+                                                      await showDialog<bool>(
                                                         barrierDismissible:
                                                             false,
                                                         context: context,
@@ -607,15 +606,12 @@ class _LoansViewState extends State<LoansView> {
                                                         },
                                                       );
 
-                                                      if (result != null) {
-                                                        //TODO :: Cargar todo
-                                                        loansBloc.add(
-                                                          GetLoansByDni(
-                                                            value: state
-                                                                .searchText,
-                                                          ),
-                                                        );
-                                                      }
+                                                      loansBloc.add(
+                                                        GetLoansByDni(
+                                                          value:
+                                                              state.searchText,
+                                                        ),
+                                                      );
                                                     },
                                                     icon: const Icon(
                                                       Icons.payments_outlined,
@@ -651,14 +647,12 @@ class _LoansViewState extends State<LoansView> {
                                                         },
                                                       );
 
-                                                      if (result != null) {
-                                                        loansBloc.add(
-                                                          GetLoansByDni(
-                                                            value: state
-                                                                .searchText,
-                                                          ),
-                                                        );
-                                                      }
+                                                      loansBloc.add(
+                                                        GetLoansByDni(
+                                                          value:
+                                                              state.searchText,
+                                                        ),
+                                                      );
                                                     },
                                                     icon: Icon(
                                                       Icons.add_card,
@@ -677,9 +671,7 @@ class _LoansViewState extends State<LoansView> {
                                                     onPressed: () async {
                                                       if (prestamo?.boleta ==
                                                           null) {
-                                                        final result =
-                                                            await showDialog<
-                                                                bool>(
+                                                        await showDialog<bool>(
                                                           barrierDismissible:
                                                               false,
                                                           context: context,
@@ -701,19 +693,12 @@ class _LoansViewState extends State<LoansView> {
                                                           },
                                                         );
 
-                                                        /*  print(
-                                                            'resuuult: ${result}');
-                                                        if (result != null &&
-                                                            mounted) {
-                                                          context
-                                                              .read<LoansBloc>()
-                                                              .add(
-                                                                GetLoansByDni(
-                                                                  value: state
-                                                                      .searchText,
-                                                                ),
-                                                              );
-                                                        } */
+                                                        loansBloc.add(
+                                                          GetLoansByDni(
+                                                            value: state
+                                                                .searchText,
+                                                          ),
+                                                        );
                                                       } else {
                                                         // Abrir excel - verde
                                                         Navigator.push(context,
@@ -917,14 +902,12 @@ class _LoansViewState extends State<LoansView> {
                                                         ),
                                                       );
 
-                                                      if (result != null) {
-                                                        loansBloc.add(
-                                                          GetLoansByDni(
-                                                            value: state
-                                                                .searchText,
-                                                          ),
-                                                        );
-                                                      }
+                                                      loansBloc.add(
+                                                        GetLoansByDni(
+                                                          value:
+                                                              state.searchText,
+                                                        ),
+                                                      );
                                                     },
                                                     icon: const Icon(
                                                       Icons.update,
