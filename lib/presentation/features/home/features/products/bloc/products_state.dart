@@ -9,6 +9,7 @@ class ProductsState extends Equatable {
     this.listCategories,
     this.error,
     this.offset = 0,
+    this.categorySelected,
   });
 
   final ProductsStatus productsStatus;
@@ -16,6 +17,7 @@ class ProductsState extends Equatable {
   final List<CategoriesEntity>? listCategories;
   final String? error;
   final int offset;
+  final CategoriesEntity? categorySelected;
 
   bool get isProductLoading => productsStatus == ProductsStatus.loading;
   bool get isProductError => productsStatus == ProductsStatus.error;
@@ -29,6 +31,7 @@ class ProductsState extends Equatable {
     List<CategoriesEntity>? listCategories,
     String? error,
     int? offset,
+    CategoriesEntity? categorySelected,
   }) =>
       ProductsState(
         error: error ?? this.error,
@@ -36,6 +39,7 @@ class ProductsState extends Equatable {
         listCategories: listCategories ?? this.listCategories,
         productsStatus: productsStatus ?? this.productsStatus,
         offset: offset ?? this.offset,
+        categorySelected: categorySelected,
       );
 
   @override
@@ -45,5 +49,6 @@ class ProductsState extends Equatable {
         listProducts,
         error,
         offset,
+        categorySelected,
       ];
 }

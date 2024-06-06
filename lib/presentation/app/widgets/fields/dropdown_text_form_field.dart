@@ -13,6 +13,7 @@ class AppDropdownButtonFormField<T> extends StatelessWidget {
     this.iconPadding,
     this.icon,
     this.colorIconSize,
+    this.suffixOnPressed,
   }) : super(key: key);
   final T? value;
   final ValueChanged<T?>? onChanged;
@@ -23,6 +24,7 @@ class AppDropdownButtonFormField<T> extends StatelessWidget {
   final EdgeInsets? iconPadding;
   final Widget? icon;
   final Color? colorIconSize;
+  final void Function()? suffixOnPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -69,6 +71,12 @@ class AppDropdownButtonFormField<T> extends StatelessWidget {
                   )
                 : null, */
             suffixIconConstraints: const BoxConstraints(),
+            suffixIcon: suffixOnPressed != null
+                ? IconButton(
+                    onPressed: suffixOnPressed,
+                    icon: const Icon(Icons.clear),
+                  )
+                : null,
             /* suffixIcon: suffixIconBlue
                 ? Container(
                     margin: const EdgeInsets.only(

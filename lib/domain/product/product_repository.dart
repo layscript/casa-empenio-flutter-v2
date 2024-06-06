@@ -4,9 +4,9 @@ import 'package:dartz/dartz.dart';
 abstract class ProductRepository {
   Future<Either<String, List<ProductEntity>>> getProducts({
     required int type,
-    required String criterio,
-    required int limit,
+    String? criterio,
     required int offset,
+    String? categoria = '',
   });
 
   Future<Either<String, List<ProductEntity>>> getProductsLimitFree({

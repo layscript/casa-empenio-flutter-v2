@@ -35,7 +35,7 @@ class _SearchProductsState extends State<SearchProducts> {
                   )
                 : null,
             controller: nameCtrl,
-            labelText: 'Buscar producto',
+            labelText: 'Buscar producto por nombre',
             isValid: (value) => setState(() => nameIsValid = value),
           ),
         ),

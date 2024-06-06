@@ -19,13 +19,16 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
     on<SearchProductsByName>(_onSearchProductsByName);
     on<SaveVehiculo>(_onSaveVehiculo);
     on<SaveProduct>(_onSaveProduct);
+    on<FilterProductByCategory>(_onFilterProductByCategory);
   }
 
   final ProductRepository _productRepository;
   final CategoriesRepository _categoriesRepository;
 
-  ProductsState get _loadingState =>
-      state.copyWith(productsStatus: ProductsStatus.loading);
+  ProductsState get _loadingState => state.copyWith(
+        productsStatus: ProductsStatus.loading,
+        categorySelected: null,
+      );
 
   ProductsState _successState(List<ProductEntity> products) => state.copyWith(
         productsStatus: ProductsStatus.loaded,
@@ -45,8 +48,6 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
     final result = await Future.wait([
       _productRepository.getProducts(
         type: 0,
-        criterio: '',
-        limit: 10,
         offset: state.offset,
       ),
       _categoriesRepository.getCategories(),
@@ -80,12 +81,16 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
     SearchProductsByName event,
     Emitter<ProductsState> emit,
   ) async {
-    emit(_loadingState);
+    state.copyWith(
+      productsStatus: ProductsStatus.loading,
+      categorySelected: state.categorySelected,
+    );
+
     final result = await _productRepository.getProducts(
       type: 0,
       criterio: event.value,
-      limit: 10,
       offset: state.offset,
+      //categoria: state.categorySelected?.descripcion ?? '',
     );
     result.fold(
       (message) {
@@ -243,5 +248,40 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
         ),
       );
     }
+  }
+
+  void _onFilterProductByCategory(
+    FilterProductByCategory event,
+    Emitter<ProductsState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        productsStatus: ProductsStatus.loading,
+        categorySelected: event.value,
+      ),
+    );
+
+    final result = await _productRepository.getProducts(
+      type: 0,
+      offset: state.offset,
+      categoria: event.value?.descripcion ?? '',
+    );
+
+    result.fold(
+      (error) => emit(
+        state.copyWith(
+          error: error,
+          productsStatus: ProductsStatus.error,
+          categorySelected: event.value,
+        ),
+      ),
+      (success) => emit(
+        state.copyWith(
+          listProducts: success,
+          productsStatus: ProductsStatus.loaded,
+          categorySelected: event.value,
+        ),
+      ),
+    );
   }
 }

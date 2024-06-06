@@ -11,6 +11,11 @@ class GetProducts extends ProductsEvent {
   const GetProducts();
 }
 
+class FilterProductByCategory extends ProductsEvent {
+  const FilterProductByCategory({required this.value});
+  final CategoriesEntity? value;
+}
+
 class SearchProductsByName extends ProductsEvent {
   const SearchProductsByName({
     required this.value,

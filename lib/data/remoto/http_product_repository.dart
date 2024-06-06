@@ -85,16 +85,18 @@ class HttpProductRepository implements ProductRepository {
   @override
   Future<Either<String, List<ProductEntity>>> getProducts({
     required int type,
-    required String criterio,
-    required int limit,
-    required int offset,
+    String? criterio = '',
+    int offset = 0,
+    String? categoria = '',
   }) async {
-    final query = '?busqueda=$criterio&limit=1000&offset=0';
+    final query = '?busqueda=$criterio&limit=10&offset=$offset';
     try {
       Response<String> response;
       switch (type) {
         case 0:
-          response = await _dio.get<String>('/almacen/bien$query');
+          response = await _dio.get<String>(
+            '/almacen/bien$query&categoria=$categoria',
+          );
           break;
 
         case 1:
