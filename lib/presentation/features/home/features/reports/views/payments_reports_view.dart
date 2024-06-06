@@ -402,7 +402,7 @@ class _PaymentsReportsViewState extends State<PaymentsReportsView> {
                                     if (state.listPayments.isEmpty) {
                                       return const Center(
                                         child: Text(
-                                          'No hay registros de prestamos',
+                                          'No hay registros de pagos',
                                           textAlign: TextAlign.center,
                                         ),
                                       );
