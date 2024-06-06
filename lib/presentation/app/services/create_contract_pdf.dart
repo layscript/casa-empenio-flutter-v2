@@ -1,9 +1,9 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pdf/pdf.dart';
-import 'package:printing/printing.dart';
+import 'package:http/http.dart' as http;
 
 abstract class CreateContractPdf {
   // static Future<Uint8List> crearContratoPdf(ContratoEntity contrato) async {
@@ -613,11 +613,24 @@ abstract class CreateContractPdf {
           filledTemplate.replaceAll('{{${item.key}}}', item.value.toString());
     }
 
-    final pdf = await Printing.convertHtml(
-      format: PdfPageFormat.a4,
-      html: filledTemplate,
+    final pdf = await generarContratoPdf(filledTemplate);
+    return pdf;
+  }
+
+  static Future<Uint8List> generarContratoPdf(String htmlContent) async {
+    final url =
+        Uri.parse('http://161.132.38.162:31037/configuracion/pdf/create');
+
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'htmlContent': htmlContent}),
     );
 
-    return pdf;
+    if (response.statusCode == 200) {
+      return response.bodyBytes;
+    } else {
+      throw Exception('Error generating PDF: ${response.reasonPhrase}');
+    }
   }
 }
