@@ -3,5 +3,7 @@ export 'cancel_dialog_report_loan.dart';
 export 'leading_download_contracts.dart';
 export 'leading_download_payments.dart';
 export 'list_choice_chip.dart';
+export 'reports_detail_view.dart';
 export 'show_details_report_loans.dart';
 export 'show_details_report_pay.dart';
+export 'tabs_reports.dart';

@@ -1,7 +1,7 @@
-import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/reports/bloc/reports_bloc.dart';
-import 'package:casa_empenio_pe/presentation/features/home/features/reports/views/contract_reports_view.dart';
-import 'package:casa_empenio_pe/presentation/features/home/features/reports/views/payments_reports_view.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/reports/views/contract/contract_reports_view.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/reports/views/payment/payments_reports_view.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/reports/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -35,78 +35,60 @@ class _ReportsViewState extends State<ReportsView> {
           ),
           child: Column(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  InkWell(
-                    onTap: () {
-                      setState(() {
-                        selectedIndex = 0;
-                      });
-                      pageCtrl.animateToPage(
-                        0,
-                        duration: const Duration(seconds: 1),
-                        curve: Curves.ease,
-                      );
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        color: selectedIndex == 0
-                            ? AppColors.blue
-                            : AppColors.blue.withOpacity(0.5),
-                      ),
-                      padding: const EdgeInsets.all(10),
-                      child: FittedBox(
-                        child: Text(
-                          'Reportes de Pago',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: selectedIndex == 0
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      ),
+              SizedBox(
+                height: 35,
+                child: ListView(
+                  shrinkWrap: true,
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    TabsReports(
+                      onTap: () {
+                        setState(() {
+                          selectedIndex = 0;
+                        });
+                        pageCtrl.animateToPage(
+                          0,
+                          duration: const Duration(seconds: 1),
+                          curve: Curves.ease,
+                        );
+                      },
+                      isSelected: selectedIndex == 0,
+                      text: 'Reportes de Pago',
                     ),
-                  ),
-                  InkWell(
-                    onTap: () {
-                      setState(() {
-                        selectedIndex = 1;
-                      });
-                      pageCtrl.animateToPage(
-                        1,
-                        duration: const Duration(seconds: 1),
-                        curve: Curves.ease,
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        color: selectedIndex == 1
-                            ? AppColors.blue
-                            : AppColors.blue.withOpacity(0.5),
-                      ),
-                      child: FittedBox(
-                        child: Text(
-                          'Reportes de Contratos',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: selectedIndex == 1
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      ),
+                    const SizedBox(width: 10),
+                    TabsReports(
+                      onTap: () {
+                        setState(() {
+                          selectedIndex = 1;
+                        });
+                        pageCtrl.animateToPage(
+                          1,
+                          duration: const Duration(seconds: 1),
+                          curve: Curves.ease,
+                        );
+                      },
+                      isSelected: selectedIndex == 1,
+                      text: 'Reportes de Contratos',
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 10),
+                    TabsReports(
+                      onTap: () {
+                        setState(() {
+                          selectedIndex = 2;
+                        });
+                        pageCtrl.animateToPage(
+                          2,
+                          duration: const Duration(seconds: 1),
+                          curve: Curves.ease,
+                        );
+                      },
+                      isSelected: selectedIndex == 2,
+                      text: 'Reportes de Deudas',
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 15),
               Expanded(
                 child: PageView.builder(
                   controller: pageCtrl,
@@ -117,13 +99,17 @@ class _ReportsViewState extends State<ReportsView> {
                   },
                   scrollDirection: Axis.horizontal,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: 2,
+                  itemCount: 3,
                   itemBuilder: (context, index) {
                     switch (index) {
                       case 0:
                         return const PaymentsReportsView();
                       case 1:
                         return const ContractReportsView();
+                      case 2:
+                        return Container(
+                          child: const Text('Hello'),
+                        );
                     }
                     return null;
                   },
