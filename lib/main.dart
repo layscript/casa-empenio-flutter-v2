@@ -84,6 +84,9 @@ Future<void> main() async {
           RepositoryProvider(
             create: (context) => _plantillaRepository,
           ),
+          RepositoryProvider(
+            create: (context) => _proformaRepository,
+          ),
         ],
         child: MultiBlocProvider(
           providers: [
