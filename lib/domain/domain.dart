@@ -27,6 +27,8 @@ export 'interests/interests_entity.dart';
 export 'product/product_entity.dart';
 export 'product/product_repository.dart';
 
+export 'proforma/proforma_repository.dart';
+
 export 'customer/customer_entity.dart';
 export 'customer/customer_repository.dart';
 export 'customer/customer_sunat_entity.dart';

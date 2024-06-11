@@ -68,6 +68,18 @@ class AppDrawer extends StatelessWidget {
               },
             ),
             ListTile(
+              tileColor: homeState.index == 15 ? Colors.black12 : null,
+              leading: const FaIcon(
+                FontAwesomeIcons.paperPlane,
+                size: 20,
+              ),
+              title: const Text('Proformas'),
+              onTap: () {
+                context.read<HomeBloc>().add(GoToProformas());
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
               tileColor: homeState.index == 2 ? Colors.black12 : null,
               leading: const FaIcon(
                 FontAwesomeIcons.fileArrowDown,

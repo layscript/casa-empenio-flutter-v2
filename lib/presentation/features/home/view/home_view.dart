@@ -105,6 +105,9 @@ class HomeView extends StatelessWidget {
 
                   case 14:
                     return const PlantillaView();
+
+                  case 15:
+                    return const ProformaView();
                 }
                 return const SizedBox();
               },

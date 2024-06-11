@@ -54,6 +54,13 @@ class MainView extends StatelessWidget {
               ),
               _ItemGrid(
                 onTap: () => context.read<HomeBloc>().add(
+                      GoToProformas(),
+                    ),
+                text: 'Proformas',
+                icon: FontAwesomeIcons.paperPlane,
+              ),
+              _ItemGrid(
+                onTap: () => context.read<HomeBloc>().add(
                       GoToReports(),
                     ),
                 text: 'Reportes',

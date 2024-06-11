@@ -27,6 +27,9 @@ export 'interests/views/interests_view.dart';
 export 'products/bloc/products_bloc.dart';
 export 'products/views/products_view.dart';
 
+export 'proforma/bloc/proforma_bloc.dart';
+export 'proforma/view/proforma_view.dart';
+
 export 'reports/bloc/reports_bloc.dart';
 export 'reports/views/reports_view.dart';
 

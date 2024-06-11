@@ -93,6 +93,11 @@ final PlantillaRepository _plantillaRepository = HttpPlantillaRepository(
   sentry: _sentry,
 );
 
+final ProformaRepository _proformaRepository = HttpProformaRepository(
+  dio: _client,
+  sentry: _sentry,
+);
+
 void configDio(Preferences preferences) {
   _client.interceptors.add(
     InterceptorsWrapper(

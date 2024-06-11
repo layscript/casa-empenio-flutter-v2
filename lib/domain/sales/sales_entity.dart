@@ -36,6 +36,7 @@ class SalesEntity {
   }
 
   static SalesEntity getSalesFromMap(Map<String, dynamic> map) {
+    log('abccccc: $map');
     return SalesEntity(
       id: map['id'],
       serie: map['serie'],
