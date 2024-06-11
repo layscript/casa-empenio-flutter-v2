@@ -7,7 +7,7 @@ enum SalesStatus {
   error,
 }
 
-class ProductSales {
+class ProductSales extends Equatable {
   const ProductSales({
     required this.selectedProducts,
     required this.precio,
@@ -36,6 +36,15 @@ class ProductSales {
         gastoAdicional: gastoAdicional ?? this.gastoAdicional,
         observaciones: observaciones ?? this.observaciones,
       );
+
+  @override
+  List<Object?> get props => [
+        selectedProducts,
+        precio,
+        cantidad,
+        gastoAdicional,
+        observaciones,
+      ];
 }
 
 class SalesState extends Equatable {

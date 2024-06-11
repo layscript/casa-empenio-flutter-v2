@@ -230,13 +230,27 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
     );
 
     List<Map<String, dynamic>> detalles = state.selectedProductsSales!.map((e) {
-      return {
-        'cantidad': e.cantidad,
-        'gastoAdicional': e.gastoAdicional, // nuevo
-        'observaciones': e.observaciones, // nuevo
-        'precio': e.precio,
-        'bienGarantiaId': e.selectedProducts?.id,
-      };
+      final id = e.selectedProducts?.id.toString();
+
+      if (id?.startsWith('2000') ?? false) {
+        return {
+          'cantidad': e.cantidad,
+          'gastoAdicional': e.gastoAdicional,
+          'observaciones': e.observaciones,
+          'precio': e.precio,
+          'bienTemporal': e.selectedProducts?.descripcion,
+          'bienGarantiaId': null,
+        };
+      } else {
+        return {
+          'cantidad': e.cantidad,
+          'gastoAdicional': e.gastoAdicional,
+          'observaciones': e.observaciones,
+          'precio': e.precio,
+          'bienGarantiaId': e.selectedProducts?.id,
+          'bienTemporal': null,
+        };
+      }
     }).toList();
 
     final data = <String, dynamic>{

@@ -193,6 +193,7 @@ class _AddFormSalesState extends State<AddFormSales> {
                                 final selectedProduct =
                                     state.selectedProductsSales![index];
                                 final e = selectedProduct.selectedProducts;
+
                                 final fullText =
                                     '${e?.descripcion} ${e?.marca != null && e?.marca != '' ? ' / ${e?.marca}' : ''} ${e?.modelo != null && e?.modelo != '' ? ' / ${e?.modelo}' : ''}';
                                 final parsed = fullText.trimLeft();
@@ -242,13 +243,16 @@ class _AddFormSalesState extends State<AddFormSales> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        '${selectedProduct.selectedProducts?.cantidad} disponible(s)',
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          color: Colors.green,
+                                      if (selectedProduct
+                                              .selectedProducts?.cantidad !=
+                                          null)
+                                        Text(
+                                          '${selectedProduct.selectedProducts?.cantidad} disponible(s)',
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.green,
+                                          ),
                                         ),
-                                      ),
                                       if (selectedProduct.gastoAdicional !=
                                               null &&
                                           selectedProduct.observaciones !=
@@ -277,7 +281,8 @@ class _AddFormSalesState extends State<AddFormSales> {
                                     inputWidth: 60,
                                     acceptsZero: true,
                                     maxValue: selectedProduct
-                                        .selectedProducts?.cantidad,
+                                            .selectedProducts?.cantidad ??
+                                        100000,
                                     value: selectedProduct.cantidad,
                                     onChanged: (value) {
                                       if (int.parse(
