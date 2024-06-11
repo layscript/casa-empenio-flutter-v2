@@ -1,5 +1,6 @@
 import 'package:casa_empenio_pe/presentation/features/home/features/reports/bloc/reports_bloc.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/reports/views/contract/contract_reports_view.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/reports/views/deudas/deudas_reports_view.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/reports/views/payment/payments_reports_view.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/reports/widgets/widgets.dart';
 import 'package:flutter/material.dart';
@@ -107,9 +108,7 @@ class _ReportsViewState extends State<ReportsView> {
                       case 1:
                         return const ContractReportsView();
                       case 2:
-                        return Container(
-                          child: const Text('Hello'),
-                        );
+                        return const DeudasReportsView();
                     }
                     return null;
                   },

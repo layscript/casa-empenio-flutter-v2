@@ -11,6 +11,11 @@ class GetCategoriesEvent extends ReportsEvent {
   const GetCategoriesEvent();
 }
 
+class SearchDeudasByDays extends ReportsEvent {
+  final String dias;
+  const SearchDeudasByDays({required this.dias});
+}
+
 class DeleteIncreaseEvent extends ReportsEvent {
   const DeleteIncreaseEvent(
     this.id,

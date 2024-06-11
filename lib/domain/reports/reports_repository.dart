@@ -14,6 +14,12 @@ abstract class ReportsRepository {
     required int usuarioId,
     required int sucursalId,
   });
+
+  Future<Either<String, List<LoansEntity>>> getDeudasByDays({
+    required String dias,
+    required int sucursalId,
+  });
+
   Future<Either<String, List<ReportsPaymentEntity>>> getPaymentsByRangeDate({
     required DateTime inicio,
     required DateTime fin,

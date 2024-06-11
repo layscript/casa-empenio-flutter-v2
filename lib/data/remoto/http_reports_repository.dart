@@ -354,4 +354,35 @@ class HttpReportsRepository implements ReportsRepository {
       return false;
     }
   }
+
+  @override
+  Future<Either<String, List<LoansEntity>>> getDeudasByDays({
+    required String dias,
+    required int sucursalId,
+  }) async {
+    final payload = {
+      'sucursalId': sucursalId,
+      'dias': dias,
+    };
+
+    const path = '/prestamos/reportes/dias';
+    try {
+      final response = await _dio.post<String>(path, data: payload);
+      if (response.statusCode != 201) {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final message = map['message'] ?? 'Ocurrió un error';
+        return Left(message);
+      } else {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final result = LoansEntity.listGetSalesDetailFromMap(map['body']);
+        return Right(result);
+      }
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
+      return const Left('Ocurrió un error con el servidor');
+    }
+  }
 }

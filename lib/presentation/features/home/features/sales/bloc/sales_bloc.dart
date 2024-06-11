@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -33,12 +32,15 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
         _productRepository = productRepository,
         _cajaRepository = cajaRepository,
         super(_initialState) {
-    on<GetSalesInitial>((event, emit) => emit(
-          state.copyWith(
-            addStatus: SalesStatus.initial,
-            customer: null,
-          ),
-        ));
+    on<GetSalesInitial>(
+      (event, emit) => emit(
+        state.copyWith(
+          addStatus: SalesStatus.initial,
+          customer: null,
+        ),
+      ),
+    );
+
     on<GetListSales>(_onGetListSales);
     on<GetCashSalesStatus>(_onGetCashSalesStatus);
     on<GetCustomerSalesByDni>(_onGetCustomerSalesByDni);

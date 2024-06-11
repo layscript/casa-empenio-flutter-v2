@@ -39,6 +39,8 @@ class ReportsState extends Equatable {
     required this.listCategories,
     required this.selectedCategory,
     required this.statusCanceledContracts,
+    required this.statusDeudas,
+    required this.listDeudas,
   });
 
   final ReportsStatus statusClosedLoans;
@@ -47,6 +49,7 @@ class ReportsState extends Equatable {
   final ReportsStatus statusLoans;
   final ReportsStatus statusDetails;
   final ReportsStatus statusCanceled;
+  final ReportsStatus statusDeudas;
   final ReportsContractsStatus statusCanceledContracts;
 
   final DateTime startTimePayments;
@@ -54,6 +57,7 @@ class ReportsState extends Equatable {
   final List<LoansEntity> listClosedLoans;
   final List<LoansEntity> listLoans;
   final List<ReportsPaymentEntity> listPayments;
+  final List<LoansEntity>? listDeudas;
   final double totalPayments;
 
   final double partialUtilityPayment;
@@ -127,12 +131,14 @@ class ReportsState extends Equatable {
     ReportsStatus? statusPayments,
     ReportsStatus? statusDetails,
     ReportsStatus? statusCanceled,
+    ReportsStatus? statusDeudas,
     DateTime? startTimePayments,
     DateTime? endTimePayments,
     List<LoansEntity>? listClosedLoans,
     List<LoansEntity>? listLoans,
     List<ReportsContractsEntity>? listIncrease,
     List<ReportsPaymentEntity>? listPayments,
+    List<LoansEntity>? listDeudas,
     DateTime? startTimeContracts,
     DateTime? endTimeContracts,
     double? totalPayments,
@@ -191,6 +197,8 @@ class ReportsState extends Equatable {
         selectedCategory: selectedCategory,
         statusCanceledContracts:
             statusCanceledContracts ?? this.statusCanceledContracts,
+        statusDeudas: statusDeudas ?? this.statusDeudas,
+        listDeudas: listDeudas ?? this.listDeudas,
       );
 
   @override
@@ -228,5 +236,7 @@ class ReportsState extends Equatable {
         listCategories,
         selectedCategory,
         statusCanceledContracts,
+        statusDeudas,
+        listDeudas,
       ];
 }

@@ -44,6 +44,8 @@ final _initialState = ReportsState(
   message: null,
   listCategories: const [],
   selectedCategory: null,
+  listDeudas: const [],
+  statusDeudas: ReportsStatus.initial,
 );
 
 class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
@@ -70,6 +72,7 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     on<GetCategoriesEvent>(_onGetCategoriesEvent);
     on<ChangeCategoryEvent>(_onChangeCategoryEvent);
     on<DeleteIncreaseEvent>(_onDeleteIncreaseEvent);
+    on<SearchDeudasByDays>(_onSearchDeudasByDays);
 
     // Tags
     on<ChangeCanceladoContracts>(
@@ -664,5 +667,43 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
       start: state.startTimeContracts,
       end: state.endTimeContracts,
     ));
+  }
+
+  Future<void> _onSearchDeudasByDays(
+    SearchDeudasByDays event,
+    Emitter<ReportsState> emit,
+  ) async {
+    emit(state.copyWith(statusDeudas: ReportsStatus.loading));
+
+    try {
+      final result = await _reportsRepository.getDeudasByDays(
+        dias: event.dias,
+        sucursalId: _preferences.token?.sucursal?.id ?? 1,
+      );
+
+      result.fold(
+        (error) => emit(
+          state.copyWith(
+            statusDeudas: ReportsStatus.error,
+            message: error,
+            listDeudas: [],
+          ),
+        ),
+        (success) => emit(
+          state.copyWith(
+            statusDeudas: ReportsStatus.success,
+            message: '',
+            listDeudas: success,
+          ),
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          statusDeudas: ReportsStatus.error,
+          message: e.toString(),
+        ),
+      );
+    }
   }
 }
