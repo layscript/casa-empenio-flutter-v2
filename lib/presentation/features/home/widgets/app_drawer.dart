@@ -115,6 +115,20 @@ class AppDrawer extends StatelessWidget {
                 Navigator.pop(context);
               },
             ),
+            if (auth?.role?.nombre == 'Administrador')
+              ListTile(
+                tileColor: homeState.index == 16 ? Colors.black12 : null,
+                leading: const FaIcon(
+                  FontAwesomeIcons.hand,
+                  size: 20,
+                ),
+                title: const Text('Anexos'),
+                onTap: () {
+                  context.read<HomeBloc>().add(GoToAnexos());
+                  Navigator.pop(context);
+                },
+              ),
+
             /* if (auth?.role?.nombre == 'Administrador')
               ListTile(
                 tileColor: homeState.index == 5 ? Colors.black12 : null,

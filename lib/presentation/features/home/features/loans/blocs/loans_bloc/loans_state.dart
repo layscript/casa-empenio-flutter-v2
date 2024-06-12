@@ -43,6 +43,13 @@ enum LoansStatus {
   updateLoansError,
 }
 
+enum AnexosLoanStatus {
+  initial,
+  loading,
+  success,
+  error,
+}
+
 class LoansState extends Equatable {
   const LoansState({
     this.searchText = '',
@@ -52,6 +59,9 @@ class LoansState extends Equatable {
     this.loansSearchStatus = LoansStatus.initial,
     this.loansRenewStatus = LoansStatus.initial,
     this.solicitudStatus = LoansStatus.initial,
+    this.anexosLoanStatus = AnexosLoanStatus.initial,
+    this.listAnexosStatus = AnexosLoanStatus.initial,
+    this.listAnexos = const <AnexoEntity>[],
     this.customer,
     this.searchCustomer,
     this.customerSunat,
@@ -64,6 +74,11 @@ class LoansState extends Equatable {
   final bool? openBox;
   final bool? typeSearch;
   final String searchText;
+
+  final AnexosLoanStatus anexosLoanStatus;
+  final List<AnexoEntity> listAnexos;
+  final AnexosLoanStatus listAnexosStatus;
+
   final LoansStatus loansStatus;
   final LoansStatus loansSearchStatus;
   final LoansStatus? loansRenewStatus;
@@ -134,6 +149,10 @@ class LoansState extends Equatable {
   bool get isSolicitudError => solicitudStatus == LoansStatus.error;
   bool get isSolicitudSuccess => solicitudStatus == LoansStatus.loaded;
 
+  bool get isAnexosLoading => anexosLoanStatus == AnexosLoanStatus.loading;
+  bool get isAnexosError => anexosLoanStatus == AnexosLoanStatus.error;
+  bool get isAnexosSuccess => anexosLoanStatus == AnexosLoanStatus.success;
+
   String fullNamesCustomerSunat() {
     return '${customerSunat?.nombre} ${customerSunat?.apellidoPaterno} ${customerSunat?.apellidoMaterno}';
   }
@@ -155,6 +174,7 @@ class LoansState extends Equatable {
     LoansStatus? loansSearchStatus,
     LoansStatus? loansRenewStatus,
     LoansStatus? solicitudStatus,
+    AnexosLoanStatus? anexosLoanStatus,
     CustomerEntity? customer,
     CustomerEntity? searchCustomer,
     CustomerSunatEntity? customerSunat,
@@ -162,6 +182,8 @@ class LoansState extends Equatable {
     String? error,
     List<CategoriesEntity>? listCategories,
     int? cajaId,
+    List<AnexoEntity>? listAnexos,
+    AnexosLoanStatus? listAnexosStatus,
   }) =>
       LoansState(
         openBox: openBox,
@@ -178,6 +200,9 @@ class LoansState extends Equatable {
         listCategories: listCategories ?? this.listCategories,
         loansRenewStatus: loansRenewStatus ?? this.loansRenewStatus,
         cajaId: cajaId ?? this.cajaId,
+        anexosLoanStatus: anexosLoanStatus ?? this.anexosLoanStatus,
+        listAnexos: listAnexos ?? this.listAnexos,
+        listAnexosStatus: listAnexosStatus ?? this.listAnexosStatus,
       );
 
   @override
@@ -196,5 +221,8 @@ class LoansState extends Equatable {
         listCategories,
         loansRenewStatus,
         cajaId,
+        anexosLoanStatus,
+        listAnexos,
+        listAnexosStatus,
       ];
 }

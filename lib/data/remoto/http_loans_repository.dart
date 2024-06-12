@@ -275,6 +275,7 @@ class HttpLoansRepository implements LoansRepository {
     required List<XFile>? photos,
     required bool? efectivo,
     required int? cajaId,
+    bool isLiquidacion = false,
   }) async {
     const path = '/prestamos/pagos';
     final payload = {
@@ -282,6 +283,7 @@ class HttpLoansRepository implements LoansRepository {
       'prestamoId': codigo,
       'usuarioId': userId,
       'cajaId': cajaId,
+      'isLiquidacion': isLiquidacion,
     };
 
     if (efectivo != null) {

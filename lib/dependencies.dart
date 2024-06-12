@@ -98,6 +98,11 @@ final ProformaRepository _proformaRepository = HttpProformaRepository(
   sentry: _sentry,
 );
 
+final AnexoRepository _anexoRepository = HttpAnexoRepository(
+  dio: _client,
+  sentry: _sentry,
+);
+
 void configDio(Preferences preferences) {
   _client.interceptors.add(
     InterceptorsWrapper(

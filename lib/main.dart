@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:casa_empenio_pe/app.dart';
 import 'package:casa_empenio_pe/bootstrap.dart';
 import 'package:casa_empenio_pe/data/data.dart';
+import 'package:casa_empenio_pe/data/remoto/http_anexo_repository.dart';
 import 'package:casa_empenio_pe/data/remoto/http_sucursal_repository.dart';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
@@ -86,6 +87,9 @@ Future<void> main() async {
           ),
           RepositoryProvider(
             create: (context) => _proformaRepository,
+          ),
+          RepositoryProvider(
+            create: (context) => _anexoRepository,
           ),
         ],
         child: MultiBlocProvider(

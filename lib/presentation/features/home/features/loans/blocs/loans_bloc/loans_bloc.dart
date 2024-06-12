@@ -17,10 +17,12 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     required CajaRepository cajaRepository,
     required SolicitudRepository solicitudRepository,
     required Preferences preferences,
+    required AnexoRepository anexoRepository,
   })  : _customerRepository = customerRepository,
         _loansRepository = loansRepository,
         _cajaRepository = cajaRepository,
         _solicitudRepository = solicitudRepository,
+        _anexoRepository = anexoRepository,
         _preferences = preferences,
         super(const LoansState()) {
     on<GetLoansInitial>((event, emit) => emit(const LoansState()));
@@ -46,6 +48,8 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     on<UpdateStatusLoanById>(_onUpdateStatusLoanById);
 
     on<CreateSolicitud>(_onCreateSolicitud);
+    on<SaveAnexoLoan>(_onSaveAnexoLoan);
+    on<GetAnexosLoan>(_onGetAnexosLoan);
   }
 
   final CustomerRepository _customerRepository;
@@ -53,6 +57,7 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
   final CajaRepository _cajaRepository;
   final SolicitudRepository _solicitudRepository;
   final Preferences _preferences;
+  final AnexoRepository _anexoRepository;
 
   LoansState get _loadingState =>
       state.copyWith(loansStatus: LoansStatus.loading);
@@ -204,6 +209,7 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
         photos: null,
         efectivo: event.efectivo,
         cajaId: state.cajaId,
+        isLiquidacion: true,
       );
 
       final resultLoand = await _loansRepository.payOffLoan(
@@ -265,6 +271,7 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
       photos: null,
       efectivo: event.efectivo,
       cajaId: state.cajaId,
+      isLiquidacion: true,
     );
 
     final resultLoand = await _loansRepository.payOffLoan(
@@ -637,14 +644,91 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
         ));
       },
     );
-    /* final result = await _loansRepository.deleteLoan(
-      idLoan: event.idLoan,
-      userId: event.userId,
+  }
+
+  Future<void> _onSaveAnexoLoan(
+    SaveAnexoLoan event,
+    Emitter<LoansState> emit,
+  ) async {
+    emit(state.copyWith(anexosLoanStatus: AnexosLoanStatus.loading));
+    List<String> images = [];
+    if (event.imagenes != null) {
+      for (var img in event.imagenes!) {
+        final url = await _anexoRepository.createImage(path: img.path);
+        url.fold(
+          (error) => emit(
+            state.copyWith(
+              anexosLoanStatus: AnexosLoanStatus.error,
+              error: error,
+            ),
+          ),
+          (success) => images.add(success),
+        );
+      }
+
+      if (images.isNotEmpty) {
+        final result = await _anexoRepository.createAnexo(
+          description: event.description,
+          prestamoId: event.prestamoId,
+          url: images.map((e) {
+            return {'url': e};
+          }).toList(),
+        );
+
+        result.fold(
+          (error) => emit(
+            state.copyWith(
+              anexosLoanStatus: AnexosLoanStatus.error,
+              error: error,
+            ),
+          ),
+          (success) => emit(
+            state.copyWith(
+              anexosLoanStatus: AnexosLoanStatus.success,
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _onGetAnexosLoan(
+    GetAnexosLoan event,
+    Emitter<LoansState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        listAnexosStatus: AnexosLoanStatus.loading,
+      ),
     );
-    if (result) {
-      emit(state.copyWith(loansStatus: LoansStatus.deleteLoanSuccess));
-    } else {
-      emit(state.copyWith(loansStatus: LoansStatus.deleteLoanError));
-    } */
+    try {
+      final result = await _anexoRepository.getAnexoByPrestamo(
+        prestamoId: event.idPrestamo,
+      );
+      result.fold((error) {
+        emit(
+          state.copyWith(
+            listAnexos: [],
+            listAnexosStatus: AnexosLoanStatus.error,
+            error: error,
+          ),
+        );
+      }, (data) {
+        emit(
+          state.copyWith(
+            listAnexos: data,
+            listAnexosStatus: AnexosLoanStatus.success,
+          ),
+        );
+      });
+    } catch (e) {
+      emit(
+        state.copyWith(
+          listAnexos: [],
+          error: e.toString(),
+          listAnexosStatus: AnexosLoanStatus.error,
+        ),
+      );
+    }
   }
 }

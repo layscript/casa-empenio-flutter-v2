@@ -38,3 +38,5 @@ class GoToPerdonados extends HomeEvent {}
 class GoToPlantillas extends HomeEvent {}
 
 class GoToProformas extends HomeEvent {}
+
+class GoToAnexos extends HomeEvent {}

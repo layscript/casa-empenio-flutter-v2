@@ -108,6 +108,9 @@ class HomeView extends StatelessWidget {
 
                   case 15:
                     return const ProformaView();
+
+                  case 16:
+                    return const AnexosView();
                 }
                 return const SizedBox();
               },

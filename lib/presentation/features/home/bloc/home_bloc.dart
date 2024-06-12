@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 
@@ -22,6 +24,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<GoToPerdonados>(_onGoToPerdonados);
     on<GoToPlantillas>(_onGoToPlantillas);
     on<GoToProformas>(_onGoToProformas);
+    on<GoToAnexos>(_onGoToAnexos);
   }
 
   void _onGoToHome(GoToHome event, Emitter<HomeState> emit) {
@@ -86,5 +89,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
   void _onGoToProformas(GoToProformas event, Emitter<HomeState> emit) {
     emit(state.copyWith(index: 15));
+  }
+
+  void _onGoToAnexos(GoToAnexos event, Emitter<HomeState> emit) {
+    emit(state.copyWith(index: 16));
   }
 }

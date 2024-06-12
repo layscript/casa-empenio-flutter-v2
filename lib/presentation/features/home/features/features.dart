@@ -1,3 +1,6 @@
+export 'anexos/view/anexos_view.dart';
+export 'anexos/bloc/anexos_bloc.dart';
+
 export 'categories/views/categories_view.dart';
 export 'categories/bloc/categories_bloc.dart';
 

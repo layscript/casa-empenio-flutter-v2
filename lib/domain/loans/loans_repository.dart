@@ -75,6 +75,7 @@ abstract class LoansRepository {
     required List<XFile>? photos,
     required bool? efectivo,
     required int? cajaId,
+    bool isLiquidacion,
   });
 
   Future<bool> payOffLoan({

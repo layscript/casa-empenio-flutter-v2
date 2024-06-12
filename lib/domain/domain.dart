@@ -1,3 +1,6 @@
+export 'anexo/anexo_entity.dart';
+export 'anexo/anexo_repository.dart';
+
 export 'auth/auth.dart';
 
 export 'caja/caja_entity.dart';

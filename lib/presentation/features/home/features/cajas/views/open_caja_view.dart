@@ -71,7 +71,9 @@ class _OpenCajaViewState extends State<OpenCajaView> {
                             ),
                             CustomRow(
                               label: 'Hora de Apertura',
-                              value: movimiento.horaApertura.toString(),
+                              value: setTimeToLocal(
+                                movimiento.horaApertura ?? '',
+                              ),
                             ),
                             CustomRow(
                               label: 'Usuario de Apertura',

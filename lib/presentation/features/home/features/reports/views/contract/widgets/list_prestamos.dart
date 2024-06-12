@@ -80,6 +80,7 @@ class _ListPrestamos extends StatelessWidget {
                                       cajaRepository: context.read(),
                                       preferences: context.read(),
                                       solicitudRepository: context.read(),
+                                      anexoRepository: context.read(),
                                     ),
                                     child: ReportsDetailView(
                                       document: prestamo?.cliente?.dni ?? '',

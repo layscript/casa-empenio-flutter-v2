@@ -195,3 +195,19 @@ class CreateSolicitud extends LoansEvent {
   final String estado;
   final int usuarioId;
 }
+
+class SaveAnexoLoan extends LoansEvent {
+  const SaveAnexoLoan({
+    required this.description,
+    required this.imagenes,
+    required this.prestamoId,
+  });
+  final String prestamoId;
+  final String description;
+  final List<XFile>? imagenes;
+}
+
+class GetAnexosLoan extends LoansEvent {
+  final String idPrestamo;
+  const GetAnexosLoan(this.idPrestamo);
+}

@@ -2,6 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
+String setTimeToLocal(String hora) {
+  final time = DateFormat('hh:mm:ss a').parse(hora).toLocal();
+  String formattedTime = DateFormat('hh:mm:ss a', 'es_ES').format(time);
+  return formattedTime;
+}
+
+String setDateTimeToLocal(String fecha) {
+  return DateFormat('dd/MM/yyyy - hh:mm')
+      .format(DateTime.parse(fecha).toLocal());
+}
+
 final removeBlankSpaces = [
   FilteringTextInputFormatter.deny(
     RegExp(r'\s\b|\b\s'),
