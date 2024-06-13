@@ -271,7 +271,7 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
       'apellidos':
           '${state.customer?.apellidoPaterno} ${state.customer?.apellidoMaterno}',
       'direccion': '${state.customer?.domicilio?.direccion}',
-      'dni': '${state.customer?.dni}',
+      'dni': '${state.customer?.customerDocument}',
       'usuarioId': event.userId,
       'sucursalId': event.sucursalId,
     };
