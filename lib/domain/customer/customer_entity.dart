@@ -35,6 +35,12 @@ class CustomerEntity {
   final String? updatedAt;
   final String? createdAt;
 
+  String get customerFullName => (dni == null || dni!.isEmpty || dni == 'null')
+      ? '$nombres'
+      : apellidos != "null null"
+          ? '$nombres $apellidos'
+          : '$nombres';
+
   @override
   String toString() {
     return '''
@@ -62,7 +68,7 @@ class CustomerEntity {
   }
 
   static CustomerEntity getCustomerFromMap(Map<String, dynamic> map) {
-
+    print('ajsdkjksadl: ${map}');
     return CustomerEntity(
       dni: map['dni'],
       nombres: map['nombres'],

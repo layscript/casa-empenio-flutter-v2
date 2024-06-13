@@ -218,7 +218,7 @@ class _SalesViewState extends State<SalesView> {
                                         Text('${venta.cod}'),
                                         const SizedBox(height: 2),
                                         Text(
-                                          '${venta.cliente?.nombres?.toUpperCase() ?? ''} ${venta.cliente?.apellidos?.toUpperCase() ?? ''}',
+                                          '${venta.cliente?.customerFullName}',
                                           style: const TextStyle(
                                             color: AppColors.secondaryText,
                                             fontWeight: FontWeight.normal,
