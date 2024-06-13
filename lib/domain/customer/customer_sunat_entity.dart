@@ -1,4 +1,5 @@
 class CustomerSunatEntity {
+  final String? ruc;
   final String? dni;
   final String? nombre;
   final String? apellidoPaterno;
@@ -6,6 +7,7 @@ class CustomerSunatEntity {
   final HomeSunatEntity? domicilio;
 
   const CustomerSunatEntity({
+    required this.ruc,
     required this.dni,
     required this.nombre,
     required this.apellidoPaterno,
@@ -13,12 +15,18 @@ class CustomerSunatEntity {
     required this.domicilio,
   });
 
+  String get customerDocument => ruc != null ? dni ?? '' : ruc ?? '';
+  String get customerFullName => ruc != null
+      ? nombre ?? ''
+      : '${nombre ?? ''} ${apellidoMaterno ?? ''} ${apellidoPaterno ?? ''}';
+
   static CustomerSunatEntity getCustomerSunatFromMap(Map<String, dynamic> map) {
     return CustomerSunatEntity(
       dni: map['dni'],
       nombre: map['nombre'],
       apellidoPaterno: map['apellido_paterno'],
       apellidoMaterno: map['apellido_materno'],
+      ruc: map['ruc'],
       domicilio: map['domicilio'] != null
           ? HomeSunatEntity.getCustomerHomeSunatEntity(map['domicilio'])
           : null,
