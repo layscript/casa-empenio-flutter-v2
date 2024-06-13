@@ -38,7 +38,6 @@ class _AddFormSalesState extends State<AddFormSales> {
                     ? null
                     : () => context.read<SalesBloc>().add(
                           GenerateSalesProduct(
-                            // TODO:: ID SUCURSSCAL
                             sucursalId: preferences.token?.sucursal?.id ?? 1,
                             userId: authBloc.user.id,
                           ),
@@ -72,10 +71,9 @@ class _AddFormSalesState extends State<AddFormSales> {
                       'Venta generada correctamente',
                     );
 
-                    // Despues  de 1500 milisegundos redirigir a la vista de ventas
-                    await Future.delayed(const Duration(milliseconds: 1500));
+                    await Future.delayed(const Duration(milliseconds: 200));
                     if (mounted) {
-                      Navigator.pop(context);
+                      Navigator.pop(context, true);
                     }
                   }
                 }
@@ -89,7 +87,7 @@ class _AddFormSalesState extends State<AddFormSales> {
 
                   case SalesStatus.error:
                     return const Center(
-                      child: Text('No pudimos obtener datos del DNI'),
+                      child: Text('No pudimos obtener datos del DNI/RUC'),
                     );
 
                   case SalesStatus.success:

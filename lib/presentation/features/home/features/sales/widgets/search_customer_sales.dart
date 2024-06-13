@@ -22,13 +22,12 @@ class _SearchCustomerSalesState extends State<SearchCustomerSales> {
           flex: 2,
           child: AppTextFormField(
             controller: dniCtrl,
-            labelText: 'Ingresar DNI del cliente',
-            maxLength: 8,
+            labelText: 'Ingresar DNI/RUC del cliente',
+            maxLength: 11,
             keyboardType: TextInputType.number,
             isValid: (value) => setState(() => dniIsValid = value),
             validator: (value) {
               if (value!.isEmpty) return 'Campo requerido';
-              if (value.length < 8) return 'Ingrese 8 digitos';
               return null;
             },
             suffixIcon: dniCtrl.text.isNotEmpty

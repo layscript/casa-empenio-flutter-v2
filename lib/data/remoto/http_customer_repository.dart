@@ -80,7 +80,7 @@ class HttpCustomerRepository implements CustomerRepository {
   Future<Either<String, CustomerSunatEntity>> getCustomerSunatByDni({
     required String dni,
   }) async {
-    final path = '/facturacion/facturacion/dni/$dni';
+    final path = '/facturacion/facturacion/documento/$dni';
     try {
       final response = await _dio.get<String>(path);
       if (response.statusCode != 200) {
