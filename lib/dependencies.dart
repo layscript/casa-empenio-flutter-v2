@@ -103,6 +103,11 @@ final AnexoRepository _anexoRepository = HttpAnexoRepository(
   sentry: _sentry,
 );
 
+final ModulosRepository _modulosRepository = HttpModulosRepository(
+  dio: _client,
+  sentry: _sentry,
+);
+
 void configDio(Preferences preferences) {
   _client.interceptors.add(
     InterceptorsWrapper(

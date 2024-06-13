@@ -25,6 +25,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<GoToPlantillas>(_onGoToPlantillas);
     on<GoToProformas>(_onGoToProformas);
     on<GoToAnexos>(_onGoToAnexos);
+    on<GoToModulos>(_onGoToModulos);
   }
 
   void _onGoToHome(GoToHome event, Emitter<HomeState> emit) {
@@ -93,5 +94,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
   void _onGoToAnexos(GoToAnexos event, Emitter<HomeState> emit) {
     emit(state.copyWith(index: 16));
+  }
+
+  void _onGoToModulos(GoToModulos event, Emitter<HomeState> emit) {
+    emit(state.copyWith(index: 17));
   }
 }

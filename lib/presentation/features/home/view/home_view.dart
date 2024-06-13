@@ -111,6 +111,9 @@ class HomeView extends StatelessWidget {
 
                   case 16:
                     return const AnexosView();
+
+                  case 17:
+                    return const ModulosView();
                 }
                 return const SizedBox();
               },

@@ -245,6 +245,19 @@ class AppDrawer extends StatelessWidget {
                   Navigator.pop(context);
                 },
               ),
+            if (auth?.role?.nombre == 'Administrador' || isCajera)
+              ListTile(
+                tileColor: homeState.index == 17 ? Colors.black12 : null,
+                leading: const FaIcon(
+                  FontAwesomeIcons.store,
+                  size: 20,
+                ),
+                title: const Text('Módulos'),
+                onTap: () {
+                  context.read<HomeBloc>().add(GoToModulos());
+                  Navigator.pop(context);
+                },
+              ),
             const Divider(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),

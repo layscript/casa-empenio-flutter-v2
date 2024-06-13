@@ -39,6 +39,9 @@ export 'customer/customer_sunat_entity.dart';
 export 'loans/loans_entity.dart';
 export 'loans/loans_repository.dart';
 
+export 'modulos/modulos_entity.dart';
+export 'modulos/modulos_repository.dart';
+
 export 'motion/motion.entity.dart';
 export 'motion/motion_repository.dart';
 

@@ -40,3 +40,5 @@ class GoToPlantillas extends HomeEvent {}
 class GoToProformas extends HomeEvent {}
 
 class GoToAnexos extends HomeEvent {}
+
+class GoToModulos extends HomeEvent {}

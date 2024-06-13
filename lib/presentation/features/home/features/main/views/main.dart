@@ -151,6 +151,14 @@ class MainView extends StatelessWidget {
                   text: 'Plantillas',
                   icon: FontAwesomeIcons.shop,
                 ),
+              if (auth?.role?.nombre == 'Administrador' || isCajera)
+                _ItemGrid(
+                  onTap: () => context.read<HomeBloc>().add(
+                        GoToModulos(),
+                      ),
+                  text: 'Módulos',
+                  icon: FontAwesomeIcons.store,
+                ),
             ],
           ),
         ],

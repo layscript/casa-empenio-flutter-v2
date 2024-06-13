@@ -47,5 +47,8 @@ export 'perdonados/bloc/perdonados_bloc.dart';
 export 'plantilla/bloc/plantilla_bloc.dart';
 export 'plantilla/view/plantilla_view.dart';
 
+export 'modulos/bloc/modulos_bloc.dart';
+export 'modulos/views/modulos_view.dart';
+
 export 'notify/bloc/notify_bloc.dart';
 export 'notify/view/notify_view.dart';
