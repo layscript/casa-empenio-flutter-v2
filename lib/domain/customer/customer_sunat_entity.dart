@@ -15,7 +15,8 @@ class CustomerSunatEntity {
     required this.domicilio,
   });
 
-  String get customerDocument => ruc != null ? dni ?? '' : ruc ?? '';
+  String get customerDocument => ruc == null ? dni! : ruc!;
+
   String get customerFullName => ruc != null
       ? nombre ?? ''
       : '${nombre ?? ''} ${apellidoMaterno ?? ''} ${apellidoPaterno ?? ''}';

@@ -118,7 +118,7 @@ class _AddFormSalesState extends State<AddFormSales> {
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
-                                  '${cliente.nombre} ${cliente.apellidoPaterno} ${cliente.apellidoMaterno}',
+                                  cliente.customerFullName,
                                 ),
                               ),
                             ],

@@ -96,6 +96,7 @@ class _SalesViewState extends State<SalesView> {
                 );
 
               case SalesStatus.success:
+                final salesBloc = context.read<SalesBloc>();
                 return Container(
                   padding: const EdgeInsets.all(20),
                   width: double.infinity,
@@ -127,16 +128,15 @@ class _SalesViewState extends State<SalesView> {
                                   currentDate: DateTime.now(),
                                   saveText: 'Done');
 
-                              if (result != null && mounted) {
-                                context.read<SalesBloc>().add(
-                                      GetListSales(
-                                        start: result.start,
-                                        end: result.end,
-                                        sucursalId:
-                                            preferences.token?.sucursal?.id ??
-                                                1,
-                                      ),
-                                    );
+                              if (result != null) {
+                                salesBloc.add(
+                                  GetListSales(
+                                    start: result.start,
+                                    end: result.end,
+                                    sucursalId:
+                                        preferences.token?.sucursal?.id ?? 1,
+                                  ),
+                                );
                               }
                             },
                             icon: const FaIcon(
@@ -152,24 +152,34 @@ class _SalesViewState extends State<SalesView> {
                                 MaterialPageRoute(
                                   builder: (_) {
                                     return BlocProvider.value(
-                                      value: context.read<SalesBloc>(),
+                                      value: salesBloc,
                                       child: const AddFormSales(),
                                     );
                                   },
                                 ),
                               );
 
-                              if (result != null && mounted) {
-                                context.read<SalesBloc>().add(
-                                      GetListSales(
-                                        start: null,
-                                        end: null,
-                                        sucursalId:
-                                            preferences.token?.sucursal?.id ??
-                                                1,
-                                      ),
-                                    );
+                              if (result != null) {
+                                await Future.delayed(
+                                    Duration(milliseconds: 500), () {});
+                                salesBloc.add(
+                                  GetListSales(
+                                    start: null,
+                                    end: null,
+                                    sucursalId:
+                                        preferences.token?.sucursal?.id ?? 1,
+                                  ),
+                                );
                               }
+
+                              salesBloc.add(
+                                GetListSales(
+                                  start: null,
+                                  end: null,
+                                  sucursalId:
+                                      preferences.token?.sucursal?.id ?? 1,
+                                ),
+                              );
                             },
                             icon: const FaIcon(
                               FontAwesomeIcons.circlePlus,
@@ -208,7 +218,7 @@ class _SalesViewState extends State<SalesView> {
                                         Text('${venta.cod}'),
                                         const SizedBox(height: 2),
                                         Text(
-                                          '${venta.cliente?.nombres?.toUpperCase()} ${venta.cliente?.apellidos?.toUpperCase()}',
+                                          '${venta.cliente?.nombres?.toUpperCase() ?? ''} ${venta.cliente?.apellidos?.toUpperCase() ?? ''}',
                                           style: const TextStyle(
                                             color: AppColors.secondaryText,
                                             fontWeight: FontWeight.normal,

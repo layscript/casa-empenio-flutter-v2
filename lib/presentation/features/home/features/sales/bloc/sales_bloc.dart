@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -229,13 +230,13 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
     Emitter<SalesState> emit,
   ) async {
     if (state.isSaveSalesLoading == true) return;
-    emit(
+    /* emit(
       state.copyWith(
         saveStatus: SalesStatus.loading,
         customer: state.customer,
         selectedProductsSales: state.selectedProductsSales,
       ),
-    );
+    ); */
 
     List<Map<String, dynamic>> detalles = state.selectedProductsSales!.map((e) {
       final id = e.selectedProducts?.id.toString();
@@ -276,7 +277,9 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
       'sucursalId': event.sucursalId,
     };
 
-    final result = await _salesRepository.createSalesProduct(data);
+    log('dataaa: ${data}');
+
+    /* final result = await _salesRepository.createSalesProduct(data);
     if (result) {
       emit(
         state.copyWith(
@@ -293,6 +296,6 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
           selectedProductsSales: null,
         ),
       );
-    }
+    } */
   }
 }
