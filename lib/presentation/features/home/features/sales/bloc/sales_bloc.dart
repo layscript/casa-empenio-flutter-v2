@@ -230,13 +230,13 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
     Emitter<SalesState> emit,
   ) async {
     if (state.isSaveSalesLoading == true) return;
-    /* emit(
+    emit(
       state.copyWith(
         saveStatus: SalesStatus.loading,
         customer: state.customer,
         selectedProductsSales: state.selectedProductsSales,
       ),
-    ); */
+    );
 
     List<Map<String, dynamic>> detalles = state.selectedProductsSales!.map((e) {
       final id = e.selectedProducts?.id.toString();
