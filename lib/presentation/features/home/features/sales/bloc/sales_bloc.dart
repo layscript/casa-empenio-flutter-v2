@@ -279,7 +279,7 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
 
     log('dataaa: ${data}');
 
-    /* final result = await _salesRepository.createSalesProduct(data);
+    final result = await _salesRepository.createSalesProduct(data);
     if (result) {
       emit(
         state.copyWith(
@@ -296,6 +296,6 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
           selectedProductsSales: null,
         ),
       );
-    } */
+    }
   }
 }
