@@ -81,7 +81,13 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
     GetListSales event,
     Emitter<SalesState> emit,
   ) async {
-    emit(state.copyWith(status: SalesStatus.loading));
+    emit(
+      state.copyWith(
+        status: SalesStatus.loading,
+        startTimeSales: event.start ?? state.startTimeSales,
+        endTimeSales: event.end ?? state.endTimeSales,
+      ),
+    );
     final result = await _salesRepository.getSalesByRangeDate(
       inicio: event.start ?? state.startTimeSales,
       fin: event.end ?? state.endTimeSales,
