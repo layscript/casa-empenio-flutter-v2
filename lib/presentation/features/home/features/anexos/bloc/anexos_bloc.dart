@@ -128,5 +128,25 @@ class AnexosBloc extends Bloc<AnexosEvent, AnexosState> {
   Future<void> _onDeleteAnexo(
     DeleteAnexo event,
     Emitter<AnexosState> emit,
-  ) async {}
+  ) async {
+    emit(
+      state.copyWith(
+        anexosStatus: AnexosStatus.loading,
+      ),
+    );
+
+    final result = await _anexoRepository.deleteAnexo(id: event.id.toString());
+
+    result.fold(
+      (error) => emit(
+        state.copyWith(
+          anexosStatus: AnexosStatus.error,
+          error: error,
+        ),
+      ),
+      (success) {
+        add(const GetAnexos());
+      },
+    );
+  }
 }

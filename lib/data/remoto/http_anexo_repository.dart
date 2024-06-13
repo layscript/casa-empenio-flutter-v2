@@ -56,15 +56,12 @@ class HttpAnexoRepository implements AnexoRepository {
     final path = '/comercial/anexo/$id';
     try {
       final response = await _dio.delete<String>(path);
-      if (response.statusCode != 201) {
+      if (response.statusCode != 200) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
         return Left(message);
       } else {
-        /*  final map = json.decode(response.data!) as Map<String, dynamic>;
-        final result = SalesEntity.listGetSalesFromMap(map['body']); */
-
-        return Right(true);
+        return const Right(true);
       }
     } catch (e, stackTrace) {
       await _sentry.captureException(

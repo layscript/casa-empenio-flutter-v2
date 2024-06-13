@@ -3,6 +3,7 @@ import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/anexos/widgets/add_anexo_dialog.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/anexos/widgets/show_details_anexo.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
 import 'package:excel/excel.dart';
 import 'package:flutter/material.dart';
@@ -149,7 +150,12 @@ class AnexosView extends StatelessWidget {
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           IconButton(
-                                            onPressed: () {},
+                                            onPressed: () {
+                                              ShowDetailsAnexo.show(
+                                                context,
+                                                anexo: anexo,
+                                              );
+                                            },
                                             icon: const Icon(
                                               Icons.remove_red_eye_sharp,
                                               color: Colors.blue,
@@ -166,7 +172,7 @@ class AnexosView extends StatelessWidget {
                                                 context: context,
                                                 builder: (_) {
                                                   return DeleteDialog(
-                                                    title: 'Anexos',
+                                                    title: 'Anexo',
                                                     onPressed: () => context
                                                         .read<AnexosBloc>()
                                                         .add(
