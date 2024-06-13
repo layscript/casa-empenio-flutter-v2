@@ -251,27 +251,14 @@ class _AddFormSalesState extends State<AddFormSales> {
                                             color: Colors.green,
                                           ),
                                         ),
-                                      if (selectedProduct.gastoAdicional !=
-                                              null &&
-                                          selectedProduct.observaciones !=
-                                              null) ...[
-                                        Text(
-                                          'G. Adicional: s/.${selectedProduct.gastoAdicional}',
-                                          style: const TextStyle(
-                                            fontSize: 11,
-                                            color: AppColors.red,
-                                            fontWeight: FontWeight.w500,
-                                          ),
+                                      Text(
+                                        'G. Obs: ${selectedProduct.observaciones}',
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: AppColors.red,
+                                          fontWeight: FontWeight.w500,
                                         ),
-                                        Text(
-                                          'G. Obs: ${selectedProduct.observaciones}',
-                                          style: const TextStyle(
-                                            fontSize: 11,
-                                            color: AppColors.red,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ]
+                                      ),
                                     ],
                                   ),
                                   trailing: QuantityInput(

@@ -12,13 +12,11 @@ class ProductSales extends Equatable {
     required this.selectedProducts,
     required this.precio,
     required this.cantidad,
-    required this.gastoAdicional,
     required this.observaciones,
   });
 
   final ProductEntity? selectedProducts;
   final double precio;
-  final double? gastoAdicional;
   final String? observaciones;
   final int cantidad;
 
@@ -26,14 +24,12 @@ class ProductSales extends Equatable {
     ProductEntity? selectedProducts,
     double? precio,
     int? cantidad,
-    double? gastoAdicional,
     String? observaciones,
   }) =>
       ProductSales(
         selectedProducts: selectedProducts ?? this.selectedProducts,
         precio: precio ?? this.precio,
         cantidad: cantidad ?? this.cantidad,
-        gastoAdicional: gastoAdicional ?? this.gastoAdicional,
         observaciones: observaciones ?? this.observaciones,
       );
 
@@ -42,7 +38,6 @@ class ProductSales extends Equatable {
         selectedProducts,
         precio,
         cantidad,
-        gastoAdicional,
         observaciones,
       ];
 }

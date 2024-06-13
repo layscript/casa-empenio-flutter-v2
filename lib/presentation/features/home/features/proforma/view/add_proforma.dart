@@ -253,18 +253,8 @@ class _AddFormProformaState extends State<AddFormProforma> {
                                             color: Colors.green,
                                           ),
                                         ),
-                                      if (selectedProduct.gastoAdicional !=
-                                              null &&
-                                          selectedProduct.observaciones !=
-                                              null) ...[
-                                        Text(
-                                          'G. Adicional: s/.${selectedProduct.gastoAdicional}',
-                                          style: const TextStyle(
-                                            fontSize: 11,
-                                            color: AppColors.red,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
+                                      if (selectedProduct.observaciones !=
+                                          null) ...[
                                         Text(
                                           'G. Obs: ${selectedProduct.observaciones}',
                                           style: const TextStyle(

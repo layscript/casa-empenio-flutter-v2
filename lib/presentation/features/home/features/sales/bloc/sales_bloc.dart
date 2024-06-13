@@ -156,7 +156,6 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
       selectedProducts: event.product,
       precio: event.precio,
       cantidad: event.cantidad,
-      gastoAdicional: event.gastoAdicional,
       observaciones: event.observaciones,
     );
 
@@ -244,7 +243,6 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
       if (id?.startsWith('2000') ?? false) {
         return {
           'cantidad': e.cantidad,
-          'gastoAdicional': e.gastoAdicional,
           'observaciones': e.observaciones,
           'precio': e.precio,
           'bienTemporal': e.selectedProducts?.descripcion,
@@ -253,7 +251,6 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
       } else {
         return {
           'cantidad': e.cantidad,
-          'gastoAdicional': e.gastoAdicional,
           'observaciones': e.observaciones,
           'precio': e.precio,
           'bienGarantiaId': e.selectedProducts?.id,

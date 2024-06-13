@@ -1,4 +1,5 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/sales/bloc/sales_bloc.dart';
@@ -22,7 +23,6 @@ class _CreateProductAlmacenState extends State<CreateProductAlmacen> {
   ProductEntity? _selection;
 
   final precioController = TextEditingController();
-  final gastoAdicionalController = TextEditingController();
   final observacionesController = TextEditingController();
 
   bool isPrecioValid = false;
@@ -279,6 +279,30 @@ class _CreateProductAlmacenState extends State<CreateProductAlmacen> {
                     ],
                   ),
                   const SizedBox(height: 3),
+                  if (_selection?.valorizacion != null)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Precio Sugerido:',
+                            style: TextStyle(fontSize: 13),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          flex: 1,
+                          child: Text(
+                            'S/. ${oCcy.format(double.parse(_selection?.valorizacion.toString() ?? '0.0'))}',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.normal,
+                            ),
+                          ),
+                        )
+                      ],
+                    ),
+                  const SizedBox(height: 3),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -349,13 +373,6 @@ class _CreateProductAlmacenState extends State<CreateProductAlmacen> {
             ),
             const SizedBox(height: 15),
             AppTextFormField(
-              labelText: 'Gasto Adicional (opcional)',
-              keyboardType: TextInputType.number,
-              controller: gastoAdicionalController,
-              preffix: const Text('S/. '),
-            ),
-            const SizedBox(height: 15),
-            AppTextFormField(
               labelText: 'Observaciones del gasto (opcional)',
               controller: observacionesController,
             ),
@@ -393,9 +410,6 @@ class _CreateProductAlmacenState extends State<CreateProductAlmacen> {
                                   product: _selection,
                                   precio: double.parse(precioController.text),
                                   cantidad: cantidad,
-                                  gastoAdicional: double.tryParse(
-                                    gastoAdicionalController.text,
-                                  ),
                                   observaciones: observacionesController.text,
                                 ),
                               );

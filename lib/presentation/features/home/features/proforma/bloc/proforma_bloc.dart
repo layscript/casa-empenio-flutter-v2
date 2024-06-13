@@ -146,7 +146,6 @@ class ProformaBloc extends Bloc<ProformaEvent, ProformaState> {
       selectedProducts: event.product,
       precio: event.precio,
       cantidad: event.cantidad,
-      gastoAdicional: event.gastoAdicional,
       observaciones: event.observaciones,
     );
 
@@ -234,7 +233,6 @@ class ProformaBloc extends Bloc<ProformaEvent, ProformaState> {
       if (id?.startsWith('2000') ?? false) {
         return {
           'cantidad': e.cantidad,
-          'gastoAdicional': e.gastoAdicional,
           'observaciones': e.observaciones,
           'precio': e.precio,
           'bienTemporal': e.selectedProducts?.descripcion,
@@ -243,7 +241,6 @@ class ProformaBloc extends Bloc<ProformaEvent, ProformaState> {
       } else {
         return {
           'cantidad': e.cantidad,
-          'gastoAdicional': e.gastoAdicional,
           'observaciones': e.observaciones,
           'precio': e.precio,
           'bienGarantiaId': e.selectedProducts?.id,

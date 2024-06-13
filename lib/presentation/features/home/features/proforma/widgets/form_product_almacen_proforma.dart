@@ -24,7 +24,6 @@ class _CreateProductAlmacenProformaState
   ProductEntity? _selection;
 
   final precioController = TextEditingController();
-  final gastoAdicionalController = TextEditingController();
   final observacionesController = TextEditingController();
 
   bool isPrecioValid = false;
@@ -351,13 +350,6 @@ class _CreateProductAlmacenProformaState
             ),
             const SizedBox(height: 15),
             AppTextFormField(
-              labelText: 'Gasto Adicional (opcional)',
-              keyboardType: TextInputType.number,
-              controller: gastoAdicionalController,
-              preffix: const Text('S/. '),
-            ),
-            const SizedBox(height: 15),
-            AppTextFormField(
               labelText: 'Observaciones del gasto (opcional)',
               controller: observacionesController,
             ),
@@ -395,9 +387,6 @@ class _CreateProductAlmacenProformaState
                                   product: _selection,
                                   precio: double.parse(precioController.text),
                                   cantidad: cantidad,
-                                  gastoAdicional: double.tryParse(
-                                    gastoAdicionalController.text,
-                                  ),
                                   observaciones: observacionesController.text,
                                 ),
                               );

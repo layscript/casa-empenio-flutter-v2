@@ -32,13 +32,11 @@ class SaveProductSalesToCart extends SalesEvent {
   const SaveProductSalesToCart({
     required this.product,
     required this.precio,
-    required this.gastoAdicional,
     required this.observaciones,
     required this.cantidad,
   });
   final ProductEntity? product;
   final double precio;
-  final double? gastoAdicional;
   final String? observaciones;
   final int cantidad;
 }

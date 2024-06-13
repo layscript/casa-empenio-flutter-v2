@@ -158,7 +158,6 @@ class _CreateProductPersonalizadoState
                                 ),
                                 precio: double.parse(precioController.text),
                                 cantidad: int.parse(cantidadController.text),
-                                gastoAdicional: null,
                                 observaciones: null,
                               ),
                             );
