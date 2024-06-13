@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -272,7 +271,8 @@ class HttpLoansRepository implements LoansRepository {
     required int codigo,
     required double monto,
     required String userId,
-    required List<XFile>? photos,
+    //required List<XFile>? photos,
+    required String url,
     required bool? efectivo,
     required int? cajaId,
     bool isLiquidacion = false,
@@ -284,6 +284,7 @@ class HttpLoansRepository implements LoansRepository {
       'usuarioId': userId,
       'cajaId': cajaId,
       'isLiquidacion': isLiquidacion,
+      'url': url,
     };
 
     if (efectivo != null) {
@@ -292,13 +293,6 @@ class HttpLoansRepository implements LoansRepository {
     try {
       final response = await _dio.post<String>(path, data: payload);
       if (response.statusCode == 201 || response.statusCode == 200) {
-        if (photos != null) {
-          await updatePagosPhotos(
-            idPrestamo: codigo,
-            imagenUno: photos.first.path,
-          );
-        }
-
         await _customerRepository.createHistory(
           accion: 'PAGAR',
           detalle: 'realizar el pago del prestamo del codigo: $codigo',
@@ -328,7 +322,7 @@ class HttpLoansRepository implements LoansRepository {
     required double monto,
     required String observaciones,
     required String userId,
-    required List<XFile>? photos,
+    required String url,
   }) async {
     const path = '/prestamos/prestamos/aumentarMonto';
     final payload = {
@@ -336,6 +330,7 @@ class HttpLoansRepository implements LoansRepository {
       'prestamoId': codigo,
       'observaciones': observaciones,
       'usuarioId': userId,
+      'url': url,
     };
     try {
       final response = await _dio.post<String>(path, data: payload);
@@ -343,18 +338,7 @@ class HttpLoansRepository implements LoansRepository {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
         return false;
-        //return Left(message);
       } else {
-        //final map = json.decode(response.data!) as Map<String, dynamic>;
-        //return const Right(true);
-        //
-        if (photos != null) {
-          await updateAumentosPhotos(
-            idPrestamo: codigo,
-            imagenUno: photos.first.path,
-          );
-        }
-
         await _customerRepository.createHistory(
           accion: 'AGREGAR MONTO',
           detalle: 'Agregar monto del prestamo del codigo: $codigo',
@@ -561,47 +545,9 @@ class HttpLoansRepository implements LoansRepository {
   }
 
   @override
-  Future<bool> uploadWarrantyImage({
-    required String path,
-    required int idGarantia,
-  }) async {
-    if (path.contains('files/garantias')) {
-      return true;
-    }
-
-    final img = File(path);
-
-    try {
-      final path = '/prestamos/prestamos/imagenGarantia/$idGarantia';
-
-      FormData formData = FormData.fromMap({
-        'imagen': await MultipartFile.fromFile(
-          img.path,
-          filename: img.path.split('/').last,
-        )
-      });
-
-      final response = await _dio.put(path, data: formData);
-
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        return true;
-      } else {
-        return false;
-      }
-    } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
-      return false;
-    }
-  }
-
-  @override
   Future<bool> payOffLoan({
     required int id,
     required int idPrestamo,
-    required List<XFile>? photos,
     required String userId,
   }) async {
     final path = '/prestamos/prestamos/liquidar/$id';
@@ -609,23 +555,14 @@ class HttpLoansRepository implements LoansRepository {
     try {
       final response = await _dio.put<String>(path);
       if (response.statusCode == 201 || response.statusCode == 200) {
-        if (photos?.length == 0) {
-          return true;
-        } else {
-          final result = await updateLiquidacionPhotos(
-            idPrestamo: idPrestamo,
-            imagenUno: photos!.first.path,
-          );
+        await _customerRepository.createHistory(
+          accion: 'LIQUIDAR',
+          detalle:
+              'realizar la liquidacion del prestamo del codigo: $idPrestamo',
+          usuarioId: int.parse(userId),
+        );
 
-          await _customerRepository.createHistory(
-            accion: 'LIQUIDAR',
-            detalle:
-                'realizar la liquidacion del prestamo del codigo: $idPrestamo',
-            usuarioId: int.parse(userId),
-          );
-
-          return result;
-        }
+        return true;
       } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
@@ -643,94 +580,67 @@ class HttpLoansRepository implements LoansRepository {
     }
   }
 
-// TODO:: Probar Aca 1
-  Future<bool> updatePagosPhotos({
-    required int idPrestamo,
-    required String imagenUno,
+  @override
+  Future<Either<String, String>> createImagePagos({
+    required String path,
   }) async {
-    final imgUno = File(imagenUno);
+    final img = File(path);
     try {
-      final path = '/prestamos/prestamos/imagenPagos/$idPrestamo';
+      const path = '/prestamos/prestamos/imagenPagos';
       FormData formData = FormData.fromMap({
         'imagen': await MultipartFile.fromFile(
-          imgUno.path,
-          filename: imgUno.path.split('/').last,
-        ),
+          img.path,
+          filename: img.path.split('/').last,
+        )
       });
 
       final response = await _dio.put(path, data: formData);
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        return true;
+      if (response.statusCode == 200) {
+        final body = response.data['body']['imagenPagos'] as String;
+        return Right(body);
       } else {
-        return false;
+        return const Left('No se pudo grabar la imagen');
       }
     } catch (e, stackTrace) {
       await _sentry.captureException(
         e,
         stackTrace: stackTrace,
       );
-      return false;
+      return Left(e.toString());
+    }
+  }
+
+  @override
+  Future<Either<String, String>> createImageAumentos({
+    required String path,
+  }) async {
+    final img = File(path);
+    try {
+      const path = '/prestamos/prestamos/imagenAumentos';
+      FormData formData = FormData.fromMap({
+        'imagen': await MultipartFile.fromFile(
+          img.path,
+          filename: img.path.split('/').last,
+        )
+      });
+
+      final response = await _dio.put(path, data: formData);
+      if (response.statusCode == 200) {
+        final body = response.data['body']['imagenAumentos'] as String;
+        return Right(body);
+      } else {
+        return const Left('No se pudo grabar la imagen');
+      }
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
+      return Left(e.toString());
     }
   }
 
 // TODO:: Probar Aca 2
-  Future<bool> updateAumentosPhotos({
-    required int idPrestamo,
-    required String imagenUno,
-  }) async {
-    final imgUno = File(imagenUno);
-    try {
-      final path = '/prestamos/prestamos/imagenAumentos/$idPrestamo';
-      FormData formData = FormData.fromMap({
-        'imagen': await MultipartFile.fromFile(
-          imgUno.path,
-          filename: imgUno.path.split('/').last,
-        ),
-      });
-
-      final response = await _dio.put(path, data: formData);
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        return true;
-      } else {
-        return false;
-      }
-    } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
-      return false;
-    }
-  }
-
-  Future<bool> updateLiquidacionPhotos({
-    required int idPrestamo,
-    required String imagenUno,
-  }) async {
-    final imgUno = File(imagenUno);
-    try {
-      final path = '/prestamos/prestamos/imagenLiquidar/$idPrestamo';
-      FormData formData = FormData.fromMap({
-        'imagen': await MultipartFile.fromFile(
-          imgUno.path,
-          filename: imgUno.path.split('/').last,
-        ),
-      });
-
-      final response = await _dio.put(path, data: formData);
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        return true;
-      } else {
-        return false;
-      }
-    } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
-      return false;
-    }
-  }
 
   Future<bool> updateCustomerPhotos({
     required int dni,

@@ -10,6 +10,7 @@ class PayEntity {
     required this.usuario,
     required this.updatedAt,
     required this.createdAt,
+    required this.url,
   });
 
   final int? id;
@@ -20,6 +21,7 @@ class PayEntity {
   final UserEntity? usuario;
   final String? updatedAt;
   final String? createdAt;
+  final String? url;
 
   static List<PayEntity> listGetPayFromMap(
     List<dynamic> list,
@@ -30,6 +32,7 @@ class PayEntity {
   static PayEntity getPayFromMap(Map<String, dynamic> map) {
     return PayEntity(
       id: map['id'],
+      url: map['url'],
       monto: map['monto'],
       fecha: map['fecha'],
       customer: map['customer'] != null

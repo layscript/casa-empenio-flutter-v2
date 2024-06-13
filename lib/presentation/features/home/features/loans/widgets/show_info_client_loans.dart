@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
@@ -126,32 +125,10 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                           ),
                           const SizedBox(width: 10),
                           if (loan?.cliente?.imagenUno != null)
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(30),
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => FullScreenImage(
-                                        imageUrl:
-                                            loan?.cliente?.imagenUno ?? '',
-                                      ),
-                                    ),
-                                  );
-                                },
-                                child: Image.network(
-                                  '$endPointPrincipal/${loan?.cliente?.imagenUno}',
-                                  width: 60,
-                                  height: 60,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return const Placeholder(
-                                      fallbackHeight: 60,
-                                      fallbackWidth: 60,
-                                    );
-                                  },
-                                ),
-                              ),
+                            CustomImageApp(
+                              urlImg: loan?.cliente?.imagenUno ?? '',
+                              width: 60,
+                              height: 60,
                             )
                           else
                             ClipRRect(
@@ -268,112 +245,6 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                         ],
                       ),
                       const SizedBox(height: 10),
-                      if (loan?.imagenLiquidado != null) ...[
-                        const SizedBox(height: 10),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              "Foto de Liquidación: ",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => FullScreenImage(
-                                      imageUrl: loan?.imagenLiquidado ?? '',
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: Image.network(
-                                '$endPointPrincipal/${loan?.imagenLiquidado}',
-                                height: 50,
-                                width: 50,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Placeholder(
-                                    fallbackHeight: 50,
-                                    fallbackWidth: 50,
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                      if (loan?.imagenPagos != null) ...[
-                        const SizedBox(height: 10),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              "Foto del Pago: ",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => FullScreenImage(
-                                      imageUrl: loan?.imagenPagos ?? '',
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: Image.network(
-                                '$endPointPrincipal/${loan?.imagenPagos}',
-                                height: 50,
-                                width: 50,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Placeholder(
-                                    fallbackHeight: 50,
-                                    fallbackWidth: 50,
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                      if (loan?.imagenAumentos != null) ...[
-                        const SizedBox(height: 10),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              "Foto del Aumento: ",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => FullScreenImage(
-                                      imageUrl: loan?.imagenAumentos ?? '',
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: Image.network(
-                                '$endPointPrincipal/${loan?.imagenAumentos}',
-                                height: 50,
-                                width: 50,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Placeholder(
-                                    fallbackHeight: 50,
-                                    fallbackWidth: 50,
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                      const SizedBox(height: 10),
                       Text(
                         'Aumentos (${loan?.aumentos?.length ?? '0'})',
                         style: const TextStyle(
@@ -459,6 +330,21 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                 ],
                               ),
                               const SizedBox(height: 10),
+                              if (aumento.url != null)
+                                Row(
+                                  children: [
+                                    const Expanded(
+                                      child: Text(
+                                        'Imagen',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                    CustomImageApp(
+                                      urlImg: aumento.url!,
+                                    ),
+                                  ],
+                                ),
                             ],
                           );
                         }).toList(),
@@ -702,38 +588,11 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                       style: TextStyle(
                                           fontWeight: FontWeight.bold),
                                     ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                FullScreenImage(
-                                              imageUrl: bien.imagen ?? '',
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      // TODO:: Revisar bien csmre:v
-                                      child: CachedNetworkImage(
-                                        imageUrl:
-                                            '$endPointPrincipal/${bien.imagen}',
-                                        height: 50,
-                                        width: 50,
-                                        placeholder: (context, url) {
-                                          return const Placeholder(
-                                            fallbackHeight: 50,
-                                            fallbackWidth: 50,
-                                          );
-                                        },
-                                        errorWidget: (context, url, error) {
-                                          return const Placeholder(
-                                            fallbackHeight: 50,
-                                            fallbackWidth: 50,
-                                          );
-                                        },
-                                      ),
-                                    ),
+                                    CustomImageApp(
+                                      urlImg: bien.imagen ?? '',
+                                      height: 50,
+                                      width: 50,
+                                    )
                                   ],
                                 )
                               ],
@@ -749,38 +608,11 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                       style: TextStyle(
                                           fontWeight: FontWeight.bold),
                                     ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                FullScreenImage(
-                                              imageUrl: bien.imagenDos ?? '',
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      // TODO:: Revisar bien csmre:v
-                                      child: CachedNetworkImage(
-                                        imageUrl:
-                                            '$endPointPrincipal/${bien.imagenDos}',
-                                        height: 50,
-                                        width: 50,
-                                        placeholder: (context, url) {
-                                          return const Placeholder(
-                                            fallbackHeight: 50,
-                                            fallbackWidth: 50,
-                                          );
-                                        },
-                                        errorWidget: (context, url, error) {
-                                          return const Placeholder(
-                                            fallbackHeight: 50,
-                                            fallbackWidth: 50,
-                                          );
-                                        },
-                                      ),
-                                    ),
+                                    CustomImageApp(
+                                      urlImg: bien.imagenDos ?? '',
+                                      height: 50,
+                                      width: 50,
+                                    )
                                   ],
                                 )
                               ],
@@ -796,37 +628,11 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                       style: TextStyle(
                                           fontWeight: FontWeight.bold),
                                     ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                FullScreenImage(
-                                              imageUrl: bien.imagenTres ?? '',
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      child: CachedNetworkImage(
-                                        imageUrl:
-                                            '$endPointPrincipal/${bien.imagenTres}',
-                                        height: 50,
-                                        width: 50,
-                                        placeholder: (context, url) {
-                                          return const Placeholder(
-                                            fallbackHeight: 50,
-                                            fallbackWidth: 50,
-                                          );
-                                        },
-                                        errorWidget: (context, url, error) {
-                                          return const Placeholder(
-                                            fallbackHeight: 50,
-                                            fallbackWidth: 50,
-                                          );
-                                        },
-                                      ),
-                                    ),
+                                    CustomImageApp(
+                                      urlImg: bien.imagenTres ?? '',
+                                      height: 50,
+                                      width: 50,
+                                    )
                                   ],
                                 )
                               ],
@@ -882,6 +688,20 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                   ),
                                 ],
                               ),
+                              const SizedBox(height: 10),
+                              if (pago.url != null)
+                                Row(
+                                  children: [
+                                    const Expanded(
+                                      child: Text(
+                                        'Imagen',
+                                      ),
+                                    ),
+                                    CustomImageApp(
+                                      urlImg: pago.url!,
+                                    ),
+                                  ],
+                                ),
                             ],
                           );
                         }).toList(),
@@ -918,21 +738,6 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                           Text('${loan?.estado}'),
                         ],
                       ),
-                      if (loan?.estado == 'LIQUIDADO') ...[
-                        const SizedBox(height: 10),
-                        if (loan?.imagenLiquidado != null)
-                          Image.network(
-                            '$endPointPrincipal/${loan!.imagenLiquidado}',
-                            height: 100,
-                            width: 100,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Placeholder(
-                                fallbackHeight: 50,
-                                fallbackWidth: 50,
-                              );
-                            },
-                          ),
-                      ],
                       if (loan?.usuario != null)
                         const Divider(
                           height: 20,

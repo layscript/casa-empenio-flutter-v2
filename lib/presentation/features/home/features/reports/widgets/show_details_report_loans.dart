@@ -122,32 +122,10 @@ class _ShowDetailsReportLoansState extends State<ShowDetailsReportLoans> {
                           ),
                           const SizedBox(width: 10),
                           if (prestamo.cliente?.imagenUno != null)
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(30),
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => FullScreenImage(
-                                        imageUrl:
-                                            prestamo.cliente?.imagenUno ?? '',
-                                      ),
-                                    ),
-                                  );
-                                },
-                                child: Image.network(
-                                  '$endPointPrincipal/${prestamo.cliente?.imagenUno}',
-                                  width: 60,
-                                  height: 60,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return const Placeholder(
-                                      fallbackHeight: 60,
-                                      fallbackWidth: 60,
-                                    );
-                                  },
-                                ),
-                              ),
+                            CustomImageApp(
+                              urlImg: prestamo.cliente?.imagenUno ?? '',
+                              width: 60,
+                              height: 60,
                             )
                           else
                             ClipRRect(
@@ -486,30 +464,10 @@ class _ShowDetailsReportLoansState extends State<ShowDetailsReportLoans> {
                                       style: TextStyle(
                                           fontWeight: FontWeight.bold),
                                     ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                FullScreenImage(
-                                              imageUrl: prenda.imagen ?? '',
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      child: Image.network(
-                                        '$endPointPrincipal/${prenda.imagen}',
-                                        height: 50,
-                                        width: 50,
-                                        errorBuilder:
-                                            (context, error, stackTrace) {
-                                          return const Placeholder(
-                                            fallbackHeight: 50,
-                                            fallbackWidth: 50,
-                                          );
-                                        },
-                                      ),
+                                    CustomImageApp(
+                                      urlImg: prenda.imagen ?? '',
+                                      width: 60,
+                                      height: 60,
                                     ),
                                   ],
                                 )
@@ -517,112 +475,6 @@ class _ShowDetailsReportLoansState extends State<ShowDetailsReportLoans> {
                             ],
                           );
                         }).toList(),
-                      const SizedBox(height: 10),
-                      if (prestamo.imagenLiquidado != null) ...[
-                        const SizedBox(height: 10),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              "Foto de Liquidación: ",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => FullScreenImage(
-                                      imageUrl: prestamo.imagenLiquidado ?? '',
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: Image.network(
-                                '$endPointPrincipal/${prestamo.imagenLiquidado}',
-                                height: 50,
-                                width: 50,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Placeholder(
-                                    fallbackHeight: 50,
-                                    fallbackWidth: 50,
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                      if (prestamo.imagenPagos != null) ...[
-                        const SizedBox(height: 10),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              "Foto del Pago: ",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => FullScreenImage(
-                                      imageUrl: prestamo.imagenPagos ?? '',
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: Image.network(
-                                '$endPointPrincipal/${prestamo.imagenPagos}',
-                                height: 50,
-                                width: 50,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Placeholder(
-                                    fallbackHeight: 50,
-                                    fallbackWidth: 50,
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                      if (prestamo.imagenAumentos != null) ...[
-                        const SizedBox(height: 10),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              "Foto del Aumento: ",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => FullScreenImage(
-                                      imageUrl: prestamo.imagenAumentos ?? '',
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: Image.network(
-                                '$endPointPrincipal/${prestamo.imagenAumentos}',
-                                height: 50,
-                                width: 50,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Placeholder(
-                                    fallbackHeight: 50,
-                                    fallbackWidth: 50,
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
                       const SizedBox(height: 10),
                       const Text(
                         "Pagos Realizados",
@@ -683,6 +535,20 @@ class _ShowDetailsReportLoansState extends State<ShowDetailsReportLoans> {
                                   )
                                 ],
                               ),
+                              const SizedBox(height: 10),
+                              if (pago.url != null)
+                                Row(
+                                  children: [
+                                    const Expanded(
+                                      child: Text(
+                                        'Imagen',
+                                      ),
+                                    ),
+                                    CustomImageApp(
+                                      urlImg: pago.url!,
+                                    ),
+                                  ],
+                                ),
                             ],
                           );
                         }).toList(),

@@ -137,14 +137,9 @@ class HttpExpensesRepository implements ExpensesRepository {
   Future<Either<String, String>> createImage({
     required String path,
   }) async {
-    print('patttth 1: $path');
     final img = File(path);
-
-    print('patttth 2: $img');
-
     try {
       const path = '/finanza/movimiento/imagenGasto';
-
       FormData formData = FormData.fromMap({
         'imagen': await MultipartFile.fromFile(
           img.path,
@@ -153,8 +148,6 @@ class HttpExpensesRepository implements ExpensesRepository {
       });
 
       final response = await _dio.post(path, data: formData);
-      log('gaaaaa 0: ${response.statusCode}}');
-
       if (response.statusCode == 201) {
         final body = response.data['body']['url'] as String;
         return Right(body);

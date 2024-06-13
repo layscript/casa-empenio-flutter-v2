@@ -72,7 +72,7 @@ abstract class LoansRepository {
     required int codigo,
     required double monto,
     required String userId,
-    required List<XFile>? photos,
+    required String url,
     required bool? efectivo,
     required int? cajaId,
     bool isLiquidacion,
@@ -81,7 +81,6 @@ abstract class LoansRepository {
   Future<bool> payOffLoan({
     required int id,
     required int idPrestamo,
-    required List<XFile>? photos,
     required String userId,
   });
 
@@ -90,7 +89,7 @@ abstract class LoansRepository {
     required double monto,
     required String observaciones,
     required String userId,
-    required List<XFile>? photos,
+    required String url,
   });
 
   Future<Uint8List> createInvoicePdf({required String url});
@@ -104,8 +103,11 @@ abstract class LoansRepository {
     required String userId,
   });
 
-  Future<bool> uploadWarrantyImage({
+  Future<Either<String, String>> createImagePagos({
     required String path,
-    required int idGarantia,
+  });
+
+  Future<Either<String, String>> createImageAumentos({
+    required String path,
   });
 }

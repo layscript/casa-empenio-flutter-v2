@@ -201,12 +201,16 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
   ) async {
     if (state.loansStatus == LoansStatus.loading) return;
     emit(_loadingState);
+
+    final urlImg = await savePhotoPayment(event.photos);
+    print('saveddd 1: ${urlImg}');
+
     if (double.parse(event.monto) >= double.parse(event.montoRestante)) {
       final resultPayment = await _loansRepository.savePayment(
         codigo: event.idPrestamo,
         monto: double.parse(event.monto),
         userId: event.userId,
-        photos: null,
+        url: urlImg,
         efectivo: event.efectivo,
         cajaId: state.cajaId,
         isLiquidacion: true,
@@ -215,7 +219,6 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
       final resultLoand = await _loansRepository.payOffLoan(
         id: event.codigo,
         idPrestamo: event.idPrestamo,
-        photos: event.photos,
         userId: event.userId,
       );
 
@@ -237,7 +240,7 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
         codigo: event.idPrestamo,
         monto: double.parse(event.monto),
         userId: event.userId,
-        photos: event.photos,
+        url: urlImg,
         efectivo: event.efectivo,
         cajaId: state.cajaId,
       );
@@ -264,11 +267,14 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
   ) async {
     if (state.loansStatus == LoansStatus.loading) return;
     emit(_loadingState);
+    final urlImg = await savePhotoPayment(event.photos);
+    print('saveddd 2: ${urlImg}');
+
     final resultPayment = await _loansRepository.savePayment(
       codigo: event.idPrestamo,
       monto: double.parse(event.monto),
       userId: event.userId,
-      photos: null,
+      url: urlImg,
       efectivo: event.efectivo,
       cajaId: state.cajaId,
       isLiquidacion: true,
@@ -277,7 +283,6 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     final resultLoand = await _loansRepository.payOffLoan(
       id: event.codigo,
       idPrestamo: event.idPrestamo,
-      photos: event.photos,
       userId: event.userId,
     );
 
@@ -301,12 +306,13 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     Emitter<LoansState> emit,
   ) async {
     emit(_loadingState);
+    final imgUrl = await savePhotoIncreases(event.photos);
     final result = await _loansRepository.addAmountLoan(
       codigo: event.idPrestamo,
       monto: event.monto,
       observaciones: event.obs,
       userId: event.userId,
-      photos: event.photos,
+      url: imgUrl,
     );
     if (result) {
       emit(
@@ -730,5 +736,25 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
         ),
       );
     }
+  }
+
+  Future<String> savePhotoPayment(List<XFile>? photos) async {
+    final result = await _loansRepository.createImagePagos(
+      path: photos?.first.path ?? '',
+    );
+    return result.fold(
+      (err) => '',
+      (success) => success,
+    );
+  }
+
+  Future<String> savePhotoIncreases(List<XFile>? photos) async {
+    final result = await _loansRepository.createImageAumentos(
+      path: photos?.first.path ?? '',
+    );
+    return result.fold(
+      (err) => '',
+      (success) => success,
+    );
   }
 }

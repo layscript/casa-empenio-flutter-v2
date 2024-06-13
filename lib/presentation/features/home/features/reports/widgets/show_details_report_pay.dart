@@ -1,6 +1,7 @@
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/full_screen_image.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/reports/bloc/reports_bloc.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/reports/widgets/show_details_report_loans.dart';
 import 'package:flutter/material.dart';
@@ -88,33 +89,10 @@ class _ShowDetailsReportPayState extends State<ShowDetailsReportPay> {
                         ),
                         const SizedBox(width: 10),
                         if (pago?.prestamo?.cliente?.imagenUno != null)
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(30),
-                            child: GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => FullScreenImage(
-                                      imageUrl:
-                                          pago?.prestamo?.cliente?.imagenUno ??
-                                              '',
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: Image.network(
-                                '$endPointPrincipal/${pago?.prestamo?.cliente?.imagenUno}',
-                                width: 60,
-                                height: 60,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Placeholder(
-                                    fallbackHeight: 60,
-                                    fallbackWidth: 60,
-                                  );
-                                },
-                              ),
-                            ),
+                          CustomImageApp(
+                            urlImg: pago?.prestamo?.cliente?.imagenUno ?? '',
+                            width: 60,
+                            height: 60,
                           )
                         else
                           ClipRRect(
