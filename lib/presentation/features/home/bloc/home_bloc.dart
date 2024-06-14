@@ -1,5 +1,5 @@
-import 'dart:async';
-
+import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:casa_empenio_pe/presentation/features/auth/auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 
@@ -7,96 +7,62 @@ part 'home_event.dart';
 part 'home_state.dart';
 
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
-  HomeBloc() : super(const HomeState(index: 0)) {
+  HomeBloc(
+      {required Preferences preferences,
+      required UserRepository userRepository})
+      : _preferences = preferences,
+        _userRepository = userRepository,
+        super(const HomeState()) {
     on<GoToHome>(_onGoToHome);
-    on<GoToLoans>(_onGoToLoans);
-    on<GoToReports>(_onGoToReports);
-    on<GoToSales>(_onGoToSales);
-    on<GoToProducts>(_onGoToProducts);
-    on<GoToUsers>(_onGoToUsers);
-    on<GoToInterests>(_onGoToInterests);
-    on<GoToCategories>(_onGoToCategories);
-    on<GoToCajas>(_onGoToCajas);
     on<GoToOpenCaja>(_onGoToOpenCaja);
-    on<GoToExpenses>(_onGoToExpenses);
-    on<GoToHistorial>(_onGoToHistorial);
-    on<GoToPayUsers>(_onGoToPayUsers);
-    on<GoToPerdonados>(_onGoToPerdonados);
-    on<GoToPlantillas>(_onGoToPlantillas);
-    on<GoToProformas>(_onGoToProformas);
-    on<GoToAnexos>(_onGoToAnexos);
-    on<GoToModulos>(_onGoToModulos);
+    on<GoToPage>(_onGoToPage);
+    on<GetAllModulos>(_onGetAllModulos);
   }
+
+  final UserRepository _userRepository;
+  final Preferences _preferences;
 
   void _onGoToHome(GoToHome event, Emitter<HomeState> emit) {
-    emit(state.copyWith(index: 0));
+    const inicio = ModulosEntity(
+      id: 19,
+      nombre: 'inicio',
+    );
+    emit(state.copyWith(selected: inicio));
   }
 
-  void _onGoToLoans(GoToLoans event, Emitter<HomeState> emit) {
-    emit(state.copyWith(index: 1));
+  void _onGetAllModulos(
+    GetAllModulos event,
+    Emitter<HomeState> emit,
+  ) async {
+    final getUser = await _userRepository.getUser(
+      id: _preferences.token?.id ?? 1,
+    );
+    getUser.fold(
+      (e) => emit(
+        state.copyWith(
+          modulos: _preferences.token?.role?.modulos,
+        ),
+      ),
+      (user) {
+        _preferences.setToken(user);
+        emit(
+          state.copyWith(
+            modulos: user.role?.modulos ?? [],
+          ),
+        );
+      },
+    );
   }
 
-  void _onGoToReports(GoToReports event, Emitter<HomeState> emit) {
-    emit(state.copyWith(index: 2));
-  }
-
-  void _onGoToSales(GoToSales event, Emitter<HomeState> emit) {
-    emit(state.copyWith(index: 3));
-  }
-
-  void _onGoToProducts(GoToProducts event, Emitter<HomeState> emit) {
-    emit(state.copyWith(index: 4));
-  }
-
-  void _onGoToUsers(GoToUsers event, Emitter<HomeState> emit) {
-    emit(state.copyWith(index: 5));
-  }
-
-  void _onGoToInterests(GoToInterests event, Emitter<HomeState> emit) {
-    emit(state.copyWith(index: 6));
-  }
-
-  void _onGoToCategories(GoToCategories event, Emitter<HomeState> emit) {
-    emit(state.copyWith(index: 7));
-  }
-
-  void _onGoToCajas(GoToCajas event, Emitter<HomeState> emit) {
-    emit(state.copyWith(index: 8));
-  }
-
-  void _onGoToExpenses(GoToExpenses event, Emitter<HomeState> emit) {
-    emit(state.copyWith(index: 9));
-  }
-
-  void _onGoToHistorial(GoToHistorial event, Emitter<HomeState> emit) {
-    emit(state.copyWith(index: 10));
+  void _onGoToPage(GoToPage event, Emitter<HomeState> emit) {
+    emit(state.copyWith(selected: event.e));
   }
 
   void _onGoToOpenCaja(GoToOpenCaja event, Emitter<HomeState> emit) {
-    emit(state.copyWith(index: 11));
-  }
-
-  void _onGoToPayUsers(GoToPayUsers event, Emitter<HomeState> emit) {
-    emit(state.copyWith(index: 12));
-  }
-
-  void _onGoToPerdonados(GoToPerdonados event, Emitter<HomeState> emit) {
-    emit(state.copyWith(index: 13));
-  }
-
-  void _onGoToPlantillas(GoToPlantillas event, Emitter<HomeState> emit) {
-    emit(state.copyWith(index: 14));
-  }
-
-  void _onGoToProformas(GoToProformas event, Emitter<HomeState> emit) {
-    emit(state.copyWith(index: 15));
-  }
-
-  void _onGoToAnexos(GoToAnexos event, Emitter<HomeState> emit) {
-    emit(state.copyWith(index: 16));
-  }
-
-  void _onGoToModulos(GoToModulos event, Emitter<HomeState> emit) {
-    emit(state.copyWith(index: 17));
+    const caja = ModulosEntity(
+      id: 12,
+      nombre: 'caja',
+    );
+    emit(state.copyWith(selected: caja));
   }
 }

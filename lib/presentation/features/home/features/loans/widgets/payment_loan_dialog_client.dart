@@ -445,8 +445,8 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                                                                 0,
                                                             monto: montoCtrl.text,
                                                             userId: authBloc
-                                                                .user.id
-                                                                .toString(),
+                                                                .user?.id
+                                                                .toString() ?? '1',
                                                             codigo:
                                                                 loan?.codigo ?? 0,
                                                             photos:
@@ -483,7 +483,7 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                                         SavePaymentLoan(
                                           idPrestamo: widget.nroPrestamo ?? 0,
                                           monto: montoCtrl.text,
-                                          userId: authBloc.user.id.toString(),
+                                          userId: authBloc.user?.id.toString() ?? '1',
                                           photos: selectedPhotosLiquidar,
                                           montoRestante: montoRestante.toString(),
                                           codigo: loan?.codigo ?? 0,

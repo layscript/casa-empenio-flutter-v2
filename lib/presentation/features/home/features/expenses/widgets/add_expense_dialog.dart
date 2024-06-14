@@ -92,7 +92,7 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
                   context.read<ExpensesBloc>().add(
                         SaveExpense(
                           obs: obsCtrl.text,
-                          usuarioId: authBloc.user.id,
+                          usuarioId: authBloc.user?.id ?? 1,
                           monto: montoCtrl.text,
                           imagenes: selectedPhotosGastos,
                         ),

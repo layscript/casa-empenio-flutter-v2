@@ -82,7 +82,7 @@ class HistorialView extends StatelessWidget {
                                             ),
                                           ),
                                           Text(
-                                            user.userName,
+                                            user.userName ?? '',
                                             maxLines: 3,
                                             style: const TextStyle(
                                               fontWeight: FontWeight.normal,

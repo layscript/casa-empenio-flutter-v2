@@ -39,7 +39,7 @@ class _AddFormSalesState extends State<AddFormSales> {
                     : () => context.read<SalesBloc>().add(
                           GenerateSalesProduct(
                             sucursalId: preferences.token?.sucursal?.id ?? 1,
-                            userId: authBloc.user.id,
+                            userId: authBloc.user?.id ?? 1,
                           ),
                         ),
                 child: const Icon(Icons.add),

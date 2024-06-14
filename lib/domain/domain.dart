@@ -56,6 +56,9 @@ export 'reports/perdonados_entity.dart';
 export 'reports/reports_entity.dart';
 export 'reports/reports_repository.dart';
 
+export 'roles/rol_entity.dart';
+export 'roles/rol_repository.dart';
+
 export 'sales/sales_repository.dart';
 export 'sales/sales_detail_entity.dart';
 export 'sales/sales_entity.dart';

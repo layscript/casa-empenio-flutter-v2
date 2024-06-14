@@ -1,126 +1,130 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
-import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
-import 'package:casa_empenio_pe/presentation/features/home/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-class HomeView extends StatelessWidget {
+class HomeView extends StatefulWidget {
   const HomeView({Key? key}) : super(key: key);
   static const route = 'home';
 
   @override
+  State<HomeView> createState() => _HomeViewState();
+}
+
+class _HomeViewState extends State<HomeView> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<AuthBloc>().add(RefreshDataUser());
+  }
+
+  @override
   Widget build(BuildContext context) {
     final auth = context.read<Preferences>().token;
+    final preferences = context.watch<Preferences>();
 
-    return BlocProvider(
-      create: (context) => HomeBloc(),
-      child: Builder(builder: (context) {
-        final homeState = context.watch<HomeBloc>().state;
-        return WillPopScope(
-          onWillPop: () async {
-            if (homeState.index != 0) {
-              DialogGlobalHome.show(
-                context,
-                homeBloc: context.read<HomeBloc>(),
-              );
-            }
-            return false;
-          },
-          child: Scaffold(
-            appBar: AppBar(
-              iconTheme: const IconThemeData(color: AppColors.white),
-              backgroundColor: AppColors.blue,
-              title: const Text(
-                'Casa de Empeño',
-                style: TextStyle(
-                  color: AppColors.white,
-                ),
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          const SizedBox(height: 20),
+          Center(
+            child: Text(
+              'Bienvenido a ${preferences.token?.sucursal?.nombre ?? ''}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.primaryText,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
               ),
-              centerTitle: true,
-              actions: [
-                if (auth?.role?.nombre == 'Administrador')
-                  IconButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const NotifyView()),
-                      );
-                    },
-                    icon: const Icon(
-                      Icons.notifications_active_sharp,
-                      color: Colors.deepOrangeAccent,
-                    ),
-                  ),
-              ],
-            ),
-            // color blanco del drawer
-            drawer: const AppDrawer(),
-            body: BlocBuilder<HomeBloc, HomeState>(
-              builder: (context, state) {
-                switch (state.index) {
-                  case 0:
-                    return const MainView();
-
-                  case 1:
-                    return const LoansView();
-
-                  case 2:
-                    return const ReportsView();
-
-                  case 3:
-                    return const SalesView();
-
-                  case 4:
-                    return const ProductsView();
-
-                  case 5:
-                    return const UsersView();
-
-                  case 6:
-                    return const InterestsView();
-
-                  case 7:
-                    return const CategoriesView();
-
-                  case 8:
-                    return const CajasView();
-
-                  case 9:
-                    return const ExpensesView();
-
-                  case 10:
-                    return const HistorialView();
-
-                  case 11:
-                    return const OpenCajaView();
-
-                  case 12:
-                    return const PayUserView();
-
-                  case 13:
-                    return const PerdonadosView();
-
-                  case 14:
-                    return const PlantillaView();
-
-                  case 15:
-                    return const ProformaView();
-
-                  case 16:
-                    return const AnexosView();
-
-                  case 17:
-                    return const ModulosView();
-                }
-                return const SizedBox();
-              },
             ),
           ),
-        );
-      }),
+          Text('Modulos: ${auth?.role?.modulos?.length}'),
+          const SizedBox(height: 10),
+          if (auth?.role?.modulos != null)
+            GridView.count(
+              shrinkWrap: true,
+              primary: false,
+              padding: const EdgeInsets.all(20),
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 20,
+              crossAxisCount: 2,
+              children: auth?.role?.modulos?.map((e) {
+                    if (e.id == 19) return const SizedBox();
+                    return _ItemGrid(
+                      onTap: () {
+                        preferences.setRefresh(true);
+                        context.read<HomeBloc>().add(
+                              GoToPage(e),
+                            );
+                      },
+                      text: e.nombre.toUpperCase(),
+                      icon: getIcon(e.id),
+                    );
+                  }).toList() ??
+                  [],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ItemGrid extends StatelessWidget {
+  const _ItemGrid({
+    required this.onTap,
+    required this.text,
+    required this.icon,
+  });
+
+  final void Function()? onTap;
+  final String text;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.7),
+              spreadRadius: 0.2,
+              blurRadius: 3,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            FaIcon(
+              icon,
+              size: 30,
+              color: const Color.fromARGB(255, 89, 210, 234),
+            ),
+            const SizedBox(height: 10),
+            Center(
+              child: Text(
+                text,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: AppColors.buttonPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

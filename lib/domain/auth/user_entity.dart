@@ -1,11 +1,13 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:equatable/equatable.dart';
 
-class UserEntity {
+class UserEntity extends Equatable {
   const UserEntity({
     required this.id,
     required this.nombre,
     required this.apellido,
     required this.userName,
+    required this.oldUserName,
     required this.email,
     required this.avatar,
     required this.celular,
@@ -21,10 +23,11 @@ class UserEntity {
   });
 
   final int id;
-  final String nombre;
-  final String apellido;
-  final String userName;
-  final String email;
+  final String? nombre;
+  final String? apellido;
+  final String? userName;
+  final String? oldUserName;
+  final String? email;
   final String? avatar;
   final int? celular;
   final RoleEntity? role;
@@ -49,13 +52,14 @@ class UserEntity {
   static UserEntity userFromMap(Map<String, dynamic> map) {
     return UserEntity(
       id: map['id'] as int,
-      nombre: map['nombre'] as String,
-      apellido: map['apellido'] as String,
-      userName: map['userName'] as String,
-      email: map['email'] as String,
+      nombre: map['nombre'] as String?,
+      apellido: map['apellido'] as String?,
+      userName: map['userName'] as String?,
+      oldUserName: map['oldUserName'] as String?,
+      email: map['email'] as String?,
       avatar: map['avatar'] as String?,
       celular: map['celular'] as int?,
-      role: map['role'] != null ? roleFromMap(map['role']) : null,
+      role: map['role'] != null ? RoleEntity.roleFromMap(map['role']) : null,
       isAdmin: map['isAdmin'] as bool?,
       createdAt: null,
       pagos: null,
@@ -63,36 +67,6 @@ class UserEntity {
       prestamosAdmin: null,
       updatedAt: null,
       ventas: null,
-      sucursal: map['sucursal'] != null
-          ? SucursalEntity.sucursalFromMap(
-              map['sucursal'],
-            )
-          : null,
-    );
-  }
-
-  static RoleEntity roleFromMap(Map<String, dynamic> map) => RoleEntity(
-        id: map['id'] as int,
-        nombre: map['nombre'] as String,
-      );
-
-  factory UserEntity.fromJson(Map<String, dynamic> map) {
-    return UserEntity(
-      id: map['id'] as int,
-      nombre: map['nombre'] as String,
-      apellido: map['apellido'] as String,
-      userName: map['userName'] as String,
-      email: map['email'] as String,
-      avatar: map['avatar'] as String?,
-      celular: map['celular'] as int?,
-      role: RoleEntity.fromJson(map['role']),
-      createdAt: '',
-      pagos: null,
-      prestamos: null,
-      prestamosAdmin: null,
-      updatedAt: null,
-      ventas: null,
-      isAdmin: map['isAdmin'] as bool?,
       sucursal: map['sucursal'] != null
           ? SucursalEntity.sucursalFromMap(
               map['sucursal'],
@@ -113,6 +87,14 @@ class UserEntity {
       'role': {
         'id': role?.id,
         'nombre': role?.nombre,
+        'modulos': role?.modulos
+            ?.map(
+              (e) => {
+                'id': e.id,
+                'nombre': e.nombre,
+              },
+            )
+            .toList(),
       },
       'isAdmin': isAdmin,
       'sucursal': {
@@ -130,21 +112,25 @@ class UserEntity {
   String toString() {
     return 'UserEntity(id: $id, nombre: $nombre, apellido: $apellido, userName: $userName, email: $email, avatar: $avatar, celular: $celular, role: $role, pagos: $pagos, prestamos: $prestamos, createdAt: $createdAt, prestamosAdmin: $prestamosAdmin, updatedAt: $updatedAt, ventas: $ventas, isAdmin: $isAdmin, sucursal: $sucursal)';
   }
-}
 
-class RoleEntity {
-  const RoleEntity({
-    required this.id,
-    required this.nombre,
-  });
-
-  final int id;
-  final String nombre;
-
-  factory RoleEntity.fromJson(Map<String, dynamic> map) {
-    return RoleEntity(
-      id: map['id'] as int,
-      nombre: map['nombre'] as String,
-    );
-  }
+  @override
+  List<Object?> get props => [
+        id,
+        nombre,
+        apellido,
+        userName,
+        oldUserName,
+        email,
+        avatar,
+        celular,
+        role,
+        prestamos,
+        prestamosAdmin,
+        pagos,
+        ventas,
+        createdAt,
+        updatedAt,
+        isAdmin,
+        sucursal,
+      ];
 }

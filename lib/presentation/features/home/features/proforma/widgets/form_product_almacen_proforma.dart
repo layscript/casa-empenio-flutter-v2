@@ -63,7 +63,7 @@ class _CreateProductAlmacenProformaState
   @override
   Widget build(BuildContext context) {
     final authUser = context.read<AuthBloc>().state as Authenticated;
-    final role = authUser.user.role;
+    final role = authUser.user?.role;
 
     return SizedBox(
       width: widget.width * 0.85,

@@ -8,11 +8,13 @@ part 'users_event.dart';
 part 'users_state.dart';
 
 class UsersBloc extends Bloc<UsersEvent, UsersState> {
-  UsersBloc(
-      {required UserRepository userRepository,
-      required SucursalRepository sucursalRepository})
-      : _userRepository = userRepository,
+  UsersBloc({
+    required UserRepository userRepository,
+    required SucursalRepository sucursalRepository,
+    required RolRepository rolRepository,
+  })  : _userRepository = userRepository,
         _sucursalRepository = sucursalRepository,
+        _rolRepository = rolRepository,
         super(const UsersState()) {
     on<GetUsers>(_onGetUsers);
     on<SaveUser>(_onSaveUser);
@@ -22,6 +24,7 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
 
   final UserRepository _userRepository;
   final SucursalRepository _sucursalRepository;
+  final RolRepository _rolRepository;
 
   UsersState get _loadingState =>
       state.copyWith(userStatus: UserStatus.loading);
@@ -29,11 +32,13 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
   UsersState _successState(
     List<UserEntity> users,
     List<SucursalEntity> listSucursales,
+    List<RoleEntity> listRoles,
   ) =>
       state.copyWith(
         userStatus: UserStatus.loaded,
         listUsers: users,
         listSucursales: listSucursales,
+        listRoles: listRoles,
       );
 
   UsersState _errorState(String message) => state.copyWith(
@@ -58,12 +63,19 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
         final getSucursales = await _sucursalRepository.getSucursales();
         await getSucursales.fold(
           (error) async => emit(_errorState(error)),
-          (sucursales) async => emit(
-            _successState(
-              users,
-              sucursales,
-            ),
-          ),
+          (sucursales) async {
+            final getRoles = await _rolRepository.getRoles();
+            await getRoles.fold(
+              (error) async => emit(_errorState(error)),
+              (roles) async => emit(
+                _successState(
+                  users,
+                  sucursales,
+                  roles,
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -82,7 +94,7 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
       userName: event.username,
       email: event.email,
       celular: 0,
-      rolId: 2,
+      rolId: event.rolId,
       password: event.password,
       sucursalId: event.sucursalId,
     );

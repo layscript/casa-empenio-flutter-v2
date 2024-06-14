@@ -36,6 +36,9 @@ export 'proforma/view/proforma_view.dart';
 export 'reports/bloc/reports_bloc.dart';
 export 'reports/views/reports_view.dart';
 
+export 'roles/bloc/roles_bloc.dart';
+export 'roles/views/roles_view.dart';
+
 export 'main/views/main.dart';
 
 export 'pay_user/view/pay_user_view.dart';

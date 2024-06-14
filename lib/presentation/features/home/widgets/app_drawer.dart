@@ -1,18 +1,31 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-class AppDrawer extends StatelessWidget {
+class AppDrawer extends StatefulWidget {
   const AppDrawer({Key? key}) : super(key: key);
 
   @override
+  State<AppDrawer> createState() => _AppDrawerState();
+}
+
+class _AppDrawerState extends State<AppDrawer> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<HomeBloc>().add(const GetAllModulos());
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final auth = context.watch<Preferences>().token;
-    final isCajera = auth?.id == 8;
+    final preferences = context.watch<Preferences>();
+    final auth = preferences.token;
+
     final homeState = context.watch<HomeBloc>().state;
 
     return Drawer(
@@ -30,239 +43,59 @@ class AppDrawer extends StatelessWidget {
                 ),
               ),
             ),
+            Center(
+              child: Text(
+                '(Modulos: ${homeState.modulos?.length})',
+                style: const TextStyle(
+                  fontSize: 11,
+                ),
+              ),
+            ),
             const SizedBox(height: 10),
-            ListTile(
-              tileColor: homeState.index == 0 ? Colors.black12 : null,
-              leading: const FaIcon(
-                FontAwesomeIcons.house,
-                size: 20,
-              ),
-              title: const Text('Inicio'),
-              onTap: () {
-                context.read<HomeBloc>().add(GoToHome());
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              tileColor: homeState.index == 1 ? Colors.black12 : null,
-              leading: const FaIcon(
-                FontAwesomeIcons.accusoft,
-                size: 20,
-              ),
-              title: const Text('Préstamos'),
-              onTap: () {
-                context.read<HomeBloc>().add(GoToLoans());
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              tileColor: homeState.index == 13 ? Colors.black12 : null,
-              leading: const FaIcon(
-                FontAwesomeIcons.doorClosed,
-                size: 20,
-              ),
-              title: const Text('Perdonados'),
-              onTap: () {
-                context.read<HomeBloc>().add(GoToPerdonados());
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              tileColor: homeState.index == 15 ? Colors.black12 : null,
-              leading: const FaIcon(
-                FontAwesomeIcons.paperPlane,
-                size: 20,
-              ),
-              title: const Text('Proformas'),
-              onTap: () {
-                context.read<HomeBloc>().add(GoToProformas());
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              tileColor: homeState.index == 2 ? Colors.black12 : null,
-              leading: const FaIcon(
-                FontAwesomeIcons.fileArrowDown,
-                size: 20,
-              ),
-              title: const Text('Reportes'),
-              onTap: () {
-                context.read<HomeBloc>().add(GoToReports());
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              tileColor: homeState.index == 3 ? Colors.black12 : null,
-              leading: const FaIcon(
-                FontAwesomeIcons.message,
-                size: 20,
-              ),
-              title: const Text('Ventas'),
-              onTap: () {
-                context.read<HomeBloc>().add(GoToSales());
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              tileColor: homeState.index == 4 ? Colors.black12 : null,
-              leading: const FaIcon(
-                FontAwesomeIcons.cartArrowDown,
-                size: 20,
-              ),
-              title: const Text('Productos'),
-              onTap: () {
-                context.read<HomeBloc>().add(GoToProducts());
-                Navigator.pop(context);
-              },
-            ),
-            if (auth?.role?.nombre == 'Administrador')
-              ListTile(
-                tileColor: homeState.index == 16 ? Colors.black12 : null,
-                leading: const FaIcon(
-                  FontAwesomeIcons.hand,
-                  size: 20,
-                ),
-                title: const Text('Anexos'),
-                onTap: () {
-                  context.read<HomeBloc>().add(GoToAnexos());
-                  Navigator.pop(context);
-                },
-              ),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: homeState.modulos?.length,
+              itemBuilder: (context, index) {
+                int newIndex;
+                if (homeState.modulos?[index].id == 19) {
+                  newIndex = 0;
+                } else if (index == 0 && homeState.modulos?[index].id != 19) {
+                  newIndex = homeState.modulos
+                          ?.indexWhere((modulo) => modulo.id == 19) ??
+                      0;
+                  newIndex = newIndex == -1 ? index : newIndex;
+                } else {
+                  newIndex = index;
+                }
 
-            /* if (auth?.role?.nombre == 'Administrador')
-              ListTile(
-                tileColor: homeState.index == 5 ? Colors.black12 : null,
-                leading: const FaIcon(
-                  FontAwesomeIcons.user,
-                  size: 20,
-                ),
-                title: const Text('Usuarios'),
-                onTap: () {
-                  context.read<HomeBloc>().add(GoToUsers());
-                  Navigator.pop(context);
-                },
-              ), */
-            if (auth?.role?.nombre == 'Administrador')
-              ListTile(
-                tileColor: homeState.index == 6 ? Colors.black12 : null,
-                leading: const FaIcon(
-                  FontAwesomeIcons.piggyBank,
-                  size: 20,
-                ),
-                title: const Text('Interes'),
-                onTap: () {
-                  context.read<HomeBloc>().add(GoToInterests());
-                  Navigator.pop(context);
-                },
-              ),
-            ListTile(
-              tileColor: homeState.index == 7 ? Colors.black12 : null,
-              leading: const FaIcon(
-                FontAwesomeIcons.screwdriverWrench,
-                size: 20,
-              ),
-              title: const Text('Categorías'),
-              onTap: () {
-                context.read<HomeBloc>().add(GoToCategories());
-                Navigator.pop(context);
+                final modulo = homeState.modulos?[newIndex];
+
+                return ListTile(
+                  tileColor:
+                      homeState.selected == modulo ? Colors.black12 : null,
+                  leading: FaIcon(
+                    getIcon(modulo?.id ?? 19),
+                    size: 20,
+                  ),
+                  title: Text(modulo?.nombre.toUpperCase() ?? 'aea'),
+                  onTap: () {
+                    preferences.setRefresh(true);
+                    context.read<HomeBloc>().add(
+                          GoToPage(modulo!),
+                        );
+
+                    Navigator.pop(context);
+                  },
+                );
               },
             ),
-            if (auth?.role?.nombre == 'Administrador' || isCajera)
-              ListTile(
-                tileColor: homeState.index == 11 ? Colors.black12 : null,
-                leading: const FaIcon(
-                  FontAwesomeIcons.boxOpen,
-                  size: 20,
-                ),
-                title: const Text('Caja'),
-                onTap: () {
-                  context.read<HomeBloc>().add(GoToOpenCaja());
-                  Navigator.pop(context);
-                },
-              ),
-            if (auth?.role?.nombre == 'Administrador' || isCajera)
-              ListTile(
-                tileColor: homeState.index == 8 ? Colors.black12 : null,
-                leading: const FaIcon(
-                  FontAwesomeIcons.expeditedssl,
-                  size: 20,
-                ),
-                title: const Text('Lista de Cajas'),
-                onTap: () {
-                  context.read<HomeBloc>().add(GoToCajas());
-                  Navigator.pop(context);
-                },
-              ),
-            if (auth?.role?.nombre == 'Administrador' || isCajera)
-              ListTile(
-                tileColor: homeState.index == 9 ? Colors.black12 : null,
-                leading: const FaIcon(
-                  FontAwesomeIcons.ccDinersClub,
-                  size: 20,
-                ),
-                title: const Text('Gastos'),
-                onTap: () {
-                  context.read<HomeBloc>().add(GoToExpenses());
-                  Navigator.pop(context);
-                },
-              ),
-            if (auth?.role?.nombre == 'Administrador')
-              ListTile(
-                tileColor: homeState.index == 10 ? Colors.black12 : null,
-                leading: const FaIcon(
-                  FontAwesomeIcons.clockRotateLeft,
-                  size: 20,
-                ),
-                title: const Text('Historial'),
-                onTap: () {
-                  context.read<HomeBloc>().add(GoToHistorial());
-                  Navigator.pop(context);
-                },
-              ),
-            if (auth?.role?.nombre == 'Administrador' || isCajera)
-              ListTile(
-                tileColor: homeState.index == 12 ? Colors.black12 : null,
-                leading: const FaIcon(
-                  FontAwesomeIcons.paypal,
-                  size: 20,
-                ),
-                title: const Text('Pagos a Personales'),
-                onTap: () {
-                  context.read<HomeBloc>().add(GoToPayUsers());
-                  Navigator.pop(context);
-                },
-              ),
-            if (auth?.role?.nombre == 'Administrador' || isCajera)
-              ListTile(
-                tileColor: homeState.index == 14 ? Colors.black12 : null,
-                leading: const FaIcon(
-                  FontAwesomeIcons.shop,
-                  size: 20,
-                ),
-                title: const Text('Plantillas'),
-                onTap: () {
-                  context.read<HomeBloc>().add(GoToPlantillas());
-                  Navigator.pop(context);
-                },
-              ),
-            if (auth?.role?.nombre == 'Administrador' || isCajera)
-              ListTile(
-                tileColor: homeState.index == 17 ? Colors.black12 : null,
-                leading: const FaIcon(
-                  FontAwesomeIcons.store,
-                  size: 20,
-                ),
-                title: const Text('Módulos'),
-                onTap: () {
-                  context.read<HomeBloc>().add(GoToModulos());
-                  Navigator.pop(context);
-                },
-              ),
             const Divider(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: SecondaryButton(
                 onPressed: () {
+                  context.read<Preferences>().setRefresh(false);
                   Navigator.pop(context);
                   context.read<AuthBloc>().add(SignOff());
                 },

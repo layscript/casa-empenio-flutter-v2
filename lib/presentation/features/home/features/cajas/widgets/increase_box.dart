@@ -78,7 +78,7 @@ class _IncreaseBoxViewState extends State<IncreaseBoxView> {
                     ? () {
                         context.read<CajasBloc>().add(
                               IncreaseBox(
-                                id: auth.user.id,
+                                id: auth.user?.id ?? 1,
                                 monto: montoCtrl.text,
                                 obs: obsCtrl.text,
                               ),

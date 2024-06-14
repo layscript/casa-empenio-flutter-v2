@@ -186,4 +186,27 @@ class HttpUserRepository implements UserRepository {
       return const Left('Ocurrió un error con el servidor');
     }
   }
+
+  @override
+  Future<Either<String, UserEntity>> getUser({required int id}) async {
+    final path = '/usuarios/$id';
+    try {
+      final response = await _dio.get<String>(path);
+
+      if (response.statusCode != 200) {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final message = map['message'] ?? 'Ocurrió un error';
+        return Left(message);
+      } else {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        return Right(UserEntity.userFromMap(map['body']));
+      }
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
+      return const Left('Ocurrió un error con el servidor');
+    }
+  }
 }

@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const _tokenKey = 'du18sj17';
 const _loansKey = 'du1865z33';
+const _refreshKey = 'du1865z33';
 
 class LocalPreferences implements Preferences {
   LocalPreferences(this._preferences);
@@ -15,7 +16,7 @@ class LocalPreferences implements Preferences {
     final userString = _preferences.getString(_tokenKey);
     if (userString != null) {
       final userMap = jsonDecode(userString) as Map<String, dynamic>;
-      final user = UserEntity.fromJson(userMap);
+      final user = UserEntity.userFromMap(userMap);
       return user;
     }
     return null;
@@ -49,4 +50,13 @@ class LocalPreferences implements Preferences {
     final loansString = jsonEncode(value.toJson());
     return _preferences.setString(_loansKey, loansString);
   }
+
+  @override
+  bool? get refresh => _preferences.getBool(_refreshKey);
+
+  @override
+  Future<void> removeRefresh() => _preferences.remove(_refreshKey);
+  @override
+  Future<bool> setRefresh(bool value) =>
+      _preferences.setBool(_refreshKey, value);
 }

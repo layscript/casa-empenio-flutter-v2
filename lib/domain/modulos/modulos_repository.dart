@@ -5,5 +5,6 @@ abstract class ModulosRepository {
   Future<Either<String, List<ModulosEntity>>> getAllModulos({
     String? busqueda,
     int? offset,
+    int? limit,
   });
 }

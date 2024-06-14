@@ -1,3 +1,4 @@
+export 'http_anexo_repository.dart';
 export 'http_caja_repository.dart';
 export 'http_categories_repository.dart';
 export 'http_customer_repository.dart';
@@ -11,6 +12,8 @@ export 'http_plantilla_repository.dart';
 export 'http_product_repository.dart';
 export 'http_proforma_repository.dart';
 export 'http_reports_repository.dart';
+export 'http_rol_repository.dart';
 export 'http_sales_repository.dart';
 export 'http_solicitud_repository.dart';
+export 'http_sucursal_repository.dart';
 export 'http_user_repository.dart';

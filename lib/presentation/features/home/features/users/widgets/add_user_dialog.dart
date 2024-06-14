@@ -22,6 +22,7 @@ class _AddUserDialogState extends State<AddUserDialog> {
   final passwordCtrl = TextEditingController();
   final confirmPasswordCtrl = TextEditingController();
   SucursalEntity? sucursal;
+  RoleEntity? rol;
 
   bool fullNamesIsValid = false;
   bool fullLastNamesIsValid = false;
@@ -30,6 +31,7 @@ class _AddUserDialogState extends State<AddUserDialog> {
   bool passwordIsValid = false;
   bool confirmIsValid = false;
   bool sucursalIsValid = false;
+  bool rolIsValid = false;
 
   @override
   Widget build(BuildContext context) {
@@ -123,6 +125,25 @@ class _AddUserDialogState extends State<AddUserDialog> {
             labelText: 'Sucursal',
           ),
           const SizedBox(height: 20),
+          AppDropdownButtonFormField<RoleEntity?>(
+            value: rol,
+            items: usersBloc.state.listRoles
+                ?.map(
+                  (e) => DropdownMenuItem<RoleEntity?>(
+                    value: e,
+                    child: Text(e.nombre),
+                  ),
+                )
+                .toList(),
+            onChanged: (e) {
+              setState(() {
+                rol = e;
+                rolIsValid = true;
+              });
+            },
+            labelText: 'Rol',
+          ),
+          const SizedBox(height: 20),
         ],
       ),
       actions: [
@@ -133,7 +154,8 @@ class _AddUserDialogState extends State<AddUserDialog> {
                   !userIsValid ||
                   !passwordIsValid ||
                   !confirmIsValid ||
-                  !sucursalIsValid
+                  !sucursalIsValid ||
+                  !rolIsValid
               ? null
               : () {
                   Navigator.pop(context);
@@ -146,6 +168,7 @@ class _AddUserDialogState extends State<AddUserDialog> {
                           password: passwordCtrl.text,
                           confirmPassword: confirmPasswordCtrl.text,
                           sucursalId: sucursal?.id ?? 1,
+                          rolId: rol?.id ?? 1,
                         ),
                       );
                 },

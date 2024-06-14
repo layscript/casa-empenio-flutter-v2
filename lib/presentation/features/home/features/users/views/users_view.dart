@@ -18,6 +18,7 @@ class UsersView extends StatelessWidget {
       create: (context) => UsersBloc(
         userRepository: context.read(),
         sucursalRepository: context.read(),
+        rolRepository: context.read(),
       )..add(
           GetUsers(),
         ),
@@ -68,9 +69,7 @@ class UsersView extends StatelessWidget {
                                 ListView.separated(
                                   physics: const NeverScrollableScrollPhysics(),
                                   separatorBuilder: (context, index) =>
-                                      const SizedBox(
-                                    height: 10,
-                                  ),
+                                      const Divider(height: 10),
                                   shrinkWrap: true,
                                   itemCount: state.listUsers!.length,
                                   itemBuilder: (context, index) {
@@ -84,22 +83,23 @@ class UsersView extends StatelessWidget {
                                                   CrossAxisAlignment.start,
                                               children: [
                                                 Text(
-                                                  '${user.nombre} ${user.apellido}',
+                                                  user.fullName,
                                                   maxLines: 1,
                                                   style: const TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.normal,
+                                                    fontWeight: FontWeight.bold,
                                                     overflow:
                                                         TextOverflow.ellipsis,
                                                   ),
                                                 ),
                                                 Text(
-                                                  user.userName,
-                                                  maxLines: 3,
+                                                  user.role?.nombre ?? '',
+                                                  maxLines: 1,
                                                   style: const TextStyle(
                                                     fontWeight:
                                                         FontWeight.normal,
                                                     fontSize: 12,
+                                                    color:
+                                                        AppColors.secondaryText,
                                                   ),
                                                 ),
                                               ],

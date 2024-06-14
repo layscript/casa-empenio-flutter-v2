@@ -53,7 +53,7 @@ class _AddPayUserDialogState extends State<AddPayUserDialog> {
                         SavePayExpense(
                           typeId: 8,
                           obs: 'Pago a ${obsCtrl.text}',
-                          usuarioId: authBloc.user.id,
+                          usuarioId: authBloc.user?.id ?? 1,
                           monto: montoCtrl.text,
                         ),
                       );

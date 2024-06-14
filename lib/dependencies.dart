@@ -108,6 +108,11 @@ final ModulosRepository _modulosRepository = HttpModulosRepository(
   sentry: _sentry,
 );
 
+final RolRepository _rolRepository = HttpRolRepository(
+  dio: _client,
+  sentry: _sentry,
+);
+
 void configDio(Preferences preferences) {
   _client.interceptors.add(
     InterceptorsWrapper(

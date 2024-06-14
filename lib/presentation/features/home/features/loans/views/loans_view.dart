@@ -27,6 +27,11 @@ class LoansView extends StatefulWidget {
 
 class _LoansViewState extends State<LoansView> {
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final homeBloc = context.read<HomeBloc>();
 
@@ -468,7 +473,7 @@ class _LoansViewState extends State<LoansView> {
                                                   ),
                                                 ),
                                                 //if (auth.user.role?.id != 2)
-                                                if (auth.user.isAdmin == true)
+                                                if (auth.user?.isAdmin == true)
                                                   //Editar
                                                   SizedBox(
                                                     height: 38,

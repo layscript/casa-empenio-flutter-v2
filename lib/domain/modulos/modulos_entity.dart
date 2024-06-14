@@ -1,4 +1,6 @@
-class ModulosEntity {
+import 'package:equatable/equatable.dart';
+
+class ModulosEntity extends Equatable {
   final int id;
   final String nombre;
 
@@ -21,4 +23,10 @@ class ModulosEntity {
       nombre: map['nombre'],
     );
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        nombre,
+      ];
 }

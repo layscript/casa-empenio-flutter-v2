@@ -38,10 +38,10 @@ class _EditUserDialogState extends State<EditUserDialog> {
   @override
   void initState() {
     super.initState();
-    fullNamesCtrl.text = widget.user.nombre;
-    fullLastNamesCtrl.text = widget.user.apellido;
-    emailCtrl.text = widget.user.email;
-    usernameCtrl.text = widget.user.userName;
+    fullNamesCtrl.text = widget.user.nombre ?? '';
+    fullLastNamesCtrl.text = widget.user.apellido ?? '';
+    emailCtrl.text = widget.user.email ?? '';
+    usernameCtrl.text = widget.user.userName ?? '';
     sucursal = widget.user.sucursal;
 
     fullNamesIsValid = true;

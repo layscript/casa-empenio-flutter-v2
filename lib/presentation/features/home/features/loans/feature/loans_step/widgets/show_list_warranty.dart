@@ -134,7 +134,7 @@ class ShowListWarranty extends StatelessWidget {
         PrimaryButton(
           onPressed: listWarranty != null
               ? () => context.read<LoansStepBloc>().add(
-                    SaveAllLoan(auth.user.id.toString()),
+                    SaveAllLoan(auth.user?.id.toString() ?? '1'),
                   )
               : null,
           child: const Text('Registrar Préstamo'),

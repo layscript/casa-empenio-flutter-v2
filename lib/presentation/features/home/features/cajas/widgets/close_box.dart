@@ -116,7 +116,7 @@ class _CloseBoxViewState extends State<CloseBoxView> {
                     ? () {
                         context.read<CajasBloc>().add(
                               CloseBox(
-                                id: auth.user.id,
+                                id: auth.user?.id ?? 1,
                                 monto: montoCtrl.text,
                                 obs: obsCtrl.text,
                               ),

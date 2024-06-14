@@ -77,7 +77,7 @@ class _OpenBoxViewState extends State<OpenBoxView> {
                   ? () {
                       context.read<CajasBloc>().add(
                             OpenBox(
-                              id: auth.user.id,
+                              id: auth.user?.id ?? 1,
                               monto: montoCtrl.text,
                               obs: obsCtrl.text,
                             ),

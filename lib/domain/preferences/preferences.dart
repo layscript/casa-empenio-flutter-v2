@@ -8,4 +8,8 @@ abstract class Preferences {
   LoansPreferencesEntity? get getLoansPreferences;
   Future<bool> setLoansPreferences(LoansPreferencesEntity value);
   Future<void> removeLoansPreferences();
+
+  bool? get refresh;
+  Future<bool> setRefresh(bool value);
+  Future<void> removeRefresh();
 }

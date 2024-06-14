@@ -1,6 +1,7 @@
 import 'package:casa_empenio_pe/presentation/app/assets/theme.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/main/views/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -22,7 +23,7 @@ class _AppState extends State<App> {
         switch (state.runtimeType) {
           case Authenticated:
             mainNavigatorKey.currentState?.pushNamedAndRemoveUntil(
-              HomeView.route,
+              MainView.route,
               (route) => false,
             );
             break;
@@ -30,6 +31,13 @@ class _AppState extends State<App> {
           case UnAuthenticated:
             mainNavigatorKey.currentState?.pushNamedAndRemoveUntil(
               AuthView.route,
+              (route) => false,
+            );
+            break;
+
+          case RecoverAuthenticated:
+            mainNavigatorKey.currentState?.pushNamedAndRemoveUntil(
+              MainView.route,
               (route) => false,
             );
             break;

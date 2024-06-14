@@ -1,222 +1,148 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/home.dart';
+import 'package:casa_empenio_pe/presentation/features/home/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-class MainView extends StatelessWidget {
+class MainView extends StatefulWidget {
   const MainView({super.key});
+  static const route = 'main-view';
 
   @override
-  Widget build(BuildContext context) {
-    final preferences = context.read<Preferences>();
-    final auth = preferences.token;
-    final isCajera = auth?.id == 8;
-
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          const SizedBox(height: 20),
-          Center(
-            child: Text(
-              'Bienvenido a ${preferences.token?.sucursal?.nombre ?? ''}',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.primaryText,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          GridView.count(
-            shrinkWrap: true,
-            primary: false,
-            padding: const EdgeInsets.all(20),
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 20,
-            crossAxisCount: 2,
-            children: <Widget>[
-              _ItemGrid(
-                onTap: () => context.read<HomeBloc>().add(
-                      GoToLoans(),
-                    ),
-                text: 'Préstamos',
-                icon: FontAwesomeIcons.accusoft,
-              ),
-              _ItemGrid(
-                onTap: () => context.read<HomeBloc>().add(
-                      GoToPerdonados(),
-                    ),
-                text: 'Perdonados',
-                icon: FontAwesomeIcons.doorClosed,
-              ),
-              _ItemGrid(
-                onTap: () => context.read<HomeBloc>().add(
-                      GoToProformas(),
-                    ),
-                text: 'Proformas',
-                icon: FontAwesomeIcons.paperPlane,
-              ),
-              _ItemGrid(
-                onTap: () => context.read<HomeBloc>().add(
-                      GoToReports(),
-                    ),
-                text: 'Reportes',
-                icon: FontAwesomeIcons.fileArrowDown,
-              ),
-              _ItemGrid(
-                onTap: () => context.read<HomeBloc>().add(
-                      GoToSales(),
-                    ),
-                text: 'Ventas',
-                icon: FontAwesomeIcons.message,
-              ),
-              _ItemGrid(
-                onTap: () => context.read<HomeBloc>().add(
-                      GoToProducts(),
-                    ),
-                text: 'Productos',
-                icon: FontAwesomeIcons.cartArrowDown,
-              ),
-              if (auth?.role?.nombre == 'Administrador')
-                _ItemGrid(
-                  onTap: () => context.read<HomeBloc>().add(
-                        GoToAnexos(),
-                      ),
-                  text: 'Anexos',
-                  icon: FontAwesomeIcons.hand,
-                ),
-              if (auth?.role?.nombre == 'Administrador')
-                _ItemGrid(
-                  onTap: () => context.read<HomeBloc>().add(
-                        GoToInterests(),
-                      ),
-                  text: 'Interéses',
-                  icon: FontAwesomeIcons.piggyBank,
-                ),
-              _ItemGrid(
-                onTap: () => context.read<HomeBloc>().add(
-                      GoToCategories(),
-                    ),
-                text: 'Categorías',
-                icon: FontAwesomeIcons.screwdriverWrench,
-              ),
-              if (auth?.role?.nombre == 'Administrador' || isCajera)
-                _ItemGrid(
-                  onTap: () => context.read<HomeBloc>().add(
-                        GoToExpenses(),
-                      ),
-                  text: 'Gastos',
-                  icon: FontAwesomeIcons.ccDinersClub,
-                ),
-              if (auth?.role?.nombre == 'Administrador')
-                _ItemGrid(
-                  onTap: () => context.read<HomeBloc>().add(
-                        GoToHistorial(),
-                      ),
-                  text: 'Historial',
-                  icon: FontAwesomeIcons.clockRotateLeft,
-                ),
-              if (auth?.role?.nombre == 'Administrador' || isCajera)
-                _ItemGrid(
-                  onTap: () => context.read<HomeBloc>().add(
-                        GoToOpenCaja(),
-                      ),
-                  text: 'Caja',
-                  icon: FontAwesomeIcons.boxOpen,
-                ),
-              if (auth?.role?.nombre == 'Administrador' || isCajera)
-                _ItemGrid(
-                  onTap: () => context.read<HomeBloc>().add(
-                        GoToCajas(),
-                      ),
-                  text: 'Lista de Cajas',
-                  icon: FontAwesomeIcons.expeditedssl,
-                ),
-              if (auth?.role?.nombre == 'Administrador' || isCajera)
-                _ItemGrid(
-                  onTap: () => context.read<HomeBloc>().add(
-                        GoToPayUsers(),
-                      ),
-                  text: 'Pagos a Personales',
-                  icon: FontAwesomeIcons.paypal,
-                ),
-              if (auth?.role?.nombre == 'Administrador' || isCajera)
-                _ItemGrid(
-                  onTap: () => context.read<HomeBloc>().add(
-                        GoToPlantillas(),
-                      ),
-                  text: 'Plantillas',
-                  icon: FontAwesomeIcons.shop,
-                ),
-              if (auth?.role?.nombre == 'Administrador' || isCajera)
-                _ItemGrid(
-                  onTap: () => context.read<HomeBloc>().add(
-                        GoToModulos(),
-                      ),
-                  text: 'Módulos',
-                  icon: FontAwesomeIcons.store,
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  State<MainView> createState() => _MainViewState();
 }
 
-class _ItemGrid extends StatelessWidget {
-  const _ItemGrid({
-    required this.onTap,
-    required this.text,
-    required this.icon,
-  });
-
-  final void Function()? onTap;
-  final String text;
-  final IconData? icon;
+class _MainViewState extends State<MainView> {
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.7),
-              spreadRadius: 0.2,
-              blurRadius: 3,
-              offset: const Offset(0, 3),
-            ),
-          ],
+    final preferences = context.watch<Preferences>();
+    final preferencesState = preferences.token;
+
+    return BlocProvider(
+      lazy: false,
+      create: (context) => HomeBloc(
+        preferences: context.read(),
+        userRepository: context.read(),
+      )..add(
+          const GetAllModulos(),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            FaIcon(
-              icon,
-              size: 30,
-              color: const Color.fromARGB(255, 154, 218, 231),
-            ),
-            const SizedBox(height: 10),
-            Center(
-              child: Text(
-                text,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+      child: Builder(
+        builder: (context) {
+          final homeState = context.watch<HomeBloc>().state;
+          return WillPopScope(
+            onWillPop: () async {
+              if (homeState.selected?.id != 19) {
+                DialogGlobalHome.show(
+                  context,
+                  homeBloc: context.read<HomeBloc>(),
+                );
+              }
+              return false;
+            },
+            child: Scaffold(
+              appBar: AppBar(
+                iconTheme: const IconThemeData(color: AppColors.white),
+                backgroundColor: AppColors.blue,
+                title: const Text(
+                  'Casa de Empeño',
+                  style: TextStyle(
+                    color: AppColors.white,
+                  ),
                 ),
+                centerTitle: true,
+                actions: [
+                  if (preferencesState?.role?.nombre == 'Administrador')
+                    IconButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const NotifyView()),
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.notifications_active_sharp,
+                        color: Colors.deepOrangeAccent,
+                      ),
+                    ),
+                ],
+              ),
+              // color blanco del drawer
+              drawer: const AppDrawer(),
+              body: BlocBuilder<HomeBloc, HomeState>(
+                builder: (context, state) {
+                  switch (state.selected?.id) {
+                    case 1:
+                      return const LoansView();
+
+                    case 2:
+                      return const PerdonadosView();
+
+                    case 3:
+                      return const ProformaView();
+
+                    case 4:
+                      return const ReportsView();
+
+                    case 5:
+                      return const SalesView();
+
+                    case 6:
+                      return const ProductsView();
+
+                    case 7:
+                      return const AnexosView();
+
+                    case 8:
+                      return const InterestsView();
+
+                    case 9:
+                      return const CategoriesView();
+
+                    case 10:
+                      return const ExpensesView();
+
+                    case 11:
+                      return const HistorialView();
+
+                    case 12:
+                      return const CajasView();
+
+                    case 13:
+                      return const OpenCajaView();
+
+                    case 14:
+                      return const PayUserView();
+
+                    case 15:
+                      return const PlantillaView();
+
+                    case 16:
+                      return const RolesView();
+
+                    case 17:
+                      return const UsersView();
+
+                    case 18:
+                      return const ModulosView();
+
+                    case 19:
+                      return const HomeView();
+                  }
+
+                  return const HomeView();
+                },
               ),
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

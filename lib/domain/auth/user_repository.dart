@@ -7,6 +7,10 @@ abstract class UserRepository {
     required String password,
   });
 
+  Future<Either<String, UserEntity>> getUser({
+    required int id,
+  });
+
   Future<Either<String, List<UserEntity>>> getUsers({
     required int limit,
     required int offset,

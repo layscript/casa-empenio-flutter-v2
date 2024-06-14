@@ -40,7 +40,7 @@ class _AddFormProformaState extends State<AddFormProforma> {
                           GenerateProformasProduct(
                             // TODO:: ID SUCURSSCAL
                             sucursalId: preferences.token?.sucursal?.id ?? 1,
-                            userId: authBloc.user.id,
+                            userId: authBloc.user?.id ?? 1,
                           ),
                         ),
                 child: const Icon(Icons.add),

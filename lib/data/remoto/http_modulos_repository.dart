@@ -19,9 +19,10 @@ class HttpModulosRepository implements ModulosRepository {
   Future<Either<String, List<ModulosEntity>>> getAllModulos({
     String? busqueda = '',
     int? offset = 0,
+    int? limit = 10,
   }) async {
     final path =
-        '/modulos?limit=10&offset=$offset${busqueda!.isEmpty ? '' : '&busqueda=$busqueda'}';
+        '/modulos?limit=$limit&offset=$offset${busqueda!.isEmpty ? '' : '&busqueda=$busqueda'}';
     try {
       final response = await _dio.get<String>(path);
       if (response.statusCode != 200) {

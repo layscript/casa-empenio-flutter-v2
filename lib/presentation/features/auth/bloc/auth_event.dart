@@ -19,3 +19,5 @@ class LogIn extends AuthEvent {
 class SignOff extends AuthEvent {}
 
 class GetSession extends AuthEvent {}
+
+class RefreshDataUser extends AuthEvent {}

@@ -163,7 +163,7 @@ class _HistorialUserVentasViewState extends State<HistorialUserVentasView> {
                                             ),
                                             const SizedBox(height: 2),
                                             Text(
-                                              'USUARIO: ${venta.usuario?.nombre.toUpperCase()} ${venta.usuario?.apellido.toUpperCase()}',
+                                              'USUARIO: ${venta.usuario?.nombre?.toUpperCase()} ${venta.usuario?.apellido?.toUpperCase()}',
                                               style: const TextStyle(
                                                 color: AppColors.secondaryText,
                                                 fontWeight: FontWeight.normal,

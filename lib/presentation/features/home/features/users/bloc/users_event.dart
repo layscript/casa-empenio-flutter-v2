@@ -18,6 +18,7 @@ class SaveUser extends UsersEvent {
     required this.password,
     required this.confirmPassword,
     required this.sucursalId,
+    required this.rolId,
   });
 
   final String fullNames;
@@ -27,6 +28,7 @@ class SaveUser extends UsersEvent {
   final String password;
   final String confirmPassword;
   final int sucursalId;
+  final int rolId;
 }
 
 class UpdateUser extends UsersEvent {

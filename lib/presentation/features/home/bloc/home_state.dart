@@ -2,14 +2,24 @@ part of 'home_bloc.dart';
 
 class HomeState extends Equatable {
   const HomeState({
-    this.index = 0,
+    this.modulos,
+    this.selected,
   });
-  final int index;
+  final List<ModulosEntity>? modulos;
+  final ModulosEntity? selected;
 
-  HomeState copyWith({int? index}) => HomeState(
-        index: index ?? this.index,
+  HomeState copyWith({
+    ModulosEntity? selected,
+    List<ModulosEntity>? modulos,
+  }) =>
+      HomeState(
+        selected: selected ?? this.selected,
+        modulos: modulos ?? this.modulos,
       );
 
   @override
-  List<Object> get props => [index];
+  List<Object?> get props => [
+        selected,
+        modulos,
+      ];
 }
