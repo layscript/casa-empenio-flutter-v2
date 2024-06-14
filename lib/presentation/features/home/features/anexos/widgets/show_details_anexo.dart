@@ -27,7 +27,7 @@ class ShowDetailsAnexo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Anexo: ${anexo.id}'),
+      title: Text('Visita: ${anexo.id}'),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),

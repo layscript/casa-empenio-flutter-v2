@@ -1,5 +1,4 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
-import 'package:casa_empenio_pe/presentation/features/auth/auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 

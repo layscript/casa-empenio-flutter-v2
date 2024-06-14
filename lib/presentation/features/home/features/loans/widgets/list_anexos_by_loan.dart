@@ -44,7 +44,7 @@ class _ListAnexosByLoanState extends State<ListAnexosByLoan> {
           ),
           const SizedBox(height: 15),
           Text(
-            'Anexos del Prestamo: ${widget.prestamoId}',
+            'Visitas del Prestamo: ${widget.prestamoId}',
           ),
         ],
       ),

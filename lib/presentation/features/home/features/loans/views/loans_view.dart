@@ -71,7 +71,7 @@ class _LoansViewState extends State<LoansView> {
               if (state.isAnexosSuccess) {
                 SuccessSnackbar.show(
                   context,
-                  'Anexo agregado correctamente',
+                  'Visita agregado correctamente',
                 );
               }
             }
@@ -292,7 +292,7 @@ class _LoansViewState extends State<LoansView> {
                                           padding: const EdgeInsets.symmetric(
                                               horizontal: 20.0),
                                           child: const Text(
-                                            'Visualizar Anexos',
+                                            'Visualizar Visitas',
                                             style:
                                                 TextStyle(color: Colors.white),
                                           ),
@@ -303,7 +303,7 @@ class _LoansViewState extends State<LoansView> {
                                           padding: const EdgeInsets.symmetric(
                                               horizontal: 20.0),
                                           child: const Text(
-                                            'Agregar Anexo',
+                                            'Agregar Visita',
                                             style:
                                                 TextStyle(color: Colors.white),
                                           ),

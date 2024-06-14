@@ -63,7 +63,7 @@ class _AddAnexoDialogState extends State<AddAnexoDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       scrollable: true,
-      title: const Text('Agregar Anexo'),
+      title: const Text('Agregar Visita'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

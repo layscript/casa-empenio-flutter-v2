@@ -63,7 +63,7 @@ class AnexosView extends StatelessWidget {
                                 const SizedBox(height: 20),
                                 const Center(
                                   child: Text(
-                                    'Lista de Anexos',
+                                    'Lista de Visitas',
                                     style: TextStyle(
                                       color: AppColors.primaryText,
                                       fontWeight: FontWeight.bold,
@@ -110,7 +110,7 @@ class AnexosView extends StatelessWidget {
                                 if (state.listAnexos.isEmpty)
                                   const Center(
                                     child: Text(
-                                      'No hay anexos en la fecha seleccionada',
+                                      'No hay visitas en la fecha seleccionada',
                                     ),
                                   ),
                                 ListView.separated(
@@ -172,7 +172,7 @@ class AnexosView extends StatelessWidget {
                                                 context: context,
                                                 builder: (_) {
                                                   return DeleteDialog(
-                                                    title: 'Anexo',
+                                                    title: 'Visita',
                                                     onPressed: () => context
                                                         .read<AnexosBloc>()
                                                         .add(
@@ -234,7 +234,7 @@ class AnexosView extends StatelessWidget {
                                 children: [
                                   FaIcon(FontAwesomeIcons.circlePlus),
                                   SizedBox(width: 10),
-                                  Text('Agregar Anexo'),
+                                  Text('Agregar Visita'),
                                 ],
                               ),
                             ),
