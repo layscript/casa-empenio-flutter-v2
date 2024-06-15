@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const _tokenKey = 'du18sj17';
 const _loansKey = 'du1865z33';
-const _refreshKey = 'du1865z33';
+const _refreshKey = 'fj1625z33';
 
 class LocalPreferences implements Preferences {
   LocalPreferences(this._preferences);

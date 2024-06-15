@@ -62,6 +62,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onSignOff(SignOff event, Emitter<AuthState> emit) async {
+    await _preferences.removeRefresh();
+    await _preferences.removeLoansPreferences();
     await _preferences.removeToken();
     emit(const UnAuthenticated());
   }

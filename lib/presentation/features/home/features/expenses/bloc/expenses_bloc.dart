@@ -49,15 +49,8 @@ class ExpensesBloc extends Bloc<ExpensesEvent, ExpensesState> {
         ),
       ),
       (list) {
-        final newList = list.where((element) {
-          final date = DateTime.parse(element.createdAt!);
-          return date.isAfter(event.start ?? state.startExpenses) &&
-              date.isBefore(event.end ?? state.endExpenses);
-        }).toList();
-
         // Sumar los montos de newList
-
-        final totalGastos = newList.fold<double>(
+        final totalGastos = list.fold<double>(
           0,
           (previousValue, element) =>
               previousValue + double.parse(element.monto ?? '0.00'),
@@ -66,7 +59,7 @@ class ExpensesBloc extends Bloc<ExpensesEvent, ExpensesState> {
         emit(
           state.copyWith(
             expensesStatus: ExpensesStatus.loaded,
-            listExpenses: newList,
+            listExpenses: list,
             startExpenses: event.start ?? state.startExpenses,
             endExpenses: event.end ?? state.endExpenses,
             totalGastos: totalGastos,
