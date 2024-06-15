@@ -1,6 +1,7 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/products/bloc/products_bloc.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/products/widgets/widgets.dart';
@@ -9,8 +10,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class ProductsViewLoaded extends StatefulWidget {
-  const ProductsViewLoaded({super.key, required this.state});
-  final ProductsState state;
+  const ProductsViewLoaded({
+    Key? key,
+    required this.state,
+  }) : super(key: key);
+
+  final ProductsLoaded state;
 
   @override
   State<ProductsViewLoaded> createState() => _ProductsViewLoadedState();
@@ -18,20 +23,15 @@ class ProductsViewLoaded extends StatefulWidget {
 
 class _ProductsViewLoadedState extends State<ProductsViewLoaded> {
   final ScrollController _scrollController = ScrollController();
-  late int _offset;
-  late List<ProductEntity> _products;
-
   CategoriesEntity? selectedCategory;
   String? selectedSearch;
-
-  bool _loading = false;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    _offset = 0;
-    _products = widget.state.listProducts ?? [];
+    selectedCategory = widget.state.selectedCategory;
+    selectedSearch = widget.state.selectedSearch;
   }
 
   @override
@@ -40,79 +40,72 @@ class _ProductsViewLoadedState extends State<ProductsViewLoaded> {
     super.dispose();
   }
 
-  void _onScroll() async {
-    if (_loading) return;
+  void _onScroll() {
     if (_scrollController.position.pixels ==
         _scrollController.position.maxScrollExtent) {
-      setState(() => _loading = true);
-      _offset += 10;
-      await fetchProducts(null, null);
-      setState(() => _loading = false);
+      final state = context.read<ProductsBloc>().state;
+      if (state is ProductsLoaded && !state.hasReachedMax) {
+        context
+            .read<ProductsBloc>()
+            .add(LoadProducts(offset: state.products.length));
+      }
     }
   }
 
-  Future<void> fetchProducts(String? search, String? category) async {
-    final productRepository = context.read<ProductRepository>();
-    final result = await productRepository.getProducts(
-      type: 0,
-      offset: search == null ? _offset : 0,
-      criterio: search ?? '',
-      categoria: category ?? '',
-    );
+  Future<void> _onSearch(String search) async {
+    setState(() => selectedSearch = search);
+    _refreshProducts();
+  }
 
-    result.fold(
-      (error) => null,
-      (products) {
-        setState(() {
-          if (search == null) {
-            _products = _products + products;
-          } else {
-            _products = products;
-          }
-        });
-      },
-    );
+  void _onCategoryChange(CategoriesEntity? category) {
+    setState(() {
+      selectedCategory = category;
+      if (category != null) {
+        _refreshProducts();
+      }
+    });
+  }
+
+  void _refreshProducts() {
+    context.read<ProductsBloc>().add(RefreshProducts(
+          search: selectedSearch,
+          category: selectedCategory?.descripcion,
+        ));
   }
 
   @override
   Widget build(BuildContext context) {
-    final productsBloc = context.read<ProductsBloc>();
     return Container(
       width: double.infinity,
       padding:
           EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Stack(
         children: [
-          _buildProductList(),
-          Positioned.fill(top: null, child: Bottom(productsBloc: productsBloc)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProductList() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      height: MediaQuery.of(context).size.height * 0.9,
-      padding: const EdgeInsets.only(bottom: 120),
-      child: CustomScrollView(
-        controller: _scrollController,
-        slivers: [
-          _buildHeader(),
-          _buildCategoryFilter(),
-          if (_products.isNotEmpty) ...[
-            _buildProductListItems(),
-          ] else ...[
-            const SliverToBoxAdapter(
-              child: Center(
-                child: Text(
-                  'No se encontraron productos',
-                  style: TextStyle(color: AppColors.secondaryText),
-                ),
-              ),
+          CustomScrollView(
+            controller: _scrollController,
+            slivers: [
+              _buildHeader(),
+              _buildCategoryFilter(),
+              if (widget.state.products.isEmpty)
+                const SliverToBoxAdapter(
+                  child: Center(
+                    child: Text(
+                      'No se encontraron los productos',
+                    ),
+                  ),
+                )
+              else
+                _buildProductList(
+                    widget.state.products, widget.state.hasReachedMax),
+              const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
+            ],
+          ),
+          Positioned.fill(
+            top: null,
+            child: Bottom(
+              categories: widget.state.categories,
             ),
-          ],
-          const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
+          ),
         ],
       ),
     );
@@ -121,26 +114,19 @@ class _ProductsViewLoadedState extends State<ProductsViewLoaded> {
   Widget _buildHeader() {
     return SliverToBoxAdapter(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 20),
-          const Center(
-            child: Text(
-              'Lista de Productos',
-              style: TextStyle(
-                color: AppColors.primaryText,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ),
           const SizedBox(height: 20),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: SearchProducts(
-              onPressed: (search) async {
-                setState(() => selectedSearch = search);
-                await fetchProducts(
-                    search, selectedCategory?.descripcion.toString());
+              initialValue: selectedSearch ?? '', // Pasar valor inicial aquí
+              onPressed: (search) async => await _onSearch(search),
+              suffixOnPressed: () {
+                setState(() {
+                  selectedSearch = null; // Limpiar el valor de búsqueda
+                });
+                _refreshProducts(); // Actualizar la lista de productos
               },
             ),
           ),
@@ -156,18 +142,18 @@ class _ProductsViewLoadedState extends State<ProductsViewLoaded> {
         padding:
             const EdgeInsets.symmetric(horizontal: 20).copyWith(bottom: 20),
         child: AppDropdownButtonFormField<CategoriesEntity?>(
-          labelText: 'Filtrar por Categoria',
+          labelText: 'Filtrar por Categoría',
           value: selectedCategory,
-          onChanged: (category) async {
-            setState(() => selectedCategory = category);
-            await fetchProducts(
-                selectedSearch, category?.descripcion.toString());
-          },
+          onChanged: (value) => _onCategoryChange(value),
           suffixOnPressed: () {
-            context.read<ProductsBloc>().add(const GetProducts());
+            setState(() {
+              selectedCategory =
+                  null; // Limpiar la categoría seleccionada localmente
+            });
+            _refreshProducts(); // Cargar todos los productos nuevamente
           },
-          items: widget.state.listCategories
-              ?.map(
+          items: widget.state.categories
+              .map(
                 (category) => DropdownMenuItem<CategoriesEntity?>(
                   value: category,
                   child: Text(category.descripcion),
@@ -179,33 +165,37 @@ class _ProductsViewLoadedState extends State<ProductsViewLoaded> {
     );
   }
 
-  Widget _buildProductListItems() {
-    return SliverList.builder(
-      itemCount: _loading ? _products.length + 1 : _products.length,
-      itemBuilder: (context, index) {
-        if (index >= _products.length) {
-          return const Padding(
-            padding: EdgeInsets.all(10),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        final product = _products[index];
-        return ListTile(
-          dense: true,
-          leading: const SizedBox(
-            height: 50,
-            width: 50,
-            child: Center(child: Icon(Icons.image)),
-          ),
-          title: _buildProductTitle(product),
-          subtitle: Text(
-            '${product.marca} - ${product.modelo}',
-            style: const TextStyle(color: AppColors.secondaryText),
-          ),
-          trailing: _buildProductActions(product, context),
-        );
-      },
+  Widget _buildProductList(List<ProductEntity> products, bool hasReachedMax) {
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          if (index < products.length) {
+            final product = products[index];
+            return ListTile(
+              dense: true,
+              leading: const SizedBox(
+                height: 50,
+                width: 50,
+                child: Center(child: Icon(Icons.image)),
+              ),
+              title: _buildProductTitle(product),
+              subtitle: Text(
+                '${product.marca} - ${product.modelo}',
+                style: const TextStyle(color: AppColors.secondaryText),
+              ),
+              trailing: _buildProductActions(product, context),
+            );
+          } else if (!hasReachedMax && products.length > 9) {
+            return const Padding(
+              padding: EdgeInsets.all(10),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          } else {
+            return const SizedBox.shrink();
+          }
+        },
+        childCount: hasReachedMax ? products.length : products.length + 1,
+      ),
     );
   }
 
@@ -213,10 +203,18 @@ class _ProductsViewLoadedState extends State<ProductsViewLoaded> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('${product.descripcion} / ${product.marca} / ${product.modelo}'),
+        Text(
+          '${product.descripcion} / ${product.marca} / ${product.modelo}',
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.primaryText,
+          ),
+        ),
         const SizedBox(height: 2),
         Text(
-          'Prestamo - N° ${product.prestamo?.codigoFormateado ?? ''}',
+          'Préstamo - N° ${product.prestamo?.codigoFormateado ?? ''}',
           style: const TextStyle(color: Colors.blue, fontSize: 12),
         ),
       ],
@@ -245,19 +243,24 @@ class _ProductsViewLoadedState extends State<ProductsViewLoaded> {
         IconButton(
           icon: const FaIcon(FontAwesomeIcons.penToSquare,
               size: 20, color: Colors.blue),
-          onPressed: () {
-            showDialog(
+          onPressed: () async {
+            final isProduct = product.motor == null;
+            final result = await showDialog<StatusFormVehiculo?>(
               barrierDismissible: false,
               context: context,
-              builder: (_) {
-                final isProduct = product.motor == null;
-                return BlocProvider.value(
-                  value: context.read<ProductsBloc>(),
-                  child:
-                      EditProductDialog(product: product, isProduct: isProduct),
-                );
-              },
+              builder: (_) => EditProductDialog(
+                categories: widget.state.categories,
+                product: product,
+                isProduct: isProduct,
+              ),
             );
+            if (result != null && mounted) {
+              if (result.isSuccess) {
+                SuccessSnackbar.show(context, result.message);
+              } else {
+                ErrorSnackbar.show(context, result.message);
+              }
+            }
           },
         ),
       ],
@@ -265,10 +268,16 @@ class _ProductsViewLoadedState extends State<ProductsViewLoaded> {
   }
 }
 
-class Bottom extends StatelessWidget {
-  const Bottom({super.key, required this.productsBloc});
-  final ProductsBloc productsBloc;
+class Bottom extends StatefulWidget {
+  const Bottom({Key? key, required this.categories}) : super(key: key);
 
+  final List<CategoriesEntity> categories;
+
+  @override
+  State<Bottom> createState() => _BottomState();
+}
+
+class _BottomState extends State<Bottom> {
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -280,17 +289,21 @@ class Bottom extends StatelessWidget {
       ),
       child: Center(
         child: PrimaryButton(
-          onPressed: () {
-            showDialog(
+          onPressed: () async {
+            final result = await showDialog<StatusFormVehiculo?>(
               barrierDismissible: false,
               context: context,
-              builder: (_) {
-                return BlocProvider.value(
-                  value: productsBloc,
-                  child: const AddProductDialog(),
-                );
-              },
+              builder: (_) => AddProductDialog(
+                categories: widget.categories,
+              ),
             );
+            if (result != null && mounted) {
+              if (result.isSuccess) {
+                SuccessSnackbar.show(context, result.message);
+              } else {
+                ErrorSnackbar.show(context, result.message);
+              }
+            }
           },
           child: const Row(
             mainAxisAlignment: MainAxisAlignment.center,

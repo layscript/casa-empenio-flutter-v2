@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:equatable/equatable.dart';
@@ -9,279 +8,124 @@ part 'products_event.dart';
 part 'products_state.dart';
 
 class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
+  final ProductRepository _productRepository;
+  final CategoriesRepository _categoriesRepository;
+
   ProductsBloc({
     required ProductRepository productRepository,
     required CategoriesRepository categoriesRepository,
   })  : _productRepository = productRepository,
         _categoriesRepository = categoriesRepository,
-        super(const ProductsState()) {
-    on<GetProducts>(_onGetProducts);
-    on<SearchProductsByName>(_onSearchProductsByName);
-    on<SaveVehiculo>(_onSaveVehiculo);
-    on<SaveProduct>(_onSaveProduct);
-    on<FilterProductByCategory>(_onFilterProductByCategory);
+        super(ProductsInitial()) {
+    on<LoadProducts>(_onLoadProducts);
+    on<RefreshProducts>(_onRefreshProducts);
   }
 
-  final ProductRepository _productRepository;
-  final CategoriesRepository _categoriesRepository;
-
-  ProductsState get _loadingState => state.copyWith(
-        productsStatus: ProductsStatus.loading,
-        categorySelected: null,
-      );
-
-  ProductsState _successState(List<ProductEntity> products) => state.copyWith(
-        productsStatus: ProductsStatus.loaded,
-        listProducts: products,
-      );
-
-  ProductsState _errorState(String message) => state.copyWith(
-        productsStatus: ProductsStatus.error,
-        error: message,
-      );
-
-  Future<void> _onGetProducts(
-    GetProducts event,
+  Future<void> _onLoadProducts(
+    LoadProducts event,
     Emitter<ProductsState> emit,
   ) async {
-    emit(_loadingState);
-    final result = await Future.wait([
-      _productRepository.getProducts(
-        type: 0,
-        offset: state.offset,
-      ),
-      _categoriesRepository.getCategories(),
-    ]);
-    final resultProducts = result[0] as Either<String, List<ProductEntity>>;
-    final resultCategories =
-        result[1] as Either<String, List<CategoriesEntity>>;
+    final currentState = state;
+    List<ProductEntity> oldProducts = [];
+    List<CategoriesEntity> categories = [];
+    String? selectedSearch;
+    CategoriesEntity? selectedCategory;
+    bool isFirstFetch = event.offset == 0;
 
-    resultCategories.fold(
-      (error) => emit(
-        state.copyWith(
-          listCategories: state.listCategories ?? [],
-        ),
-      ),
-      (listCategories) => emit(
-        state.copyWith(listCategories: state.listCategories ?? listCategories),
-      ),
-    );
-
-    resultProducts.fold(
-      (message) {
-        emit(_errorState(message));
-      },
-      (products) {
-        emit(_successState(products));
-      },
-    );
-  }
-
-  Future<void> _onSearchProductsByName(
-    SearchProductsByName event,
-    Emitter<ProductsState> emit,
-  ) async {
-    state.copyWith(
-      productsStatus: ProductsStatus.loading,
-      categorySelected: state.categorySelected,
-    );
-
-    final result = await _productRepository.getProducts(
-      type: 0,
-      criterio: event.value,
-      offset: state.offset,
-      //categoria: state.categorySelected?.descripcion ?? '',
-    );
-    result.fold(
-      (message) {
-        emit(_errorState(message));
-      },
-      (products) {
-        emit(_successState(products));
-      },
-    );
-  }
-
-  Future<void> _onSaveVehiculo(
-    SaveVehiculo event,
-    Emitter<ProductsState> emit,
-  ) async {
-    emit(_loadingState);
-    if (event.id == null) {
-      final result = await _productRepository.createVehiculo(
-        payload: {
-          'descripcion': event.descripcion,
-          'marca': event.marca,
-          'modelo': event.modelo,
-          'valorizacion': event.valorizacion,
-          'observaciones': event.observaciones,
-          'imagen': event.imagen,
-          'imagen2': event.imagenDos,
-          'cantidad': event.cantidad,
-          'color': event.color,
-          'serie': event.serie,
-          'placa': event.placa,
-          'anio': event.anio,
-          'motor': event.motor,
-          'carroceria': event.carroceria,
-          'categoria': event.categoria,
-          'sucursalId': event.sucursalId,
-        },
-      );
-
-      result.fold(
-        (error) => emit(
-          state.copyWith(
-            error: error,
-            productsStatus: ProductsStatus.failed,
-          ),
-        ),
-        (success) => emit(
-          state.copyWith(
-            productsStatus: ProductsStatus.success,
-          ),
-        ),
-      );
-    } else {
-      final result = await _productRepository.updateVehiculo(
-        payload: {
-          'id': event.id,
-          'descripcion': event.descripcion,
-          'marca': event.marca,
-          'modelo': event.modelo,
-          'valorizacion': event.valorizacion,
-          'observaciones': event.observaciones,
-          'imagen': event.imagen,
-          'imagen2': event.imagenDos,
-          'cantidad': event.cantidad,
-          'color': event.color,
-          'serie': event.serie,
-          'placa': event.placa,
-          'anio': event.anio,
-          'motor': event.motor,
-          'carroceria': event.carroceria,
-          'categoria': event.categoria,
-          'sucursalId': event.sucursalId,
-        },
-      );
-
-      result.fold(
-        (error) => emit(
-          state.copyWith(
-            error: error,
-            productsStatus: ProductsStatus.failed,
-          ),
-        ),
-        (success) => emit(
-          state.copyWith(
-            productsStatus: ProductsStatus.success,
-          ),
-        ),
-      );
+    if (currentState is ProductsLoaded) {
+      oldProducts = currentState.products;
+      categories = currentState.categories;
+      selectedSearch = currentState.selectedSearch;
+      selectedCategory = currentState.selectedCategory;
+      isFirstFetch = currentState.isFirstFetch && event.offset == 0;
     }
-  }
 
-  Future<void> _onSaveProduct(
-    SaveProduct event,
-    Emitter<ProductsState> emit,
-  ) async {
-    emit(_loadingState);
-    if (event.id == null) {
-      final result = await _productRepository.createProduct(
-        payload: {
-          'descripcion': event.descripcion,
-          'marca': event.marca,
-          'categoria': event.categoria,
-          'placa': event.placa,
-          'modelo': event.modelo,
-          'valorizacion': event.valorizacion,
-          'observaciones': event.observaciones,
-          'imagen': event.imagen,
-          'imagen2': event.imagenDos,
-          'cantidad': event.cantidad,
-          'sucursalId': event.sucursalId,
-        },
-      );
-
-      result.fold(
-        (error) => emit(
-          state.copyWith(
-            error: error,
-            productsStatus: ProductsStatus.failed,
-          ),
-        ),
-        (success) => emit(
-          state.copyWith(
-            productsStatus: ProductsStatus.success,
-          ),
-        ),
-      );
-    } else {
-      final result = await _productRepository.updateProduct(
-        payload: {
-          'id': event.id,
-          'descripcion': event.descripcion,
-          'marca': event.marca,
-          'categoria': event.categoria,
-          'placa': event.placa,
-          'modelo': event.modelo,
-          'valorizacion': event.valorizacion,
-          'observaciones': event.observaciones,
-          'imagen': event.imagen,
-          'imagen2': event.imagenDos,
-          'cantidad': event.cantidad,
-          'sucursalId': event.sucursalId,
-        },
-      );
-
-      result.fold(
-        (error) => emit(
-          state.copyWith(
-            error: error,
-            productsStatus: ProductsStatus.failed,
-          ),
-        ),
-        (success) => emit(
-          state.copyWith(
-            productsStatus: ProductsStatus.success,
-          ),
-        ),
-      );
-    }
-  }
-
-  void _onFilterProductByCategory(
-    FilterProductByCategory event,
-    Emitter<ProductsState> emit,
-  ) async {
     emit(
-      state.copyWith(
-        productsStatus: ProductsStatus.loading,
-        categorySelected: event.value,
+      ProductsLoading(
+        oldProducts,
+        categories,
+        isFirstFetch: isFirstFetch,
+        selectedSearch: selectedSearch,
+        selectedCategory: selectedCategory,
       ),
     );
 
-    final result = await _productRepository.getProducts(
-      type: 0,
-      offset: state.offset,
-      categoria: event.value?.descripcion ?? '',
-    );
+    try {
+      final productsResult = await _productRepository.getProducts(
+        type: 0,
+        offset: event.offset,
+        criterio: selectedSearch ?? '',
+        categoria: selectedCategory?.descripcion ??
+            '', // Mantener el filtro de categoría actual
+      );
 
-    result.fold(
-      (error) => emit(
-        state.copyWith(
-          error: error,
-          productsStatus: ProductsStatus.error,
-          categorySelected: event.value,
-        ),
-      ),
-      (success) => emit(
-        state.copyWith(
-          listProducts: success,
-          productsStatus: ProductsStatus.loaded,
-          categorySelected: event.value,
-        ),
-      ),
-    );
+      final categoriesResult = await _categoriesRepository.getCategories();
+
+      productsResult.fold(
+        (error) => emit(ProductsError(error.toString())),
+        (products) {
+          categoriesResult.fold(
+            (error) => emit(ProductsError(error.toString())),
+            (categories) {
+              final allProducts = oldProducts + products;
+              emit(ProductsLoaded(
+                products: allProducts,
+                categories: categories,
+                isFirstFetch: isFirstFetch,
+                hasReachedMax: products.isEmpty,
+                selectedSearch: selectedSearch,
+                selectedCategory: selectedCategory,
+              ));
+            },
+          );
+        },
+      );
+    } catch (e) {
+      emit(ProductsError(e.toString()));
+    }
+  }
+
+  Future<void> _onRefreshProducts(
+    RefreshProducts event,
+    Emitter<ProductsState> emit,
+  ) async {
+    emit(const ProductsLoading([], [], isFirstFetch: true));
+
+    try {
+      final productsResult = await _productRepository.getProducts(
+        type: 0,
+        offset: 0,
+        criterio: event.search ?? '',
+        categoria: event.category ?? '',
+      );
+
+      final categoriesResult = await _categoriesRepository.getCategories();
+
+      productsResult.fold(
+        (error) => emit(ProductsError(error.toString())),
+        (products) {
+          categoriesResult.fold(
+            (error) => emit(ProductsError(error.toString())),
+            (categories) {
+              emit(ProductsLoaded(
+                products: products,
+                categories: categories,
+                isFirstFetch: true,
+                hasReachedMax: products.isEmpty,
+                selectedSearch: event.search,
+                selectedCategory: event.category != null
+                    ? categories.firstWhere(
+                        (element) => element.descripcion == event.category,
+                        orElse: () => null!,
+                      )
+                    : null,
+              ));
+            },
+          );
+        },
+      );
+    } catch (e) {
+      emit(ProductsError(e.toString()));
+    }
   }
 }

@@ -1,54 +1,72 @@
 part of 'products_bloc.dart';
 
-enum ProductsStatus { initial, loading, error, loaded, failed, success }
+abstract class ProductsState extends Equatable {
+  const ProductsState();
 
-class ProductsState extends Equatable {
-  const ProductsState({
-    this.productsStatus = ProductsStatus.initial,
-    this.listProducts,
-    this.listCategories,
-    this.error,
-    this.offset = 0,
-    this.categorySelected,
+  @override
+  List<Object?> get props => [];
+}
+
+class ProductsInitial extends ProductsState {}
+
+class ProductsLoading extends ProductsState {
+  final List<ProductEntity> products;
+  final List<CategoriesEntity> categories;
+  final bool isFirstFetch;
+  final String? selectedSearch;
+  final CategoriesEntity? selectedCategory;
+
+  const ProductsLoading(
+    this.products,
+    this.categories, {
+    this.isFirstFetch = false,
+    this.selectedSearch,
+    this.selectedCategory,
   });
-
-  final ProductsStatus productsStatus;
-  final List<ProductEntity>? listProducts;
-  final List<CategoriesEntity>? listCategories;
-  final String? error;
-  final int offset;
-  final CategoriesEntity? categorySelected;
-
-  bool get isProductLoading => productsStatus == ProductsStatus.loading;
-  bool get isProductError => productsStatus == ProductsStatus.error;
-
-  bool get isProductSuccess => productsStatus == ProductsStatus.success;
-  bool get isProductFailure => productsStatus == ProductsStatus.failed;
-
-  ProductsState copyWith({
-    ProductsStatus? productsStatus,
-    List<ProductEntity>? listProducts,
-    List<CategoriesEntity>? listCategories,
-    String? error,
-    int? offset,
-    CategoriesEntity? categorySelected,
-  }) =>
-      ProductsState(
-        error: error ?? this.error,
-        listProducts: listProducts ?? this.listProducts,
-        listCategories: listCategories ?? this.listCategories,
-        productsStatus: productsStatus ?? this.productsStatus,
-        offset: offset ?? this.offset,
-        categorySelected: categorySelected,
-      );
 
   @override
   List<Object?> get props => [
-        productsStatus,
-        listCategories,
-        listProducts,
-        error,
-        offset,
-        categorySelected,
+        products,
+        categories,
+        isFirstFetch,
+        selectedSearch,
+        selectedCategory,
       ];
+}
+
+class ProductsLoaded extends ProductsState {
+  final List<ProductEntity> products;
+  final List<CategoriesEntity> categories;
+  final bool isFirstFetch;
+  final bool hasReachedMax;
+  final String? selectedSearch;
+  final CategoriesEntity? selectedCategory;
+
+  const ProductsLoaded({
+    required this.products,
+    required this.categories,
+    required this.isFirstFetch,
+    required this.hasReachedMax,
+    this.selectedSearch,
+    this.selectedCategory,
+  });
+
+  @override
+  List<Object> get props => [
+        products,
+        categories,
+        isFirstFetch,
+        hasReachedMax,
+        selectedSearch ?? '',
+        selectedCategory ?? ''
+      ];
+}
+
+class ProductsError extends ProductsState {
+  final String error;
+
+  const ProductsError(this.error);
+
+  @override
+  List<Object> get props => [error];
 }

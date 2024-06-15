@@ -1,22 +1,41 @@
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
-import 'package:casa_empenio_pe/presentation/features/home/features/products/bloc/products_bloc.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SearchProducts extends StatefulWidget {
   const SearchProducts({
-    super.key,
+    Key? key,
     required this.onPressed,
-  });
+    required this.suffixOnPressed,
+    this.initialValue = '',
+  }) : super(key: key);
+
   final void Function(String)? onPressed;
+  final void Function()? suffixOnPressed;
+  final String initialValue;
 
   @override
   State<SearchProducts> createState() => _SearchProductsState();
 }
 
 class _SearchProductsState extends State<SearchProducts> {
-  final nameCtrl = TextEditingController();
-  bool nameIsValid = false;
+  late TextEditingController nameCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    nameCtrl = TextEditingController(text: widget.initialValue);
+  }
+
+  @override
+  void dispose() {
+    nameCtrl.dispose();
+    super.dispose();
+  }
+
+  void clearSearch() {
+    nameCtrl.clear();
+    widget.suffixOnPressed!(); // Llama al método en el widget padre
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,10 +47,7 @@ class _SearchProductsState extends State<SearchProducts> {
             suffixIcon: nameCtrl.text.isNotEmpty
                 ? GestureDetector(
                     onTap: () {
-                      nameCtrl.clear();
-                      context.read<ProductsBloc>().add(
-                            const GetProducts(),
-                          );
+                      clearSearch(); // Llama a la función para limpiar
                     },
                     child: const Icon(
                       Icons.clear,
@@ -40,7 +56,7 @@ class _SearchProductsState extends State<SearchProducts> {
                 : null,
             controller: nameCtrl,
             labelText: 'Buscar producto por nombre',
-            isValid: (value) => setState(() => nameIsValid = value),
+            isValid: (value) => setState(() {}),
           ),
         ),
         const SizedBox(width: 10),

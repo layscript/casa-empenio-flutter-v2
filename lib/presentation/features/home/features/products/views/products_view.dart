@@ -15,7 +15,7 @@ class ProductsView extends StatelessWidget {
         productRepository: context.read(),
         categoriesRepository: context.read(),
       )..add(
-          const GetProducts(),
+          const LoadProducts(offset: 0),
         ),
       child: const ProductsViewBody(),
     );
@@ -31,38 +31,16 @@ class ProductsViewBody extends StatelessWidget {
       onTap: () => Keyboard.unfocus(context),
       child: Builder(builder: (context) {
         return BlocConsumer<ProductsBloc, ProductsState>(
-          listener: (context, state) {
-            if (state.isProductSuccess) {
-              Navigator.pop(context);
-              context.read<ProductsBloc>().add(const GetProducts());
-              SuccessSnackbar.show(
-                context,
-                'Producto/Vehiculo Agregado Correctamente',
-              );
-            }
-
-            if (state.isProductFailure) {
-              Navigator.pop(context);
-              ErrorSnackbar.show(
-                context,
-                state.error ?? 'Ocurrió un problema, intentelo de nuevo',
-              );
-            }
-          },
+          listener: (context, state) {},
           builder: (context, state) {
-            switch (state.productsStatus) {
-              case ProductsStatus.initial || ProductsStatus.loading:
-                return const ButtonStateLoading();
-
-              case ProductsStatus.error || ProductsStatus.failed:
-                return ButtonStateError(
-                  onPressed: () {
-                    context.read<ProductsBloc>().add(const GetProducts());
-                  },
-                );
-
-              case ProductsStatus.success || ProductsStatus.loaded:
-                return ProductsViewLoaded(state: state);
+            if (state is ProductsLoading && state.isFirstFetch) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (state is ProductsLoaded) {
+              return ProductsViewLoaded(state: state);
+            } else if (state is ProductsError) {
+              return Center(child: Text(state.error));
+            } else {
+              return const SizedBox();
             }
           },
         );
