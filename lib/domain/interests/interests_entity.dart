@@ -1,4 +1,6 @@
-class InterestsEntity {
+import 'package:equatable/equatable.dart';
+
+class InterestsEntity extends Equatable {
   const InterestsEntity({
     required this.id,
     required this.intereses,
@@ -22,4 +24,10 @@ class InterestsEntity {
       intereses: map['interes'] as String,
     );
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        intereses,
+      ];
 }

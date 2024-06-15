@@ -1,6 +1,7 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:equatable/equatable.dart';
 
-class PayEntity {
+class PayEntity extends Equatable {
   const PayEntity({
     required this.id,
     required this.monto,
@@ -48,4 +49,17 @@ class PayEntity {
       createdAt: map['createdAt'],
     );
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        monto,
+        fecha,
+        customer,
+        prestamo,
+        usuario,
+        updatedAt,
+        createdAt,
+        url,
+      ];
 }

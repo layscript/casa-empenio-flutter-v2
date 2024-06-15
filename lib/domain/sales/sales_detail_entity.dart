@@ -1,8 +1,9 @@
 // CLASE DETALLE VENTA
 
 import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:equatable/equatable.dart';
 
-class SalesDetailEntity {
+class SalesDetailEntity extends Equatable {
   const SalesDetailEntity({
     required this.id,
     required this.cantidad,
@@ -35,4 +36,13 @@ class SalesDetailEntity {
       bienGarantia: WarrantyEntity.getWarrantyFromMap(map['bienGarantia']),
     );
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        cantidad,
+        precio,
+        venta,
+        bienGarantia,
+      ];
 }

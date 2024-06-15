@@ -1,4 +1,6 @@
-class CategoriesEntity {
+import 'package:equatable/equatable.dart';
+
+class CategoriesEntity extends Equatable {
   const CategoriesEntity({
     required this.id,
     required this.descripcion,
@@ -28,4 +30,12 @@ class CategoriesEntity {
       updatedAt: map['updatedAt'],
     );
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        descripcion,
+        updatedAt,
+        createdAt,
+      ];
 }

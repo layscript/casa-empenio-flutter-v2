@@ -1,4 +1,6 @@
-class ExpensesEntity {
+import 'package:equatable/equatable.dart';
+
+class ExpensesEntity extends Equatable {
   const ExpensesEntity({
     required this.id,
     required this.observaciones,
@@ -61,9 +63,27 @@ class ExpensesEntity {
           : null,
     );
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        observaciones,
+        monto,
+        ventaId,
+        pagoId,
+        prestamoId,
+        compraId,
+        createdBy,
+        updatedAt,
+        createdAt,
+        suma,
+        eliminado,
+        tipo,
+        imagenes,
+      ];
 }
 
-class TypeEntity {
+class TypeEntity extends Equatable {
   const TypeEntity({
     required this.id,
     required this.codigo,
@@ -90,9 +110,19 @@ class TypeEntity {
       createdAt: map['createdAt'],
     );
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        codigo,
+        descripcion,
+        eliminado,
+        updatedAt,
+        createdAt,
+      ];
 }
 
-class Imagenes {
+class Imagenes extends Equatable {
   final int id;
   final String url;
   final String createdAt;
@@ -118,4 +148,11 @@ class Imagenes {
       url: map['url'],
     );
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        url,
+        createdAt,
+      ];
 }

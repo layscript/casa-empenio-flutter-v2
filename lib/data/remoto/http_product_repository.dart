@@ -89,13 +89,21 @@ class HttpProductRepository implements ProductRepository {
     int offset = 0,
     String? categoria = '',
   }) async {
-    final query = '?busqueda=$criterio&limit=10&offset=$offset';
+    //final query = '?busqueda=$criterio&limit=10&offset=$offset';
+    final query = '?limit=10&offset=$offset';
+
     try {
       Response<String> response;
       switch (type) {
         case 0:
+          final searchCriterio = criterio!.isEmpty ? '' : '&busqueda=$criterio';
+          final searchCategoria =
+              categoria!.isEmpty ? '' : '&categoria=$categoria';
+
+          final url = '/almacen/bien$query$searchCriterio$searchCategoria';
           response = await _dio.get<String>(
-            '/almacen/bien$query&categoria=$categoria',
+            //'/almacen/bien$query&busqueda=$criterio',
+            url,
           );
           break;
 

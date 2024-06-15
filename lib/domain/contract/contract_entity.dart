@@ -1,4 +1,6 @@
-class ContratoEntity {
+import 'package:equatable/equatable.dart';
+
+class ContratoEntity extends Equatable {
   const ContratoEntity({
     required this.numero,
     required this.nombre,
@@ -76,9 +78,24 @@ class ContratoEntity {
       interes: double.parse(json['interes']),
     );
   }
+
+  @override
+  List<Object?> get props => [
+        numero,
+        nombre,
+        dni,
+        domicilio,
+        fechaVencimiento,
+        monto,
+        montoPagar,
+        prendas,
+        nombreAval,
+        dniAval,
+        interes,
+      ];
 }
 
-class PrendaEntity {
+class PrendaEntity extends Equatable {
   const PrendaEntity({
     required this.nombre,
     required this.marca,
@@ -116,4 +133,14 @@ class PrendaEntity {
       estado: json['estado'],
     );
   }
+
+  @override
+  List<Object?> get props => [
+        nombre,
+        marca,
+        modelo,
+        serie,
+        color,
+        estado,
+      ];
 }

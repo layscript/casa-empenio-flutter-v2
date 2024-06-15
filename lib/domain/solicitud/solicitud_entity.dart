@@ -1,8 +1,7 @@
-import 'dart:developer';
-
 import 'package:casa_empenio_pe/domain/auth/auth.dart';
+import 'package:equatable/equatable.dart';
 
-class SolicitudEntity {
+class SolicitudEntity extends Equatable {
   const SolicitudEntity({
     required this.id,
     required this.prestamoId,
@@ -39,4 +38,14 @@ class SolicitudEntity {
       createdAt: map['created_at'],
     );
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        prestamoId,
+        estado,
+        usuario,
+        updatedAt,
+        createdAt,
+      ];
 }

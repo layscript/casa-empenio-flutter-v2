@@ -1,4 +1,6 @@
-class CustomerSunatEntity {
+import 'package:equatable/equatable.dart';
+
+class CustomerSunatEntity extends Equatable {
   final String? ruc;
   final String? dni;
   final String? nombre;
@@ -33,9 +35,19 @@ class CustomerSunatEntity {
           : null,
     );
   }
+
+  @override
+  List<Object?> get props => [
+        ruc,
+        dni,
+        nombre,
+        apellidoPaterno,
+        apellidoMaterno,
+        domicilio,
+      ];
 }
 
-class HomeSunatEntity {
+class HomeSunatEntity extends Equatable {
   final String? direccion;
   final String? distrito;
   final String? provincia;
@@ -59,4 +71,13 @@ class HomeSunatEntity {
       ubigeo: map['ubigeo'],
     );
   }
+
+  @override
+  List<Object?> get props => [
+        direccion,
+        distrito,
+        provincia,
+        departamento,
+        ubigeo,
+      ];
 }

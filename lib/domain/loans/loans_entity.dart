@@ -1,8 +1,7 @@
-import 'dart:developer';
-
 import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:equatable/equatable.dart';
 
-class LoansEntity {
+class LoansEntity extends Equatable {
   const LoansEntity({
     required this.codigo,
     required this.codigoFormateado,
@@ -161,10 +160,43 @@ caja: $caja,
           : null,
     );
   }
+
+  @override
+  List<Object?> get props => [
+        codigo,
+        codigoFormateado,
+        plazoDias,
+        interes,
+        fechaPago,
+        fechaCierre,
+        monto,
+        observaciones,
+        estado,
+        cerrado,
+        ganancia,
+        cliente,
+        aval,
+        pagos,
+        usuario,
+        admin,
+        fecha,
+        eliminado,
+        imagenLiquidado,
+        imagenAumentos,
+        imagenPagos,
+        updatedAt,
+        createdAt,
+        aumentos,
+        boleta,
+        notaCredito,
+        bienesGarantia,
+        isRenewed,
+        caja,
+      ];
 }
 
 // Boleta venta
-class TicketSalesEntity {
+class TicketSalesEntity extends Equatable {
   const TicketSalesEntity({
     required this.id,
     required this.serie,
@@ -199,10 +231,22 @@ class TicketSalesEntity {
           : null,
     );
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        serie,
+        correlativo,
+        fecha,
+        zip,
+        xml,
+        pdf,
+        venta,
+      ];
 }
 
 // Boleta
-class TicketEntity {
+class TicketEntity extends Equatable {
   const TicketEntity({
     required this.id,
     required this.serie,
@@ -237,10 +281,22 @@ class TicketEntity {
           : null,
     );
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        serie,
+        correlativo,
+        fecha,
+        zip,
+        xml,
+        pdf,
+        prestamo,
+      ];
 }
 
 // Nota Credito
-class CreditNoteEntity {
+class CreditNoteEntity extends Equatable {
   final int? id;
   final String? serie;
   final int? correlativo;
@@ -288,4 +344,17 @@ class CreditNoteEntity {
           : null,
     );
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        serie,
+        correlativo,
+        fecha,
+        zip,
+        xml,
+        pdf,
+        venta,
+        prestamo,
+      ];
 }

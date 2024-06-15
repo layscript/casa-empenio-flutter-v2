@@ -1,8 +1,7 @@
-import 'dart:developer';
-
 import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:equatable/equatable.dart';
 
-class CustomerEntity {
+class CustomerEntity extends Equatable {
   const CustomerEntity({
     required this.dni,
     required this.nombres,
@@ -98,4 +97,22 @@ class CustomerEntity {
       createdAt: map['createdAt'],
     );
   }
+
+  @override
+  List<Object?> get props => [
+        dni,
+        nombres,
+        apellidos,
+        domicilio,
+        email,
+        celular,
+        prestamos,
+        prestamosAval,
+        pagos,
+        ventas,
+        imagenUno,
+        imagenDos,
+        updatedAt,
+        createdAt,
+      ];
 }

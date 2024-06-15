@@ -121,14 +121,14 @@ class _AddAmountLoanDialogClientState extends State<AddAmountLoanDialogClient> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Text(
-                      'Agregar Monto',
+                      'Agregar Aumento',
                       style: TextStyle(
                         fontSize: 18,
                       ),
                     ),
                     const SizedBox(height: 10),
                     Text(
-                        'Monto Total Prestado: S/. ${oCcy.format(double.parse(loan?.monto ?? '0.00'))}'),
+                        'Aumento Total Prestado: S/. ${oCcy.format(double.parse(loan?.monto ?? '0.00'))}'),
                     const SizedBox(height: 20),
                     AppTextFormField(
                       keyboardType: TextInputType.number,

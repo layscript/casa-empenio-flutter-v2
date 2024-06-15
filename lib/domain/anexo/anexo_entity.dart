@@ -1,6 +1,7 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:equatable/equatable.dart';
 
-class AnexoEntity {
+class AnexoEntity extends Equatable {
   final int id;
   final String descripcion;
   final String url;
@@ -43,4 +44,16 @@ class AnexoEntity {
           : null,
     );
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        descripcion,
+        url,
+        tipo,
+        updatedAt,
+        createdAt,
+        deletedAt,
+        prestamo,
+      ];
 }

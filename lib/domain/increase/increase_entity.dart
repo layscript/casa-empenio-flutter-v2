@@ -1,6 +1,6 @@
-import 'package:casa_empenio_pe/domain/loans/loans_entity.dart';
+import 'package:equatable/equatable.dart';
 
-class IncreaseEntity {
+class IncreaseEntity extends Equatable {
   const IncreaseEntity({
     required this.id,
     required this.fecha,
@@ -34,4 +34,13 @@ class IncreaseEntity {
       url: map['url'],
     );
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        fecha,
+        monto,
+        observaciones,
+        url,
+      ];
 }

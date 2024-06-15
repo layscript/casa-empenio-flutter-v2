@@ -1,8 +1,7 @@
-import 'dart:developer';
-
 import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:equatable/equatable.dart';
 
-class WarrantyEntity {
+class WarrantyEntity extends Equatable {
   const WarrantyEntity({
     required this.id,
     required this.description,
@@ -92,4 +91,31 @@ class WarrantyEntity {
       valorizacion: map['valorizacion'],
     );
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        description,
+        categoria,
+        estado,
+        color,
+        marca,
+        modelo,
+        serie,
+        placa,
+        carroceria,
+        motor,
+        anio,
+        valorizacion,
+        observaciones,
+        cantidad,
+        prestamo,
+        detallesVenta,
+        imagen,
+        imagenDos,
+        imagenTres,
+        activo,
+        updatedAt,
+        createdAt,
+      ];
 }

@@ -4,7 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SearchProducts extends StatefulWidget {
-  const SearchProducts({super.key});
+  const SearchProducts({
+    super.key,
+    required this.onPressed,
+  });
+  final void Function(String)? onPressed;
 
   @override
   State<SearchProducts> createState() => _SearchProductsState();
@@ -42,11 +46,7 @@ class _SearchProductsState extends State<SearchProducts> {
         const SizedBox(width: 10),
         Expanded(
           child: ElevatedButton(
-            onPressed: () {
-              context.read<ProductsBloc>().add(
-                    SearchProductsByName(value: nameCtrl.text),
-                  );
-            },
+            onPressed: () => widget.onPressed!(nameCtrl.text),
             child: const Text('Buscar'),
           ),
         ),

@@ -1,6 +1,7 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:equatable/equatable.dart';
 
-class ReportsPaymentEntity {
+class ReportsPaymentEntity extends Equatable {
   const ReportsPaymentEntity({
     required this.id,
     required this.monto,
@@ -78,9 +79,23 @@ class ReportsPaymentEntity {
   String toString() {
     return 'ReportsPaymentEntity( prestamo: ${prestamo?.codigoFormateado}  estado: ${prestamo?.estado})';
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        monto,
+        fecha,
+        cliente,
+        prestamo,
+        usuario,
+        updatedAt,
+        createdAt,
+        efectivo,
+        caja,
+      ];
 }
 
-class ReportsContractsEntity {
+class ReportsContractsEntity extends Equatable {
   const ReportsContractsEntity({
     required this.id,
     required this.fecha,
@@ -122,4 +137,13 @@ class ReportsContractsEntity {
   String toString() {
     return 'ReportsContractsEntity( prestamo: ${prestamo?.codigoFormateado}  estado: ${prestamo?.estado})';
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        fecha,
+        monto,
+        observaciones,
+        prestamo,
+      ];
 }

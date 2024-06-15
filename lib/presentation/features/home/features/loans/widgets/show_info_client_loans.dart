@@ -331,19 +331,33 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                               ),
                               const SizedBox(height: 10),
                               if (aumento.url != null)
-                                Row(
-                                  children: [
-                                    const Expanded(
-                                      child: Text(
-                                        'Imagen',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold),
+                                Container(
+                                  alignment: Alignment.centerRight,
+                                  height: 32,
+                                  child: TextButton(
+                                    style: const ButtonStyle(
+                                      padding: MaterialStatePropertyAll(
+                                        EdgeInsets.zero,
                                       ),
                                     ),
-                                    CustomImageApp(
-                                      urlImg: aumento.url!,
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => FullScreenImage(
+                                            imageUrl: aumento.url!,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    child: const Text(
+                                      'Ver Imagen',
+                                      style: TextStyle(
+                                        color: AppColors.darkBlue,
+                                        decoration: TextDecoration.underline,
+                                      ),
                                     ),
-                                  ],
+                                  ),
                                 ),
                             ],
                           );

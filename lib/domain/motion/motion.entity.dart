@@ -1,6 +1,7 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:equatable/equatable.dart';
 
-class MotionEntity {
+class MotionEntity extends Equatable {
   const MotionEntity({
     required this.id,
     required this.observaciones,
@@ -58,4 +59,21 @@ class MotionEntity {
           : null,
     );
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        observaciones,
+        monto,
+        ventaId,
+        pagoId,
+        prestamoId,
+        compraId,
+        createdBy,
+        updatedAt,
+        createdAt,
+        suma,
+        eliminado,
+        tipo,
+      ];
 }

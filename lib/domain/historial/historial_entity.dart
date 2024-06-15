@@ -1,6 +1,8 @@
 import 'dart:developer';
 
-class HistorialEntity {
+import 'package:equatable/equatable.dart';
+
+class HistorialEntity extends Equatable {
   const HistorialEntity({
     required this.id,
     required this.accion,
@@ -34,4 +36,13 @@ class HistorialEntity {
       updatedAt: map['updated_at'],
     );
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        accion,
+        detalle,
+        createdAt,
+        updatedAt,
+      ];
 }

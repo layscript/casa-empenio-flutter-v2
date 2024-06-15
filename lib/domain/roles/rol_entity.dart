@@ -1,6 +1,7 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:equatable/equatable.dart';
 
-class RoleEntity {
+class RoleEntity extends Equatable {
   const RoleEntity({
     required this.id,
     required this.nombre,
@@ -26,4 +27,11 @@ class RoleEntity {
               )
             : null,
       );
+
+  @override
+  List<Object?> get props => [
+        id,
+        nombre,
+        modulos,
+      ];
 }

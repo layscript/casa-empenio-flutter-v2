@@ -1,8 +1,9 @@
 import 'dart:developer';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:equatable/equatable.dart';
 
-class SalesEntity {
+class SalesEntity extends Equatable {
   const SalesEntity({
     required this.id,
     required this.serie,
@@ -63,4 +64,19 @@ class SalesEntity {
           : null,
     );
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        serie,
+        correlativo,
+        cod,
+        fecha,
+        total,
+        cliente,
+        usuario,
+        boletaVenta,
+        detallesVenta,
+        notaCredito,
+      ];
 }
