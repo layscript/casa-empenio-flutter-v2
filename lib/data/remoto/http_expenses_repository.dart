@@ -87,7 +87,7 @@ class HttpExpensesRepository implements ExpensesRepository {
     final fechaFinP = fechafinParsed.toUtc().toIso8601String();
 
     final path =
-        'http://161.132.38.162:31037/finanza/movimiento/gasto?limit=1000&offset=0&fechaInicio=$fechaIniP&fechaFin=$fechaFinP&sucursalId=$sucursalId';
+        '/finanza/movimiento/gasto?limit=1000&offset=0&fechaInicio=$fechaIniP&fechaFin=$fechaFinP&sucursalId=$sucursalId';
     try {
       final response = await _dio.get<String>(path);
       if (response.statusCode != 200) {
