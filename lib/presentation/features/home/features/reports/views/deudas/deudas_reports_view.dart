@@ -85,9 +85,9 @@ class _DeudasReportsViewState extends State<DeudasReportsView> {
                     ],
                   ),
                   const SizedBox(height: 7),
-                  const Text(
-                    'Obtener los prestamos vencidos desde hoy hasta el día que digites',
-                    style: TextStyle(
+                  Text(
+                    'Prestamos que vencieron hace ${cantDiasCtrl.text.isEmpty ? '0' : cantDiasCtrl.text} días',
+                    style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.black,
                     ),
