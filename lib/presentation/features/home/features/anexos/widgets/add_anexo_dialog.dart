@@ -43,6 +43,7 @@ class _AddAnexoDialogState extends State<AddAnexoDialog> {
     super.initState();
     if (widget.idPrestamo != null) {
       prestamoCtrl.text = widget.idPrestamo.toString();
+      prestamoIsValid = true;
     }
   }
 
@@ -67,14 +68,17 @@ class _AddAnexoDialogState extends State<AddAnexoDialog> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          AppTextFormField(
-            keyboardType: TextInputType.number,
-            controller: prestamoCtrl,
-            labelText: 'Préstamo',
-            validator: (value) {
-              return value!.isEmpty ? invalidEmptyValue : null;
-            },
-            isValid: (value) => setState(() => prestamoIsValid = value),
+          AbsorbPointer(
+            absorbing: widget.idPrestamo != null,
+            child: AppTextFormField(
+              keyboardType: TextInputType.number,
+              controller: prestamoCtrl,
+              labelText: 'Nro de Préstamo',
+              validator: (value) {
+                return value!.isEmpty ? invalidEmptyValue : null;
+              },
+              isValid: (value) => setState(() => prestamoIsValid = value),
+            ),
           ),
           const SizedBox(height: 20),
           AppTextFormField(
@@ -113,7 +117,9 @@ class _AddAnexoDialogState extends State<AddAnexoDialog> {
       ),
       actions: [
         TextButton.icon(
-          onPressed: !prestamoIsValid  || !descriptionIsValid || selectedPhotosAnexos!.isEmpty
+          onPressed: !prestamoIsValid ||
+                  !descriptionIsValid ||
+                  selectedPhotosAnexos!.isEmpty
               ? null
               : () {
                   Navigator.pop(context, true);
