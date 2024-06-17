@@ -12,6 +12,7 @@ enum LoansStatus {
   settlementSuccess,
   settlementError,
 
+  addAmountLoading,
   addAmountSuccess,
   addAmountError,
 
@@ -107,6 +108,9 @@ class LoansState extends Equatable {
   bool get isLoansSettlementSuccess =>
       loansStatus == LoansStatus.settlementSuccess;
   bool get isLoansSettlementError => loansStatus == LoansStatus.settlementError;
+
+  bool get isLoansAddAmountLoading =>
+      loansStatus == LoansStatus.addAmountLoading;
 
   bool get isLoansAddAmountSuccess =>
       loansStatus == LoansStatus.addAmountSuccess;

@@ -305,7 +305,12 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     AddAmountLoan event,
     Emitter<LoansState> emit,
   ) async {
-    emit(_loadingState);
+    emit(
+      state.copyWith(
+        loansStatus: LoansStatus.addAmountLoading,
+      ),
+    );
+
     final imgUrl = await savePhotoIncreases(event.photos);
     final result = await _loansRepository.addAmountLoan(
       codigo: event.idPrestamo,
