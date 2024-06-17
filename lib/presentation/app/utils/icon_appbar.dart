@@ -4,31 +4,31 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 IconData getIcon(int id) {
   switch (id) {
     case 1:
-      return FontAwesomeIcons.accusoft;
+      return FontAwesomeIcons.sackDollar;
 
     case 2:
-      return FontAwesomeIcons.doorClosed;
+      return FontAwesomeIcons.fileSignature;
 
     case 3:
-      return FontAwesomeIcons.paperPlane;
+      return FontAwesomeIcons.chartLine;
 
     case 4:
       return FontAwesomeIcons.fileArrowDown;
 
     case 5:
-      return FontAwesomeIcons.message;
+      return FontAwesomeIcons.briefcase;
 
     case 6:
       return FontAwesomeIcons.cartArrowDown;
 
     case 7:
-      return FontAwesomeIcons.hand;
+      return FontAwesomeIcons.houseLaptop;
 
     case 8:
       return FontAwesomeIcons.piggyBank;
 
     case 9:
-      return FontAwesomeIcons.screwdriverWrench;
+      return FontAwesomeIcons.tag;
 
     case 10:
       return FontAwesomeIcons.ccDinersClub;
@@ -40,27 +40,27 @@ IconData getIcon(int id) {
       return FontAwesomeIcons.boxOpen;
 
     case 13:
-      return FontAwesomeIcons.expeditedssl;
+      return FontAwesomeIcons.boxesPacking;
 
     case 14:
       return FontAwesomeIcons.paypal;
 
     case 15:
-      return FontAwesomeIcons.shop;
+      return FontAwesomeIcons.file;
 
     case 16:
-      return FontAwesomeIcons.userGroup;
+      return FontAwesomeIcons.expeditedssl;
 
     case 17:
       return FontAwesomeIcons.users;
 
     case 18:
-      return FontAwesomeIcons.store;
+      return FontAwesomeIcons.sitemap;
 
     case 19:
-      return FontAwesomeIcons.home;
+      return FontAwesomeIcons.house;
 
     default:
-      return FontAwesomeIcons.home;
+      return FontAwesomeIcons.house;
   }
 }

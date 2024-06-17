@@ -120,7 +120,7 @@ class _AddFormProformaState extends State<AddFormProforma> {
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
-                                  '${cliente.nombre} ${cliente.apellidoPaterno} ${cliente.apellidoMaterno}',
+                                  cliente.customerFullName,
                                 ),
                               ),
                             ],
@@ -200,20 +200,22 @@ class _AddFormProformaState extends State<AddFormProforma> {
 
                                 return ListTile(
                                   contentPadding: EdgeInsets.zero,
-                                  leading: selectedProduct
-                                              .selectedProducts?.imagen ==
-                                          null
-                                      ? const SizedBox(
-                                          width: 40,
-                                          height: 40,
-                                          child: Placeholder(),
+                                  leading: e?.isProductPersonalizado == true
+                                      ? const FaIcon(
+                                          FontAwesomeIcons.boxOpen,
+                                          size: 35,
                                         )
-                                      : Image.network(
-                                          '$endPointPrincipal/${selectedProduct.selectedProducts?.imagen}',
-                                          width: 40,
-                                          height: 40,
-                                          fit: BoxFit.cover,
-                                        ),
+                                      : selectedProduct
+                                                  .selectedProducts?.imagen ==
+                                              null
+                                          ? const SizedBox(
+                                              width: 40,
+                                              height: 40,
+                                              child: Placeholder(),
+                                            )
+                                          : CustomImageApp(
+                                              urlImg: e?.imagen ?? '',
+                                            ),
                                   title: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -256,7 +258,7 @@ class _AddFormProformaState extends State<AddFormProforma> {
                                       if (selectedProduct.observaciones !=
                                           null) ...[
                                         Text(
-                                          'G. Obs: ${selectedProduct.observaciones}',
+                                          'Obs: ${selectedProduct.observaciones}',
                                           style: const TextStyle(
                                             fontSize: 11,
                                             color: AppColors.red,

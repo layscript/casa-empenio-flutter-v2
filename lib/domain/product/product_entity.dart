@@ -90,6 +90,8 @@ class ProductEntity extends Equatable {
     );
   }
 
+  bool get isProductPersonalizado => id.toString().startsWith('2000');
+
   @override
   List<Object?> get props => [
         id,

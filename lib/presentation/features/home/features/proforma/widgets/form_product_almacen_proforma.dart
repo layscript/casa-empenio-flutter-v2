@@ -1,4 +1,5 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/proforma/bloc/proforma_bloc.dart';
@@ -279,6 +280,30 @@ class _CreateProductAlmacenProformaState
                       )
                     ],
                   ),
+                  const SizedBox(height: 3),
+                  if (_selection?.valorizacion != null)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Precio Sugerido:',
+                            style: TextStyle(fontSize: 13),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          flex: 1,
+                          child: Text(
+                            'S/. ${oCcy.format(double.parse(_selection?.valorizacion.toString() ?? '0.0'))}',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.normal,
+                            ),
+                          ),
+                        )
+                      ],
+                    ),
                   const SizedBox(height: 3),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,

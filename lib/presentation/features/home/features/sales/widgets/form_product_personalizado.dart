@@ -85,7 +85,6 @@ class _CreateProductPersonalizadoState
                   textDirection: TextDirection.ltr,
                   keyboardType: TextInputType.number,
                   labelText: 'Cantidad',
-                  preffix: const Text('S/. '),
                   validator: (value) {
                     if (value!.isEmpty) return 'Campo requerido';
                     return null;

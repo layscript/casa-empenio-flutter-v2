@@ -205,14 +205,13 @@ class _ProformaViewState extends State<ProformaView> {
                                       children: [
                                         Text('${venta.cod}'),
                                         const SizedBox(height: 2),
-                                        /*  if (false)
-                                          Text(
-                                            '${venta.cliente?.nombres?.toUpperCase()} ${venta.cliente?.apellidos?.toUpperCase()}',
-                                            style: const TextStyle(
-                                              color: AppColors.secondaryText,
-                                              fontWeight: FontWeight.normal,
-                                            ),
-                                          ) */
+                                        Text(
+                                          '${venta.cliente?.customerFullName}',
+                                          style: const TextStyle(
+                                            color: AppColors.secondaryText,
+                                            fontWeight: FontWeight.normal,
+                                          ),
+                                        )
                                       ],
                                     ),
                                     subtitle: Row(
