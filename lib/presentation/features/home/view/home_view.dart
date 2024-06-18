@@ -41,7 +41,7 @@ class _HomeViewState extends State<HomeView> {
               ),
             ),
           ),
-          Text('Modulos: ${auth?.role?.modulos?.length}'),
+          //Text('Modulos: ${auth?.role?.modulos?.length}'),
           const SizedBox(height: 10),
           if (auth?.role?.modulos != null)
             GridView.count(
@@ -52,17 +52,20 @@ class _HomeViewState extends State<HomeView> {
               mainAxisSpacing: 20,
               crossAxisCount: 2,
               children: auth?.role?.modulos?.map((e) {
-                    if (e.id == 19) return const SizedBox();
-                    return _ItemGrid(
-                      onTap: () {
-                        preferences.setRefresh(true);
-                        context.read<HomeBloc>().add(
-                              GoToPage(e),
-                            );
-                      },
-                      text: e.nombre.toUpperCase(),
-                      icon: getIcon(e.id),
-                    );
+                    if (e.id == 19 || e.id == 18 || e.id == 17 || e.id == 16) {
+                      return const SizedBox();
+                    } else {
+                      return _ItemGrid(
+                        onTap: () {
+                          preferences.setRefresh(true);
+                          context.read<HomeBloc>().add(
+                                GoToPage(e),
+                              );
+                        },
+                        text: e.nombre.toUpperCase(),
+                        icon: getIcon(e.id),
+                      );
+                    }
                   }).toList() ??
                   [],
             ),

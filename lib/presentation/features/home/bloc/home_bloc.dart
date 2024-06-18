@@ -48,8 +48,15 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         final moduloInicio =
             user.role?.modulos?.where((modulo) => modulo.id == 19).toList();
 
-        final otrosModulos =
-            user.role?.modulos?.where((modulo) => modulo.id != 19).toList();
+        final otrosModulos = user.role?.modulos
+            ?.where(
+              (modulo) =>
+                  modulo.id != 19 &&
+                  modulo.id != 16 &&
+                  modulo.id != 17 &&
+                  modulo.id != 18,
+            )
+            .toList();
 
         final modulos = [...moduloInicio!, ...otrosModulos!];
         emit(
