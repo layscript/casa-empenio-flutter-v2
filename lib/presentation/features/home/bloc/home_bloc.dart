@@ -44,9 +44,17 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       ),
       (user) {
         _preferences.setToken(user);
+
+        final moduloInicio =
+            user.role?.modulos?.where((modulo) => modulo.id == 19).toList();
+
+        final otrosModulos =
+            user.role?.modulos?.where((modulo) => modulo.id != 19).toList();
+
+        final modulos = [...moduloInicio!, ...otrosModulos!];
         emit(
           state.copyWith(
-            modulos: user.role?.modulos ?? [],
+            modulos: modulos,
           ),
         );
       },

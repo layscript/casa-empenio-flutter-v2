@@ -57,20 +57,7 @@ class _AppDrawerState extends State<AppDrawer> {
               physics: const NeverScrollableScrollPhysics(),
               itemCount: homeState.modulos?.length,
               itemBuilder: (context, index) {
-                int newIndex;
-                if (homeState.modulos?[index].id == 19) {
-                  newIndex = 0;
-                } else if (index == 0 && homeState.modulos?[index].id != 19) {
-                  newIndex = homeState.modulos
-                          ?.indexWhere((modulo) => modulo.id == 19) ??
-                      0;
-                  newIndex = newIndex == -1 ? index : newIndex;
-                } else {
-                  newIndex = index;
-                }
-
-                final modulo = homeState.modulos?[newIndex];
-
+                final modulo = homeState.modulos?[index];
                 return ListTile(
                   tileColor:
                       homeState.selected == modulo ? Colors.black12 : null,
