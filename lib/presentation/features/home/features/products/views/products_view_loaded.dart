@@ -240,7 +240,7 @@ class _ProductsViewLoadedState extends State<ProductsViewLoaded> {
               );
             },
           ),
-        IconButton(
+       /*  IconButton(
           icon: const FaIcon(FontAwesomeIcons.penToSquare,
               size: 20, color: Colors.blue),
           onPressed: () async {
@@ -262,7 +262,7 @@ class _ProductsViewLoadedState extends State<ProductsViewLoaded> {
               }
             }
           },
-        ),
+        ), */
       ],
     );
   }
