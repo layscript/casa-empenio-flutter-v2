@@ -242,7 +242,7 @@ class _ProformaViewState extends State<ProformaView> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text(
-                            'Ventas Totales:',
+                            'Proformas Totales:',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                             ),
