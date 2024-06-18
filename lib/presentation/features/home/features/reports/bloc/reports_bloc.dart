@@ -31,6 +31,8 @@ final _initialState = ReportsState(
   listPayments: const [],
   totalIncreases: 0.0,
   totalProfits: 0.0,
+  realBenefit: 0.0,
+  theoreticalProfit: 0.0,
   listIncrease: const [],
   totalLoans: 0.0,
   canceladoContracts: true,
@@ -398,22 +400,60 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
         double totalLoans = 0.0;
         double totalProfits = 0.0;
 
+        double realBenefit = 0.0;
+
+        double totalAmountProfits = 0.0;
+        double totalAmountPayments = 0.0;
+        double theoreticalProfit = 0.0;
+
         if (prestamos.isNotEmpty) {
           for (var element in prestamos) {
             if (element.estado != 'CANCELADO') {
-              // Ganancia totales
-              totalProfits += double.parse(element.ganancia ?? '0.00');
               // Prestamos totales
               totalLoans += double.parse(element.monto ?? '0.00');
+              // Ganancia totales
+              totalProfits += double.parse(element.ganancia ?? '0.00');
+            }
+
+            // Ganancias Real => sum (pagos totales) - sum(total capital)
+            if (element.estado == 'LIQUIDADO') {
+              var totalPayments = 0.0;
+              element.pagos?.forEach((element) {
+                totalPayments += double.parse(element.monto ?? '0.00');
+              });
+
+              realBenefit +=
+                  totalPayments - double.parse(element.monto ?? '0.00');
+            }
+
+            // Ganancias Teóricas
+            if (element.estado == 'LIQUIDADO') {
+              var totalPayments = 0.0;
+              element.pagos?.forEach((element) {
+                totalPayments += double.parse(element.monto ?? '0.00');
+              });
+
+              //  total pagos > ganancia = ganancia
+              if (totalPayments > double.parse(element.ganancia ?? '0.00')) {
+                totalAmountProfits += double.parse(element.ganancia ?? '0.00');
+              } else {
+                // total pagos < ganancia = total pagos
+                totalAmountPayments += totalPayments;
+              }
             }
           }
         }
+
+        // suma total de ganancia y total pagos
+        theoreticalProfit = totalAmountProfits + totalAmountPayments;
 
         emit(
           state.copyWith(
             listLoans: prestamos,
             totalLoans: totalLoans,
             totalProfits: totalProfits,
+            realBenefit: realBenefit,
+            theoreticalProfit: theoreticalProfit,
             statusLoans: ReportsStatus.success,
             selectedCategory: null,
           ),

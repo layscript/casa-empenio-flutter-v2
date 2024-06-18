@@ -20,7 +20,7 @@ class PaymentsReportsBottomView extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
-          Row(
+          /* Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
@@ -32,8 +32,8 @@ class PaymentsReportsBottomView extends StatelessWidget {
               ),
               Text('S/. ${oCcy.format(state.partialUtilityPayment)}')
             ],
-          ),
-          Row(
+          ), */
+          /* Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
@@ -47,7 +47,7 @@ class PaymentsReportsBottomView extends StatelessWidget {
                 'S/. ${oCcy.format(state.fullPaymentUtility)}',
               )
             ],
-          ),
+          ), */
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

@@ -23,6 +23,8 @@ class ReportsState extends Equatable {
     required this.listLoans,
     required this.totalIncreases,
     required this.totalProfits,
+    required this.realBenefit,
+    required this.theoreticalProfit,
     required this.totalLoans,
     required this.listIncrease,
     required this.canceladoContracts,
@@ -68,6 +70,9 @@ class ReportsState extends Equatable {
   final double totalLoans;
 
   final double totalProfits;
+  final double realBenefit;
+  final double theoreticalProfit;
+
   final List<ReportsContractsEntity> listIncrease;
   final LoansEntity? loanDetails;
   final ReportsPaymentEntity? paymentDetails;
@@ -148,6 +153,8 @@ class ReportsState extends Equatable {
     double? totalIncreases,
     double? totalProfits,
     double? totalLoans,
+    double? realBenefit,
+    double? theoreticalProfit,
     bool? vigentContracts,
     bool? vencidoContracts,
     bool? pagadoContracts,
@@ -182,6 +189,8 @@ class ReportsState extends Equatable {
         listLoans: listLoans ?? this.listLoans,
         totalIncreases: totalIncreases ?? this.totalIncreases,
         totalProfits: totalProfits ?? this.totalProfits,
+        realBenefit: realBenefit ?? this.realBenefit,
+        theoreticalProfit: theoreticalProfit ?? this.theoreticalProfit,
         totalLoans: totalLoans ?? this.totalLoans,
         listIncrease: listIncrease ?? this.listIncrease,
         vigentContracts: vigentContracts ?? this.vigentContracts,
@@ -221,6 +230,8 @@ class ReportsState extends Equatable {
         totalClosedLoans,
         listLoans,
         totalProfits,
+        realBenefit,
+        theoreticalProfit,
         totalIncreases,
         totalLoans,
         listIncrease,

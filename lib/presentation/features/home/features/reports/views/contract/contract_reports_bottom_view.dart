@@ -42,12 +42,24 @@ class BottomContract extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Ganancias Totales:',
+                'Ganancias Real:',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              Text('S/. ${oCcy.format(state.totalProfits)}'),
+              Text('S/. ${oCcy.format(state.realBenefit)}'),
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Ganancias Teórica:',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text('S/. ${oCcy.format(state.theoreticalProfit)}'),
             ],
           ),
           Row(
