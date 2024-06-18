@@ -21,7 +21,7 @@ class _DeudasReportsViewState extends State<DeudasReportsView> {
   @override
   void initState() {
     super.initState();
-    fetchApi();
+    //fetchApi();
   }
 
   void fetchApi() async {
@@ -80,16 +80,6 @@ class _DeudasReportsViewState extends State<DeudasReportsView> {
 
                             _calculateDateRange();
                           },
-                          suffixIcon: IconButton(
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            onPressed: () {
-                              cantDiasCtrl.clear();
-                            },
-                            icon: const Icon(
-                              Icons.clear,
-                            ),
-                          ),
                         ),
                       ),
                       const SizedBox(width: 15),
