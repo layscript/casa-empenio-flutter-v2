@@ -32,6 +32,23 @@ class _DeudasReportsViewState extends State<DeudasReportsView> {
         );
   }
 
+  String cantDias = '';
+  String _dateRange = '';
+
+  void _calculateDateRange() {
+    int days = int.tryParse(cantDias) ?? 0;
+    DateTime endDate = DateTime.now();
+    DateTime startDate = endDate.subtract(Duration(days: days));
+    setState(() {
+      _dateRange =
+          'entre el ${_formatDate(startDate)} hasta ${_formatDate(endDate)}';
+    });
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final reportsBloc = context.read<ReportsBloc>();
@@ -45,6 +62,7 @@ class _DeudasReportsViewState extends State<DeudasReportsView> {
           slivers: [
             SliverToBoxAdapter(
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 10),
                   Row(
@@ -52,21 +70,26 @@ class _DeudasReportsViewState extends State<DeudasReportsView> {
                       Expanded(
                         flex: 2,
                         child: AppTextFormField(
-                          labelText: 'Ingresar cantidad de días',
+                          labelText: 'Cantidad de días',
                           keyboardType: TextInputType.number,
-                          controller: cantDiasCtrl,
-                          suffixIcon: cantDiasCtrl.text.isEmpty
-                              ? null
-                              : IconButton(
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                  onPressed: () {
-                                    cantDiasCtrl.clear();
-                                  },
-                                  icon: const Icon(
-                                    Icons.clear,
-                                  ),
-                                ),
+                          initialValue: cantDias,
+                          onChanged: (e) {
+                            setState(() {
+                              cantDias = e;
+                            });
+
+                            _calculateDateRange();
+                          },
+                          suffixIcon: IconButton(
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () {
+                              cantDiasCtrl.clear();
+                            },
+                            icon: const Icon(
+                              Icons.clear,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 15),
@@ -75,7 +98,7 @@ class _DeudasReportsViewState extends State<DeudasReportsView> {
                           onPressed: () {
                             reportsBloc.add(
                               SearchDeudasByDays(
-                                dias: cantDiasCtrl.text,
+                                dias: cantDias,
                               ),
                             );
                           },
@@ -86,10 +109,11 @@ class _DeudasReportsViewState extends State<DeudasReportsView> {
                   ),
                   const SizedBox(height: 7),
                   Text(
-                    'Prestamos que vencieron hace ${cantDiasCtrl.text.isEmpty ? '0' : cantDiasCtrl.text} días',
+                    'Filtro de deudas $_dateRange',
                     style: const TextStyle(
-                      fontSize: 12,
+                      fontSize: 11,
                       color: AppColors.black,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
