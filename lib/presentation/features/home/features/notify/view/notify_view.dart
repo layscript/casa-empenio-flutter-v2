@@ -56,12 +56,13 @@ class NotifyView extends StatelessWidget {
                         if (state.listSolicitud!.isNotEmpty)
                           ListView.builder(
                             shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
                             itemCount: state.listSolicitud!.length,
                             itemBuilder: (context, index) {
                               final solicitud = state.listSolicitud![index];
                               return ListTile(
                                 title: Text(
-                                    '${solicitud.usuario?.nombre ?? ''} ${solicitud.usuario?.apellido ?? ''}'),
+                                    '${solicitud.usuario?.nombre ?? '----------'} ${solicitud.usuario?.apellido ?? '--------'}'),
                                 subtitle: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
