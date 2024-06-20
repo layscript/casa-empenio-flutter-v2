@@ -7,9 +7,16 @@ sealed class PlantillaEvent extends Equatable {
   List<Object> get props => [];
 }
 
-class GetPlantilla extends PlantillaEvent {}
+class GetPlantillas extends PlantillaEvent {}
+
+class GetLastPlantilla extends PlantillaEvent {}
 
 class GeneratePlantilla extends PlantillaEvent {
   final String url;
   const GeneratePlantilla(this.url);
+}
+
+class SelectedPlantillaByText extends PlantillaEvent {
+  final String text;
+  const SelectedPlantillaByText(this.text);
 }

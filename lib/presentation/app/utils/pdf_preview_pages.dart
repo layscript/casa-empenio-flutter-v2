@@ -10,9 +10,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class PdfPreviewPage extends StatelessWidget {
   final ContratoEntity contrato;
+  final String? templateState;
   const PdfPreviewPage({
     Key? key,
     required this.contrato,
+    this.templateState,
   }) : super(key: key);
 
   @override
@@ -30,7 +32,11 @@ class PdfPreviewPage extends StatelessWidget {
           'A4': PdfPageFormat.a4,
         },
         canChangeOrientation: false,
-        build: (_) => CreateContractPdf.crearContratoPdf(contrato, context),
+        build: (_) => CreateContractPdf.crearContratoPdf(
+          contrato,
+          context,
+          templateState: templateState,
+        ),
         canDebug: false,
       ),
     );

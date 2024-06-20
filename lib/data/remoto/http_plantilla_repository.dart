@@ -17,7 +17,6 @@ class HttpPlantillaRepository implements PlantillaRepository {
 
   @override
   Future<Either<String, String>> getPlantilla() async {
-    // TODO: Plantilla 1
     const path = '/configuracion/plantilla/last';
     try {
       final response = await _dio.get<String>(path);
@@ -41,7 +40,6 @@ class HttpPlantillaRepository implements PlantillaRepository {
 
   @override
   Future<Either<String, String>> setPlantilla(String url) async {
-    // TODO: Plantilla 2
     const path = '/configuracion/plantilla';
     final payload = {
       'html': url,
@@ -56,6 +54,29 @@ class HttpPlantillaRepository implements PlantillaRepository {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final data = map['html'];
         return Right(data);
+      }
+    } catch (e, stackTrace) {
+      await _sentry.captureException(
+        e,
+        stackTrace: stackTrace,
+      );
+      return const Left('Ocurrió un error con el servidor');
+    }
+  }
+
+  @override
+  Future<Either<String, List<PlantillaEntity>>> getPlantillas() async {
+    const path = '/configuracion/plantilla';
+    try {
+      final response = await _dio.get<String>(path);
+      if (response.statusCode != 200) {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final message = map['message'] ?? 'Ocurrió un error';
+        return Left(message);
+      } else {
+        final map = json.decode(response.data!) as List<dynamic>;
+        final body = PlantillaEntity.fromJsonList(map);
+        return Right(body);
       }
     } catch (e, stackTrace) {
       await _sentry.captureException(

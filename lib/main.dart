@@ -6,6 +6,7 @@ import 'package:casa_empenio_pe/data/data.dart';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -103,6 +104,11 @@ Future<void> main() async {
                 userRepository: _userRepository,
                 preferences: localPreferences,
                 modulosRepository: _modulosRepository,
+              ),
+            ),
+            BlocProvider(
+              create: (context) => PlantillaBloc(
+                plantillaRepository: _plantillaRepository,
               ),
             ),
           ],

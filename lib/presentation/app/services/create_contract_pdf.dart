@@ -584,7 +584,10 @@ abstract class CreateContractPdf {
   // }
 
   static Future<Uint8List> crearContratoPdf(
-      ContratoEntity contrato, BuildContext context) async {
+    ContratoEntity contrato,
+    BuildContext context, {
+    String? templateState,
+  }) async {
     final templateContent =
         await context.read<PlantillaRepository>().getPlantilla();
 
@@ -601,9 +604,17 @@ abstract class CreateContractPdf {
     }
 
     // Insertar las filas generadas en el HTML
-    String filledTemplate = templateContent.getOrElse(() => '').replaceFirst(
-        '<!-- Aquí se insertarán las filas generadas -->',
-        tableRows.toString());
+    String filledTemplate;
+
+    if (templateState != null) {
+      filledTemplate = templateState.replaceFirst(
+          '<!-- Aquí se insertarán las filas generadas -->',
+          tableRows.toString());
+    } else {
+      filledTemplate = templateContent.getOrElse(() => '').replaceFirst(
+          '<!-- Aquí se insertarán las filas generadas -->',
+          tableRows.toString());
+    }
 
     final abc = contrato.toJson();
     print(abc);

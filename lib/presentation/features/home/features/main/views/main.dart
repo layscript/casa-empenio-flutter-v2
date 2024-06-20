@@ -1,6 +1,7 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/plantilla/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/home/home.dart';
 import 'package:casa_empenio_pe/presentation/features/home/widgets/widgets.dart';
 import 'package:flutter/material.dart';
@@ -58,7 +59,8 @@ class _MainViewState extends State<MainView> {
                 ),
                 centerTitle: true,
                 actions: [
-                  if (preferencesState?.role?.nombre == 'Administrador')
+                  if (preferencesState?.role?.nombre == 'Administrador' &&
+                      homeState.selected?.id != 15)
                     IconButton(
                       onPressed: () {
                         Navigator.push(
@@ -72,6 +74,15 @@ class _MainViewState extends State<MainView> {
                         color: Colors.deepOrangeAccent,
                       ),
                     ),
+                  if (homeState.selected?.id == 15)
+                    IconButton(
+                      onPressed: () {
+                        ShowPlantillasDialog.show(context);
+                      },
+                      icon: const Icon(
+                        Icons.list,
+                      ),
+                    )
                 ],
               ),
               // color blanco del drawer

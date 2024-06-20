@@ -11,28 +11,87 @@ class PlantillaBloc extends Bloc<PlantillaEvent, PlantillaState> {
   PlantillaBloc({required PlantillaRepository plantillaRepository})
       : _plantillaRepository = plantillaRepository,
         super(const PlantillaState()) {
-    on<GetPlantilla>(_onGetPlantilla);
+    on<GetPlantillas>(_onGetPlantillas);
+    on<GetLastPlantilla>(_onGetLastPlantilla);
     on<GeneratePlantilla>(_onGeneratePlantilla);
+    on<SelectedPlantillaByText>(_onSelectedPlantillaByText);
+
+    // TODO::
+    // Todos las dedudas creadas hace "5" dias hasta "3" dias INICIO Y FIN, inicio mayor que fin y no aceptar umeros negativos
   }
 
   final PlantillaRepository _plantillaRepository;
 
-  Future<void> _onGetPlantilla(
-    GetPlantilla event,
+  Future<void> _onGetPlantillas(
+    GetPlantillas event,
     Emitter<PlantillaState> emit,
   ) async {
-    emit(state.copyWith(status: PlantillaStatus.loading));
+    emit(
+      state.copyWith(
+        dialogStatus: PlantillaStatus.loading,
+        plantillaSelected: state.plantillaSelected,
+      ),
+    );
+    try {
+      final getPlantillas = await _plantillaRepository.getPlantillas();
+      getPlantillas.fold(
+        (error) {
+          emit(
+            state.copyWith(
+              dialogStatus: PlantillaStatus.failure,
+              error: error,
+              plantillaSelected: state.plantillaSelected,
+            ),
+          );
+        },
+        (plantillas) {
+          emit(
+            state.copyWith(
+              dialogStatus: PlantillaStatus.success,
+              plantillas: plantillas,
+              plantillaSelected: state.plantillaSelected,
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          dialogStatus: PlantillaStatus.failure,
+          error: e.toString(),
+          plantillaSelected: '',
+        ),
+      );
+    }
+  }
+
+  Future<void> _onGetLastPlantilla(
+    GetLastPlantilla event,
+    Emitter<PlantillaState> emit,
+  ) async {
+    if (state.status == PlantillaStatus.loading) return;
+    emit(state.copyWith(
+      status: PlantillaStatus.loading,
+      plantillaSelected: '',
+    ));
     try {
       final plantilla = await _plantillaRepository.getPlantilla();
       plantilla.fold(
         (error) {
-          emit(state.copyWith(status: PlantillaStatus.failure, error: error));
+          emit(
+            state.copyWith(
+              status: PlantillaStatus.failure,
+              error: error,
+              plantillaSelected: '',
+            ),
+          );
         },
         (success) {
           emit(
             state.copyWith(
               status: PlantillaStatus.success,
               htmlContent: success,
+              plantillaSelected: '',
             ),
           );
         },
@@ -55,13 +114,20 @@ class PlantillaBloc extends Bloc<PlantillaEvent, PlantillaState> {
       final plantilla = await _plantillaRepository.setPlantilla(event.url);
       plantilla.fold(
         (error) {
-          emit(state.copyWith(status: PlantillaStatus.failure, error: error));
+          emit(
+            state.copyWith(
+              status: PlantillaStatus.failure,
+              error: error,
+              plantillaSelected: '',
+            ),
+          );
         },
         (success) {
           emit(
             state.copyWith(
               status: PlantillaStatus.navigate,
               htmlContent: success,
+              plantillaSelected: '',
             ),
           );
         },
@@ -71,8 +137,20 @@ class PlantillaBloc extends Bloc<PlantillaEvent, PlantillaState> {
         state.copyWith(
           status: PlantillaStatus.failure,
           error: e.toString(),
+          plantillaSelected: '',
         ),
       );
     }
+  }
+
+  Future<void> _onSelectedPlantillaByText(
+    SelectedPlantillaByText event,
+    Emitter<PlantillaState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        plantillaSelected: event.text,
+      ),
+    );
   }
 }
