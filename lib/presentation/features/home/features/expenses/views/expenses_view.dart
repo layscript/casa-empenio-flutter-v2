@@ -85,6 +85,7 @@ class _ExpensesViewState extends State<ExpensesView> {
                   );
 
                 case ExpensesStatus.loaded || ExpensesStatus.success:
+                  final expensesBloc = context.read<ExpensesBloc>();
                   return Container(
                     width: double.infinity,
                     padding: EdgeInsets.only(
@@ -139,12 +140,12 @@ class _ExpensesViewState extends State<ExpensesView> {
                                       );
 
                                       if (result != null && mounted) {
-                                        context.read<ExpensesBloc>().add(
-                                              GetExpenses(
-                                                start: result.start,
-                                                end: result.end,
-                                              ),
-                                            );
+                                        expensesBloc.add(
+                                          GetExpenses(
+                                            start: result.start,
+                                            end: result.end,
+                                          ),
+                                        );
                                       }
                                     },
                                     icon: const Icon(Icons.calendar_today),
@@ -163,112 +164,132 @@ class _ExpensesViewState extends State<ExpensesView> {
                                     itemBuilder: (context, index) {
                                       final expense =
                                           state.listExpenses![index];
-                                      return ExpansionTile(
-                                        title: Text(
-                                          'Monto: s/. ${expense.monto}',
-                                          maxLines: 1,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
+                                      return Dismissible(
+                                        key: ValueKey(expense),
+                                        direction: DismissDirection.horizontal,
+                                        background: const SizedBox(),
+                                        secondaryBackground: Container(
+                                          color: Colors.red,
+                                          alignment: Alignment.centerRight,
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 20.0),
+                                          child: const Text(
+                                            'Eliminar Gasto',
+                                            style:
+                                                TextStyle(color: Colors.white),
                                           ),
                                         ),
-                                        subtitle: Text(
-                                          'Fecha: ${DateFormat('dd-MM-yyyy').format(DateTime.parse(expense.createdAt ?? '').toLocal())}',
-                                        ),
-                                        childrenPadding:
-                                            const EdgeInsets.symmetric(
-                                                horizontal: 20),
-                                        children: [
-                                          Row(
-                                            children: [
-                                              const Text(
-                                                'Tipo:',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                              const Spacer(),
-                                              Text('${expense.tipo?.codigo}')
-                                            ],
+                                        confirmDismiss: (direction) async {
+                                          if (direction ==
+                                              DismissDirection.endToStart) {
+                                            await showDialog<bool?>(
+                                              barrierDismissible: false,
+                                              context: context,
+                                              builder: (_) {
+                                                return DeleteDialog(
+                                                  title: 'Gasto',
+                                                  onPressed: () {
+                                                    context
+                                                        .read<ExpensesBloc>()
+                                                        .add(
+                                                          DeleteExpense(
+                                                            id: expense.id ?? 1,
+                                                          ),
+                                                        );
+                                                  },
+                                                );
+                                              },
+                                            );
+                                          }
+
+                                          return false; //
+                                        },
+                                        child: ExpansionTile(
+                                          title: Text(
+                                            'Monto: s/. ${expense.monto}',
+                                            maxLines: 1,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
-                                          const SizedBox(height: 10),
-                                          Row(
-                                            children: [
-                                              const Text(
-                                                'Observaciones: ',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                              const Spacer(),
-                                              Text('${expense.observaciones}')
-                                            ],
+                                          subtitle: Text(
+                                            'Fecha: ${DateFormat('dd-MM-yyyy').format(DateTime.parse(expense.createdAt ?? '').toLocal())}',
                                           ),
-                                          const SizedBox(height: 10),
-                                          if (expense.imagenes != null)
-                                            Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
+                                          childrenPadding:
+                                              const EdgeInsets.symmetric(
+                                                  horizontal: 20),
+                                          children: [
+                                            Row(
                                               children: [
                                                 const Text(
-                                                  'Imagenes: ',
+                                                  'Tipo:',
                                                   style: TextStyle(
                                                     fontWeight: FontWeight.bold,
                                                   ),
                                                 ),
-                                                SizedBox(
-                                                  height: 100,
-                                                  child: ListView.builder(
-                                                    scrollDirection:
-                                                        Axis.horizontal,
-                                                    itemCount: expense
-                                                        .imagenes!.length,
-                                                    itemBuilder:
-                                                        (context, index) {
-                                                      final imagen = expense
-                                                          .imagenes![index];
-                                                      return Padding(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                    .only(
-                                                                right: 10),
-                                                        child: ClipRRect(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(10),
-                                                          child:
-                                                              CachedNetworkImage(
-                                                            imageUrl:
-                                                                '$endPointPrincipal/${imagen.url}',
-                                                            height: 50,
-                                                            width: 50,
-                                                            placeholder:
-                                                                (context, url) {
-                                                              return const Placeholder(
-                                                                fallbackHeight:
-                                                                    50,
-                                                                fallbackWidth:
-                                                                    50,
-                                                              );
-                                                            },
-                                                            errorWidget:
-                                                                (context, url,
-                                                                    error) {
-                                                              return const Placeholder(
-                                                                fallbackHeight:
-                                                                    50,
-                                                                fallbackWidth:
-                                                                    50,
-                                                              );
-                                                            },
-                                                          ),
-                                                        ),
-                                                      );
-                                                    },
-                                                  ),
-                                                ),
+                                                const Spacer(),
+                                                Text('${expense.tipo?.codigo}')
                                               ],
                                             ),
-                                        ],
+                                            const SizedBox(height: 10),
+                                            Row(
+                                              children: [
+                                                const Text(
+                                                  'Observaciones: ',
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                                const Spacer(),
+                                                Text('${expense.observaciones}')
+                                              ],
+                                            ),
+                                            const SizedBox(height: 10),
+                                            if (expense.imagenes != null)
+                                              Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  const Text(
+                                                    'Imagenes: ',
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  SizedBox(
+                                                    height: 100,
+                                                    child: ListView.builder(
+                                                      scrollDirection:
+                                                          Axis.horizontal,
+                                                      itemCount: expense
+                                                          .imagenes!.length,
+                                                      itemBuilder:
+                                                          (context, index) {
+                                                        final imagen = expense
+                                                            .imagenes![index];
+                                                        return Container(
+                                                          margin:
+                                                              const EdgeInsets
+                                                                      .only(
+                                                                  right: 10),
+                                                          child: ClipRRect(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        10),
+                                                            child: CustomImageApp(
+                                                                urlImg:
+                                                                    imagen.url),
+                                                          ),
+                                                        );
+                                                      },
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                          ],
+                                        ),
                                       );
                                     },
                                   ),
@@ -328,19 +349,19 @@ class _ExpensesViewState extends State<ExpensesView> {
                                     context: context,
                                     builder: (_) {
                                       return BlocProvider.value(
-                                        value: context.read<ExpensesBloc>(),
+                                        value: expensesBloc,
                                         child: const AddExpenseDialog(),
                                       );
                                     },
                                   );
 
                                   if (result != null && mounted) {
-                                    context.read<ExpensesBloc>().add(
-                                          const GetExpenses(
-                                            end: null,
-                                            start: null,
-                                          ),
-                                        );
+                                    expensesBloc.add(
+                                      const GetExpenses(
+                                        end: null,
+                                        start: null,
+                                      ),
+                                    );
                                   }
                                 },
                                 child: const Row(

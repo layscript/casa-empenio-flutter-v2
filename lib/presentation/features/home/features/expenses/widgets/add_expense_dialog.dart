@@ -1,9 +1,9 @@
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/custom_image_picker.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/expenses/bloc/expenses_bloc.dart';
-import 'package:casa_empenio_pe/presentation/features/home/features/loans/feature/loans_step/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -20,19 +20,6 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
   final montoCtrl = TextEditingController();
   final obsCtrl = TextEditingController();
   bool isValidMonto = false;
-
-  void onChangePhotosGastos() async {
-    final photo = await ImagePicker().pickImage(
-      source: ImageSource.camera,
-      imageQuality: 70,
-    );
-
-    if (photo != null) {
-      setState(() {
-        selectedPhotosGastos?.add(photo);
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,27 +46,16 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
             labelText: 'Observaciones',
           ),
           const SizedBox(height: 20),
-          Row(
-            children: [
-              for (int i = 0; i < (selectedPhotosGastos?.length ?? 0); i++)
-                CustomImageClient(
-                  onTap: () {
-                    setState(() {
-                      selectedPhotosGastos?.removeAt(i);
-                    });
-                  },
-                  path: selectedPhotosGastos![i].path,
-                ),
-              if (selectedPhotosGastos!.length < 2)
-                Expanded(
-                  child: SecondaryButton(
-                    onPressed: onChangePhotosGastos,
-                    child: Text(
-                      'Subir Imagen (${2 - selectedPhotosGastos!.length})',
-                    ),
-                  ),
-                ),
-            ],
+          CustomImagePicker(
+            onImagesSelected: (photo) {
+              if (photo != null) {
+                setState(() {
+                  selectedPhotosGastos = photo;
+                });
+              }
+            },
+            initialSelectedPhotos: selectedPhotosGastos,
+            limit: 1,
           ),
           const SizedBox(height: 20),
         ],

@@ -31,3 +31,11 @@ class SaveExpense extends ExpensesEvent {
   final String monto;
   final List<XFile>? imagenes;
 }
+
+class DeleteExpense extends ExpensesEvent {
+  const DeleteExpense({
+    required this.id,
+  });
+
+  final int id;
+}

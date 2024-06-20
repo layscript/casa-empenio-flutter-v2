@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/custom_image_picker.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/auth/auth.dart';
@@ -329,66 +330,18 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                               )
                             : const SizedBox(),
                       const SizedBox(height: 10),
-                      /* if (liquidar) ...[ */
-                      Row(
-                        children: [
-                          for (int i = 0;
-                              i < (selectedPhotosLiquidar?.length ?? 0);
-                              i++)
-                            GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  selectedPhotosLiquidar?.removeAt(i);
-                                });
-                              },
-                              child: Stack(
-                                children: [
-                                  Image.file(
-                                    File(selectedPhotosLiquidar![i].path),
-                                    width: 100,
-                                    height: 100,
-                                  ),
-                                  Positioned(
-                                    top: 0,
-                                    right: 0,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(10),
-                                        color: Colors.red,
-                                      ),
-                                      child: const Icon(
-                                        Icons.close,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          if (selectedPhotosLiquidar!.length < 1)
-                            Expanded(
-                              child: SecondaryButton(
-                                onPressed: () async {
-                                  final photo = await ImagePicker().pickImage(
-                                    source: ImageSource.camera,
-                                    imageQuality: 70,
-                                  );
-                
-                                  if (photo != null) {
-                                    setState(() {
-                                      selectedPhotosLiquidar?.add(photo);
-                                    });
-                                  }
-                                },
-                                child: Text(
-                                  'Subir Imagen (${1 - selectedPhotosLiquidar!.length})',
-                                ),
-                              ),
-                            ),
-                        ],
+                      CustomImagePicker(
+                        onImagesSelected: (photo) {
+                          if (photo != null) {
+                            setState(() {
+                              selectedPhotosLiquidar = photo;
+                            });
+                          }
+                        },
+                        initialSelectedPhotos: selectedPhotosLiquidar,
+                        limit: 1,
                       ),
                       const SizedBox(height: 20),
-                      /* ], */
                       if (liquidar)
                         PrimaryButton(
                           onPressed: (loan?.ganancia != null &&
@@ -438,17 +391,22 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                                                     LoansStatus.loading
                                                 ? () {
                                                     Navigator.pop(context);
-                                                    context.read<LoansBloc>().add(
+                                                    context
+                                                        .read<LoansBloc>()
+                                                        .add(
                                                           SaveSettlementLoan(
                                                             idPrestamo: widget
                                                                     .nroPrestamo ??
                                                                 0,
-                                                            monto: montoCtrl.text,
+                                                            monto:
+                                                                montoCtrl.text,
                                                             userId: authBloc
-                                                                .user?.id
-                                                                .toString() ?? '1',
+                                                                    .user?.id
+                                                                    .toString() ??
+                                                                '1',
                                                             codigo:
-                                                                loan?.codigo ?? 0,
+                                                                loan?.codigo ??
+                                                                    0,
                                                             photos:
                                                                 selectedPhotosLiquidar,
                                                             efectivo: efectivo,
@@ -483,9 +441,12 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                                         SavePaymentLoan(
                                           idPrestamo: widget.nroPrestamo ?? 0,
                                           monto: montoCtrl.text,
-                                          userId: authBloc.user?.id.toString() ?? '1',
+                                          userId:
+                                              authBloc.user?.id.toString() ??
+                                                  '1',
                                           photos: selectedPhotosLiquidar,
-                                          montoRestante: montoRestante.toString(),
+                                          montoRestante:
+                                              montoRestante.toString(),
                                           codigo: loan?.codigo ?? 0,
                                           efectivo: efectivo,
                                         ),

@@ -25,6 +25,7 @@ class ExpensesBloc extends Bloc<ExpensesEvent, ExpensesState> {
     on<GetExpenses>(_onGetExpenses);
     on<SaveExpense>(_onSaveExpense);
     on<GetCashExpensesStatus>(_onGetCashExpensesStatus);
+    on<DeleteExpense>(_onDeleteExpense);
   }
 
   final ExpensesRepository _expensesRepository;
@@ -166,6 +167,35 @@ class ExpensesBloc extends Bloc<ExpensesEvent, ExpensesState> {
           openBox: rigth == null ? true : false,
         ),
       ),
+    );
+  }
+
+  Future<void> _onDeleteExpense(
+    DeleteExpense event,
+    Emitter<ExpensesState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        expensesStatus: ExpensesStatus.loading,
+      ),
+    );
+
+    final result = await _expensesRepository.deleteExpense(id: event.id);
+    result.fold(
+      (error) => emit(
+        state.copyWith(
+          expensesStatus: ExpensesStatus.failure,
+          error: error,
+        ),
+      ),
+      (success) {
+        add(
+          GetExpenses(
+            start: state.startExpenses,
+            end: state.endExpenses,
+          ),
+        );
+      },
     );
   }
 }

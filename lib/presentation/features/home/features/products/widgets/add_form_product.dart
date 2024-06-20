@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/custom_image_picker.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/products/widgets/widgets.dart';
@@ -284,76 +285,16 @@ class _AddFormProductState extends State<AddFormProduct> {
             labelText: 'Observaciones (Opcional)',
           ),
           const SizedBox(height: 15),
-          Row(
-            children: [
-              // Muestra las imágenes seleccionadas con opción de eliminar
-              for (int i = 0; i < (selectedPhotosProduct?.length ?? 0); i++)
-                GestureDetector(
-                  onTap: () {
-                    // Elimina la imagen del array al tocarla
-                    setState(() {
-                      selectedPhotosProduct?.removeAt(i);
-                    });
-                  },
-                  child: Stack(
-                    children: [
-                      /*  Image.file(
-                        File(selectedPhotosProduct![i].path),
-                        width: 100,
-                        height: 100,
-                      ), */
-                      selectedPhotosProduct![i].path.contains('files/garantias')
-                          ? Image.network(
-                              '$endPointPrincipal/${selectedPhotosProduct?[i].path}',
-                              width: 70,
-                              height: 70,
-                            )
-                          : Image.file(
-                              File(selectedPhotosProduct![i].path),
-                              width: 70,
-                              height: 70,
-                            ),
-                      Positioned(
-                        top: 0,
-                        right: 0,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            color: Colors.red,
-                          ),
-                          child: const Icon(
-                            Icons.close,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-              // Botón para seleccionar imágenes
-              if (selectedPhotosProduct!.length < 2)
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      final photo = await ImagePicker().pickImage(
-                        source: ImageSource.camera,
-                        imageQuality: 70,
-                      );
-
-                      // Verifica si se seleccionó una imagen antes de agregarla a la lista
-                      if (photo != null) {
-                        setState(() {
-                          selectedPhotosProduct?.add(photo);
-                        });
-                      }
-                    },
-                    child: Text(
-                      'Cargar Imagen (${2 - selectedPhotosProduct!.length})',
-                    ),
-                  ),
-                ),
-            ],
+          CustomImagePicker(
+            onImagesSelected: (photo) {
+              if (photo != null) {
+                setState(() {
+                  selectedPhotosProduct = photo;
+                });
+              }
+            },
+            initialSelectedPhotos: selectedPhotosProduct,
+            limit: 2,
           ),
           const SizedBox(height: 15),
           Row(

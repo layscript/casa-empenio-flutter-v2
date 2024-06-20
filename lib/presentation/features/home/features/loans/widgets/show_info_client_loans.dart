@@ -704,7 +704,35 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                               ),
                               const SizedBox(height: 10),
                               if (pago.url != null)
-                                Row(
+                                Container(
+                                  alignment: Alignment.centerRight,
+                                  height: 32,
+                                  child: TextButton(
+                                    style: const ButtonStyle(
+                                      padding: MaterialStatePropertyAll(
+                                        EdgeInsets.zero,
+                                      ),
+                                    ),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => FullScreenImage(
+                                            imageUrl: pago.url!,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    child: const Text(
+                                      'Ver Imagen',
+                                      style: TextStyle(
+                                        color: AppColors.darkBlue,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              /*  Row(
                                   children: [
                                     const Expanded(
                                       child: Text(
@@ -715,7 +743,7 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                       urlImg: pago.url!,
                                     ),
                                   ],
-                                ),
+                                ), */
                             ],
                           );
                         }).toList(),

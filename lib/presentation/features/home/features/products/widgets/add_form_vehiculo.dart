@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/custom_image_picker.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -468,73 +469,16 @@ class _AddFormVehiculoState extends State<AddFormVehiculo> {
             labelText: 'Observaciones (Opcional)',
           ),
           const SizedBox(height: 15),
-          Row(
-            children: [
-              // Muestra las imágenes seleccionadas con opción de eliminar
-              for (int i = 0; i < (selectedPhotosVehiculo?.length ?? 0); i++)
-                GestureDetector(
-                  onTap: () {
-                    // Elimina la imagen del array al tocarla
-                    setState(() {
-                      selectedPhotosVehiculo?.removeAt(i);
-                    });
-                  },
-                  child: Stack(
-                    children: [
-                      selectedPhotosVehiculo![i]
-                              .path
-                              .contains('files/garantias')
-                          ? Image.network(
-                              '$endPointPrincipal/${selectedPhotosVehiculo?[i].path}',
-                              width: 70,
-                              height: 70,
-                            )
-                          : Image.file(
-                              File(selectedPhotosVehiculo![i].path),
-                              width: 70,
-                              height: 70,
-                            ),
-                      Positioned(
-                        top: 0,
-                        right: 0,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            color: Colors.red,
-                          ),
-                          child: const Icon(
-                            Icons.close,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-              // Botón para seleccionar imágenes
-              if (selectedPhotosVehiculo!.length < 2)
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      final photo = await ImagePicker().pickImage(
-                        source: ImageSource.camera,
-                        imageQuality: 70,
-                      );
-
-                      // Verifica si se seleccionó una imagen antes de agregarla a la lista
-                      if (photo != null) {
-                        setState(() {
-                          selectedPhotosVehiculo?.add(photo);
-                        });
-                      }
-                    },
-                    child: Text(
-                      'Cargar Imagen (${2 - selectedPhotosVehiculo!.length})',
-                    ),
-                  ),
-                ),
-            ],
+          CustomImagePicker(
+            onImagesSelected: (photo) {
+              if (photo != null) {
+                setState(() {
+                  selectedPhotosVehiculo = photo;
+                });
+              }
+            },
+            initialSelectedPhotos: selectedPhotosVehiculo,
+            limit: 2,
           ),
           const SizedBox(height: 15),
           Row(
