@@ -1,7 +1,4 @@
-import 'package:casa_empenio_pe/domain/loans/loans_entity.dart';
-import 'package:casa_empenio_pe/domain/loans/loans_repository.dart';
-import 'package:casa_empenio_pe/domain/preferences/preferences.dart';
-import 'package:casa_empenio_pe/domain/solicitud/solicitud_repository.dart';
+import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
@@ -35,7 +32,9 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
   int _offset = 0;
   String? searchCriterio;
   String? searchCategoria;
+  String? searchDocument;
   List<LoansEntity> loans = [];
+  CustomerEntity? customer;
 
   bool? typeSearch;
 
@@ -80,19 +79,19 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
     getLoans.fold(
       (error) => null,
       (success) {
-        setState(() {
-          if (_offset == 0) {
-            loans.clear();
-          }
+        if (_offset == 0) {
+          loans.clear();
+        }
 
-          loans.addAll(success);
-          _isLoading = false;
-        });
+        loans.addAll(success);
       },
     );
+    setState(() {
+      _isLoading = false;
+    });
   }
 
-  void _handleSearch(String? criterio, String? categoria) {
+  void _handleSearchByGeneral(String? criterio, String? categoria) {
     setState(() {
       searchCriterio = criterio;
       searchCategoria = categoria;
@@ -104,9 +103,39 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
     _loadData();
   }
 
+  void _handleSearchByDni(String? dni) async {
+    setState(() {
+      _offset = 0;
+      _isLoading = true;
+      searchDocument = dni;
+      loans.clear();
+    });
+    final customerRepository = context.read<CustomerRepository>();
+    final authPreferences = context.read<Preferences>().token;
+    final getLoans = await customerRepository.getCustomerByDni(
+      userId: authPreferences?.id ?? 1,
+      sucursal: authPreferences?.sucursal?.id ?? 1,
+      dni: dni ?? '',
+    );
+
+    getLoans.fold(
+      (error) => null,
+      (success) {
+        customer = success;
+        loans.addAll(success.prestamos ?? []);
+      },
+    );
+
+    _isLoading = false;
+
+    setState(() {});
+  }
+
   void _handleTypeSearch(bool value) {
     setState(() {
       typeSearch = value;
+      customer = null;
+
       loans = [];
       loans.clear();
     });
@@ -114,8 +143,6 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
 
   @override
   Widget build(BuildContext context) {
-    print('stateeeee: ${typeSearch}');
-
     return AbsorbPointer(
       absorbing: _isLoading,
       child: Container(
@@ -216,20 +243,23 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                           ),
                           if (typeSearch == true) ...[
                             const SizedBox(height: 15),
-                            const SearchLoansClientByDNI(),
+                            SearchLoansClientByDNI(
+                              onPressed: (dni) {
+                                _handleSearchByDni(dni);
+                              },
+                            ),
                           ],
                           if (typeSearch == false) ...[
                             const SizedBox(height: 15),
                             SearchLoansClientByGeneral(
                               categories: widget.state.listCategories ?? [],
                               onPressed: (dto) {
-                                _handleSearch(dto.text, dto.category);
+                                _handleSearchByGeneral(dto.text, dto.category);
                               },
                             ),
                           ],
                           const SizedBox(height: 15),
-                          if (widget.state.customer != null &&
-                              widget.state.customer?.nombres != null)
+                          if (customer != null && customer?.nombres != null)
                             Row(
                               children: [
                                 const Text(
@@ -242,7 +272,7 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                                 const SizedBox(width: 5),
                                 Expanded(
                                   child: Text(
-                                    widget.state.fullNames(),
+                                    customer?.customerFullName ?? '',
                                     maxLines: 1,
                                   ),
                                 ),
@@ -440,8 +470,8 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                                           width: 38,
                                           child: IconButton(
                                             padding: EdgeInsets.zero,
-                                            onPressed: () {
-                                              showDialog(
+                                            onPressed: () async {
+                                              await showDialog(
                                                 barrierDismissible: false,
                                                 context: context,
                                                 builder: (_) {
@@ -449,7 +479,7 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                                                     value: widget.loansBloc,
                                                     child: ShowInfoClientLoans(
                                                       nroPrestamo:
-                                                          prestamo?.codigo,
+                                                          prestamo.codigo,
                                                     ),
                                                   );
                                                 },
@@ -505,26 +535,14 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                                                                 milliseconds:
                                                                     300))
                                                         .then((value) {
-                                                      if (widget.state
-                                                              .typeSearch ==
-                                                          true) {
-                                                        widget.loansBloc.add(
-                                                          GetLoansByDni(
-                                                            value: widget.state
-                                                                .searchText,
-                                                          ),
+                                                      if (typeSearch == true) {
+                                                        _handleSearchByDni(
+                                                          searchDocument,
                                                         );
                                                       } else {
-                                                        widget.loansBloc.add(
-                                                          GetLoansByText(
-                                                            criterio: widget
-                                                                .state
-                                                                .searchText,
-                                                            categoria: widget
-                                                                    .state
-                                                                    .categoriaText ??
-                                                                '',
-                                                          ),
+                                                        _handleSearchByGeneral(
+                                                          searchCriterio,
+                                                          searchCategoria,
                                                         );
                                                       }
                                                     });
@@ -574,27 +592,15 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                                                                   milliseconds:
                                                                       300))
                                                           .then((value) {
-                                                        if (widget.state
-                                                                .typeSearch ==
+                                                        if (typeSearch ==
                                                             true) {
-                                                          widget.loansBloc.add(
-                                                            GetLoansByDni(
-                                                              value: widget
-                                                                  .state
-                                                                  .searchText,
-                                                            ),
+                                                          _handleSearchByDni(
+                                                            searchDocument,
                                                           );
                                                         } else {
-                                                          widget.loansBloc.add(
-                                                            GetLoansByText(
-                                                              criterio: widget
-                                                                  .state
-                                                                  .searchText,
-                                                              categoria: widget
-                                                                      .state
-                                                                      .categoriaText ??
-                                                                  '',
-                                                            ),
+                                                          _handleSearchByGeneral(
+                                                            searchCriterio,
+                                                            searchCategoria,
                                                           );
                                                         }
                                                       });
@@ -707,22 +713,21 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                                                   },
                                                 );
 
+                                                print(
+                                                    'typeee 1: ${typeSearch}');
+                                                print(
+                                                    'typeee 2: ${searchDocument}');
+                                                print(
+                                                    'typeee 3: ${searchCriterio}');
+
                                                 if (typeSearch == true) {
-                                                  widget.loansBloc.add(
-                                                    GetLoansByDni(
-                                                      value: widget
-                                                          .state.searchText,
-                                                    ),
+                                                  _handleSearchByDni(
+                                                    searchDocument,
                                                   );
                                                 } else {
-                                                  widget.loansBloc.add(
-                                                    GetLoansByText(
-                                                      criterio: widget
-                                                          .state.searchText,
-                                                      categoria: widget.state
-                                                              .categoriaText ??
-                                                          '',
-                                                    ),
+                                                  _handleSearchByGeneral(
+                                                    searchCriterio,
+                                                    searchCategoria,
                                                   );
                                                 }
                                               },
@@ -740,8 +745,7 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                                             child: IconButton(
                                               padding: EdgeInsets.zero,
                                               onPressed: () async {
-                                                final result =
-                                                    await showDialog<bool>(
+                                                await showDialog<bool>(
                                                   barrierDismissible: false,
                                                   context: context,
                                                   builder: (_) {
@@ -757,21 +761,13 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                                                 );
 
                                                 if (typeSearch == true) {
-                                                  widget.loansBloc.add(
-                                                    GetLoansByDni(
-                                                      value: widget
-                                                          .state.searchText,
-                                                    ),
+                                                  _handleSearchByDni(
+                                                    searchDocument,
                                                   );
                                                 } else {
-                                                  widget.loansBloc.add(
-                                                    GetLoansByText(
-                                                      criterio: widget
-                                                          .state.searchText,
-                                                      categoria: widget.state
-                                                              .categoriaText ??
-                                                          '',
-                                                    ),
+                                                  _handleSearchByGeneral(
+                                                    searchCriterio,
+                                                    searchCategoria,
                                                   );
                                                 }
                                               },
@@ -799,32 +795,22 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                                                         child:
                                                             ShowDialogBillingLoan(
                                                           nroPrestamo:
-                                                              prestamo?.codigo,
-                                                          dniCustomer: widget
-                                                              .state
-                                                              .customer
-                                                              ?.dni,
+                                                              prestamo.codigo,
+                                                          dniCustomer:
+                                                              customer?.dni,
                                                         ),
                                                       );
                                                     },
                                                   );
 
                                                   if (typeSearch == true) {
-                                                    widget.loansBloc.add(
-                                                      GetLoansByDni(
-                                                        value: widget
-                                                            .state.searchText,
-                                                      ),
+                                                    _handleSearchByDni(
+                                                      searchDocument,
                                                     );
                                                   } else {
-                                                    widget.loansBloc.add(
-                                                      GetLoansByText(
-                                                        criterio: widget
-                                                            .state.searchText,
-                                                        categoria: widget.state
-                                                                .categoriaText ??
-                                                            '',
-                                                      ),
+                                                    _handleSearchByGeneral(
+                                                      searchCriterio,
+                                                      searchCategoria,
                                                     );
                                                   }
                                                 } else {
@@ -960,22 +946,13 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
 
                                                   if (result != null) {
                                                     if (typeSearch == true) {
-                                                      widget.loansBloc.add(
-                                                        GetLoansByDni(
-                                                          value: widget
-                                                              .state.searchText,
-                                                        ),
+                                                      _handleSearchByDni(
+                                                        searchDocument,
                                                       );
                                                     } else {
-                                                      widget.loansBloc.add(
-                                                        GetLoansByText(
-                                                          criterio: widget
-                                                              .state.searchText,
-                                                          categoria: widget
-                                                                  .state
-                                                                  .categoriaText ??
-                                                              '',
-                                                        ),
+                                                      _handleSearchByGeneral(
+                                                        searchCriterio,
+                                                        searchCategoria,
                                                       );
                                                     }
                                                   }
@@ -1010,21 +987,13 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                                                 );
 
                                                 if (typeSearch == true) {
-                                                  widget.loansBloc.add(
-                                                    GetLoansByDni(
-                                                      value: widget
-                                                          .state.searchText,
-                                                    ),
+                                                  _handleSearchByDni(
+                                                    searchDocument,
                                                   );
                                                 } else {
-                                                  widget.loansBloc.add(
-                                                    GetLoansByText(
-                                                      criterio: widget
-                                                          .state.searchText,
-                                                      categoria: widget.state
-                                                              .categoriaText ??
-                                                          '',
-                                                    ),
+                                                  _handleSearchByGeneral(
+                                                    searchCriterio,
+                                                    searchCategoria,
                                                   );
                                                 }
                                               },
@@ -1050,6 +1019,14 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                             return const SizedBox();
                           }
                         },
+                      ),
+
+                    if (customer == null && typeSearch == true)
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        child: const Text(
+                          'No hay prestamos registrados',
+                        ),
                       ),
                     const SizedBox(height: 15),
                   ],
@@ -1078,13 +1055,11 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                             context,
                             LoansStepView.route,
                           );
+
                           if (result != null) {
-                            widget.loansBloc.add(
-                              GetLoansByDni(
-                                value: result as String? ?? '',
-                              ),
+                            _handleSearchByDni(
+                              result as String,
                             );
-                            return;
                           }
                         },
                         child: const Row(

@@ -29,70 +29,65 @@ class LoansView extends StatelessWidget {
       child: Builder(
         builder: (context) {
           return BlocConsumer<LoansBloc, LoansState>(
-              listener: (context, state) {
-            if (state.isSolicitudLoading || state.isAnexosLoading) {
-              OverlayLoader.show(context);
-            } else {
-              OverlayLoader.hide();
-              if (state.isSolicitudError) {
-                Navigator.pop(context);
-                ErrorSnackbar.show(context, state.error ?? '');
+            listener: (context, state) {
+              if (state.isSolicitudLoading || state.isAnexosLoading) {
+                OverlayLoader.show(context);
+              } else {
+                OverlayLoader.hide();
+                if (state.isSolicitudError) {
+                  Navigator.pop(context);
+                  ErrorSnackbar.show(context, state.error ?? '');
+                }
+
+                if (state.isSolicitudSuccess) {
+                  Navigator.pop(context);
+                  SuccessSnackbar.show(
+                      context, 'Solicitud enviada correctamente');
+                }
+
+                if (state.isAnexosError) {
+                  ErrorSnackbar.show(context, state.error ?? '');
+                }
+
+                if (state.isAnexosSuccess) {
+                  SuccessSnackbar.show(
+                    context,
+                    'Visita agregado correctamente',
+                  );
+                }
               }
 
-              if (state.isSolicitudSuccess) {
-                Navigator.pop(context);
-                SuccessSnackbar.show(
-                    context, 'Solicitud enviada correctamente');
-              }
-
-              if (state.isAnexosError) {
-                ErrorSnackbar.show(context, state.error ?? '');
-              }
-
-              if (state.isAnexosSuccess) {
-                SuccessSnackbar.show(
-                  context,
-                  'Visita agregado correctamente',
+              if (state.openBox == true) {
+                showDialog(
+                  barrierDismissible: false,
+                  context: context,
+                  builder: (context) {
+                    return const AlertGoToCaja();
+                  },
+                ).then(
+                  (value) {
+                    homeBloc.add(GoToOpenCaja());
+                  },
                 );
               }
-            }
-
-            if (state.openBox == true) {
-              showDialog(
-                barrierDismissible: false,
-                context: context,
-                builder: (context) {
-                  return const AlertGoToCaja();
-                },
-              ).then((value) {
-                homeBloc.add(GoToOpenCaja());
-              });
-            }
-          }, builder: (context, state) {
-            final loansBloc = context.read<LoansBloc>();
-
-            switch (state.loansStatus) {
-              case LoansStatus.loading || LoansStatus.initial:
-                return const ButtonStateLoading();
-
-              case LoansStatus.error:
+            },
+            builder: (context, state) {
+              final loansBloc = context.read<LoansBloc>();
+              if (state.loansStatus == LoansStatus.error) {
                 return ButtonStateError(
                   message: state.error,
                   onPressed: () {
                     loansBloc.add(GetCashStatus());
                   },
                 );
+              }
 
-              case LoansStatus.loaded:
-                return LoansLoadedView(
-                  loansBloc: loansBloc,
-                  state: state,
-                );
-              default:
-            }
-
-            return const SizedBox();
-          });
+              return LoansLoadedView(
+                loansBloc: loansBloc,
+                state: state,
+              );
+            },
+          );
         },
       ),
     );
