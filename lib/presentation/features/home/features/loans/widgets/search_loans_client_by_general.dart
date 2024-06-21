@@ -43,7 +43,6 @@ class _SearchLoansClientByGeneralState
                     ? GestureDetector(
                         onTap: () {
                           textCtrl.clear();
-                          context.read<LoansBloc>().add(GetLoansInitial());
                         },
                         child: const Icon(
                           Icons.clear,

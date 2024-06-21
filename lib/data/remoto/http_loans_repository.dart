@@ -92,7 +92,11 @@ class HttpLoansRepository implements LoansRepository {
   }) async {
     const path = '/prestamos/prestamos/criterio';
     final payload = {
-      'criterio': criterio,
+      'criterio': criterio != null
+          ? criterio.isEmpty
+              ? null
+              : criterio
+          : null,
       'sucursal': sucursal,
       'categoria': categoria,
     };
