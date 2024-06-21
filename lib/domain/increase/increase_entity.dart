@@ -24,8 +24,6 @@ class IncreaseEntity extends Equatable {
   }
 
   static IncreaseEntity getIncreaseFromMap(Map<String, dynamic> map) {
-    print('aumentosssss: $map');
-
     return IncreaseEntity(
       id: map['id'],
       fecha: map['fecha'],

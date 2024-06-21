@@ -32,9 +32,11 @@ class GetLoansByDni extends LoansEvent {
 
 class GetLoansByText extends LoansEvent {
   const GetLoansByText({
-    required this.value,
+    required this.criterio,
+    required this.categoria,
   });
-  final String value;
+  final String? criterio;
+  final String? categoria;
 }
 
 class GetDetailsLoan extends LoansEvent {

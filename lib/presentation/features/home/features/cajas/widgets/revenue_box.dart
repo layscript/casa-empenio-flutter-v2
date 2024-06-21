@@ -72,9 +72,7 @@ class _RevenueBoxState extends State<RevenueBox> {
                   itemBuilder: (context, index) {
                     final movimiento = filter[index];
                     return ExpansionTile(
-                      onExpansionChanged: (value) {
-                        log('clicked_movimiento: ${movimiento.toString()}');
-                      },
+                      onExpansionChanged: (value) {},
                       title: Text(
                         'Monto: s/ ${movimiento.monto}',
                       ),

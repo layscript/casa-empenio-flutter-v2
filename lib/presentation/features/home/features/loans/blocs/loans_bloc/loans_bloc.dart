@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:image_picker/image_picker.dart';
@@ -18,12 +19,14 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     required SolicitudRepository solicitudRepository,
     required Preferences preferences,
     required AnexoRepository anexoRepository,
+    required CategoriesRepository categoriesRepository,
   })  : _customerRepository = customerRepository,
         _loansRepository = loansRepository,
         _cajaRepository = cajaRepository,
         _solicitudRepository = solicitudRepository,
         _anexoRepository = anexoRepository,
         _preferences = preferences,
+        _categoriesRepository = categoriesRepository,
         super(const LoansState()) {
     on<GetLoansInitial>((event, emit) => emit(const LoansState()));
     on<GetCashStatus>(_onGetCashStatus);
@@ -58,6 +61,7 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
   final SolicitudRepository _solicitudRepository;
   final Preferences _preferences;
   final AnexoRepository _anexoRepository;
+  final CategoriesRepository _categoriesRepository;
 
   LoansState get _loadingState =>
       state.copyWith(loansStatus: LoansStatus.loading);
@@ -104,14 +108,17 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     emit(
       state.copyWith(
         loansStatus: LoansStatus.loading,
-        searchText: event.value,
+        searchText: event.criterio,
+        categoriaText: event.categoria,
       ),
     );
     final preferences = _preferences.token;
     final result = await _loansRepository.getLoans(
-        criterio: event.value,
-        userId: preferences?.id ?? 0,
-        sucursal: preferences?.sucursal?.id ?? 1);
+      criterio: event.criterio,
+      userId: preferences?.id ?? 0,
+      sucursal: preferences?.sucursal?.id ?? 1,
+      categoria: event.categoria,
+    );
     result.fold(
       (message) => emit(_errorState(message)),
       (loans) {
@@ -203,8 +210,6 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     emit(_loadingState);
 
     final urlImg = await savePhotoPayment(event.photos);
-    print('saveddd 1: ${urlImg}');
-
     if (double.parse(event.monto) >= double.parse(event.montoRestante)) {
       final resultPayment = await _loansRepository.savePayment(
         codigo: event.idPrestamo,
@@ -268,8 +273,6 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     if (state.loansStatus == LoansStatus.loading) return;
     emit(_loadingState);
     final urlImg = await savePhotoPayment(event.photos);
-    print('saveddd 2: ${urlImg}');
-
     final resultPayment = await _loansRepository.savePayment(
       codigo: event.idPrestamo,
       monto: double.parse(event.monto),
@@ -371,28 +374,71 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     GetCashStatus event,
     Emitter<LoansState> emit,
   ) async {
-    // Llamar api de caja y verificar que exista algun registro.
-    emit(state.copyWith(loansStatus: LoansStatus.loading));
-    final result = await _cajaRepository.getCajaOfTheDay();
-    result.fold(
-      // Error
-      (left) => emit(
-        state.copyWith(
-          openBox: true,
-          loansStatus: LoansStatus.loaded,
-        ),
-      ),
-      // Success
-      (rigth) => emit(
-        state.copyWith(
-          openBox: rigth == null ? true : false,
-          loansStatus: LoansStatus.loaded,
-          cajaId: rigth?.id,
-        ),
-      ),
-    );
+    try {
+      // Emitir estado de carga
+      emit(state.copyWith(loansStatus: LoansStatus.loading));
 
-    // Mostrar modal o dejar pasar
+      // Llamar a la API para obtener el estado de caja del día
+      final getCajaOftheDayResult = await _cajaRepository.getCajaOfTheDay();
+
+      // Variables para almacenar el resultado de la primera llamada
+      int? cajaId;
+      var openBox = true;
+
+      // Procesar el resultado de la llamada de caja del día
+      await getCajaOftheDayResult.fold(
+        // Manejo de error en la llamada de caja del día
+        (error) async {
+          emit(
+            state.copyWith(
+              openBox: true,
+              loansStatus: LoansStatus.loaded,
+            ),
+          );
+        },
+        // Manejo de éxito en la llamada de caja del día
+        (box) async {
+          cajaId = box?.id;
+          openBox = box == null;
+
+          // Llamar a la API para obtener las categorías solo si la primera llamada fue exitosa
+          final getCategoriesResult =
+              await _categoriesRepository.getCategories();
+
+          // Procesar el resultado de la llamada de categorías
+          getCategoriesResult.fold(
+            // Manejo de error en la llamada de categorías
+            (error) async {
+              emit(
+                state.copyWith(
+                  openBox: true,
+                  loansStatus: LoansStatus.loaded,
+                ),
+              );
+            },
+            // Manejo de éxito en la llamada de categorías
+            (categories) async {
+              emit(
+                state.copyWith(
+                  openBox: openBox,
+                  loansStatus: LoansStatus.loaded,
+                  cajaId: cajaId,
+                  listCategories: categories,
+                ),
+              );
+            },
+          );
+        },
+      );
+    } catch (e) {
+      // Manejo de excepción
+      print('Error: $e');
+      emit(
+        state.copyWith(
+          loansStatus: LoansStatus.error,
+        ),
+      );
+    }
   }
 
   Future<void> _onGetLoansSearchByDni(

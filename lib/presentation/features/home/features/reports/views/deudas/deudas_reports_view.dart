@@ -1,4 +1,3 @@
-import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
@@ -17,42 +16,74 @@ class DeudasReportsView extends StatefulWidget {
 
 class _DeudasReportsViewState extends State<DeudasReportsView> {
   final cantDiasCtrl = TextEditingController();
+  final diasInicioCtrl = TextEditingController();
+  final diasFinCtrl = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    //fetchApi();
   }
 
-  void fetchApi() async {
-    context.read<ReportsBloc>().add(
-          const SearchDeudasByDays(
-            dias: '0',
+  void _searchDeudas() {
+    final diasInicio = int.tryParse(diasInicioCtrl.text) ?? -1;
+    final diasFin = int.tryParse(diasFinCtrl.text) ?? -1;
+
+    /* if (diasInicio < 0 || diasFin < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.red,
+          content: Text(
+            'Por favor ingrese solo números positivos.',
           ),
-        );
-  }
+        ),
+      );
+      return;
+    }
 
-  String cantDias = '';
-  String _dateRange = '';
+    if (diasInicio > diasFin) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.red,
+          content:
+              Text('El día de inicio no puede ser mayor que el día de fin.'),
+        ),
+      );
+      return;
+    } */
+    if (diasInicio <= 0 || diasFin <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.red,
+          content: Text(
+            'Por favor ingrese solo números positivos.',
+          ),
+        ),
+      );
+      return;
+    }
 
-  void _calculateDateRange() {
-    int days = int.tryParse(cantDias) ?? 0;
-    DateTime endDate = DateTime.now();
-    DateTime startDate = endDate.subtract(Duration(days: days));
-    setState(() {
-      _dateRange =
-          'entre el ${_formatDate(startDate)} hasta ${_formatDate(endDate)}';
-    });
-  }
+    if (diasInicio <= diasFin) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.red,
+          content: Text('El día de inicio debe ser mayor que el día de fin.'),
+        ),
+      );
+      return;
+    }
 
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
+    final reportsBloc = context.read<ReportsBloc>();
+    reportsBloc.add(
+      SearchDeudasByDays(
+        diasFin: diasFinCtrl.text,
+        diasInicio: diasInicioCtrl.text,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final reportsBloc = context.read<ReportsBloc>();
-
     return GestureDetector(
       onTap: () => Keyboard.unfocus(context),
       child: SizedBox(
@@ -70,42 +101,38 @@ class _DeudasReportsViewState extends State<DeudasReportsView> {
                       Expanded(
                         flex: 2,
                         child: AppTextFormField(
-                          labelText: 'Cantidad de días',
+                          labelText: 'Inicio',
                           keyboardType: TextInputType.number,
-                          initialValue: cantDias,
-                          onChanged: (e) {
-                            setState(() {
-                              cantDias = e;
-                            });
-
-                            _calculateDateRange();
-                          },
+                          controller: diasInicioCtrl,
                         ),
                       ),
                       const SizedBox(width: 15),
                       Expanded(
+                        flex: 2,
+                        child: AppTextFormField(
+                          labelText: 'Fin',
+                          keyboardType: TextInputType.number,
+                          controller: diasFinCtrl,
+                        ),
+                      ),
+                      const SizedBox(width: 15),
+                      Expanded(
+                        flex: 3,
                         child: PrimaryButton(
-                          onPressed: () {
-                            reportsBloc.add(
-                              SearchDeudasByDays(
-                                dias: cantDias,
-                              ),
-                            );
-                          },
+                          onPressed: _searchDeudas,
                           child: const Text('Buscar'),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 7),
-                  Text(
-                    'Filtro de deudas $_dateRange',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.black,
-                      fontWeight: FontWeight.w500,
+                  const SizedBox(height: 15),
+                  const Text(
+                    'Deudas vencidas en un rango de (Días de Fin) a (Días de Inicio)',
+                    style: TextStyle(
+                      fontSize: 12,
                     ),
                   ),
+                  const SizedBox(height: 7),
                 ],
               ),
             ),
@@ -115,7 +142,7 @@ class _DeudasReportsViewState extends State<DeudasReportsView> {
                   case ReportsStatus.error:
                     return const SliverToBoxAdapter(
                       child: Center(
-                        child: Text('Ocurrió un error, intentelo de nuevo'),
+                        child: Text('Ocurrió un error, inténtelo de nuevo'),
                       ),
                     );
 
@@ -131,11 +158,10 @@ class _DeudasReportsViewState extends State<DeudasReportsView> {
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
                           if (index == 0) {
-                            // Este es el texto adicional
                             return Padding(
                               padding: const EdgeInsets.all(8.0),
                               child: Text(
-                                'Prestamos con deuda (${state.listDeudas?.length})',
+                                'Préstamos con deuda (${state.listDeudas?.length})',
                                 style: const TextStyle(
                                   color: Colors.black,
                                   fontWeight: FontWeight.bold,
@@ -145,7 +171,6 @@ class _DeudasReportsViewState extends State<DeudasReportsView> {
                             );
                           }
 
-                          // Ajusta el índice para acceder correctamente a la lista
                           final prestamo = state.listDeudas![index - 1];
                           final fechaCreacion =
                               DateTime.parse(prestamo.fecha ?? '').toLocal();

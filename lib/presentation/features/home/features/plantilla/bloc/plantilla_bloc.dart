@@ -15,9 +15,6 @@ class PlantillaBloc extends Bloc<PlantillaEvent, PlantillaState> {
     on<GetLastPlantilla>(_onGetLastPlantilla);
     on<GeneratePlantilla>(_onGeneratePlantilla);
     on<SelectedPlantillaByText>(_onSelectedPlantillaByText);
-
-    // TODO::
-    // Todos las dedudas creadas hace "5" dias hasta "3" dias INICIO Y FIN, inicio mayor que fin y no aceptar umeros negativos
   }
 
   final PlantillaRepository _plantillaRepository;

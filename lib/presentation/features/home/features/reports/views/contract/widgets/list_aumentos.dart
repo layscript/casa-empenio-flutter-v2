@@ -77,6 +77,7 @@ class _ListAumentos extends StatelessWidget {
                                       preferences: context.read(),
                                       solicitudRepository: context.read(),
                                       anexoRepository: context.read(),
+                                      categoriesRepository: context.read(),
                                     ),
                                     child: ReportsDetailView(
                                       document:

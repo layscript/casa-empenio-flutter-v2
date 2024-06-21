@@ -274,8 +274,6 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
       'sucursalId': event.sucursalId,
     };
 
-    log('dataaa: ${data}');
-
     final result = await _salesRepository.createSalesProduct(data);
     if (result) {
       emit(

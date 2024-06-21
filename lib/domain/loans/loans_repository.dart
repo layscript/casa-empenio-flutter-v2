@@ -2,7 +2,6 @@ import 'dart:typed_data';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:dartz/dartz.dart';
-import 'package:image_picker/image_picker.dart';
 
 abstract class LoansRepository {
   Future<Either<String, int>> getLastCode();
@@ -11,10 +10,12 @@ abstract class LoansRepository {
     required int? userId,
   });
   Future<Either<String, List<LoansEntity>>> getLoans({
-    required String criterio,
+    required String? criterio,
     required int? userId,
     required int sucursal,
+    String? categoria,
   });
+
   Future<Either<String, ContratoEntity>> saveLoan({
     required int plazoDias,
     required double interes,

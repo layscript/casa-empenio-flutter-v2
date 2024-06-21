@@ -44,6 +44,7 @@ class _LoansViewState extends State<LoansView> {
         preferences: context.read(),
         solicitudRepository: context.read(),
         anexoRepository: context.read(),
+        categoriesRepository: context.read(),
       )..add(GetCashStatus()),
       child: Builder(
         builder: (context) {
@@ -202,7 +203,9 @@ class _LoansViewState extends State<LoansView> {
                                     ],
                                     if (state.typeSearch == false) ...[
                                       const SizedBox(height: 15),
-                                      const SearchLoansClientByGeneral(),
+                                      SearchLoansClientByGeneral(
+                                        categories: state.listCategories ?? [],
+                                      ),
                                     ],
                                     const SizedBox(height: 15),
                                     if (state.customer != null &&
@@ -532,8 +535,11 @@ class _LoansViewState extends State<LoansView> {
                                                               } else {
                                                                 loansBloc.add(
                                                                   GetLoansByText(
-                                                                    value: state
+                                                                    criterio: state
                                                                         .searchText,
+                                                                    categoria:
+                                                                        state.categoriaText ??
+                                                                            '',
                                                                   ),
                                                                 );
                                                               }
@@ -601,8 +607,12 @@ class _LoansViewState extends State<LoansView> {
                                                                 } else {
                                                                   loansBloc.add(
                                                                     GetLoansByText(
-                                                                      value: state
-                                                                          .searchText,
+                                                                      criterio:
+                                                                          state
+                                                                              .searchText,
+                                                                      categoria:
+                                                                          state.categoriaText ??
+                                                                              '',
                                                                     ),
                                                                   );
                                                                 }
@@ -732,8 +742,11 @@ class _LoansViewState extends State<LoansView> {
                                                         } else {
                                                           loansBloc.add(
                                                             GetLoansByText(
-                                                              value: state
+                                                              criterio: state
                                                                   .searchText,
+                                                              categoria: state
+                                                                      .categoriaText ??
+                                                                  '',
                                                             ),
                                                           );
                                                         }
@@ -783,8 +796,11 @@ class _LoansViewState extends State<LoansView> {
                                                         } else {
                                                           loansBloc.add(
                                                             GetLoansByText(
-                                                              value: state
+                                                              criterio: state
                                                                   .searchText,
+                                                              categoria: state
+                                                                      .categoriaText ??
+                                                                  '',
                                                             ),
                                                           );
                                                         }
@@ -842,8 +858,11 @@ class _LoansViewState extends State<LoansView> {
                                                           } else {
                                                             loansBloc.add(
                                                               GetLoansByText(
-                                                                value: state
+                                                                criterio: state
                                                                     .searchText,
+                                                                categoria: state
+                                                                        .categoriaText ??
+                                                                    '',
                                                               ),
                                                             );
                                                           }
@@ -1013,8 +1032,11 @@ class _LoansViewState extends State<LoansView> {
                                                             } else {
                                                               loansBloc.add(
                                                                 GetLoansByText(
-                                                                  value: state
+                                                                  criterio: state
                                                                       .searchText,
+                                                                  categoria:
+                                                                      state.categoriaText ??
+                                                                          '',
                                                                 ),
                                                               );
                                                             }
@@ -1064,8 +1086,11 @@ class _LoansViewState extends State<LoansView> {
                                                         } else {
                                                           loansBloc.add(
                                                             GetLoansByText(
-                                                              value: state
+                                                              criterio: state
                                                                   .searchText,
+                                                              categoria: state
+                                                                      .categoriaText ??
+                                                                  '',
                                                             ),
                                                           );
                                                         }

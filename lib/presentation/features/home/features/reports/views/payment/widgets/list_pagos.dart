@@ -80,6 +80,8 @@ class _ListPagos extends StatelessWidget {
                                             preferences: context.read(),
                                             solicitudRepository: context.read(),
                                             anexoRepository: context.read(),
+                                            categoriesRepository:
+                                                context.read(),
                                           ),
                                           child: ReportsDetailView(
                                             document:
@@ -187,6 +189,8 @@ class _ListPagos extends StatelessWidget {
                                                       solicitudRepository:
                                                           context.read(),
                                                       anexoRepository:
+                                                          context.read(),
+                                                      categoriesRepository:
                                                           context.read(),
                                                     ),
                                                     child: DeleteLoanDialog(

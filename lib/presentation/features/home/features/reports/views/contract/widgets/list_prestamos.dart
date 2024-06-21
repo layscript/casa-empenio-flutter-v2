@@ -81,6 +81,7 @@ class _ListPrestamos extends StatelessWidget {
                                       preferences: context.read(),
                                       solicitudRepository: context.read(),
                                       anexoRepository: context.read(),
+                                      categoriesRepository: context.read(),
                                     ),
                                     child: ReportsDetailView(
                                       document: prestamo?.cliente?.dni ?? '',

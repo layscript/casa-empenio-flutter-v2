@@ -16,7 +16,8 @@ abstract class ReportsRepository {
   });
 
   Future<Either<String, List<LoansEntity>>> getDeudasByDays({
-    required String dias,
+    required String diasInicio,
+    required String diasFin,
     required int sucursalId,
   });
 

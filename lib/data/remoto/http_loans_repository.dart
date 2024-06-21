@@ -85,15 +85,21 @@ class HttpLoansRepository implements LoansRepository {
 
   @override
   Future<Either<String, List<LoansEntity>>> getLoans({
-    required String criterio,
+    required String? criterio,
     required int sucursal,
     required int? userId,
+    String? categoria,
   }) async {
-    final path = '/prestamos/prestamos/criterio/$criterio/$sucursal';
+    const path = '/prestamos/prestamos/criterio';
+    final payload = {
+      'criterio': criterio,
+      'sucursal': sucursal,
+      'categoria': categoria,
+    };
 
     try {
-      final response = await _dio.get<String>(path);
-      if (response.statusCode != 200) {
+      final response = await _dio.post<String>(path, data: payload);
+      if (response.statusCode != 201) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
         return Left(message);

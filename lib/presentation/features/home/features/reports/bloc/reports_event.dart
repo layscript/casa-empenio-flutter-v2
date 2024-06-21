@@ -12,8 +12,13 @@ class GetCategoriesEvent extends ReportsEvent {
 }
 
 class SearchDeudasByDays extends ReportsEvent {
-  final String dias;
-  const SearchDeudasByDays({required this.dias});
+  final String diasInicio;
+  final String diasFin;
+
+  const SearchDeudasByDays({
+    required this.diasInicio,
+    required this.diasFin,
+  });
 }
 
 class DeleteIncreaseEvent extends ReportsEvent {

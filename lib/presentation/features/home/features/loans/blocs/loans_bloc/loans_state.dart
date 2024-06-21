@@ -54,6 +54,7 @@ enum AnexosLoanStatus {
 class LoansState extends Equatable {
   const LoansState({
     this.searchText = '',
+    this.categoriaText = '',
     this.openBox = false,
     this.typeSearch,
     this.loansStatus = LoansStatus.initial,
@@ -71,6 +72,8 @@ class LoansState extends Equatable {
     this.listCategories,
     this.cajaId,
   });
+
+  final String? categoriaText;
 
   final bool? openBox;
   final bool? typeSearch;
@@ -174,6 +177,7 @@ class LoansState extends Equatable {
     bool? openBox,
     bool? typeSearch,
     String? searchText,
+    String? categoriaText,
     LoansStatus? loansStatus,
     LoansStatus? loansSearchStatus,
     LoansStatus? loansRenewStatus,
@@ -207,6 +211,7 @@ class LoansState extends Equatable {
         anexosLoanStatus: anexosLoanStatus ?? this.anexosLoanStatus,
         listAnexos: listAnexos ?? this.listAnexos,
         listAnexosStatus: listAnexosStatus ?? this.listAnexosStatus,
+        categoriaText: categoriaText ?? this.categoriaText,
       );
 
   @override
@@ -228,5 +233,6 @@ class LoansState extends Equatable {
         anexosLoanStatus,
         listAnexos,
         listAnexosStatus,
+        categoriaText,
       ];
 }

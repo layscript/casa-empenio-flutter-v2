@@ -67,7 +67,6 @@ class CustomerEntity extends Equatable {
   }
 
   static CustomerEntity getCustomerFromMap(Map<String, dynamic> map) {
-    print('ajsdkjksadl: ${map}');
     return CustomerEntity(
       dni: map['dni'],
       nombres: map['nombres'],

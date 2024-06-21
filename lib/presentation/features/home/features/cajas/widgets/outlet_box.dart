@@ -73,9 +73,7 @@ class _CajaEgresosState extends State<CajaEgresos> {
                   itemBuilder: (context, index) {
                     final movimiento = filter[index];
                     return ExpansionTile(
-                      onExpansionChanged: (value) {
-                        log('clicked_movimiento: ${movimiento.toString()}');
-                      },
+                      onExpansionChanged: (value) {},
                       title: Text(
                         'Monto: s/ ${movimiento.monto}',
                       ),

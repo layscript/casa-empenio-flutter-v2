@@ -79,6 +79,8 @@ class _ListPrestamosCerrados extends StatelessWidget {
                                             preferences: context.read(),
                                             solicitudRepository: context.read(),
                                             anexoRepository: context.read(),
+                                            categoriesRepository:
+                                                context.read(),
                                           ),
                                           child: ReportsDetailView(
                                             document:
@@ -149,6 +151,8 @@ class _ListPrestamosCerrados extends StatelessWidget {
                                                           solicitudRepository:
                                                               context.read(),
                                                           anexoRepository:
+                                                              context.read(),
+                                                          categoriesRepository:
                                                               context.read(),
                                                         ),
                                                         child:

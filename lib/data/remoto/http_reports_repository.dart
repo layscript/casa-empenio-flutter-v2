@@ -292,7 +292,6 @@ class HttpReportsRepository implements ReportsRepository {
         return Right(result);
       }
     } catch (e, stackTrace) {
-      print('aslñkdlakñsdadklskladñs: $e');
       await _sentry.captureException(
         e,
         stackTrace: stackTrace,
@@ -357,12 +356,14 @@ class HttpReportsRepository implements ReportsRepository {
 
   @override
   Future<Either<String, List<LoansEntity>>> getDeudasByDays({
-    required String dias,
+    required String diasInicio,
+    required String diasFin,
     required int sucursalId,
   }) async {
     final payload = {
       'sucursalId': sucursalId,
-      'dias': dias,
+      'diasInicio': diasInicio,
+      'diasFin': diasFin,
     };
 
     const path = '/prestamos/reportes/dias';

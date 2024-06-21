@@ -717,7 +717,8 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
 
     try {
       final result = await _reportsRepository.getDeudasByDays(
-        dias: event.dias,
+        diasInicio: event.diasInicio,
+        diasFin: event.diasFin,
         sucursalId: _preferences.token?.sucursal?.id ?? 1,
       );
 
