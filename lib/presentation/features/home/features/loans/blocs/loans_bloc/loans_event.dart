@@ -34,9 +34,11 @@ class GetLoansByText extends LoansEvent {
   const GetLoansByText({
     required this.criterio,
     required this.categoria,
+    this.offset = 0,
   });
   final String? criterio;
   final String? categoria;
+  final int offset;
 }
 
 class GetDetailsLoan extends LoansEvent {

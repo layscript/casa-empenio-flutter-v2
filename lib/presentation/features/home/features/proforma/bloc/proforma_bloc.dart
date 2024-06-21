@@ -237,6 +237,7 @@ class ProformaBloc extends Bloc<ProformaEvent, ProformaState> {
           'precio': e.precio,
           'bienTemporal': e.selectedProducts?.descripcion,
           'bienGarantiaId': null,
+          'gastoAdicional': 0,
         };
       } else {
         return {
@@ -245,6 +246,7 @@ class ProformaBloc extends Bloc<ProformaEvent, ProformaState> {
           'precio': e.precio,
           'bienGarantiaId': e.selectedProducts?.id,
           'bienTemporal': null,
+          'gastoAdicional': 0,
         };
       }
     }).toList();

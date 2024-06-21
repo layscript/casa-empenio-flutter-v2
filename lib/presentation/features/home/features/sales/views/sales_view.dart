@@ -161,7 +161,7 @@ class _SalesViewState extends State<SalesView> {
 
                               if (result != null) {
                                 await Future.delayed(
-                                    Duration(milliseconds: 500), () {});
+                                    const Duration(milliseconds: 500), () {});
                                 salesBloc.add(
                                   GetListSales(
                                     start: null,
@@ -171,15 +171,6 @@ class _SalesViewState extends State<SalesView> {
                                   ),
                                 );
                               }
-
-                              salesBloc.add(
-                                GetListSales(
-                                  start: null,
-                                  end: null,
-                                  sucursalId:
-                                      preferences.token?.sucursal?.id ?? 1,
-                                ),
-                              );
                             },
                             icon: const FaIcon(
                               FontAwesomeIcons.circlePlus,

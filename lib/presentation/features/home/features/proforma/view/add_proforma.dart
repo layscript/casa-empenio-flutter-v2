@@ -62,20 +62,19 @@ class _AddFormProformaState extends State<AddFormProforma> {
                   if (state.isSaveSalesError) {
                     ErrorSnackbar.show(
                       context,
-                      'Ocurrió un problema con la venta',
+                      'Ocurrió un problema con la proforma',
                     );
                   }
 
                   if (state.isSaveSalesSuccess) {
                     SuccessSnackbar.show(
                       context,
-                      'Venta generada correctamente',
+                      'Proforma generada correctamente',
                     );
 
-                    // Despues  de 1500 milisegundos redirigir a la vista de ventas
-                    await Future.delayed(const Duration(milliseconds: 500));
+                    await Future.delayed(const Duration(milliseconds: 200));
                     if (mounted) {
-                      Navigator.pop(context);
+                      Navigator.pop(context, true);
                     }
                   }
                 }

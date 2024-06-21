@@ -89,6 +89,7 @@ class HttpLoansRepository implements LoansRepository {
     required int sucursal,
     required int? userId,
     String? categoria,
+    int offset = 0,
   }) async {
     const path = '/prestamos/prestamos/criterio';
     final payload = {
@@ -99,6 +100,8 @@ class HttpLoansRepository implements LoansRepository {
           : null,
       'sucursal': sucursal,
       'categoria': categoria,
+      'limit': 10,
+      'offset': offset
     };
 
     try {
@@ -109,7 +112,7 @@ class HttpLoansRepository implements LoansRepository {
         return Left(message);
       } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
-        final body = map['body'];
+        final body = map['body'][0];
         if (userId != null) {
           await _customerRepository.createHistory(
             accion: 'BUSQUEDA',

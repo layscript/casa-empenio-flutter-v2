@@ -14,6 +14,7 @@ abstract class LoansRepository {
     required int? userId,
     required int sucursal,
     String? categoria,
+    int offset = 0,
   });
 
   Future<Either<String, ContratoEntity>> saveLoan({

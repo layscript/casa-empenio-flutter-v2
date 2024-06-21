@@ -4,12 +4,24 @@ import 'package:casa_empenio_pe/presentation/features/home/features/loans/blocs/
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+class SearchDTO {
+  final String? text;
+  final String? category;
+
+  const SearchDTO({
+    this.text,
+    this.category,
+  });
+}
+
 class SearchLoansClientByGeneral extends StatefulWidget {
   const SearchLoansClientByGeneral({
     super.key,
     required this.categories,
+    required this.onPressed,
   });
   final List<CategoriesEntity> categories;
+  final void Function(SearchDTO)? onPressed;
 
   @override
   State<SearchLoansClientByGeneral> createState() =>
@@ -54,7 +66,7 @@ class _SearchLoansClientByGeneralState
             const SizedBox(width: 10),
             Expanded(
               child: ElevatedButton(
-                onPressed: textIsValid || selectedCategory != null
+                /* onPressed: textIsValid || selectedCategory != null
                     ? () {
                         context.read<LoansBloc>().add(
                               GetLoansByText(
@@ -62,6 +74,14 @@ class _SearchLoansClientByGeneralState
                                 categoria: selectedCategory?.descripcion,
                               ),
                             );
+                      }
+                    : null, */
+                onPressed: textIsValid || selectedCategory != null
+                    ? () {
+                        widget.onPressed!(SearchDTO(
+                          category: selectedCategory?.descripcion,
+                          text: textCtrl.text,
+                        ));
                       }
                     : null,
                 child: const Text('Buscar'),

@@ -114,10 +114,11 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     );
     final preferences = _preferences.token;
     final result = await _loansRepository.getLoans(
-      criterio: event.criterio,
+      criterio: event.criterio ?? state.searchText,
       userId: preferences?.id ?? 0,
       sucursal: preferences?.sucursal?.id ?? 1,
-      categoria: event.categoria,
+      categoria: event.categoria ?? state.categoriaText,
+      offset: event.offset,
     );
     result.fold(
       (message) => emit(_errorState(message)),

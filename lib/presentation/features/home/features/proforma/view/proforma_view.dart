@@ -157,8 +157,9 @@ class _ProformaViewState extends State<ProformaView> {
                                   },
                                 ),
                               );
-
                               if (result != null) {
+                                await Future.delayed(
+                                    const Duration(milliseconds: 500), () {});
                                 proformaBloc.add(
                                   GetListProformas(
                                     start: null,
@@ -195,6 +196,8 @@ class _ProformaViewState extends State<ProformaView> {
                                 itemCount: state.listSales.length,
                                 itemBuilder: (context, index) {
                                   final venta = state.listSales[index];
+                                  print('ventaaa: ${venta}');
+
                                   return ListTile(
                                     dense: true,
                                     contentPadding: const EdgeInsets.only(
@@ -205,13 +208,13 @@ class _ProformaViewState extends State<ProformaView> {
                                       children: [
                                         Text('${venta.cod}'),
                                         const SizedBox(height: 2),
-                                        Text(
+                                        /* Text(
                                           '${venta.cliente?.customerFullName}',
                                           style: const TextStyle(
                                             color: AppColors.secondaryText,
                                             fontWeight: FontWeight.normal,
                                           ),
-                                        )
+                                        ) */
                                       ],
                                     ),
                                     subtitle: Row(
