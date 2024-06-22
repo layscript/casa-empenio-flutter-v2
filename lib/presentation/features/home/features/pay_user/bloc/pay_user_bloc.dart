@@ -5,13 +5,20 @@ import 'package:equatable/equatable.dart';
 part 'pay_user_event.dart';
 part 'pay_user_state.dart';
 
+final _initialState = PayUserState(
+  startExpenses: DateTime.now().subtract(const Duration(days: 1)),
+  endExpenses: DateTime.now(),
+);
+
 class PayUserBloc extends Bloc<PayUserEvent, PayUserState> {
   PayUserBloc({
     required MotionRepository motionRepository,
     required CajaRepository cajaRepository,
+    required Preferences preferences,
   })  : _motionRepository = motionRepository,
         _cajaRepository = cajaRepository,
-        super(const PayUserState()) {
+        _preferences = preferences,
+        super(_initialState) {
     on<GetPayExpenses>(_onGetExpenses);
     on<SavePayExpense>(_onSaveExpense);
     on<GetCashPayExpensesStatus>(_onGetCashExpensesStatus);
@@ -19,13 +26,18 @@ class PayUserBloc extends Bloc<PayUserEvent, PayUserState> {
 
   final MotionRepository _motionRepository;
   final CajaRepository _cajaRepository;
+  final Preferences _preferences;
 
   Future<void> _onGetExpenses(
     GetPayExpenses event,
     Emitter<PayUserState> emit,
   ) async {
     emit(state.copyWith(payUserStatus: PayUserStatus.loading));
-    final result = await _motionRepository.getAllMotions();
+    final result = await _motionRepository.getAllMotions(
+      fechaInicio: event.start ?? state.startExpenses,
+      fechafin: event.end ?? state.endExpenses,
+      sucursalId: _preferences.token?.sucursal?.id ?? 1,
+    );
     result.fold(
       (error) => emit(
         state.copyWith(
@@ -39,6 +51,8 @@ class PayUserBloc extends Bloc<PayUserEvent, PayUserState> {
           state.copyWith(
             payUserStatus: PayUserStatus.loaded,
             listPayments: filterPayUsers,
+            startExpenses: event.start ?? state.startExpenses,
+            endExpenses: event.end ?? state.endExpenses,
           ),
         );
       },
@@ -49,7 +63,6 @@ class PayUserBloc extends Bloc<PayUserEvent, PayUserState> {
     SavePayExpense event,
     Emitter<PayUserState> emit,
   ) async {
-
     emit(
       state.copyWith(
         payUserStatus: PayUserStatus.loading,

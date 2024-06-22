@@ -20,12 +20,14 @@ class HttpCajaRepository implements CajaRepository {
     required int userId,
     required double monto,
     required String obs,
+    required int sucursalId,
   }) async {
     const path = '/finanza/caja/cerrar';
     final payload = {
       'usuarioId': userId,
       'monto': monto,
       'observaciones': obs,
+      'sucursalId': sucursalId,
     };
 
     try {
@@ -118,12 +120,14 @@ class HttpCajaRepository implements CajaRepository {
     required int userId,
     required double monto,
     required String obs,
+    required int sucursalId,
   }) async {
     const path = '/finanza/caja/abrir';
     final payload = {
       'usuarioId': userId,
       'monto': monto,
       'observaciones': obs,
+      'sucursalId': sucursalId,
     };
 
     try {
@@ -150,12 +154,14 @@ class HttpCajaRepository implements CajaRepository {
     required int userId,
     required double monto,
     required String obs,
+    required int sucursalId,
   }) async {
     const path = '/finanza/caja/aumentarMonto';
     final payload = {
       'usuarioId': userId,
       'monto': monto,
       'observaciones': obs,
+      'sucursalId': sucursalId,
     };
 
     try {

@@ -201,16 +201,52 @@ class _LoanClientViewState extends State<LoanClientView> {
                                   ),
                                 ),
                                 //if (auth.user.role?.id != 2)
-                                if (auth.user?.isAdmin == true)
-                                  //Editar
-                                  SizedBox(
-                                    height: 38,
-                                    width: 38,
-                                    child: IconButton(
-                                      padding: EdgeInsets.zero,
-                                      onPressed: () async {
-                                        if (prestamo?.cerrado == false) {
-                                          // TODAVIA NO ESTÁ CERRADO PUEDO EDITAR
+                                //if (auth.user?.isAdmin == true)
+                                //Editar
+                                SizedBox(
+                                  height: 38,
+                                  width: 38,
+                                  child: IconButton(
+                                    padding: EdgeInsets.zero,
+                                    onPressed: () async {
+                                      if (prestamo?.cerrado == false) {
+                                        // TODAVIA NO ESTÁ CERRADO PUEDO EDITAR
+                                        final result =
+                                            await showModalBottomSheet<bool?>(
+                                          isDismissible: false,
+                                          context: context,
+                                          builder: (_) {
+                                            return BlocProvider.value(
+                                              value: context.read<LoansBloc>(),
+                                              child: Padding(
+                                                padding: MediaQuery.of(context)
+                                                    .viewInsets,
+                                                child: EditLoanBottomSheet(
+                                                  idPrestamo:
+                                                      prestamo?.codigo ?? 0,
+                                                  isNuevo: false,
+                                                  isRenew: null,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        );
+                                        if (result != null && mounted) {
+                                          context.read<LoansBloc>().add(
+                                                GetLoansByDni(
+                                                  value: state.searchText,
+                                                ),
+                                              );
+                                        }
+                                      } else {
+                                        // YA ESTÁ CERRADO asi que renuevo
+                                        final optionBottomSheet =
+                                            await ShowBottomSheetRenewLoan.show(
+                                          context,
+                                        );
+
+                                        if (optionBottomSheet != null &&
+                                            mounted) {
                                           final result =
                                               await showModalBottomSheet<bool?>(
                                             isDismissible: false,
@@ -226,13 +262,14 @@ class _LoanClientViewState extends State<LoanClientView> {
                                                   child: EditLoanBottomSheet(
                                                     idPrestamo:
                                                         prestamo?.codigo ?? 0,
-                                                    isNuevo: false,
-                                                    isRenew: null,
+                                                    isNuevo: true,
+                                                    isRenew: optionBottomSheet,
                                                   ),
                                                 ),
                                               );
                                             },
                                           );
+
                                           if (result != null && mounted) {
                                             context.read<LoansBloc>().add(
                                                   GetLoansByDni(
@@ -240,64 +277,21 @@ class _LoanClientViewState extends State<LoanClientView> {
                                                   ),
                                                 );
                                           }
-                                        } else {
-                                          // YA ESTÁ CERRADO asi que renuevo
-                                          final optionBottomSheet =
-                                              await ShowBottomSheetRenewLoan
-                                                  .show(
-                                            context,
-                                          );
-
-                                          if (optionBottomSheet != null &&
-                                              mounted) {
-                                            final result =
-                                                await showModalBottomSheet<
-                                                    bool?>(
-                                              isDismissible: false,
-                                              context: context,
-                                              builder: (_) {
-                                                return BlocProvider.value(
-                                                  value:
-                                                      context.read<LoansBloc>(),
-                                                  child: Padding(
-                                                    padding:
-                                                        MediaQuery.of(context)
-                                                            .viewInsets,
-                                                    child: EditLoanBottomSheet(
-                                                      idPrestamo:
-                                                          prestamo?.codigo ?? 0,
-                                                      isNuevo: true,
-                                                      isRenew:
-                                                          optionBottomSheet,
-                                                    ),
-                                                  ),
-                                                );
-                                              },
-                                            );
-
-                                            if (result != null && mounted) {
-                                              context.read<LoansBloc>().add(
-                                                    GetLoansByDni(
-                                                      value: state.searchText,
-                                                    ),
-                                                  );
-                                            }
-                                          }
                                         }
-                                      },
-                                      icon: Icon(
-                                        prestamo?.cerrado == false
-                                            ? Icons.edit
-                                            : Icons.new_label,
-                                        color: prestamo?.cerrado == false
-                                            ? Colors.blue
-                                            : Colors.purple,
-                                      ),
+                                      }
+                                    },
+                                    icon: Icon(
+                                      prestamo?.cerrado == false
+                                          ? Icons.edit
+                                          : Icons.new_label,
+                                      color: prestamo?.cerrado == false
+                                          ? Colors.blue
+                                          : Colors.purple,
                                     ),
                                   ),
+                                ),
                                 //if (auth.user.role?.id == 2 &&
-                                if (auth.user?.isAdmin == true &&
-                                    prestamo?.cerrado == true)
+                                if (prestamo?.cerrado == true)
                                   SizedBox(
                                     height: 38,
                                     width: 38,

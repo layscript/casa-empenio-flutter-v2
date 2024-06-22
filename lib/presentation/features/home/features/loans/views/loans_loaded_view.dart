@@ -492,21 +492,72 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                                           ),
                                         ),
                                         //if (auth.user.role?.id != 2)
-                                        if (auth.user?.isAdmin == true)
-                                          //Editar
-                                          SizedBox(
-                                            height: 38,
-                                            width: 38,
-                                            child: IconButton(
-                                              padding: EdgeInsets.zero,
-                                              onPressed: () async {
-                                                if (prestamo?.cerrado ==
-                                                    false) {
-                                                  // TODAVIA NO ESTÁ CERRADO PUEDO EDITAR
+                                        //if (auth.user?.isAdmin == true)
+                                        //Editar
+                                        SizedBox(
+                                          height: 38,
+                                          width: 38,
+                                          child: IconButton(
+                                            padding: EdgeInsets.zero,
+                                            onPressed: () async {
+                                              if (prestamo?.cerrado == false) {
+                                                // TODAVIA NO ESTÁ CERRADO PUEDO EDITAR
+                                                final result =
+                                                    await showModalBottomSheet<
+                                                        bool?>(
+                                                  isDismissible: false,
+                                                  context: context,
+                                                  builder: (_) {
+                                                    return BlocProvider.value(
+                                                      value: widget.loansBloc,
+                                                      child: Padding(
+                                                        padding: MediaQuery.of(
+                                                                context)
+                                                            .viewInsets,
+                                                        child:
+                                                            EditLoanBottomSheet(
+                                                          idPrestamo: prestamo
+                                                                  ?.codigo ??
+                                                              0,
+                                                          isNuevo: false,
+                                                          isRenew: null,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                );
+
+                                                if (result != null) {
+                                                  await Future.delayed(
+                                                          const Duration(
+                                                              milliseconds:
+                                                                  300))
+                                                      .then((value) {
+                                                    if (typeSearch == true) {
+                                                      _handleSearchByDni(
+                                                        searchDocument,
+                                                      );
+                                                    } else {
+                                                      _handleSearchByGeneral(
+                                                        searchCriterio,
+                                                        searchCategoria,
+                                                      );
+                                                    }
+                                                  });
+                                                }
+                                              } else {
+                                                final optionBottomSheet =
+                                                    await ShowBottomSheetRenewLoan
+                                                        .show(
+                                                  context,
+                                                );
+                                                if (optionBottomSheet != null &&
+                                                    mounted) {
                                                   final result =
                                                       await showModalBottomSheet<
                                                           bool?>(
                                                     isDismissible: false,
+                                                    isScrollControlled: false,
                                                     context: context,
                                                     builder: (_) {
                                                       return BlocProvider.value(
@@ -521,8 +572,9 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                                                             idPrestamo: prestamo
                                                                     ?.codigo ??
                                                                 0,
-                                                            isNuevo: false,
-                                                            isRenew: null,
+                                                            isNuevo: true,
+                                                            isRenew:
+                                                                optionBottomSheet,
                                                           ),
                                                         ),
                                                       );
@@ -547,78 +599,19 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                                                       }
                                                     });
                                                   }
-                                                } else {
-                                                  final optionBottomSheet =
-                                                      await ShowBottomSheetRenewLoan
-                                                          .show(
-                                                    context,
-                                                  );
-                                                  if (optionBottomSheet !=
-                                                          null &&
-                                                      mounted) {
-                                                    final result =
-                                                        await showModalBottomSheet<
-                                                            bool?>(
-                                                      isDismissible: false,
-                                                      isScrollControlled: false,
-                                                      context: context,
-                                                      builder: (_) {
-                                                        return BlocProvider
-                                                            .value(
-                                                          value:
-                                                              widget.loansBloc,
-                                                          child: Padding(
-                                                            padding:
-                                                                MediaQuery.of(
-                                                                        context)
-                                                                    .viewInsets,
-                                                            child:
-                                                                EditLoanBottomSheet(
-                                                              idPrestamo: prestamo
-                                                                      ?.codigo ??
-                                                                  0,
-                                                              isNuevo: true,
-                                                              isRenew:
-                                                                  optionBottomSheet,
-                                                            ),
-                                                          ),
-                                                        );
-                                                      },
-                                                    );
-
-                                                    if (result != null) {
-                                                      await Future.delayed(
-                                                              const Duration(
-                                                                  milliseconds:
-                                                                      300))
-                                                          .then((value) {
-                                                        if (typeSearch ==
-                                                            true) {
-                                                          _handleSearchByDni(
-                                                            searchDocument,
-                                                          );
-                                                        } else {
-                                                          _handleSearchByGeneral(
-                                                            searchCriterio,
-                                                            searchCategoria,
-                                                          );
-                                                        }
-                                                      });
-                                                    }
-                                                  }
                                                 }
-                                              },
-                                              icon: Icon(
-                                                prestamo?.cerrado == false
-                                                    ? Icons.edit
-                                                    : Icons.new_label,
-                                                color:
-                                                    prestamo?.cerrado == false
-                                                        ? Colors.blue
-                                                        : Colors.purple,
-                                              ),
+                                              }
+                                            },
+                                            icon: Icon(
+                                              prestamo?.cerrado == false
+                                                  ? Icons.edit
+                                                  : Icons.new_label,
+                                              color: prestamo?.cerrado == false
+                                                  ? Colors.blue
+                                                  : Colors.purple,
                                             ),
                                           ),
+                                        ),
                                         //if (auth.user.role?.id == 2 &&
                                         /*   if (auth.user.isAdmin == true &&
                                                       prestamo?.cerrado == true)

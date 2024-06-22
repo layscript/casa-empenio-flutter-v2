@@ -13,8 +13,10 @@ class CajasBloc extends Bloc<CajasEvent, CajasState> {
   CajasBloc({
     required CajaRepository cajaRepository,
     required ExpensesRepository expensesRepository,
+    required Preferences preferences,
   })  : _cajaRepository = cajaRepository,
         _expensesRepository = expensesRepository,
+        _preferences = preferences,
         super(const CajasState()) {
     on<GetAllCajas>(_onGetAllCajas);
     on<GetCajasOfTheDay>(_onGetCajasOfTheDay);
@@ -26,6 +28,7 @@ class CajasBloc extends Bloc<CajasEvent, CajasState> {
 
   final CajaRepository _cajaRepository;
   final ExpensesRepository _expensesRepository;
+  final Preferences _preferences;
 
   Future<void> _onGetAllCajas(
     GetAllCajas event,
@@ -142,6 +145,7 @@ class CajasBloc extends Bloc<CajasEvent, CajasState> {
       userId: event.id,
       monto: double.parse(event.monto),
       obs: event.obs,
+      sucursalId: _preferences.token?.sucursal?.id ?? 1,
     );
 
     result.fold(
@@ -173,6 +177,7 @@ class CajasBloc extends Bloc<CajasEvent, CajasState> {
       userId: event.id,
       monto: double.parse(event.monto),
       obs: event.obs,
+      sucursalId: _preferences.token?.sucursal?.id ?? 1,
     );
 
     result.fold(
@@ -208,6 +213,7 @@ class CajasBloc extends Bloc<CajasEvent, CajasState> {
       userId: event.id,
       monto: double.parse(event.monto),
       obs: event.obs,
+      sucursalId: _preferences.token?.sucursal?.id ?? 1,
     );
 
     result.fold(

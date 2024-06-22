@@ -26,6 +26,7 @@ class _OpenCajaViewState extends State<OpenCajaView> {
       create: (context) => CajasBloc(
         cajaRepository: context.read(),
         expensesRepository: context.read(),
+        preferences: context.read(),
       )..add(GetCajasOfTheDay()),
       child: Builder(builder: (context) {
         return BlocBuilder<CajasBloc, CajasState>(

@@ -9,7 +9,15 @@ sealed class PayUserEvent extends Equatable {
 
 class GetCashPayExpensesStatus extends PayUserEvent {}
 
-class GetPayExpenses extends PayUserEvent {}
+class GetPayExpenses extends PayUserEvent {
+  const GetPayExpenses({
+    required this.start,
+    required this.end,
+  });
+
+  final DateTime? start;
+  final DateTime? end;
+}
 
 class SavePayExpense extends PayUserEvent {
   const SavePayExpense({

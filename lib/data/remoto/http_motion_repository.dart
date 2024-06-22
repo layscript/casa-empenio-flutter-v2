@@ -50,8 +50,35 @@ class HttpMotionRepository implements MotionRepository {
   }
 
   @override
-  Future<Either<String, List<MotionEntity>>> getAllMotions() async {
-    const path = '/finanza/movimiento';
+  Future<Either<String, List<MotionEntity>>> getAllMotions({
+    required DateTime fechaInicio,
+    required DateTime fechafin,
+    required int sucursalId,
+  }) async {
+    final fechaInicioParsed = DateTime(
+      fechaInicio.year,
+      fechaInicio.month,
+      fechaInicio.day,
+      0,
+      0,
+      0,
+    );
+
+    final fechafinParsed = DateTime(
+      fechafin.year,
+      fechafin.month,
+      fechafin.day,
+      23,
+      59,
+      59,
+    );
+
+    final fechaIniP = fechaInicioParsed.toUtc().toIso8601String();
+    final fechaFinP = fechafinParsed.toUtc().toIso8601String();
+
+    final path =
+        '/finanza/movimiento?limit=1000&offset=0&fechaInicio=$fechaIniP&fechaFin=$fechaFinP&sucursalId=$sucursalId';
+
     try {
       final response = await _dio.get<String>(path);
       if (response.statusCode != 200) {

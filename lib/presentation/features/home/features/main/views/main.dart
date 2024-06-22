@@ -124,10 +124,10 @@ class _MainViewState extends State<MainView> {
                       return const HistorialView();
 
                     case 12:
-                      return const CajasView();
+                      return const OpenCajaView();
 
                     case 13:
-                      return const OpenCajaView();
+                      return const CajasView();
 
                     case 14:
                       return const PayUserView();

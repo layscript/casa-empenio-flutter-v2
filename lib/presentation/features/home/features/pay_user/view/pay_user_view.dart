@@ -3,7 +3,6 @@ import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/buttons/buttons.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
-import 'package:casa_empenio_pe/presentation/features/home/features/expenses/widgets/add_expense_dialog.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/pay_user/widgets/add_pay_user_dialog.dart';
 import 'package:flutter/material.dart';
@@ -28,8 +27,9 @@ class _PayUserViewState extends State<PayUserView> {
       create: (context) => PayUserBloc(
         motionRepository: context.read(),
         cajaRepository: context.read(),
+        preferences: context.read(),
       )
-        ..add(GetPayExpenses())
+        ..add(const GetPayExpenses(end: null, start: null))
         ..add(GetCashPayExpensesStatus()),
       child: Builder(
         builder: (context) {
@@ -67,12 +67,16 @@ class _PayUserViewState extends State<PayUserView> {
                   return ButtonStateError(
                     onPressed: () {
                       context.read<PayUserBloc>()
-                        ..add(GetPayExpenses())
+                        ..add(const GetPayExpenses(
+                          end: null,
+                          start: null,
+                        ))
                         ..add(GetCashPayExpensesStatus());
                     },
                   );
 
                 case PayUserStatus.loaded || PayUserStatus.success:
+                  final payUserBloc = context.read<PayUserBloc>();
                   return Container(
                     width: double.infinity,
                     padding: EdgeInsets.only(
@@ -101,6 +105,43 @@ class _PayUserViewState extends State<PayUserView> {
                                   ),
                                 ),
                                 const SizedBox(height: 20),
+                                ListTile(
+                                  dense: true,
+                                  leading: const Icon(
+                                    Icons.calendar_today,
+                                  ),
+                                  title: FittedBox(
+                                    child: Text(
+                                      'Desde: ${DateFormat('dd/MM/yyyy').format(state.startExpenses)} Hasta: ${DateFormat('dd/MM/yyyy').format(state.endExpenses)}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ),
+                                  trailing: IconButton(
+                                    constraints: const BoxConstraints(),
+                                    onPressed: () async {
+                                      final result = await showDateRangePicker(
+                                        context: context,
+                                        firstDate: DateTime(2022, 1, 1),
+                                        lastDate: DateTime(2030, 12, 31),
+                                        currentDate: DateTime.now(),
+                                        saveText: 'Done',
+                                      );
+
+                                      if (result != null && mounted) {
+                                        payUserBloc.add(
+                                          GetPayExpenses(
+                                            start: result.start,
+                                            end: result.end,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    icon: const Icon(Icons.calendar_today),
+                                  ),
+                                ),
                                 if (state.listPayments != null)
                                   ListView.separated(
                                     physics:
@@ -193,7 +234,10 @@ class _PayUserViewState extends State<PayUserView> {
                                   if (result != null && mounted) {
                                     context
                                         .read<PayUserBloc>()
-                                        .add(GetPayExpenses());
+                                        .add(const GetPayExpenses(
+                                          end: null,
+                                          start: null,
+                                        ));
                                   }
                                 },
                                 child: const Row(

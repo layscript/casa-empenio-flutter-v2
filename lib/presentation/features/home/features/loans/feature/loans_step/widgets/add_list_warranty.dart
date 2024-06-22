@@ -41,7 +41,6 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
   bool isValidObservationWarranty = false;
   bool isValidPriceWarranty = false;
   bool isValidCategories = false;
-
   @override
   void initState() {
     super.initState();
@@ -51,32 +50,34 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
   void callData() {
     final loansState = context.read<LoansStepBloc>().state;
 
+    // Actualización de los campos según el estado actual
     descriptionWarrantyCtrl.text = loansState.description ?? '';
-    isValidDescriptionWarranty = loansState.description != null ? true : false;
+    isValidDescriptionWarranty = loansState.description != null;
 
     categories = loansState.categories;
-    isValidCategories = loansState.categories != null ? true : false;
+    isValidCategories = loansState.categories != null;
 
     marcaWarrantyCtrl.text = loansState.brand ?? '';
-    isValidMarcaWarranty = loansState.brand != null ? true : false;
+    isValidMarcaWarranty = loansState.brand != null;
 
     modeloWarrantyCtrl.text = loansState.model ?? '';
-    isValidModeloWarranty = loansState.model != null ? true : false;
+    isValidModeloWarranty = loansState.model != null;
 
     colorWarrantyCtrl.text = loansState.color ?? '';
-    isValidColorWarranty = loansState.color != null ? true : false;
+    isValidColorWarranty = loansState.color != null;
 
     serieWarrantyCtrl.text = loansState.serie ?? '';
-    //isValidSerieWarranty = loansState.serie != null ? true : false;
 
     observationWarrantyCtrl.text = loansState.warrantyObservations ?? '';
-    isValidObservationWarranty =
-        loansState.warrantyObservations != null ? true : false;
+    isValidObservationWarranty = loansState.warrantyObservations != null;
 
     priceWarrantyCtrl.text = loansState.price ?? '';
-    isValidPriceWarranty = loansState.price != null ? true : false;
+    isValidPriceWarranty = loansState.price != null;
 
+    // Actualización de las fotos seleccionadas
     getPhoto(loansState.photoWarranty);
+
+    // Actualización del estado
     getStatus(loansState.status);
   }
 
@@ -98,146 +99,165 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
     final localState =
         preferences.getLoansPreferences ?? LoansPreferencesEntity.init();
 
+    return Container(
+      width: MediaQuery.of(context).size.width,
+      height: MediaQuery.of(context).size.height,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 15),
+          _buildDescriptionField(),
+          const SizedBox(height: 15),
+          _buildCategoryAndPlacaRow(loansState),
+          const SizedBox(height: 15),
+          _buildBrandAndModelRow(),
+          const SizedBox(height: 15),
+          _buildColorAndStatusRow(),
+          const SizedBox(height: 15),
+          _buildOptionalFields(),
+          const SizedBox(height: 15),
+          _buildPhotoSelectionRow(),
+          const SizedBox(height: 15),
+          _buildButtons(loansState, localState),
+          const SizedBox(height: 15),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDescriptionField() {
+    return AppTextFormField(
+      labelText: 'Descripción (requerido)',
+      controller: descriptionWarrantyCtrl,
+      isValid: (value) {
+        setState(() {
+          isValidDescriptionWarranty = value;
+        });
+      },
+      validator: (value) {
+        if (value!.isEmpty) return 'Campo Requerido';
+        return null;
+      },
+    );
+  }
+
+  Widget _buildCategoryAndPlacaRow(LoansStepState loansState) {
+    return Row(
+      children: [
+        Expanded(
+          child: AppDropdownButtonFormField<CategoriesEntity?>(
+            labelText: 'Categoría (requerido)',
+            value: categories,
+            onChanged: (value) {
+              setState(() {
+                isValidCategories = true;
+                categories = value;
+              });
+            },
+            items: loansState.listCategories
+                ?.map((e) => DropdownMenuItem<CategoriesEntity?>(
+                      value: e,
+                      child: Text(e.descripcion),
+                    ))
+                .toList(),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: AppTextFormField(
+            labelText: 'Placa (opcional)',
+            controller: placaWarrantyCtrl,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBrandAndModelRow() {
+    return Row(
+      children: [
+        Expanded(
+          child: AppTextFormField(
+            labelText: 'Marca (requerido)',
+            controller: marcaWarrantyCtrl,
+            isValid: (value) {
+              setState(() {
+                isValidMarcaWarranty = value;
+              });
+            },
+            validator: (value) {
+              if (value!.isEmpty) return 'Campo Requerido';
+              return null;
+            },
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: AppTextFormField(
+            labelText: 'Modelo (requerido)',
+            controller: modeloWarrantyCtrl,
+            isValid: (value) {
+              setState(() {
+                isValidModeloWarranty = value;
+              });
+            },
+            validator: (value) {
+              if (value!.isEmpty) return 'Campo Requerido';
+              return null;
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildColorAndStatusRow() {
+    return Row(
+      children: [
+        Expanded(
+          child: AppTextFormField(
+            labelText: 'Color (requerido)',
+            controller: colorWarrantyCtrl,
+            isValid: (value) {
+              setState(() {
+                isValidColorWarranty = value;
+              });
+            },
+            validator: (value) {
+              if (value!.isEmpty) return 'Campo Requerido';
+              return null;
+            },
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: AppDropdownButtonFormField<String?>(
+            labelText: 'Estado (requerido)',
+            value: statusWarranty,
+            onChanged: (value) {
+              setState(() {
+                statusWarranty = value;
+              });
+            },
+            items: ['nuevo', 'bueno', 'regular']
+                .map((e) => DropdownMenuItem<String?>(
+                      value: e,
+                      child: Text(e),
+                    ))
+                .toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOptionalFields() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 15),
-        AppTextFormField(
-          labelText: 'Descripcion (requerido)',
-          controller: descriptionWarrantyCtrl,
-          isValid: (value) {
-            setState(() {
-              isValidDescriptionWarranty = value;
-            });
-          },
-          validator: (value) {
-            if (value!.isEmpty) return 'Campo Requerido';
-            return null;
-          },
-        ),
-        const SizedBox(height: 15),
-        Row(
-          children: [
-            Expanded(
-              child: AppDropdownButtonFormField<CategoriesEntity?>(
-                labelText: 'Categoría (requerido)',
-                value: categories,
-                onChanged: (value) {
-                  setState(() {
-                    isValidCategories = true;
-                    categories = value;
-                  });
-                },
-                items: loansState.listCategories != null
-                    ? loansState.listCategories!
-                        .map(
-                          (e) => DropdownMenuItem<CategoriesEntity?>(
-                            value: e,
-                            child: Text(e.descripcion),
-                          ),
-                        )
-                        .toList()
-                    : null,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: AppTextFormField(
-                labelText: 'Placa (opcional)',
-                controller: placaWarrantyCtrl,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 15),
-        Row(
-          children: [
-            Expanded(
-              child: AppTextFormField(
-                labelText: 'Marca (requerido)',
-                controller: marcaWarrantyCtrl,
-                isValid: (value) {
-                  setState(() {
-                    isValidMarcaWarranty = value;
-                  });
-                },
-                validator: (value) {
-                  if (value!.isEmpty) return 'Campo Requerido';
-                  return null;
-                },
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: AppTextFormField(
-                labelText: 'Modelo (requerido)',
-                controller: modeloWarrantyCtrl,
-                isValid: (value) {
-                  setState(() {
-                    isValidModeloWarranty = value;
-                  });
-                },
-                validator: (value) {
-                  if (value!.isEmpty) return 'Campo Requerido';
-                  return null;
-                },
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 15),
-        Row(
-          children: [
-            Expanded(
-              child: AppTextFormField(
-                labelText: 'Color (requerido)',
-                controller: colorWarrantyCtrl,
-                isValid: (value) {
-                  setState(() {
-                    isValidColorWarranty = value;
-                  });
-                },
-                validator: (value) {
-                  if (value!.isEmpty) return 'Campo Requerido';
-                  return null;
-                },
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: AppDropdownButtonFormField<String?>(
-                labelText: 'Estado (requerido)',
-                value: statusWarranty,
-                onChanged: (value) {
-                  setState(() {
-                    statusWarranty = value;
-                  });
-                },
-                items: ['nuevo', 'bueno', 'regular']
-                    .map(
-                      (e) => DropdownMenuItem<String?>(
-                        value: e,
-                        child: Text(e),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 15),
         AppTextFormField(
           labelText: 'Serie (opcional)',
           controller: serieWarrantyCtrl,
-          /* isValid: (value) {
-            setState(() {
-              isValidSerieWarranty = value;
-            });
-          },
-          validator: (value) {
-            if (value!.isEmpty) return 'Campo Requerido';
-            return null;
-          }, */
         ),
         const SizedBox(height: 15),
         AppTextFormField(
@@ -274,93 +294,105 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
             return null;
           },
         ),
-        const SizedBox(height: 15),
-        Row(
-          children: [
-            // Muestra las imágenes seleccionadas con opción de eliminar
-            for (int i = 0; i < (selectedPhotos?.length ?? 0); i++)
-              GestureDetector(
-                onTap: () {
-                  // Elimina la imagen del array al tocarla
+      ],
+    );
+  }
+
+  Widget _buildPhotoSelectionRow() {
+    return Row(
+      children: [
+        // Muestra las imágenes seleccionadas con opción de eliminar
+        for (int i = 0; i < (selectedPhotos?.length ?? 0); i++)
+          GestureDetector(
+            onTap: () {
+              // Elimina la imagen del array al tocarla
+              setState(() {
+                selectedPhotos?.removeAt(i);
+              });
+            },
+            child: Stack(
+              children: [
+                Image.file(
+                  File(selectedPhotos![i].path),
+                  width: 100,
+                  height: 100,
+                ),
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.red,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        // Botón para seleccionar imágenes desde la cámara
+        if (selectedPhotos!.length < 2)
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () async {
+                final photo = await ImagePicker().pickImage(
+                  source: ImageSource.camera,
+                  imageQuality: 70,
+                );
+
+                // Verifica si se seleccionó una imagen antes de agregarla a la lista
+                if (photo != null) {
                   setState(() {
-                    selectedPhotos?.removeAt(i);
+                    selectedPhotos?.add(photo);
                   });
-                },
-                child: Stack(
-                  children: [
-                    Image.file(
-                      File(selectedPhotos![i].path),
-                      width: 100,
-                      height: 100,
-                    ),
-                    Positioned(
-                      top: 0,
-                      right: 0,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          color: Colors.red,
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                }
+              },
+              child: Text(
+                'Tomar Foto (${2 - selectedPhotos!.length})',
               ),
+            ),
+          ),
+        const SizedBox(width: 10),
+        // Botón para seleccionar imagen desde la galería
+        if (selectedPhotos!.length < 3)
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () async {
+                final photo = await ImagePicker().pickImage(
+                  source: ImageSource.gallery,
+                  imageQuality: 70,
+                );
 
-            // Botón para seleccionar imágenes desde la cámara
-            if (selectedPhotos!.length < 2)
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final photo = await ImagePicker().pickImage(
-                      source: ImageSource.camera,
-                      imageQuality: 70,
-                    );
-
-                    // Verifica si se seleccionó una imagen antes de agregarla a la lista
-                    if (photo != null) {
-                      setState(() {
-                        selectedPhotos?.add(photo);
-                      });
-                    }
-                  },
-                  child: Text(
-                    'Tomar Foto (${2 - selectedPhotos!.length})',
-                  ),
-                ),
+                // Verifica si se seleccionó una imagen antes de agregarla a la lista
+                if (photo != null) {
+                  setState(() {
+                    selectedPhotos?.add(photo);
+                  });
+                }
+              },
+              child: const Text(
+                'Subir Imagen (1)',
               ),
-            const SizedBox(width: 10),
-            // Botón para seleccionar imagen desde la galería
-            if (selectedPhotos!.length < 3)
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final photo = await ImagePicker().pickImage(
-                      source: ImageSource.gallery,
-                      imageQuality: 70,
-                    );
+            ),
+          ),
+      ],
+    );
+  }
 
-                    // Verifica si se seleccionó una imagen antes de agregarla a la lista
-                    if (photo != null) {
-                      setState(() {
-                        selectedPhotos?.add(photo);
-                      });
-                    }
-                  },
-                  child: const Text(
-                    'Subir Imagen (1)',
-                  ),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 15),
+  Widget _buildButtons(
+    LoansStepState loansState,
+    LoansPreferencesEntity localState,
+  ) {
+    return Column(
+      children: [
         SecondaryButton(
           onPressed: () {
+            // Lógica para volver atrás
             if (loansState.listWarranty == null ||
                 loansState.listWarranty!.isEmpty) {
               context.read<LoansStepBloc>().add(
@@ -399,10 +431,8 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
                   isValidMarcaWarranty &&
                   isValidModeloWarranty &&
                   isValidColorWarranty &&
-                  //isValidSerieWarranty &&
                   isValidObservationWarranty &&
-                  isValidPriceWarranty /* &&
-                  selectedPhotos?.length == 3 */
+                  isValidPriceWarranty
               ? () {
                   context.read<LoansStepBloc>().add(
                         AddListWarranty(
@@ -417,7 +447,8 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
                             color: colorWarrantyCtrl.text,
                             status: statusWarranty,
                             serie: serieWarrantyCtrl.text,
-                            warrantyObservations: observationWarrantyCtrl.text,
+                            warrantyObservations:
+                                observationWarrantyCtrl.text,
                             price: priceWarrantyCtrl.text,
                             photoWarranty: selectedPhotos,
                           ),
@@ -427,7 +458,6 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
               : null,
           child: const Text('Guardar'),
         ),
-        const SizedBox(height: 15),
       ],
     );
   }

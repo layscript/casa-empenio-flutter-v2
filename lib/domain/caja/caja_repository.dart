@@ -10,16 +10,19 @@ abstract class CajaRepository {
     required int userId,
     required double monto,
     required String obs,
+    required int sucursalId,
   });
   Future<Either<String, bool>> closeCaja({
     required int userId,
     required double monto,
     required String obs,
+    required int sucursalId,
   });
 
   Future<Either<String, bool>> aumentarMonto({
     required int userId,
     required double monto,
     required String obs,
+    required int sucursalId,
   });
 }
