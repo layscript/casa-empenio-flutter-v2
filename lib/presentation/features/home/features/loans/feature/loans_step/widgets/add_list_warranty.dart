@@ -242,16 +242,18 @@ class AddFormWarranty extends StatelessWidget {
             ),
             const SizedBox(height: 15),
             PrimaryButton(
-              onPressed: /* isValidDescriptionWarranty &&
-                      isValidCategories &&
-                      isValidMarcaWarranty &&
-                      isValidModeloWarranty &&
-                      isValidColorWarranty &&
-                      isValidObservationWarranty &&
-                      isValidPriceWarranty */
-                  true
+              onPressed:
+                  (state.description != '' && state.description != null) &&
+                          (state.categories != null) &&
+                          (state.brand != '' && state.brand != null) &&
+                          (state.model != '' && state.model != null) &&
+                          (state.color != '' && state.color != null) &&
+                          (state.status != '' && state.status != null) &&
+                          (state.warrantyObservations != '' &&
+                              state.warrantyObservations != null) &&
+                          (state.price != '' && state.price != null)
                       ? () {
-                          loansStepBloc.add(AddListWarranty());
+                          loansStepBloc.add(const AddListWarranty());
                         }
                       : null,
               child: const Text('Guardar'),

@@ -186,24 +186,28 @@ class EditFormWarranty extends StatelessWidget {
           child: const Text('Volver'),
         ),
         const SizedBox(height: 15),
-        PrimaryButton(
-          onPressed: /* isValidDescriptionWarranty &&
-                  isValidCategories &&
-                  isValidMarcaWarranty &&
-                  isValidModeloWarranty &&
-                  isValidColorWarranty &&
-                  /* isValidSerieWarranty && */
-                  isValidObservationWarranty &&
-                  isValidPriceWarranty /* &&
-                  (selectedPhotos?.length == 3) */ */
-              true
-                  ? () {
-                      loansStepBloc.add(
-                        const EditListWarranty(),
-                      );
-                    }
-                  : null,
-          child: const Text('Editar'),
+        BlocBuilder<LoansStepBloc, LoansStepState>(
+          builder: (context, state) {
+            return PrimaryButton(
+              onPressed:
+                  (state.description != '' && state.description != null) &&
+                          (state.categories != null) &&
+                          (state.brand != '' && state.brand != null) &&
+                          (state.model != '' && state.model != null) &&
+                          (state.color != '' && state.color != null) &&
+                          (state.status != '' && state.status != null) &&
+                          (state.warrantyObservations != '' &&
+                              state.warrantyObservations != null) &&
+                          (state.price != '' && state.price != null)
+                      ? () {
+                          loansStepBloc.add(
+                            const EditListWarranty(),
+                          );
+                        }
+                      : null,
+              child: const Text('Editar'),
+            );
+          },
         )
       ],
     );
