@@ -59,91 +59,95 @@ class PerdonadosView extends StatelessWidget {
             case PerdonadosStatus.success:
               return Stack(
                 children: [
-                  Column(
-                    children: [
-                      const SizedBox(height: 15),
-                      const Text(
-                        'Lista de Perdonados',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 18),
-                      ),
-                      const SizedBox(height: 15),
-                      ListTile(
-                        dense: true,
-                        leading: IconButton(
-                          onPressed: () {},
-                          icon: const Icon(Icons.calendar_today),
+                  SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 15),
+                        const Text(
+                          'Lista de Perdonados',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 18),
                         ),
-                        contentPadding: EdgeInsets.zero,
-                        title: FittedBox(
-                          child: Text(
-                            'Desde: ${DateFormat('dd/MM/yyyy').format(state.startTimePayments)} Hasta: ${DateFormat('dd/MM/yyyy').format(state.endTimePayments)}',
+                        const SizedBox(height: 15),
+                        ListTile(
+                          dense: true,
+                          leading: IconButton(
+                            onPressed: () {},
+                            icon: const Icon(Icons.calendar_today),
                           ),
-                        ),
-                        trailing: IconButton(
-                          constraints: const BoxConstraints(),
-                          onPressed: () async {
-                            final result = await showDateRangePicker(
-                              locale: const Locale('es'),
-                              context: context,
-                              firstDate: DateTime(2022, 1, 1),
-                              lastDate: DateTime(2030, 12, 31),
-                              currentDate: DateTime.now(),
-                              saveText: 'Done',
-                            );
-                            if (result != null) {
-                              perdonadosBloc.add(
-                                GetAllPerdonados(
-                                  inicio: result.start,
-                                  fin: result.end,
-                                ),
+                          contentPadding: EdgeInsets.zero,
+                          title: FittedBox(
+                            child: Text(
+                              'Desde: ${DateFormat('dd/MM/yyyy').format(state.startTimePayments)} Hasta: ${DateFormat('dd/MM/yyyy').format(state.endTimePayments)}',
+                            ),
+                          ),
+                          trailing: IconButton(
+                            constraints: const BoxConstraints(),
+                            onPressed: () async {
+                              final result = await showDateRangePicker(
+                                locale: const Locale('es'),
+                                context: context,
+                                firstDate: DateTime(2022, 1, 1),
+                                lastDate: DateTime(2030, 12, 31),
+                                currentDate: DateTime.now(),
+                                saveText: 'Done',
                               );
-                            }
-                          },
-                          icon: const Icon(Icons.calendar_today),
-                        ),
-                      ),
-                      const SizedBox(height: 15),
-                      if (state.listPerdonados.isEmpty)
-                        const Center(
-                          child: Text(
-                            'No hay perdonados en la fecha seleccionada',
+                              if (result != null) {
+                                perdonadosBloc.add(
+                                  GetAllPerdonados(
+                                    inicio: result.start,
+                                    fin: result.end,
+                                  ),
+                                );
+                              }
+                            },
+                            icon: const Icon(Icons.calendar_today),
                           ),
                         ),
-                      ListView.separated(
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 10),
-                        shrinkWrap: true,
-                        itemCount: state.listPerdonados.length,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemBuilder: (context, index) {
-                          final perdonado = state.listPerdonados[index];
-                          return ListTile(
-                            title: Text(
-                              'Cod: ${perdonado.prestamo.codigoFormateado} -  s/.${perdonado.monto}',
+                        const SizedBox(height: 15),
+                        if (state.listPerdonados.isEmpty)
+                          const Center(
+                            child: Text(
+                              'No hay perdonados en la fecha seleccionada',
                             ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  DateFormat('dd/MM/yyyy - hh:mm').format(
-                                      DateTime.parse(perdonado.createdAt ?? '')
-                                          .toLocal()),
-                                ),
-                                Text(
-                                  '${perdonado.prestamo.cliente?.nombres ?? ''} ${perdonado.prestamo.cliente?.apellidos ?? ''}',
-                                  maxLines: 1,
-                                  style: const TextStyle(
-                                    overflow: TextOverflow.ellipsis,
+                          ),
+                        ListView.separated(
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 10),
+                          shrinkWrap: true,
+                          itemCount: state.listPerdonados.length,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemBuilder: (context, index) {
+                            final perdonado = state.listPerdonados[index];
+                            return ListTile(
+                              title: Text(
+                                'Cod: ${perdonado.prestamo.codigoFormateado} -  s/.${perdonado.monto}',
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    DateFormat('dd/MM/yyyy - hh:mm').format(
+                                        DateTime.parse(
+                                                perdonado.createdAt ?? '')
+                                            .toLocal()),
                                   ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+                                  Text(
+                                    '${perdonado.prestamo.cliente?.nombres ?? ''} ${perdonado.prestamo.cliente?.apellidos ?? ''}',
+                                    maxLines: 1,
+                                    style: const TextStyle(
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 60),
+                      ],
+                    ),
                   ),
                   Positioned(
                     bottom: 0,

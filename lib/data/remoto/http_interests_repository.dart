@@ -3,17 +3,13 @@ import 'dart:convert';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 class HttpInterestsRepository implements InterestsRepository {
   const HttpInterestsRepository({
     required Dio dio,
-    required SentryClient sentry,
-  })  : _sentry = sentry,
-        _dio = dio;
+  }) : _dio = dio;
 
   final Dio _dio;
-  final SentryClient _sentry;
 
   @override
   Future<Either<String, bool>> createInterests({
@@ -34,10 +30,6 @@ class HttpInterestsRepository implements InterestsRepository {
         return const Right(true);
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       //print('responseee ee: $e');
       return const Left('Ocurrió un error con el servidor');
     }
@@ -60,10 +52,7 @@ class HttpInterestsRepository implements InterestsRepository {
       }
     } catch (e, stackTrace) {
       //print('responseee ee: $e');
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
+
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -82,10 +71,6 @@ class HttpInterestsRepository implements InterestsRepository {
         return Right(InterestsEntity.listGetInterestFromMap(map));
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       //print('responseee ee: $e');
       return const Left('Ocurrió un error con el servidor');
     }
@@ -111,10 +96,6 @@ class HttpInterestsRepository implements InterestsRepository {
         return const Right(true);
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       return const Left('Ocurrió un error con el servidor');
     }
   }

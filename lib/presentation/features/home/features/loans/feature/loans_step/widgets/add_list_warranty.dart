@@ -1,139 +1,51 @@
-import 'dart:io';
-
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/custom_image_picker.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/feature/loans_step/bloc/loans_step_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
 
-class AddFormWarranty extends StatefulWidget {
+class AddFormWarranty extends StatelessWidget {
   const AddFormWarranty({super.key});
 
   @override
-  State<AddFormWarranty> createState() => _AddFormWarrantyState();
-}
-
-class _AddFormWarrantyState extends State<AddFormWarranty> {
-  String? statusWarranty;
-  CategoriesEntity? categories;
-
-  final descriptionWarrantyCtrl = TextEditingController();
-  final placaWarrantyCtrl = TextEditingController();
-
-  final marcaWarrantyCtrl = TextEditingController();
-  final modeloWarrantyCtrl = TextEditingController();
-  final colorWarrantyCtrl = TextEditingController();
-  final serieWarrantyCtrl = TextEditingController();
-  final observationWarrantyCtrl = TextEditingController();
-  final priceWarrantyCtrl = TextEditingController();
-  //XFile? photoWarranty;
-
-  List<XFile>? selectedPhotos = [];
-
-  bool isValidDescriptionWarranty = false;
-  bool isValidMarcaWarranty = false;
-  bool isValidModeloWarranty = false;
-  bool isValidColorWarranty = false;
-  //bool isValidSerieWarranty = false;
-  bool isValidObservationWarranty = false;
-  bool isValidPriceWarranty = false;
-  bool isValidCategories = false;
-  @override
-  void initState() {
-    super.initState();
-    callData();
-  }
-
-  void callData() {
-    final loansState = context.read<LoansStepBloc>().state;
-
-    // Actualización de los campos según el estado actual
-    descriptionWarrantyCtrl.text = loansState.description ?? '';
-    isValidDescriptionWarranty = loansState.description != null;
-
-    categories = loansState.categories;
-    isValidCategories = loansState.categories != null;
-
-    marcaWarrantyCtrl.text = loansState.brand ?? '';
-    isValidMarcaWarranty = loansState.brand != null;
-
-    modeloWarrantyCtrl.text = loansState.model ?? '';
-    isValidModeloWarranty = loansState.model != null;
-
-    colorWarrantyCtrl.text = loansState.color ?? '';
-    isValidColorWarranty = loansState.color != null;
-
-    serieWarrantyCtrl.text = loansState.serie ?? '';
-
-    observationWarrantyCtrl.text = loansState.warrantyObservations ?? '';
-    isValidObservationWarranty = loansState.warrantyObservations != null;
-
-    priceWarrantyCtrl.text = loansState.price ?? '';
-    isValidPriceWarranty = loansState.price != null;
-
-    // Actualización de las fotos seleccionadas
-    getPhoto(loansState.photoWarranty);
-
-    // Actualización del estado
-    getStatus(loansState.status);
-  }
-
-  void getPhoto(List<XFile>? photo) {
-    setState(() {
-      selectedPhotos = photo ?? [];
-    });
-  }
-
-  void getStatus(String? status) {
-    statusWarranty = status;
-    setState(() {});
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final loansState = context.watch<LoansStepBloc>().state;
-    final preferences = context.read<Preferences>();
-    final localState =
-        preferences.getLoansPreferences ?? LoansPreferencesEntity.init();
+    final loansStepBloc = context.read<LoansStepBloc>();
 
-    return Container(
+    return SizedBox(
       width: MediaQuery.of(context).size.width,
       height: MediaQuery.of(context).size.height,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 15),
-          _buildDescriptionField(),
+          _buildDescriptionField(loansStepBloc),
           const SizedBox(height: 15),
-          _buildCategoryAndPlacaRow(loansState),
+          _buildCategoryAndPlacaRow(loansStepBloc),
           const SizedBox(height: 15),
-          _buildBrandAndModelRow(),
+          _buildBrandAndModelRow(loansStepBloc),
           const SizedBox(height: 15),
-          _buildColorAndStatusRow(),
+          _buildColorAndStatusRow(loansStepBloc),
           const SizedBox(height: 15),
-          _buildOptionalFields(),
+          _buildOptionalFields(loansStepBloc),
           const SizedBox(height: 15),
-          _buildPhotoSelectionRow(),
+          _buildPhotoSelectionRow(loansStepBloc),
           const SizedBox(height: 15),
-          _buildButtons(loansState, localState),
+          _buildButtons(loansStepBloc),
           const SizedBox(height: 15),
         ],
       ),
     );
   }
 
-  Widget _buildDescriptionField() {
+  Widget _buildDescriptionField(LoansStepBloc loansStepBloc) {
     return AppTextFormField(
       labelText: 'Descripción (requerido)',
-      controller: descriptionWarrantyCtrl,
-      isValid: (value) {
-        setState(() {
-          isValidDescriptionWarranty = value;
-        });
-      },
+      onChanged: (e) => loansStepBloc.add(
+        ChangeDescription(value: e),
+      ),
       validator: (value) {
         if (value!.isEmpty) return 'Campo Requerido';
         return null;
@@ -141,50 +53,45 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
     );
   }
 
-  Widget _buildCategoryAndPlacaRow(LoansStepState loansState) {
+  Widget _buildCategoryAndPlacaRow(LoansStepBloc loansStepBloc) {
     return Row(
       children: [
-        Expanded(
-          child: AppDropdownButtonFormField<CategoriesEntity?>(
-            labelText: 'Categoría (requerido)',
-            value: categories,
-            onChanged: (value) {
-              setState(() {
-                isValidCategories = true;
-                categories = value;
-              });
-            },
-            items: loansState.listCategories
-                ?.map((e) => DropdownMenuItem<CategoriesEntity?>(
-                      value: e,
-                      child: Text(e.descripcion),
-                    ))
-                .toList(),
-          ),
+        BlocBuilder<LoansStepBloc, LoansStepState>(
+          builder: (context, state) {
+            return Expanded(
+              child: AppDropdownButtonFormField<CategoriesEntity?>(
+                labelText: 'Categoría (requerido)',
+                value: state.categories,
+                onChanged: (value) =>
+                    loansStepBloc.add(ChangeCategoryWarranty(value)),
+                items: state.listCategories
+                    ?.map((e) => DropdownMenuItem<CategoriesEntity?>(
+                          value: e,
+                          child: Text(e.descripcion),
+                        ))
+                    .toList(),
+              ),
+            );
+          },
         ),
         const SizedBox(width: 10),
         Expanded(
           child: AppTextFormField(
             labelText: 'Placa (opcional)',
-            controller: placaWarrantyCtrl,
+            onChanged: (e) => loansStepBloc.add(ChangePlacaWarranty(e)),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildBrandAndModelRow() {
+  Widget _buildBrandAndModelRow(LoansStepBloc loansStepBloc) {
     return Row(
       children: [
         Expanded(
           child: AppTextFormField(
             labelText: 'Marca (requerido)',
-            controller: marcaWarrantyCtrl,
-            isValid: (value) {
-              setState(() {
-                isValidMarcaWarranty = value;
-              });
-            },
+            onChanged: (e) => loansStepBloc.add(ChangeBrand(value: e)),
             validator: (value) {
               if (value!.isEmpty) return 'Campo Requerido';
               return null;
@@ -195,12 +102,7 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
         Expanded(
           child: AppTextFormField(
             labelText: 'Modelo (requerido)',
-            controller: modeloWarrantyCtrl,
-            isValid: (value) {
-              setState(() {
-                isValidModeloWarranty = value;
-              });
-            },
+            onChanged: (e) => loansStepBloc.add(ChangeModel(value: e)),
             validator: (value) {
               if (value!.isEmpty) return 'Campo Requerido';
               return null;
@@ -211,18 +113,13 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
     );
   }
 
-  Widget _buildColorAndStatusRow() {
+  Widget _buildColorAndStatusRow(LoansStepBloc loansStepBloc) {
     return Row(
       children: [
         Expanded(
           child: AppTextFormField(
             labelText: 'Color (requerido)',
-            controller: colorWarrantyCtrl,
-            isValid: (value) {
-              setState(() {
-                isValidColorWarranty = value;
-              });
-            },
+            onChanged: (e) => loansStepBloc.add(ChangeColor(value: e)),
             validator: (value) {
               if (value!.isEmpty) return 'Campo Requerido';
               return null;
@@ -231,43 +128,39 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: AppDropdownButtonFormField<String?>(
-            labelText: 'Estado (requerido)',
-            value: statusWarranty,
-            onChanged: (value) {
-              setState(() {
-                statusWarranty = value;
-              });
+          child: BlocBuilder<LoansStepBloc, LoansStepState>(
+            builder: (context, state) {
+              return AppDropdownButtonFormField<String?>(
+                labelText: 'Estado (requerido)',
+                value: state.status,
+                onChanged: (e) => loansStepBloc.add(ChangeStatus(value: e!)),
+                items: ['nuevo', 'bueno', 'regular']
+                    .map((e) => DropdownMenuItem<String?>(
+                          value: e,
+                          child: Text(e),
+                        ))
+                    .toList(),
+              );
             },
-            items: ['nuevo', 'bueno', 'regular']
-                .map((e) => DropdownMenuItem<String?>(
-                      value: e,
-                      child: Text(e),
-                    ))
-                .toList(),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildOptionalFields() {
+  Widget _buildOptionalFields(LoansStepBloc loansStepBloc) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppTextFormField(
           labelText: 'Serie (opcional)',
-          controller: serieWarrantyCtrl,
+          onChanged: (e) => loansStepBloc.add(ChangeSerie(value: e)),
         ),
         const SizedBox(height: 15),
         AppTextFormField(
           labelText: 'Observaciones (requerido)',
-          controller: observationWarrantyCtrl,
-          isValid: (value) {
-            setState(() {
-              isValidObservationWarranty = value;
-            });
-          },
+          onChanged: (e) =>
+              loansStepBloc.add(ChangeWarrantyObservations(value: e)),
           validator: (value) {
             if (value!.isEmpty) return 'Campo Requerido';
             return null;
@@ -283,12 +176,7 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
           ),
           labelText: 'Precio Referencial (requerido)',
           keyboardType: TextInputType.number,
-          controller: priceWarrantyCtrl,
-          isValid: (value) {
-            setState(() {
-              isValidPriceWarranty = value;
-            });
-          },
+          onChanged: (e) => loansStepBloc.add(ChangePrice(value: e)),
           validator: (value) {
             if (value!.isEmpty) return 'Campo Requerido';
             return null;
@@ -298,167 +186,79 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
     );
   }
 
-  Widget _buildPhotoSelectionRow() {
-    return Row(
-      children: [
-        // Muestra las imágenes seleccionadas con opción de eliminar
-        for (int i = 0; i < (selectedPhotos?.length ?? 0); i++)
-          GestureDetector(
-            onTap: () {
-              // Elimina la imagen del array al tocarla
-              setState(() {
-                selectedPhotos?.removeAt(i);
-              });
-            },
-            child: Stack(
-              children: [
-                Image.file(
-                  File(selectedPhotos![i].path),
-                  width: 100,
-                  height: 100,
-                ),
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: Colors.red,
-                    ),
-                    child: const Icon(
-                      Icons.close,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+  Widget _buildPhotoSelectionRow(LoansStepBloc loansStepBloc) {
+    return BlocBuilder<LoansStepBloc, LoansStepState>(
+      builder: (context, state) {
+        return CustomImagePicker(
+          onImagesSelected: (e) => loansStepBloc.add(
+            UploadImagesWarranty(e),
           ),
-
-        // Botón para seleccionar imágenes desde la cámara
-        if (selectedPhotos!.length < 2)
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () async {
-                final photo = await ImagePicker().pickImage(
-                  source: ImageSource.camera,
-                  imageQuality: 70,
-                );
-
-                // Verifica si se seleccionó una imagen antes de agregarla a la lista
-                if (photo != null) {
-                  setState(() {
-                    selectedPhotos?.add(photo);
-                  });
-                }
-              },
-              child: Text(
-                'Tomar Foto (${2 - selectedPhotos!.length})',
-              ),
-            ),
-          ),
-        const SizedBox(width: 10),
-        // Botón para seleccionar imagen desde la galería
-        if (selectedPhotos!.length < 3)
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () async {
-                final photo = await ImagePicker().pickImage(
-                  source: ImageSource.gallery,
-                  imageQuality: 70,
-                );
-
-                // Verifica si se seleccionó una imagen antes de agregarla a la lista
-                if (photo != null) {
-                  setState(() {
-                    selectedPhotos?.add(photo);
-                  });
-                }
-              },
-              child: const Text(
-                'Subir Imagen (1)',
-              ),
-            ),
-          ),
-      ],
+          initialSelectedPhotos: state.photoWarranty,
+          limit: 2,
+        );
+      },
     );
   }
 
   Widget _buildButtons(
-    LoansStepState loansState,
-    LoansPreferencesEntity localState,
+    LoansStepBloc loansStepBloc,
   ) {
-    return Column(
-      children: [
-        SecondaryButton(
-          onPressed: () {
-            // Lógica para volver atrás
-            if (loansState.listWarranty == null ||
-                loansState.listWarranty!.isEmpty) {
-              context.read<LoansStepBloc>().add(
+    return BlocBuilder<LoansStepBloc, LoansStepState>(
+      builder: (context, state) {
+        return Column(
+          children: [
+            SecondaryButton(
+              onPressed: () {
+                // Lógica para volver atrás
+                if (state.listWarranty == null || state.listWarranty!.isEmpty) {
+                  loansStepBloc.add(
                     SaveThirdStepOne(
                       index: 1,
                       value: WarrantyState(
                         id: generateIDFromDateTime(),
-                        category: categories,
-                        placa: placaWarrantyCtrl.text,
-                        description: descriptionWarrantyCtrl.text,
-                        brand: marcaWarrantyCtrl.text,
-                        model: modeloWarrantyCtrl.text,
-                        color: colorWarrantyCtrl.text,
-                        status: statusWarranty,
-                        serie: serieWarrantyCtrl.text,
-                        warrantyObservations: observationWarrantyCtrl.text,
-                        price: priceWarrantyCtrl.text,
-                        photoWarranty: selectedPhotos,
+                        category: state.categories,
+                        placa: state.placa,
+                        description: state.description,
+                        brand: state.brand,
+                        model: state.model,
+                        color: state.color,
+                        status: state.status,
+                        serie: state.serie,
+                        warrantyObservations: state.warrantyObservations,
+                        price: state.price,
+                        photoWarranty: state.photoWarranty,
                       ),
                     ),
                   );
-            } else {
-              context.read<LoansStepBloc>().add(
+                } else {
+                  loansStepBloc.add(
                     const ChangeStatusAddListWarranty(
                       value: false,
                     ),
                   );
-            }
-          },
-          child: const Text('Volver'),
-        ),
-        const SizedBox(height: 15),
-        PrimaryButton(
-          onPressed: isValidDescriptionWarranty &&
-                  isValidCategories &&
-                  isValidMarcaWarranty &&
-                  isValidModeloWarranty &&
-                  isValidColorWarranty &&
-                  isValidObservationWarranty &&
-                  isValidPriceWarranty
-              ? () {
-                  context.read<LoansStepBloc>().add(
-                        AddListWarranty(
-                          localState: localState,
-                          value: WarrantyState(
-                            id: generateIDFromDateTime(),
-                            category: categories,
-                            placa: placaWarrantyCtrl.text,
-                            description: descriptionWarrantyCtrl.text,
-                            brand: marcaWarrantyCtrl.text,
-                            model: modeloWarrantyCtrl.text,
-                            color: colorWarrantyCtrl.text,
-                            status: statusWarranty,
-                            serie: serieWarrantyCtrl.text,
-                            warrantyObservations:
-                                observationWarrantyCtrl.text,
-                            price: priceWarrantyCtrl.text,
-                            photoWarranty: selectedPhotos,
-                          ),
-                        ),
-                      );
                 }
-              : null,
-          child: const Text('Guardar'),
-        ),
-      ],
+              },
+              child: const Text('Volver'),
+            ),
+            const SizedBox(height: 15),
+            PrimaryButton(
+              onPressed: /* isValidDescriptionWarranty &&
+                      isValidCategories &&
+                      isValidMarcaWarranty &&
+                      isValidModeloWarranty &&
+                      isValidColorWarranty &&
+                      isValidObservationWarranty &&
+                      isValidPriceWarranty */
+                  true
+                      ? () {
+                          loansStepBloc.add(AddListWarranty());
+                        }
+                      : null,
+              child: const Text('Guardar'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

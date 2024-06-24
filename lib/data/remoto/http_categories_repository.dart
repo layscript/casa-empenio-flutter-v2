@@ -3,17 +3,13 @@ import 'dart:convert';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 class HttpCategoriesRepository implements CategoriesRepository {
   const HttpCategoriesRepository({
     required Dio dio,
-    required SentryClient sentry,
-  })  : _dio = dio,
-        _sentry = sentry;
+  }) : _dio = dio;
 
   final Dio _dio;
-  final SentryClient _sentry;
 
   @override
   Future<bool> createCategory({
@@ -35,10 +31,7 @@ class HttpCategoriesRepository implements CategoriesRepository {
       }
     } catch (e, stackTrace) {
       //print('responseee ee: $e');
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
+
       return false;
     }
   }
@@ -60,10 +53,7 @@ class HttpCategoriesRepository implements CategoriesRepository {
       }
     } catch (e, stackTrace) {
       //print('responseee ee: $e')
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
+
       return false;
     }
   }
@@ -83,10 +73,7 @@ class HttpCategoriesRepository implements CategoriesRepository {
       }
     } catch (e, stackTrace) {
       //print('responseee ee: $e');
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
+
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -111,10 +98,6 @@ class HttpCategoriesRepository implements CategoriesRepository {
         return true;
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       return false;
     }
   }

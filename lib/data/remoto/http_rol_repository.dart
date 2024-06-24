@@ -3,17 +3,13 @@ import 'dart:convert';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 class HttpRolRepository implements RolRepository {
   const HttpRolRepository({
     required Dio dio,
-    required SentryClient sentry,
-  })  : _dio = dio,
-        _sentry = sentry;
+  }) : _dio = dio;
 
   final Dio _dio;
-  final SentryClient _sentry;
 
   @override
   Future<Either<String, bool>> createRol({
@@ -36,10 +32,6 @@ class HttpRolRepository implements RolRepository {
         return const Right(true);
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -59,10 +51,6 @@ class HttpRolRepository implements RolRepository {
         return const Right(true);
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -86,11 +74,6 @@ class HttpRolRepository implements RolRepository {
         return Right(RoleEntity.listGetRolesFromMap(body));
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
-
       return const Left('Ocurrió un error');
     }
   }
@@ -116,10 +99,6 @@ class HttpRolRepository implements RolRepository {
         return const Right(true);
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       return const Right(false);
     }
   }

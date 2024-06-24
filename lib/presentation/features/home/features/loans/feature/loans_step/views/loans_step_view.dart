@@ -17,155 +17,160 @@ class LoansStepView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final preferences = context.read<Preferences>();
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.blue,
-        centerTitle: true,
-        title: const Text('Registrar Préstamo'),
-        actions: [
-          if (preferences.getLoansPreferences != null)
-            IconButton(
-              icon: const Icon(Icons.delete),
+    return BlocProvider(
+      lazy: false,
+      create: (context) => LoansStepBloc(
+        loansRepository: context.read(),
+        interestsRepository: context.read(),
+        preferences: context.read(),
+        categoriesRepository: context.read(),
+        cajaRepository: context.read(),
+        customerRepository: context.read(),
+      )..add(GetLastCodeLoans()),
+      child: Builder(builder: (context) {
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: AppColors.blue,
+            centerTitle: true,
+            title: const Text('Registrar Préstamo'),
+            leading: IconButton(
               onPressed: () {
-                showDialog(
-                  barrierDismissible: false,
-                  context: context,
-                  builder: (context) {
-                    return AlertDialog(
-                      title: const Text('¿Estás seguro de eliminar?'),
-                      content: const Text(
-                        'Se eliminarán todos los datos almacenados del préstamo',
-                        style: TextStyle(
-                          fontWeight: FontWeight.normal,
-                          color: AppColors.primaryText,
-                        ),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text(
-                            'Cancelar',
+                context.read<LoansStepBloc>().add(const SaveTempDataLoans());
+                Navigator.pop(context);
+              },
+              icon: const Icon(Icons.arrow_back_outlined),
+            ),
+            actions: [
+              if (preferences.getLoansPreferences != null)
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  onPressed: () {
+                    showDialog(
+                      barrierDismissible: false,
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: const Text('¿Estás seguro de eliminar?'),
+                          content: const Text(
+                            'Se eliminarán todos los datos almacenados del préstamo',
                             style: TextStyle(
-                              color: AppColors.red,
+                              fontWeight: FontWeight.normal,
+                              color: AppColors.primaryText,
                             ),
                           ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            preferences.removeLoansPreferences();
-                            Navigator.pop(context);
-                            Navigator.pop(context);
-                          },
-                          child: const Text('Aceptar'),
-                        ),
-                      ],
-                    );
-                  },
-                );
-              },
-            )
-        ],
-      ),
-      body: BlocProvider(
-        lazy: false,
-        create: (context) => LoansStepBloc(
-          loansRepository: context.read(),
-          interestsRepository: context.read(),
-          preferences: context.read(),
-          categoriesRepository: context.read(),
-          sentry: context.read(),
-          cajaRepository: context.read(),
-        )..add(GetLastCodeLoans()),
-        child: Builder(
-          builder: (context) {
-            return BlocConsumer<LoansStepBloc, LoansStepState>(
-              listener: (context, state) {
-                if (state.isLoansStepStatusSavedLoading) {
-                  /* OverlayLoader.show(context); */
-                  LoadingDialog.show(context, 'Guardando...');
-                } else {
-                  /* OverlayLoader.hide(); */
-
-                  if (state.isLoansStepStatusSavedError) {
-                    Navigator.pop(context, null);
-                    ErrorDialog.show(
-                      context,
-                      state.message ?? 'Ocurrió un error, intentelo de nuevo.',
-                    );
-                    /*  ErrorSnackbar.show(
-                      context,
-                      state.message ?? 'Ocurrió un error, intentelo más tarde',
-                    ); */
-                  }
-                  if (state.isLoansStepStatusSavedSuccess) {
-                    Navigator.pop(context);
-                    SuccessDialog.show(
-                      context,
-                      'Guardado correctamente',
-                      onPressed: () {
-                        Navigator.pop(context);
-                        preferences.removeLoansPreferences();
-                        Navigator.pop(context, state.documentClient);
-                      },
-                    );
-                    /* SuccessSnackbar.show(
-                      context,
-                      'Guardado correctamente',
-                    ); */
-                  }
-                }
-              },
-              builder: (context, state) {
-                return GestureDetector(
-                  onTap: () => Keyboard.unfocus(context),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                    ).copyWith(top: 30),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 15),
-                          AppStepper(
-                            selectedIndex: state.index,
-                          ),
-                          const SizedBox(height: 20),
-                          Center(
-                            child: Text(
-                              state.titleIndexLoans(),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text(
+                                'Cancelar',
+                                style: TextStyle(
+                                  color: AppColors.red,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 15),
-                          BlocBuilder<LoansStepBloc, LoansStepState>(
-                            builder: (context, state) {
-                              switch (state.index) {
-                                case 0:
-                                  return const LoansStepOneView();
+                            TextButton(
+                              onPressed: () {
+                                preferences.removeLoansPreferences();
+                                Navigator.pop(context);
+                                Navigator.pop(context);
+                              },
+                              child: const Text('Aceptar'),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                )
+            ],
+          ),
+          body: BlocConsumer<LoansStepBloc, LoansStepState>(
+            listener: (context, state) {
+              if (state.isLoansStepStatusSavedLoading) {
+                /* OverlayLoader.show(context); */
+                LoadingDialog.show(context, 'Guardando...');
+              } else {
+                /* OverlayLoader.hide(); */
 
-                                case 1:
-                                  return const LoansStepTwoView();
-
-                                case 2:
-                                  return const LoansStepThreeView();
-                              }
-                              return const SizedBox();
-                            },
+                if (state.isLoansStepStatusSavedError) {
+                  Navigator.pop(context, null);
+                  ErrorDialog.show(
+                    context,
+                    state.message ?? 'Ocurrió un error, intentelo de nuevo.',
+                  );
+                  /*  ErrorSnackbar.show(
+                              context,
+                              state.message ?? 'Ocurrió un error, intentelo más tarde',
+                            ); */
+                }
+                if (state.isLoansStepStatusSavedSuccess) {
+                  Navigator.pop(context);
+                  SuccessDialog.show(
+                    context,
+                    'Guardado correctamente',
+                    onPressed: () {
+                      Navigator.pop(context);
+                      preferences.removeLoansPreferences();
+                      Navigator.pop(context, state.documentClient);
+                    },
+                  );
+                  /* SuccessSnackbar.show(
+                              context,
+                              'Guardado correctamente',
+                            ); */
+                }
+              }
+            },
+            builder: (context, state) {
+              return GestureDetector(
+                onTap: () => Keyboard.unfocus(context),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                  ).copyWith(top: 30),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 15),
+                        AppStepper(
+                          selectedIndex: state.index,
+                        ),
+                        const SizedBox(height: 20),
+                        Center(
+                          child: Text(
+                            state.titleIndexLoans(),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 15),
+                        BlocBuilder<LoansStepBloc, LoansStepState>(
+                          builder: (context, state) {
+                            switch (state.index) {
+                              case 0:
+                                return const LoansStepOneView();
+
+                              case 1:
+                                return const LoansStepTwoView();
+
+                              case 2:
+                                return const LoansStepThreeView();
+                            }
+                            return const SizedBox();
+                          },
+                        ),
+                      ],
                     ),
                   ),
-                );
-              },
-            );
-          },
-        ),
-      ),
+                ),
+              );
+            },
+          ),
+        );
+      }),
     );
   }
 }

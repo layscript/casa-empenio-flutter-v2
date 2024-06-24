@@ -1,114 +1,18 @@
-import 'dart:io';
-
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/custom_image_picker.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/feature/loans_step/bloc/loans_step_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
 
-class EditFormWarranty extends StatefulWidget {
-  const EditFormWarranty({super.key, required this.loansState});
-  final LoansStepState loansState;
-
-  @override
-  State<EditFormWarranty> createState() => _EditFormWarrantyState();
-}
-
-class _EditFormWarrantyState extends State<EditFormWarranty> {
-  String? statusWarranty;
-  CategoriesEntity? categories;
-
-  final descriptionWarrantyCtrl = TextEditingController();
-  final placaWarrantyCtrl = TextEditingController();
-
-  final marcaWarrantyCtrl = TextEditingController();
-  final modeloWarrantyCtrl = TextEditingController();
-  final colorWarrantyCtrl = TextEditingController();
-  final serieWarrantyCtrl = TextEditingController();
-  final observationWarrantyCtrl = TextEditingController();
-  final priceWarrantyCtrl = TextEditingController();
-
-  List<XFile>? selectedPhotos = [];
-
-  bool isValidDescriptionWarranty = false;
-  bool isValidMarcaWarranty = false;
-  bool isValidModeloWarranty = false;
-  bool isValidColorWarranty = false;
-  /* bool isValidSerieWarranty = false; */
-  bool isValidObservationWarranty = false;
-  bool isValidPriceWarranty = false;
-  bool isValidCategories = false;
-
-  @override
-  void initState() {
-    super.initState();
-    callData();
-  }
-
-  void callData() {
-    final loansState = widget.loansState;
-
-    descriptionWarrantyCtrl.text = loansState.description ?? '';
-    isValidDescriptionWarranty = loansState.description != null ? true : false;
-
-    placaWarrantyCtrl.text = loansState.placa ?? '';
-
-    marcaWarrantyCtrl.text = loansState.brand ?? '';
-    isValidMarcaWarranty = loansState.brand != null ? true : false;
-
-    modeloWarrantyCtrl.text = loansState.model ?? '';
-    isValidModeloWarranty = loansState.model != null ? true : false;
-
-    colorWarrantyCtrl.text = loansState.color ?? '';
-    isValidColorWarranty = loansState.color != null ? true : false;
-
-    serieWarrantyCtrl.text = loansState.serie ?? '';
-    /* isValidSerieWarranty = loansState.serie != null ? true : false; */
-
-    observationWarrantyCtrl.text = loansState.warrantyObservations ?? '';
-    isValidObservationWarranty =
-        loansState.warrantyObservations != null ? true : false;
-
-    priceWarrantyCtrl.text = loansState.price ?? '';
-    isValidPriceWarranty = loansState.price != null ? true : false;
-
-    getCategories(loansState.categories, loansState.listCategories);
-    getPhoto(loansState.photoWarranty);
-    getStatus(loansState.status);
-  }
-
-  void getCategories(
-    CategoriesEntity? categoriesState,
-    List<CategoriesEntity>? listCategories,
-  ) {
-    if (categoriesState != null && listCategories != null) {
-      final response = listCategories
-          .firstWhere((element) => element.id == categoriesState.id);
-      setState(() {
-        categories = response;
-        isValidCategories = categoriesState != null ? true : false;
-      });
-    }
-  }
-
-  void getPhoto(List<XFile>? photo) {
-    selectedPhotos = photo ?? [];
-    setState(() {});
-  }
-
-  void getStatus(String? status) {
-    statusWarranty = status;
-    setState(() {});
-  }
+class EditFormWarranty extends StatelessWidget {
+  const EditFormWarranty({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final loansState = context.watch<LoansStepBloc>().state;
-    final preferences = context.read<Preferences>();
-    final localState =
-        preferences.getLoansPreferences ?? LoansPreferencesEntity.init();
+    final loansStepBloc = context.read<LoansStepBloc>();
+    final loansState = context.read<LoansStepBloc>().state;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,12 +20,9 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
         const SizedBox(height: 15),
         AppTextFormField(
           labelText: 'Descripcion (requerido)',
-          controller: descriptionWarrantyCtrl,
-          isValid: (value) {
-            setState(() {
-              isValidDescriptionWarranty = value;
-            });
-          },
+          initialValue: loansState.description,
+          onChanged: (e) =>
+              loansStepBloc.add(ChangeDescription(value: e, edit: true)),
           validator: (value) {
             if (value!.isEmpty) return 'Campo Requerido';
             return null;
@@ -130,33 +31,34 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
         const SizedBox(height: 15),
         Row(
           children: [
-            Expanded(
-              child: AppDropdownButtonFormField<CategoriesEntity?>(
-                labelText: 'Categoría (requerido)',
-                value: categories,
-                onChanged: (value) {
-                  setState(() {
-                    isValidCategories = true;
-                    categories = value;
-                  });
-                },
-                items: loansState.listCategories != null
-                    ? loansState.listCategories!
-                        .map(
-                          (e) => DropdownMenuItem<CategoriesEntity?>(
-                            value: e,
-                            child: Text(e.descripcion),
-                          ),
-                        )
-                        .toList()
-                    : null,
-              ),
+            BlocBuilder<LoansStepBloc, LoansStepState>(
+              builder: (context, state) {
+                return Expanded(
+                  child: AppDropdownButtonFormField<CategoriesEntity?>(
+                    labelText: 'Categoría (requerido)',
+                    value: state.categories,
+                    onChanged: (e) =>
+                        loansStepBloc.add(ChangeCategoryWarranty(e)),
+                    items: state.listCategories != null
+                        ? state.listCategories!
+                            .map(
+                              (e) => DropdownMenuItem<CategoriesEntity?>(
+                                value: e,
+                                child: Text(e.descripcion),
+                              ),
+                            )
+                            .toList()
+                        : null,
+                  ),
+                );
+              },
             ),
             const SizedBox(width: 10),
             Expanded(
               child: AppTextFormField(
                 labelText: 'Placa (opcional)',
-                controller: placaWarrantyCtrl,
+                initialValue: loansState.placa,
+                onChanged: (e) => loansStepBloc.add(ChangePlacaWarranty(e)),
               ),
             ),
           ],
@@ -167,12 +69,8 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
             Expanded(
               child: AppTextFormField(
                 labelText: 'Marca (requerido)',
-                controller: marcaWarrantyCtrl,
-                isValid: (value) {
-                  setState(() {
-                    isValidMarcaWarranty = value;
-                  });
-                },
+                initialValue: loansState.brand,
+                onChanged: (e) => loansStepBloc.add(ChangeBrand(value: e)),
                 validator: (value) {
                   if (value!.isEmpty) return 'Campo Requerido';
                   return null;
@@ -183,12 +81,8 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
             Expanded(
               child: AppTextFormField(
                 labelText: 'Modelo (requerido)',
-                controller: modeloWarrantyCtrl,
-                isValid: (value) {
-                  setState(() {
-                    isValidModeloWarranty = value;
-                  });
-                },
+                initialValue: loansState.model,
+                onChanged: (e) => loansStepBloc.add(ChangeModel(value: e)),
                 validator: (value) {
                   if (value!.isEmpty) return 'Campo Requerido';
                   return null;
@@ -203,12 +97,8 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
             Expanded(
               child: AppTextFormField(
                 labelText: 'Color (requerido)',
-                controller: colorWarrantyCtrl,
-                isValid: (value) {
-                  setState(() {
-                    isValidColorWarranty = value;
-                  });
-                },
+                initialValue: loansState.color,
+                onChanged: (e) => loansStepBloc.add(ChangeColor(value: e)),
                 validator: (value) {
                   if (value!.isEmpty) return 'Campo Requerido';
                   return null;
@@ -217,22 +107,23 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: AppDropdownButtonFormField<String?>(
-                labelText: 'Estado (requerido)',
-                value: statusWarranty,
-                onChanged: (value) {
-                  setState(() {
-                    statusWarranty = value;
-                  });
+              child: BlocBuilder<LoansStepBloc, LoansStepState>(
+                builder: (context, state) {
+                  return AppDropdownButtonFormField<String?>(
+                    labelText: 'Estado (requerido)',
+                    value: state.status,
+                    onChanged: (e) =>
+                        loansStepBloc.add(ChangeStatus(value: e!)),
+                    items: ['nuevo', 'bueno', 'regular']
+                        .map(
+                          (e) => DropdownMenuItem<String?>(
+                            value: e,
+                            child: Text(e),
+                          ),
+                        )
+                        .toList(),
+                  );
                 },
-                items: ['nuevo', 'bueno', 'regular']
-                    .map(
-                      (e) => DropdownMenuItem<String?>(
-                        value: e,
-                        child: Text(e),
-                      ),
-                    )
-                    .toList(),
               ),
             ),
           ],
@@ -240,26 +131,15 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
         const SizedBox(height: 15),
         AppTextFormField(
           labelText: 'Serie (opcional)',
-          controller: serieWarrantyCtrl,
-          /*  isValid: (value) {
-            setState(() {
-              isValidSerieWarranty = value;
-            });
-          },
-          validator: (value) {
-            if (value!.isEmpty) return 'Campo Requerido';
-            return null;
-          }, */
+          initialValue: loansState.serie,
+          onChanged: (e) => loansStepBloc.add(ChangeSerie(value: e)),
         ),
         const SizedBox(height: 15),
         AppTextFormField(
           labelText: 'Observaciones (requerido)',
-          controller: observationWarrantyCtrl,
-          isValid: (value) {
-            setState(() {
-              isValidObservationWarranty = value;
-            });
-          },
+          initialValue: loansState.warrantyObservations,
+          onChanged: (e) =>
+              loansStepBloc.add(ChangeWarrantyObservations(value: e)),
           validator: (value) {
             if (value!.isEmpty) return 'Campo Requerido';
             return null;
@@ -267,6 +147,7 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
         ),
         const SizedBox(height: 15),
         AppTextFormField(
+          initialValue: loansState.price,
           preffix: const Text(
             'S/.',
             style: TextStyle(
@@ -275,100 +156,23 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
           ),
           labelText: 'Precio Referencial (requerido)',
           keyboardType: TextInputType.number,
-          controller: priceWarrantyCtrl,
-          isValid: (value) {
-            setState(() {
-              isValidPriceWarranty = value;
-            });
-          },
+          onChanged: (e) => loansStepBloc.add(ChangePrice(value: e)),
           validator: (value) {
             if (value!.isEmpty) return 'Campo Requerido';
             return null;
           },
         ),
         const SizedBox(height: 15),
-        Row(
-          children: [
-            // Muestra las imágenes seleccionadas con opción de eliminar
-            for (int i = 0; i < (selectedPhotos?.length ?? 0); i++)
-              GestureDetector(
-                onTap: () {
-                  // Elimina la imagen del array al tocarla
-                  setState(() {
-                    selectedPhotos?.removeAt(i);
-                  });
-                },
-                child: Stack(
-                  children: [
-                    Image.file(
-                      File(selectedPhotos![i].path),
-                      width: 100,
-                      height: 100,
-                    ),
-                    Positioned(
-                      top: 0,
-                      right: 0,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          color: Colors.red,
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+        BlocBuilder<LoansStepBloc, LoansStepState>(
+          builder: (context, state) {
+            return CustomImagePicker(
+              onImagesSelected: (e) => loansStepBloc.add(
+                UploadImagesWarranty(e),
               ),
-
-            // Botón para seleccionar imágenes desde la cámara
-            if (selectedPhotos!.length < 2)
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final photo = await ImagePicker().pickImage(
-                      source: ImageSource.camera,
-                      imageQuality: 70,
-                    );
-
-                    // Verifica si se seleccionó una imagen antes de agregarla a la lista
-                    if (photo != null) {
-                      setState(() {
-                        selectedPhotos?.add(photo);
-                      });
-                    }
-                  },
-                  child: Text(
-                    'Tomar Foto (${2 - selectedPhotos!.length})',
-                  ),
-                ),
-              ),
-            const SizedBox(width: 10),
-            // Botón para seleccionar imagen desde la galería
-            if (selectedPhotos!.length < 3)
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final photo = await ImagePicker().pickImage(
-                      source: ImageSource.gallery,
-                      imageQuality: 70,
-                    );
-
-                    // Verifica si se seleccionó una imagen antes de agregarla a la lista
-                    if (photo != null) {
-                      setState(() {
-                        selectedPhotos?.add(photo);
-                      });
-                    }
-                  },
-                  child: const Text(
-                    'Subir Imagen (1)',
-                  ),
-                ),
-              ),
-          ],
+              initialSelectedPhotos: loansState.photoWarranty,
+              limit: 2,
+            );
+          },
         ),
         const SizedBox(height: 15),
         SecondaryButton(
@@ -383,7 +187,7 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
         ),
         const SizedBox(height: 15),
         PrimaryButton(
-          onPressed: isValidDescriptionWarranty &&
+          onPressed: /* isValidDescriptionWarranty &&
                   isValidCategories &&
                   isValidMarcaWarranty &&
                   isValidModeloWarranty &&
@@ -391,29 +195,14 @@ class _EditFormWarrantyState extends State<EditFormWarranty> {
                   /* isValidSerieWarranty && */
                   isValidObservationWarranty &&
                   isValidPriceWarranty /* &&
-                  (selectedPhotos?.length == 3) */
-              ? () {
-                  context.read<LoansStepBloc>().add(
-                        EditListWarranty(
-                          localState: localState,
-                          value: WarrantyState(
-                            id: widget.loansState.idWarranty,
-                            description: descriptionWarrantyCtrl.text,
-                            brand: marcaWarrantyCtrl.text,
-                            model: modeloWarrantyCtrl.text,
-                            color: colorWarrantyCtrl.text,
-                            status: statusWarranty,
-                            serie: serieWarrantyCtrl.text,
-                            warrantyObservations: observationWarrantyCtrl.text,
-                            price: priceWarrantyCtrl.text,
-                            photoWarranty: selectedPhotos,
-                            category: categories,
-                            placa: placaWarrantyCtrl.text,
-                          ),
-                        ),
+                  (selectedPhotos?.length == 3) */ */
+              true
+                  ? () {
+                      loansStepBloc.add(
+                        const EditListWarranty(),
                       );
-                }
-              : null,
+                    }
+                  : null,
           child: const Text('Editar'),
         )
       ],

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
@@ -8,7 +7,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 part 'loans_step_event.dart';
 part 'loans_step_state.dart';
@@ -20,13 +18,13 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
     required InterestsRepository interestsRepository,
     required CategoriesRepository categoriesRepository,
     required Preferences preferences,
-    required SentryClient sentry,
+    required CustomerRepository customerRepository,
   })  : _cajaRepository = cajaRepository,
         _loansRepository = loansRepository,
         _interestsRepository = interestsRepository,
         _preferences = preferences,
         _categoriesRepository = categoriesRepository,
-        _sentry = sentry,
+        _customerRepository = customerRepository,
         super(const LoansStepState()) {
     // NEWWWW
 
@@ -47,6 +45,7 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
     on<ChangePhoneClient>(_onChangePhoneClient);
     on<ChangeEmailClient>(_onChangeEmailClient);
     on<ChangeHomeClient>(_onChangeHomeClient);
+    on<ChangePhotosClient>(_onChangePhotosClient);
 
     on<ChangeDocumentAval>(_onChangeDocumentAval);
     on<ChangeFullNamesAval>(_onChangeFullNamesAval);
@@ -54,6 +53,7 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
     on<ChangePhoneAval>(_onChangePhoneAval);
     on<ChangeEmailAval>(_onChangeEmailAval);
     on<ChangeHomeAval>(_onChangeHomeAval);
+    on<ChangePhotosAval>(_onChangePhotosAval);
     //
     on<ChangeCodeLoans>(_onChangeCodeLoans);
     on<ChangeStartDate>(_onChangeStartDate);
@@ -62,7 +62,10 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
     on<ChangeInterestRate>(_onChangeInterestRate);
     on<ChangePaymentRate>(_onChangePaymentRate);
     on<ChangeObservations>(_onChangeObservations);
+    //
     on<ChangeDescription>(_onChangeDescription);
+    on<ChangeCategoryWarranty>(_onChangeCategoryWarranty);
+    on<ChangePlacaWarranty>(_onChangePlacaWarranty);
     on<ChangeBrand>(_onChangeBrand);
     on<ChangeModel>(_onChangeModel);
     on<ChangeColor>(_onChangeColor);
@@ -77,6 +80,8 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
     on<ChangeStatusEditListWarranty>(_onChangeStatusEditListWarranty);
     on<UploadImagesWarranty>(_onUploadImagesWarranty);
     on<SaveAllLoan>(_onSaveAllLoan);
+
+    on<SaveTempDataLoans>(_onSaveTempDataLoans);
   }
 
   final CajaRepository _cajaRepository;
@@ -84,7 +89,42 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
   final InterestsRepository _interestsRepository;
   final CategoriesRepository _categoriesRepository;
   final Preferences _preferences;
-  final SentryClient _sentry;
+  final CustomerRepository _customerRepository;
+
+  void _onSaveTempDataLoans(
+    SaveTempDataLoans event,
+    Emitter<LoansStepState> emit,
+  ) {
+    final localState =
+        _preferences.getLoansPreferences ?? LoansPreferencesEntity.init();
+    final newState = localState.copyWith(
+      documentClient: state.documentClient,
+      fullNamesClient: state.fullNamesClient,
+      phoneClient: state.phoneClient,
+      fullLastNamesClient: state.fullLastNamesClient,
+      emailClient: state.emailClient,
+      domicilioClient: state.homeClient,
+      imagesClient: state.photosClient,
+      isAval: state.isAval,
+      documentAval: state.documentAval,
+      fullNamesAval: state.fullNamesAval,
+      phoneAval: state.phoneAval,
+      fullLastNamesAval: state.fullLastNamesAval,
+      emailAval: state.emailAval,
+      domicilioAval: state.homeAval,
+      imagesAval: state.photosAval,
+      codeLoans: state.codeLoans,
+      startDateTime: state.startDate,
+      amount: state.amount,
+      deadline: state.deadlines,
+      interest: state.interestRate,
+      endDateTime: state.paymentDate,
+      observations: state.observations,
+      totalProfit: state.totalProfit,
+      totalToPay: state.totalToPay,
+    );
+    _preferences.setLoansPreferences(newState);
+  }
 
   void _onChangeIndexLoans(
     ChangeIndexLoans event,
@@ -93,13 +133,48 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
     emit(state.copyWith(index: event.index));
   }
 
-  // one step - client
   Future<void> _onChangeDocumentClient(
     ChangeDocumentClient event,
     Emitter<LoansStepState> emit,
   ) async {
-    /* await _preferences.setDocument(event.value); */
-    emit(state.copyWith(documentClient: event.value));
+    if (event.value.isEmpty) {
+      emit(
+        state.copyWith(
+          documentClient: '',
+          fullNamesClient: '',
+          fullLastNamesClient: '',
+          homeClient: '',
+        ),
+      );
+      return;
+    }
+    if (event.value.length == 8) {
+      final getCustomerByDni = await _customerRepository.getCustomerSunatByDni(
+        dni: event.value,
+      );
+
+      getCustomerByDni.fold(
+        (error) {
+          emit(state.copyWith(documentClient: event.value));
+        },
+        (customer) {
+          final customerDni = customer.dni ?? '';
+          final customerName = customer.nombre ?? '';
+          final customerLastName =
+              '${customer.apellidoPaterno} ${customer.apellidoMaterno}';
+          final customerDomicilio = customer.domicilio?.direccion ?? '';
+
+          emit(
+            state.copyWith(
+              documentClient: customerDni,
+              fullNamesClient: customerName,
+              fullLastNamesClient: customerLastName,
+              homeClient: customerDomicilio,
+            ),
+          );
+        },
+      );
+    }
   }
 
   void _onChangeFullNamesClient(
@@ -137,12 +212,72 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
     emit(state.copyWith(homeClient: event.value));
   }
 
+  void _onChangePhotosClient(
+      ChangePhotosClient event, Emitter<LoansStepState> emit) {
+    emit(
+      state.copyWith(
+        photosClient: event.photosClient,
+      ),
+    );
+  }
+
   // one step - aval
+
+  void _onChangePhotosAval(
+      ChangePhotosAval event, Emitter<LoansStepState> emit) {
+    emit(
+      state.copyWith(
+        photosAval: event.photosAval,
+      ),
+    );
+  }
+
   void _onChangeDocumentAval(
     ChangeDocumentAval event,
     Emitter<LoansStepState> emit,
-  ) {
-    emit(state.copyWith(documentAval: event.value));
+  ) async {
+    if (event.value.isEmpty) {
+      emit(
+        state.copyWith(
+          documentAval: '',
+          fullNamesAval: '',
+          fullLastNamesAval: '',
+          homeAval: '',
+        ),
+      );
+      return;
+    }
+    if (event.value.length == 8) {
+      final getCustomerByDni = await _customerRepository.getCustomerSunatByDni(
+        dni: event.value,
+      );
+
+      getCustomerByDni.fold(
+        (error) {
+          emit(
+            state.copyWith(
+              documentAval: event.value,
+            ),
+          );
+        },
+        (customer) {
+          final customerDni = customer.dni ?? '';
+          final customerName = customer.nombre ?? '';
+          final customerLastName =
+              '${customer.apellidoPaterno} ${customer.apellidoMaterno}';
+          final customerDomicilio = customer.domicilio?.direccion ?? '';
+
+          emit(
+            state.copyWith(
+              documentAval: customerDni,
+              fullNamesAval: customerName,
+              fullLastNamesAval: customerLastName,
+              homeAval: customerDomicilio,
+            ),
+          );
+        },
+      );
+    }
   }
 
   void _onChangeFullNamesAval(
@@ -199,7 +334,29 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
     ChangeAmount event,
     Emitter<LoansStepState> emit,
   ) {
-    emit(state.copyWith(amount: event.value));
+    final interest =
+        state.interestRate ?? _preferences.getLoansPreferences?.interest;
+    if (interest != null && event.value.isNotEmpty) {
+      final monto = double.tryParse(event.value);
+      final porcentaje = double.tryParse(interest.intereses);
+      final interes = (monto! * porcentaje!) / 100;
+      final total = monto + interes;
+      final oCcy = NumberFormat("#,##0.00", "en_US");
+
+      emit(
+        state.copyWith(
+          amount: event.value,
+          totalToPay: oCcy.format(total),
+          totalProfit: oCcy.format(interes),
+        ),
+      );
+    } else {
+      emit(
+        state.copyWith(
+          amount: event.value,
+        ),
+      );
+    }
   }
 
   void _onChangeDeadLines(
@@ -269,8 +426,26 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
       state.copyWith(
         description: event.value,
         idWarranty: state.idWarranty,
-        status: state.status,
-        photoWarranty: state.photoWarranty,
+      ),
+    );
+  }
+
+  void _onChangeCategoryWarranty(
+      ChangeCategoryWarranty event, Emitter<LoansStepState> emit) {
+    emit(
+      state.copyWith(
+        categories: event.value,
+        idWarranty: state.idWarranty,
+      ),
+    );
+  }
+
+  void _onChangePlacaWarranty(
+      ChangePlacaWarranty event, Emitter<LoansStepState> emit) {
+    emit(
+      state.copyWith(
+        placa: event.value,
+        idWarranty: state.idWarranty,
       ),
     );
   }
@@ -283,8 +458,6 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
       state.copyWith(
         brand: event.value,
         idWarranty: state.idWarranty,
-        status: state.status,
-        photoWarranty: state.photoWarranty,
       ),
     );
   }
@@ -295,10 +468,8 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
   ) {
     emit(
       state.copyWith(
-        model: event.value,
         idWarranty: state.idWarranty,
-        status: state.status,
-        photoWarranty: state.photoWarranty,
+        model: event.value,
       ),
     );
   }
@@ -311,8 +482,6 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
       state.copyWith(
         color: event.value,
         idWarranty: state.idWarranty,
-        status: state.status,
-        photoWarranty: state.photoWarranty,
       ),
     );
   }
@@ -323,9 +492,8 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
   ) {
     emit(
       state.copyWith(
-        status: event.value,
         idWarranty: state.idWarranty,
-        photoWarranty: state.photoWarranty,
+        status: event.value,
       ),
     );
   }
@@ -338,8 +506,6 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
       state.copyWith(
         serie: event.value,
         idWarranty: state.idWarranty,
-        status: state.status,
-        photoWarranty: state.photoWarranty,
       ),
     );
   }
@@ -352,8 +518,6 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
       state.copyWith(
         warrantyObservations: event.value,
         idWarranty: state.idWarranty,
-        status: state.status,
-        photoWarranty: state.photoWarranty,
       ),
     );
   }
@@ -366,8 +530,6 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
       state.copyWith(
         price: event.value,
         idWarranty: state.idWarranty,
-        status: state.status,
-        photoWarranty: state.photoWarranty,
       ),
     );
   }
@@ -377,13 +539,29 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
     Emitter<LoansStepState> emit,
   ) async {
     List<WarrantyState>? newList;
+    final value = WarrantyState(
+      id: generateIDFromDateTime(),
+      category: state.categories,
+      placa: state.placa,
+      description: state.description,
+      brand: state.brand,
+      model: state.model,
+      color: state.color,
+      status: state.status,
+      serie: state.serie,
+      warrantyObservations: state.warrantyObservations,
+      price: state.price,
+      photoWarranty: state.photoWarranty,
+    );
     if (state.listWarranty != null) {
-      newList = [...state.listWarranty!, event.value];
+      newList = [...state.listWarranty!, value];
     } else {
-      newList = [event.value];
+      newList = [value];
     }
 
-    final newStateLocal = event.localState.copyWith(
+    final localState =
+        _preferences.getLoansPreferences ?? LoansPreferencesEntity.init();
+    final newStateLocal = localState.copyWith(
       warrantyPreferences: newList,
     );
     await _preferences.setLoansPreferences(newStateLocal);
@@ -401,10 +579,26 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
     EditListWarranty event,
     Emitter<LoansStepState> emit,
   ) async {
-    final updateWarranty = event.value;
+    final updateWarranty = WarrantyState(
+      id: state.idWarranty,
+      category: state.categories,
+      placa: state.placa,
+      description: state.description,
+      brand: state.brand,
+      model: state.model,
+      color: state.color,
+      status: state.status,
+      serie: state.serie,
+      warrantyObservations: state.warrantyObservations,
+      price: state.price,
+      photoWarranty: state.photoWarranty,
+    );
 
     final listWarrantyLocal =
         _preferences.getLoansPreferences?.warrantyPreferences;
+
+    final localState =
+        _preferences.getLoansPreferences ?? LoansPreferencesEntity.init();
 
     List<WarrantyState> updatedList;
     int index;
@@ -419,7 +613,7 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
     if (index != -1) {
       updatedList[index] = updateWarranty;
       final response = await _preferences.setLoansPreferences(
-        event.localState.copyWith(warrantyPreferences: updatedList),
+        localState.copyWith(warrantyPreferences: updatedList),
       );
 
       if (response) {
@@ -432,23 +626,6 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
         );
       }
     }
-
-    /* if (state.listWarranty != null) {
-      final updatedList = List<WarrantyState>.from(state.listWarranty!);
-      final index = updatedList.indexWhere((e) => e.id == updateWarranty.id);
-
-      if (index != -1) {
-        updatedList[index] = updateWarranty;
-        //emit(LoansStepState(listWarranty: updatedList));
-        emit(
-          state.copyWith(
-            listWarranty: updatedList,
-            idWarranty: null,
-            addListWarranty: false,
-          ),
-        );
-      }
-    } */
   }
 
   void _onDeleteListWarranty(
@@ -497,22 +674,6 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
     ChangeStatusAddListWarranty event,
     Emitter<LoansStepState> emit,
   ) {
-    /*  emit(
-      state.copyWith(
-        addListWarranty: event.value,
-        description: '',
-        model: '',
-        serie: '',
-        brand: '',
-        price: '',
-        warrantyObservations: '',
-        color: '',
-        status: null,
-        idWarranty: null,
-        photoWarranty: null,
-      ),
-    ); */
-
     emit(
       const LoansStepState().copyWith(
         loansStepStatus: state.loansStepStatus,
@@ -706,28 +867,18 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
     UploadImagesWarranty event,
     Emitter<LoansStepState> emit,
   ) async {
-    /* final photo = await ImagePicker().pickImage(
-      source: ImageSource.camera,
-      imageQuality: 70,
-    );
-
     emit(
       state.copyWith(
-        photoWarranty: photo,
+        photoWarranty: event.value,
         idWarranty: state.idWarranty,
-        status: state.status,
       ),
-    ); */
+    );
   }
 
   Future<void> _onSaveAllLoan(
     SaveAllLoan event,
     Emitter<LoansStepState> emit,
   ) async {
-    /*  emit(state.copyWith(loansStepStatusSaved: LoansStepStatus.loading));
-    await Future.delayed(const Duration(seconds: 3));
-    emit(state.copyWith(loansStepStatusSaved: LoansStepStatus.success)); */
-
     try {
       emit(state.copyWith(loansStepStatusSaved: LoansStepStatus.loading));
 
@@ -797,6 +948,20 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
         }).toList();
       }
 
+      final now = DateTime.now();
+      DateTime? loansLocalDatePay;
+
+      if (loansLocalState?.deadline != null) {
+        loansLocalDatePay = now.add(
+          Duration(
+            days: int.parse(loansLocalState?.deadline == ''
+                    ? '0'
+                    : loansLocalState!.deadline!) -
+                1,
+          ),
+        );
+      }
+
       final result = await _loansRepository.saveLoan(
         cajaId: state.cajaId,
         renew: false,
@@ -806,7 +971,7 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
         interes: double.parse(
           loansLocalState?.interest?.intereses ?? state.interestRate!.intereses,
         ),
-        fechaPago: state.paymentDateWithoutFormatt!,
+        fechaPago: loansLocalDatePay ?? state.paymentDateWithoutFormatt!,
         monto: double.parse(
           loansLocalState?.amount ?? state.amount!,
         ),
@@ -874,7 +1039,6 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
             : null,
         bienes: garantiasData,
         usuarioId: event.userId,
-        // TODO:: ID SUCURSSCAL
         sucursalId: _preferences.token?.sucursal?.id ?? 1,
       );
 
@@ -895,10 +1059,6 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
         ),
       );
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       emit(
         state.copyWith(
           loansStepStatusSaved: LoansStepStatus.error,
@@ -912,49 +1072,16 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
     SaveFirstStepOne event,
     Emitter<LoansStepState> emit,
   ) {
-    emit(
-      state.copyWith(
-        documentClient: event.documentClient,
-        fullNamesClient: event.namesClient,
-        phoneClient: event.phoneClient,
-        fullLastNamesClient: event.lastNamesClient,
-        emailClient: event.emailClient,
-        homeClient: event.domicilioClient,
-        photosClient: event.photosClient,
-        isAval: event.isAval,
-        documentAval: event.documentAval,
-        fullNamesAval: event.namesAval,
-        phoneAval: event.phoneAval,
-        fullLastNamesAval: event.lastNamesAval,
-        emailAval: event.emailAval,
-        homeAval: event.domicilioAval,
-        photosAval: event.photosAval,
-        index: 1,
-      ),
-    );
+    emit(state.copyWith(index: 1));
   }
 
   void _onSaveSecondStepOne(
     SaveSecondStepOne event,
     Emitter<LoansStepState> emit,
   ) {
-    final now = DateTime.now();
-    final datePay = now.add(
-      Duration(
-        days: int.parse(event.deadlines == '' ? '0' : event.deadlines!) - 1,
-      ),
-    );
-
     emit(
       state.copyWith(
         index: event.index,
-        codeLoans: state.codeLoans,
-        startDate: state.startDate,
-        amount: event.amount,
-        deadlines: event.deadlines,
-        interestRate: event.interest,
-        observations: event.observations,
-        paymentDateWithoutFormatt: datePay,
       ),
     );
   }

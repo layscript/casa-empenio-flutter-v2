@@ -5,17 +5,13 @@ import 'package:casa_empenio_pe/domain/anexo/anexo_entity.dart';
 import 'package:casa_empenio_pe/domain/anexo/anexo_repository.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 class HttpAnexoRepository implements AnexoRepository {
   const HttpAnexoRepository({
     required Dio dio,
-    required SentryClient sentry,
-  })  : _sentry = sentry,
-        _dio = dio;
+  }) : _dio = dio;
 
   final Dio _dio;
-  final SentryClient _sentry;
 
   @override
   Future<Either<String, bool>> createAnexo({
@@ -41,10 +37,6 @@ class HttpAnexoRepository implements AnexoRepository {
         return const Right(true);
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -64,10 +56,6 @@ class HttpAnexoRepository implements AnexoRepository {
         return const Right(true);
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -88,10 +76,6 @@ class HttpAnexoRepository implements AnexoRepository {
         return Right(AnexoEntity.listGetAnexosFromMap(map['body']));
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -137,10 +121,6 @@ class HttpAnexoRepository implements AnexoRepository {
         return Right(result);
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -168,10 +148,6 @@ class HttpAnexoRepository implements AnexoRepository {
         return const Left('No se pudo grabar la imagen');
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       return Left(e.toString());
     }
   }

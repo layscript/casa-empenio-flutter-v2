@@ -3,17 +3,13 @@ import 'dart:convert';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 class HttpProformaRepository implements ProformaRepository {
   const HttpProformaRepository({
     required Dio dio,
-    required SentryClient sentry,
-  })  : _sentry = sentry,
-        _dio = dio;
+  }) : _dio = dio;
 
   final Dio _dio;
-  final SentryClient _sentry;
   @override
   Future<Either<String, List<SalesEntity>>> getProformasByRangeDate({
     required DateTime inicio,
@@ -60,10 +56,6 @@ class HttpProformaRepository implements ProformaRepository {
         return Right(result);
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -80,10 +72,6 @@ class HttpProformaRepository implements ProformaRepository {
         return true;
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       return false;
     }
   }
@@ -134,10 +122,6 @@ class HttpProformaRepository implements ProformaRepository {
         return Right(result);
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       return const Left('Ocurrió un error con el servidor');
     }
   }

@@ -72,6 +72,7 @@ class _AppTextFormFieldState extends State<AppTextFormField> {
   @override
   Widget build(BuildContext context) {
     return TextFormField(
+      key: ValueKey<String>(widget.initialValue ?? ''),
       textDirection: widget.textDirection,
       enabled: widget.enabled,
       initialValue: widget.initialValue,

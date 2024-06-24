@@ -6,21 +6,16 @@ import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 class HttpLoansRepository implements LoansRepository {
   const HttpLoansRepository({
     required Dio dio,
     required CustomerRepository customerRepository,
-    required SentryClient sentry,
-  })  : _sentry = sentry,
-        _dio = dio,
+  })  : _dio = dio,
         _customerRepository = customerRepository;
 
   final Dio _dio;
   final CustomerRepository _customerRepository;
-  final SentryClient _sentry;
 
   @override
   Future<Either<String, int>> getLastCode() async {
@@ -37,10 +32,6 @@ class HttpLoansRepository implements LoansRepository {
         return Right(code);
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       //print('responseee ee: $e');
       return const Left('Ocurrió un error con el servidor');
     }
@@ -75,10 +66,6 @@ class HttpLoansRepository implements LoansRepository {
         }
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -123,10 +110,6 @@ class HttpLoansRepository implements LoansRepository {
         return Right(LoansEntity.listGetSalesDetailFromMap(body));
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -271,10 +254,6 @@ class HttpLoansRepository implements LoansRepository {
         return Right(contrato);
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -319,10 +298,6 @@ class HttpLoansRepository implements LoansRepository {
         return false;
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       //print('responseee ee: $e');
       //return const Left('Ocurrió un error 2');
       return false;
@@ -360,10 +335,6 @@ class HttpLoansRepository implements LoansRepository {
         return true;
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       //print('responseee ee: $e');
       //return const Left('Ocurrió un error 2');
       return false;
@@ -388,10 +359,6 @@ class HttpLoansRepository implements LoansRepository {
         return Uint8List(0);
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       return Uint8List(0);
     }
   }
@@ -413,10 +380,6 @@ class HttpLoansRepository implements LoansRepository {
         /* return true; */
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       //print('responseee ee: $e');
       //return const Left('Ocurrió un error 2');
       /* return false; */
@@ -440,10 +403,6 @@ class HttpLoansRepository implements LoansRepository {
         /* return true; */
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       //print('responseee ee: $e');
       //return const Left('Ocurrió un error 2');
       /* return false; */
@@ -486,10 +445,6 @@ class HttpLoansRepository implements LoansRepository {
         /* return true; */
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       return false;
       //print('responseee ee: $e');
       //return const Left('Ocurrió un error 2');
@@ -514,10 +469,6 @@ class HttpLoansRepository implements LoansRepository {
         return Right(ReportsPaymentEntity.getReportsPaymentFromMap(body));
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       //print('responseee ee: $e');
       return const Left('Ocurrió un error con el servidor');
     }
@@ -548,10 +499,6 @@ class HttpLoansRepository implements LoansRepository {
         return const Right(true);
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       //print('responseee ee: $e');
       return const Left('Ocurrió un error con el servidor');
     }
@@ -583,10 +530,6 @@ class HttpLoansRepository implements LoansRepository {
         return false;
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       //print('responseee ee: $e');
       //return const Left('Ocurrió un error 2');
       return false;
@@ -615,10 +558,6 @@ class HttpLoansRepository implements LoansRepository {
         return const Left('No se pudo grabar la imagen');
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       return Left(e.toString());
     }
   }
@@ -645,10 +584,6 @@ class HttpLoansRepository implements LoansRepository {
         return const Left('No se pudo grabar la imagen');
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       return Left(e.toString());
     }
   }
@@ -692,10 +627,6 @@ class HttpLoansRepository implements LoansRepository {
         return true;
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       return false;
     }
   }
@@ -754,66 +685,10 @@ class HttpLoansRepository implements LoansRepository {
         return true;
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
-
       return false;
     }
   }
 
-  /*  Future<bool> updateWarrantyPhotos({
-    required int idGarantia,
-    required String imagen,
-    required String? imagen2,
-    required String? imagen3,
-  }) async {
-    final imgUno = File(imagen);
-    File? imgDos;
-    File? imgTres;
-
-    if (imagen2 != null && imagen2.isNotEmpty) {
-      imgDos = File(imagen2);
-    }
-    if (imagen3 != null && imagen3.isNotEmpty) {
-      imgTres = File(imagen3);
-    }
-
-    try {
-      final path = '/prestamos/prestamos/imagenGarantia/$idGarantia';
-
-      FormData formData = FormData.fromMap({
-        if (!imgUno.path.contains('files'))
-          'imagen': await MultipartFile.fromFile(
-            imgUno.path,
-            filename: imgUno.path.split('/').last,
-          ),
-        if (imgDos != null && !imgDos.path.contains('/files'))
-          'imagen2': await MultipartFile.fromFile(
-            imgDos.path,
-            filename: imgDos.path.split('/').last,
-          ),
-        if (imgTres != null && !imgTres.path.contains('/files'))
-          'imagen3': await MultipartFile.fromFile(
-            imgTres.path,
-            filename: imgTres.path.split('/').last,
-          ),
-      });
-
-      final response = await _dio.put(path, data: formData);
-
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        return true;
-      } else {
-        return false;
-      }
-    } catch (e) {
-      print('Error: $e');
-      return false;
-    }
-  }
- */
   @override
   Future<Either<String, bool>> updateLoan({
     required int plazoDias,
@@ -925,11 +800,6 @@ class HttpLoansRepository implements LoansRepository {
         return Left(message);
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
-      //print('responseee ee: $e');
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -955,10 +825,6 @@ class HttpLoansRepository implements LoansRepository {
         return const Right(true);
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       //print('responseee ee: $e');
       return Left(e.toString());
     }
@@ -983,11 +849,6 @@ class HttpLoansRepository implements LoansRepository {
         return false;
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
-      //print('responseee ee: $e');
       return false;
     }
   }
@@ -1010,10 +871,6 @@ class HttpLoansRepository implements LoansRepository {
         return false;
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       return false;
     }
   }

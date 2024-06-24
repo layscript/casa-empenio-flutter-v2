@@ -3,17 +3,13 @@ import 'dart:convert';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 class HttpSucursalRepository implements SucursalRepository {
   const HttpSucursalRepository({
     required Dio dio,
-    required SentryClient sentry,
-  })  : _sentry = sentry,
-        _dio = dio;
+  }) : _dio = dio;
 
   final Dio _dio;
-  final SentryClient _sentry;
 
   @override
   Future<Either<String, SucursalEntity>> createSucursal({
@@ -37,10 +33,6 @@ class HttpSucursalRepository implements SucursalRepository {
         return Right(SucursalEntity.sucursalFromMap(data));
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       return const Left('Ocurrió un error con el servidor');
     }
   }
@@ -60,10 +52,6 @@ class HttpSucursalRepository implements SucursalRepository {
         return Right(SucursalEntity.listGetSucursalesFromMap(map));
       }
     } catch (e, stackTrace) {
-      await _sentry.captureException(
-        e,
-        stackTrace: stackTrace,
-      );
       return const Left('Ocurrió un error con el servidor');
     }
   }

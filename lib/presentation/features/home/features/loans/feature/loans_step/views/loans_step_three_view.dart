@@ -23,7 +23,7 @@ class LoansStepThreeView extends StatelessWidget {
           if (loansState.idWarranty == null) {
             return const AddFormWarranty();
           } else {
-            return EditFormWarranty(loansState: loansState);
+            return const EditFormWarranty();
           }
         }
       },

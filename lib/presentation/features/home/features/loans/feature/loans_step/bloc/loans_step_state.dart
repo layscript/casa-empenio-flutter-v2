@@ -443,6 +443,7 @@ class LoansStepState extends Equatable {
         homeClient,
         phoneClient,
         photosAval,
+        photosClient,
         documentAval,
         fullNamesAval,
         fullLastNamesAval,

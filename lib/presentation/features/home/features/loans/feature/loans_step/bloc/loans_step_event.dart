@@ -12,59 +12,21 @@ class GetApiSunatByDNI extends LoansStepEvent {
   final String document;
 }
 
+class SaveTempDataLoans extends LoansStepEvent {
+  const SaveTempDataLoans();
+}
+
 // SaveFirstStepOne
 class SaveFirstStepOne extends LoansStepEvent {
-  const SaveFirstStepOne({
-    required this.documentClient,
-    required this.namesClient,
-    required this.phoneClient,
-    required this.lastNamesClient,
-    required this.emailClient,
-    required this.domicilioClient,
-    required this.photosClient,
-    required this.isAval,
-    required this.documentAval,
-    required this.namesAval,
-    required this.phoneAval,
-    required this.lastNamesAval,
-    required this.emailAval,
-    required this.domicilioAval,
-    required this.photosAval,
-  });
-
-  final String documentClient;
-  final String namesClient;
-  final String phoneClient;
-  final String lastNamesClient;
-  final String emailClient;
-  final String domicilioClient;
-  final bool isAval;
-  final String? documentAval;
-  final String? namesAval;
-  final String? phoneAval;
-  final String? lastNamesAval;
-  final String? emailAval;
-  final String? domicilioAval;
-  final List<XFile>? photosClient;
-  final List<XFile>? photosAval;
+  const SaveFirstStepOne();
 }
 
 class SaveSecondStepOne extends LoansStepEvent {
   const SaveSecondStepOne({
     required this.index,
-    required this.amount,
-    required this.deadlines,
-    required this.interest,
-    required this.endDateTime,
-    required this.observations,
   });
 
   final int index;
-  final String? amount;
-  final String? deadlines;
-  final InterestsEntity? interest;
-  final String? endDateTime;
-  final String? observations;
 }
 
 class SaveThirdStepOne extends LoansStepEvent {
@@ -80,6 +42,17 @@ class SaveThirdStepOne extends LoansStepEvent {
 class GetLastCodeLoans extends LoansStepEvent {}
 
 // Change index steps
+
+class ChangePhotosClient extends LoansStepEvent {
+  const ChangePhotosClient({required this.photosClient});
+  final List<XFile>? photosClient;
+}
+
+class ChangePhotosAval extends LoansStepEvent {
+  const ChangePhotosAval({required this.photosAval});
+  final List<XFile>? photosAval;
+}
+
 class ChangeIndexLoans extends LoansStepEvent {
   const ChangeIndexLoans({required this.index});
   final int index;
@@ -189,8 +162,22 @@ class ChangeObservations extends LoansStepEvent {
 }
 
 class ChangeDescription extends LoansStepEvent {
-  const ChangeDescription({required this.value});
+  const ChangeDescription({
+    required this.value,
+    this.edit = false,
+  });
   final String value;
+  final bool edit;
+}
+
+class ChangeCategoryWarranty extends LoansStepEvent {
+  final CategoriesEntity? value;
+  const ChangeCategoryWarranty(this.value);
+}
+
+class ChangePlacaWarranty extends LoansStepEvent {
+  final String value;
+  const ChangePlacaWarranty(this.value);
 }
 
 class ChangeBrand extends LoansStepEvent {
@@ -229,21 +216,11 @@ class ChangePrice extends LoansStepEvent {
 }
 
 class AddListWarranty extends LoansStepEvent {
-  const AddListWarranty({
-    required this.value,
-    required this.localState,
-  });
-  final WarrantyState value;
-  final LoansPreferencesEntity localState;
+  const AddListWarranty();
 }
 
 class EditListWarranty extends LoansStepEvent {
-  const EditListWarranty({
-    required this.value,
-    required this.localState,
-  });
-  final WarrantyState value;
-  final LoansPreferencesEntity localState;
+  const EditListWarranty();
 }
 
 class DeleteListWarranty extends LoansStepEvent {
@@ -269,7 +246,10 @@ class ChangeStatusEditListWarranty extends LoansStepEvent {
   final String id;
 }
 
-class UploadImagesWarranty extends LoansStepEvent {}
+class UploadImagesWarranty extends LoansStepEvent {
+  final List<XFile>? value;
+  const UploadImagesWarranty(this.value);
+}
 
 class SaveAllLoan extends LoansStepEvent {
   const SaveAllLoan(this.userId);
