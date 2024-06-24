@@ -847,13 +847,15 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
           message: error,
         ),
       ),
-      (caja) => emit(
-        state.copyWith(
-          loansStepStatus: LoansStepStatus.loaded,
-          cajaId: caja?.id,
-          startDate: formattedDate,
-        ),
-      ),
+      (caja) {
+        emit(
+          state.copyWith(
+            loansStepStatus: LoansStepStatus.loaded,
+            cajaId: caja?.id,
+            startDate: formattedDate,
+          ),
+        );
+      },
     );
   }
 
@@ -962,8 +964,15 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
         );
       }
 
+      final getCaja = await _cajaRepository.getCajaOfTheDay();
+      int? cajaId;
+      getCaja.fold(
+        (error) => cajaId = null,
+        (caja) => cajaId = caja?.id,
+      );
+
       final result = await _loansRepository.saveLoan(
-        cajaId: state.cajaId,
+        cajaId: cajaId ?? state.cajaId,
         renew: false,
         plazoDias: int.parse(
           loansLocalState?.deadline ?? state.deadlines!,
