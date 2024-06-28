@@ -126,55 +126,56 @@ class PdfPreviewFacturaPage extends StatelessWidget {
         title: const Text('Comprobante Electronico'),
         actions: [
           //notaCredito!.isNotEmpty
-          notaCredito?.length != 0
-              ? IconButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => PdfPreviewNotaPage(
-                          url: notaCredito![0].pdf!,
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(
-                    Icons.document_scanner,
-                    color: Colors.red,
-                  ),
-                )
-              : IconButton(
-                  onPressed: () {
-                    // mensaje de confirmacion si realmente quiere anular el comprobante
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Anular Comprobante'),
-                        content: const Text(
-                            '¿Esta seguro que desea anular el comprobante?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            child: const Text('Cancelar'),
+          notaCredito != null
+              ? notaCredito?.length != 0
+                  ? IconButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => PdfPreviewNotaPage(
+                              url: notaCredito![0].pdf!,
+                            ),
                           ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              createNotaCredito(currentContext);
-                              // Navigator.pop(context);
-                            },
-                            child: const Text('Aceptar'),
-                          ),
-                        ],
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.document_scanner,
+                        color: Colors.red,
                       ),
-                    );
-                  },
-                  icon: const Icon(
-                    Icons.do_not_touch_rounded,
-                    color: Colors.red,
-                  ),
-                ),
+                    )
+                  : IconButton(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Anular Comprobante'),
+                            content: const Text(
+                                '¿Esta seguro que desea anular el comprobante?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                                child: const Text('Cancelar'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  createNotaCredito(currentContext);
+                                  // Navigator.pop(context);
+                                },
+                                child: const Text('Aceptar'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.do_not_touch_rounded,
+                        color: Colors.red,
+                      ),
+                    )
+              : const SizedBox(),
         ],
       ),
       body: PdfPreview(

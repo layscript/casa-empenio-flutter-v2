@@ -30,6 +30,11 @@ class SalesEntity extends Equatable {
   final TicketSalesEntity? boletaVenta;
   final List<CreditNoteEntity>? notaCredito;
 
+  @override
+  String toString() {
+    return 'SalesEntity(id: $id, serie: $serie, correlativo: $correlativo, cod: $cod, fecha: $fecha, total: $total, cliente: $cliente, usuario: $usuario, boletaVenta: $boletaVenta, detallesVenta: $detallesVenta, notaCredito: $notaCredito)';
+  }
+
   static List<SalesEntity> listGetSalesFromMap(
     List<dynamic> list,
   ) {

@@ -1,5 +1,7 @@
 // ignore_for_file: prefer_is_empty
 
+import 'dart:developer';
+
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
@@ -196,7 +198,8 @@ class _ProformaViewState extends State<ProformaView> {
                                 itemCount: state.listSales.length,
                                 itemBuilder: (context, index) {
                                   final venta = state.listSales[index];
-                                  print('ventaaa: ${venta}');
+                                  log('ventaaa: ${venta.toString()}');
+
 
                                   return ListTile(
                                     dense: true,
@@ -235,6 +238,28 @@ class _ProformaViewState extends State<ProformaView> {
                                               color: Colors.blue),
                                         )
                                       ],
+                                    ),
+                                    trailing: IconButton(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                PdfPreviewFacturaPage(
+                                              url: venta.boletaVenta?.pdf ?? '',
+                                              id: venta.id,
+                                              tipo: 'venta',
+                                              notaCredito: venta.notaCredito,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      icon: FaIcon(
+                                        FontAwesomeIcons.fileInvoice,
+                                        color: venta.notaCredito?.length == 0
+                                            ? Colors.purple
+                                            : Colors.red[400],
+                                      ),
                                     ),
                                   );
                                 },
