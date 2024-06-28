@@ -4,9 +4,9 @@ final _client = Dio(
   BaseOptions(
     //baseUrl: 'http://161.132.38.162:31032',
     baseUrl: endPointPrincipal,
-    validateStatus: (status) => (status ?? 500) < 500,
-    connectTimeout: const Duration(seconds: 60000),
-    receiveTimeout: const Duration(seconds: 60000),
+    //validateStatus: (status) => (status ?? 500) < 500,
+    connectTimeout: const Duration(seconds: 90000),
+    receiveTimeout: const Duration(seconds: 90000),
   ),
 );
 
