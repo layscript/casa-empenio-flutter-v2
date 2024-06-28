@@ -5,7 +5,6 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   file_selector_windows
   printing
-  sentry_flutter
   url_launcher_windows
 )
 

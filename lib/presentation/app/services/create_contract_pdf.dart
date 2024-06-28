@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
@@ -629,8 +630,7 @@ abstract class CreateContractPdf {
   }
 
   static Future<Uint8List> generarContratoPdf(String htmlContent) async {
-    final url =
-        Uri.parse('http://161.132.38.162:31037/configuracion/pdf/create');
+    final url = Uri.parse('$endPointPrincipal/configuracion/pdf/create');
 
     final response = await http.post(
       url,
