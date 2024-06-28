@@ -69,7 +69,23 @@ class HttpProformaRepository implements ProformaRepository {
       if (response.statusCode != 201) {
         return false;
       } else {
-        return true;
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final parsedMap = {
+          'ventaId': map['body']['id'],
+        };
+
+        // TODOOOO:: Facturación
+        final responseFactura = await _dio.post(
+          '/facturacion/facturacion/proforma',
+          data: parsedMap,
+        );
+
+        if (responseFactura.statusCode != 201) {
+          return false;
+        } else {
+          return true;
+        }
+        //return true;
       }
     } catch (e, stackTrace) {
       return false;

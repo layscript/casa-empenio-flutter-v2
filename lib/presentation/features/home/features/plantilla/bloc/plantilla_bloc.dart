@@ -88,7 +88,7 @@ class PlantillaBloc extends Bloc<PlantillaEvent, PlantillaState> {
             state.copyWith(
               status: PlantillaStatus.success,
               htmlContent: success,
-              plantillaSelected: '',
+              plantillaSelected: success,
             ),
           );
         },
