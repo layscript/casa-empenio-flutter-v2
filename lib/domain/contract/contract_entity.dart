@@ -46,11 +46,12 @@ class ContratoEntity extends Equatable {
     ];
 
     return {
-      'numero': numero,
+      'codigo': numero,
       'nombre': nombre,
       'dni': dni,
       'domicilio': domicilio,
-      'fechaVencimiento': fechaVencimiento,
+      'fechaVencimiento':
+          '${fechaVencimiento.day}/${fechaVencimiento.month.toString().padLeft(2, '0')}/${fechaVencimiento.year}',
       'monto': monto,
       'montoPagar': montoPagar,
       'prendas': prendas.map((e) => e.toJson()).toList(),
