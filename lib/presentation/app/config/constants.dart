@@ -4,8 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 //const endPointPrincipal = 'http://161.132.38.162:31032';
-//const endPointPrincipal = 'http://161.132.38.162:31037';
-const endPointPrincipal = 'http://192.168.0.4:3000';
+const endPointPrincipal = 'http://161.132.38.162:31037';
+//const endPointPrincipal = 'http://192.168.0.4:3000';
 
 //const endPoint = 'http://192.168.195.118:4000';
 //const endPoint = 'http://192.168.18.143:4000';

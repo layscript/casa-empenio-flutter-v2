@@ -237,28 +237,34 @@ class _SalesViewState extends State<SalesView> {
                                         )
                                       ],
                                     ),
-                                    trailing: IconButton(
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                PdfPreviewFacturaPage(
-                                              url: venta.boletaVenta?.pdf ?? '',
-                                              id: venta.id,
-                                              tipo: 'venta',
-                                              notaCredito: venta.notaCredito,
+                                    trailing: venta.boletaVenta?.pdf != null
+                                        ? IconButton(
+                                            onPressed: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      PdfPreviewFacturaPage(
+                                                    url: venta
+                                                            .boletaVenta?.pdf ??
+                                                        '',
+                                                    id: venta.id,
+                                                    tipo: 'venta',
+                                                    notaCredito:
+                                                        venta.notaCredito,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                            icon: FaIcon(
+                                              FontAwesomeIcons.fileInvoice,
+                                              color:
+                                                  venta.notaCredito?.length == 0
+                                                      ? Colors.purple
+                                                      : Colors.red[400],
                                             ),
-                                          ),
-                                        );
-                                      },
-                                      icon: FaIcon(
-                                        FontAwesomeIcons.fileInvoice,
-                                        color: venta.notaCredito?.length == 0
-                                            ? Colors.purple
-                                            : Colors.red[400],
-                                      ),
-                                    ),
+                                          )
+                                        : const SizedBox(),
                                   );
                                 },
                               ),
