@@ -50,7 +50,7 @@ dependencies:
   #intl: ^0.18.1
   cached_network_image: ^3.3.0
   font_awesome_flutter: ^10.6.0
-  image_picker: ^1.1.2
+  image_picker: any
   pdf: ^3.10.6
   printing: ^5.11.1
   excel: ^3.0.0
