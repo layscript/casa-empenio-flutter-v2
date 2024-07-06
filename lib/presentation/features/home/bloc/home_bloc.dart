@@ -74,8 +74,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
   void _onGoToOpenCaja(GoToOpenCaja event, Emitter<HomeState> emit) {
     const caja = ModulosEntity(
-      id: 13,
-      nombre: 'lista de cajas',
+      id: 12,
+      nombre: 'caja',
     );
     emit(state.copyWith(selected: caja));
   }
