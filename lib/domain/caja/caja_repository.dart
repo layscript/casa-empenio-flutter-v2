@@ -2,7 +2,9 @@ import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:dartz/dartz.dart';
 
 abstract class CajaRepository {
-  Future<Either<String, List<CajaEntity>>> getAllCajas();
+  Future<Either<String, List<CajaEntity>>> getAllCajas({
+    required int sucursalId,
+  });
   Future<void> getOnlyCaja();
   Future<Either<String, CajaEntity?>> getCajaOfTheDay({
     required int sucursalId,

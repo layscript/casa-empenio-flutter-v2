@@ -44,7 +44,9 @@ class CajasBloc extends Bloc<CajasEvent, CajasState> {
     final firstResult = result[0] as Either<String, List<CajaEntity>>;
     final secondResult = result[1] as Either<String, CajaEntity>; */
 
-    final firstResult = await _cajaRepository.getAllCajas();
+    final firstResult = await _cajaRepository.getAllCajas(
+      sucursalId: _preferences.token?.sucursal?.id ?? 1,
+    );
 
     firstResult.fold(
       (error) => emit(
