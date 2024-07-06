@@ -525,7 +525,9 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     );
 
     try {
-      final getCajaOfTheDay = await _cajaRepository.getCajaOfTheDay();
+      final getCajaOfTheDay = await _cajaRepository.getCajaOfTheDay(
+        sucursalId: _preferences.token?.sucursal?.id ?? 1,
+      );
       await getCajaOfTheDay.fold(
         (error) async {
           emit(

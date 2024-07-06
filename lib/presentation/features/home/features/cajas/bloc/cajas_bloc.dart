@@ -97,7 +97,9 @@ class CajasBloc extends Bloc<CajasEvent, CajasState> {
     Emitter<CajasState> emit,
   ) async {
     emit(state.copyWith(cajasStatus: CajasStatus.loading));
-    final result = await _cajaRepository.getCajaOfTheDay();
+    final result = await _cajaRepository.getCajaOfTheDay(
+      sucursalId: _preferences.token?.sucursal?.id ?? 1,
+    );
     result.fold(
       (error) => emit(
         state.copyWith(

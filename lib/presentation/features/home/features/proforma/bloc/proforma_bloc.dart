@@ -57,7 +57,9 @@ class ProformaBloc extends Bloc<ProformaEvent, ProformaState> {
     GetCashProformasStatus event,
     Emitter<ProformaState> emit,
   ) async {
-    final result = await _cajaRepository.getCajaOfTheDay();
+    final result = await _cajaRepository.getCajaOfTheDay(
+      sucursalId: _preferences.token?.sucursal?.id ?? 1,
+    );
     result.fold(
       // Error
       (left) => emit(

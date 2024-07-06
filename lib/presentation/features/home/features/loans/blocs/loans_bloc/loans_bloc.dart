@@ -380,7 +380,9 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
       emit(state.copyWith(loansStatus: LoansStatus.loading));
 
       // Llamar a la API para obtener el estado de caja del día
-      final getCajaOftheDayResult = await _cajaRepository.getCajaOfTheDay();
+      final getCajaOftheDayResult = await _cajaRepository.getCajaOfTheDay(
+        sucursalId: _preferences.token?.sucursal?.id ?? 1,
+      );
 
       // Variables para almacenar el resultado de la primera llamada
       int? cajaId;
@@ -537,7 +539,9 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
   ) async {
     emit(state.copyWith(loansStatus: LoansStatus.deleteLoanLoading));
 
-    final getCajaOfTheDay = await _cajaRepository.getCajaOfTheDay();
+    final getCajaOfTheDay = await _cajaRepository.getCajaOfTheDay(
+      sucursalId: _preferences.token?.sucursal?.id ?? 1,
+    );
 
     await getCajaOfTheDay.fold(
       (error) async => emit(
@@ -610,7 +614,9 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
   ) async {
     emit(state.copyWith(loansStatus: LoansStatus.deleteLoanLoading));
     try {
-      final getCajaOfTheDay = await _cajaRepository.getCajaOfTheDay();
+      final getCajaOfTheDay = await _cajaRepository.getCajaOfTheDay(
+        sucursalId: _preferences.token?.sucursal?.id ?? 1,
+      );
 
       await getCajaOfTheDay.fold(
         (error) async => emit(

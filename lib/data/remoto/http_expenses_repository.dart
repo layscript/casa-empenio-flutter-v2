@@ -18,6 +18,7 @@ class HttpExpensesRepository implements ExpensesRepository {
     required String obs,
     required double monto,
     required List<Map> url,
+    required int sucursalId,
   }) async {
     const path = '/finanza/movimiento/gasto';
     final payload = {
@@ -25,6 +26,7 @@ class HttpExpensesRepository implements ExpensesRepository {
       'monto': monto,
       'usuarioId': id,
       'imagenes': url,
+      'sucursalId': sucursalId,
     };
 
     try {
@@ -79,6 +81,7 @@ class HttpExpensesRepository implements ExpensesRepository {
 
     final path =
         '/finanza/movimiento/gasto?limit=1000&offset=0&fechaInicio=$fechaIniP&fechaFin=$fechaFinP&sucursalId=$sucursalId';
+    print('sucursalId> $path');
     try {
       final response = await _dio.get<String>(path);
       if (response.statusCode != 200) {

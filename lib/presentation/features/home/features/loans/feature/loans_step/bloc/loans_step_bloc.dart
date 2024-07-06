@@ -779,7 +779,9 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
       _loansRepository.getLastCode(),
       _interestsRepository.getInterest(),
       _categoriesRepository.getCategories(),
-      _cajaRepository.getCajaOfTheDay(),
+      _cajaRepository.getCajaOfTheDay(
+        sucursalId: _preferences.token?.sucursal?.id ?? 1,
+      ),
     ]);
 
     final formattedDate = _onGetToday();
@@ -964,7 +966,9 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
         );
       }
 
-      final getCaja = await _cajaRepository.getCajaOfTheDay();
+      final getCaja = await _cajaRepository.getCajaOfTheDay(
+        sucursalId: _preferences.token?.sucursal?.id ?? 1,
+      );
       int? cajaId;
       getCaja.fold(
         (error) => cajaId = null,

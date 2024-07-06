@@ -104,6 +104,7 @@ class ExpensesBloc extends Bloc<ExpensesEvent, ExpensesState> {
           url: images.map((e) {
             return {'url': e};
           }).toList(),
+          sucursalId: _preferences.token?.sucursal?.id ?? 1
         );
 
         result.fold(
@@ -153,7 +154,9 @@ class ExpensesBloc extends Bloc<ExpensesEvent, ExpensesState> {
     GetCashExpensesStatus event,
     Emitter<ExpensesState> emit,
   ) async {
-    final result = await _cajaRepository.getCajaOfTheDay();
+    final result = await _cajaRepository.getCajaOfTheDay(
+      sucursalId: _preferences.token?.sucursal?.id ?? 1,
+    );
     result.fold(
       // Error
       (left) => emit(

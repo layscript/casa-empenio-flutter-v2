@@ -17,6 +17,7 @@ class HttpMotionRepository implements MotionRepository {
     required int idUser,
     required String obs,
     required double monto,
+    required int sucursalId,
   }) async {
     const path = '/finanza/movimiento';
     final payload = {
@@ -25,6 +26,7 @@ class HttpMotionRepository implements MotionRepository {
       'observaciones': obs,
       'monto': monto,
       'usuarioId': idUser,
+      'sucursalId': sucursalId,
     };
 
     try {

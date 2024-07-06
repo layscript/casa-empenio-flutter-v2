@@ -12,5 +12,6 @@ abstract class MotionRepository {
     required int idUser,
     required String obs,
     required double monto,
+    required int sucursalId,
   });
 }

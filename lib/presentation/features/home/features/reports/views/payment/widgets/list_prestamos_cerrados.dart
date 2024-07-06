@@ -195,44 +195,6 @@ class _ListPrestamosCerrados extends StatelessWidget {
                                                         : Colors.red[400],
                                               ),
                                             ),
-                                          if (prestamo.estado == 'LIQUIDADO')
-                                            IconButton(
-                                              padding: EdgeInsets.zero,
-                                              onPressed: () async {
-                                                final result =
-                                                    await showDialog<bool?>(
-                                                  barrierDismissible: false,
-                                                  context: context,
-                                                  builder: (_) {
-                                                    return BlocProvider.value(
-                                                      value: context
-                                                          .read<ReportsBloc>(),
-                                                      child: AnularDialogReport(
-                                                          codigo:
-                                                              prestamo.codigo),
-                                                    );
-                                                  },
-                                                );
-
-                                                await Future.delayed(
-                                                        const Duration(
-                                                            milliseconds: 300))
-                                                    .then((value) {
-                                                  context
-                                                      .read<ReportsBloc>()
-                                                      .add(
-                                                        const GetLoadInitialDataPayments(
-                                                          end: null,
-                                                          start: null,
-                                                        ),
-                                                      );
-                                                });
-                                              },
-                                              icon: const Icon(
-                                                Icons.delete_forever,
-                                                color: Colors.red,
-                                              ),
-                                            ),
                                         ],
                                       ),
                                     ),

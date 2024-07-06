@@ -61,7 +61,9 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
     GetCashSalesStatus event,
     Emitter<SalesState> emit,
   ) async {
-    final result = await _cajaRepository.getCajaOfTheDay();
+    final result = await _cajaRepository.getCajaOfTheDay(
+      sucursalId: _preferences.token?.sucursal?.id ?? 1,
+    );
     result.fold(
       // Error
       (left) => emit(

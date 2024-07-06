@@ -74,6 +74,7 @@ class PayUserBloc extends Bloc<PayUserEvent, PayUserState> {
       idUser: event.usuarioId,
       obs: event.obs,
       monto: double.parse(event.monto),
+      sucursalId: _preferences.token?.sucursal?.id ?? 1,
     );
 
     result.fold(
@@ -95,7 +96,9 @@ class PayUserBloc extends Bloc<PayUserEvent, PayUserState> {
     GetCashPayExpensesStatus event,
     Emitter<PayUserState> emit,
   ) async {
-    final result = await _cajaRepository.getCajaOfTheDay();
+    final result = await _cajaRepository.getCajaOfTheDay(
+      sucursalId: _preferences.token?.sucursal?.id ?? 1,
+    );
     result.fold(
       // Error
       (left) => emit(

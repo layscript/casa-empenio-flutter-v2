@@ -4,7 +4,9 @@ import 'package:dartz/dartz.dart';
 abstract class CajaRepository {
   Future<Either<String, List<CajaEntity>>> getAllCajas();
   Future<void> getOnlyCaja();
-  Future<Either<String, CajaEntity?>> getCajaOfTheDay();
+  Future<Either<String, CajaEntity?>> getCajaOfTheDay({
+    required int sucursalId,
+  });
   Future<void> deleteCaja();
   Future<Either<String, bool>> openCaja({
     required int userId,
