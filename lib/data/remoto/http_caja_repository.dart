@@ -78,7 +78,8 @@ class HttpCajaRepository implements CajaRepository {
   Future<Either<String, CajaEntity?>> getCajaOfTheDay({
     required int sucursalId,
   }) async {
-    final path = '/finanza/caja/actual?sucursalId=$sucursalId';
+    final path = '/finanza/caja/actual/$sucursalId';
+
     try {
       final response = await _dio.get<String>(path);
       if (response.statusCode != 200) {
