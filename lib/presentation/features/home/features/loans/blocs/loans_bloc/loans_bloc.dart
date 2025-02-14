@@ -284,13 +284,22 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
       isLiquidacion: true,
     );
 
+    if (resultPayment == false) {
+      emit(
+        state.copyWith(
+          loansStatus: LoansStatus.settlementError,
+        ),
+      );
+      return;
+    }
+
     final resultLoand = await _loansRepository.payOffLoan(
       id: event.codigo,
       idPrestamo: event.idPrestamo,
       userId: event.userId,
     );
 
-    if (resultPayment && resultLoand) {
+    if (resultLoand) {
       emit(
         state.copyWith(
           loansStatus: LoansStatus.settlementSuccess,
