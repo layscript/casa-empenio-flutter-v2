@@ -21,7 +21,10 @@ class _ManualCustomerFormState extends State<ManualCustomerForm> {
   final _nombreCtrl = TextEditingController();
   final _apellidoPaternoCtrl = TextEditingController();
   final _apellidoMaternoCtrl = TextEditingController();
+  final _razonSocialCtrl = TextEditingController();
   final _direccionCtrl = TextEditingController();
+  
+  bool get isRuc => widget.documentNumber.length == 11;
 
   @override
   void initState() {
@@ -33,6 +36,7 @@ class _ManualCustomerFormState extends State<ManualCustomerForm> {
     _nombreCtrl.dispose();
     _apellidoPaternoCtrl.dispose();
     _apellidoMaternoCtrl.dispose();
+    _razonSocialCtrl.dispose();
     _direccionCtrl.dispose();
     super.dispose();
   }
@@ -41,11 +45,11 @@ class _ManualCustomerFormState extends State<ManualCustomerForm> {
     if (_formKey.currentState!.validate()) {
       // Crear un objeto CustomerSunatEntity con los datos ingresados manualmente
       final manualCustomer = CustomerSunatEntity(
-        nombre: _nombreCtrl.text,
-        apellidoPaterno: _apellidoPaternoCtrl.text,
-        apellidoMaterno: _apellidoMaternoCtrl.text,
-        dni: widget.documentNumber,
-        ruc: widget.documentNumber.length > 8 ? widget.documentNumber : null,
+        nombre: isRuc ? _razonSocialCtrl.text : _nombreCtrl.text,
+        apellidoPaterno: isRuc ? '' : _apellidoPaternoCtrl.text,
+        apellidoMaterno: isRuc ? '' : _apellidoMaternoCtrl.text,
+        dni: isRuc ? null : widget.documentNumber,
+        ruc: isRuc ? widget.documentNumber : null,
         domicilio: HomeSunatEntity(
           direccion: _direccionCtrl.text,
           distrito: '',
@@ -66,38 +70,53 @@ class _ManualCustomerFormState extends State<ManualCustomerForm> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppTextFormField(
-            controller: _nombreCtrl,
-            labelText: 'Nombres',
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Por favor ingresa los nombres';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 10),
-          AppTextFormField(
-            controller: _apellidoPaternoCtrl,
-            labelText: 'Apellido Paterno',
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Por favor ingresa el apellido paterno';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 10),
-          AppTextFormField(
-            controller: _apellidoMaternoCtrl,
-            labelText: 'Apellido Materno',
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Por favor ingresa el apellido materno';
-              }
-              return null;
-            },
-          ),
+          if (isRuc) ...[
+            // Formulario para RUC (empresas)
+            AppTextFormField(
+              controller: _razonSocialCtrl,
+              labelText: 'Razón Social',
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Por favor ingresa la razón social';
+                }
+                return null;
+              },
+            ),
+          ] else ...[
+            // Formulario para DNI (personas naturales)
+            AppTextFormField(
+              controller: _nombreCtrl,
+              labelText: 'Nombres',
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Por favor ingresa los nombres';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 10),
+            AppTextFormField(
+              controller: _apellidoPaternoCtrl,
+              labelText: 'Apellido Paterno',
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Por favor ingresa el apellido paterno';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 10),
+            AppTextFormField(
+              controller: _apellidoMaternoCtrl,
+              labelText: 'Apellido Materno',
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Por favor ingresa el apellido materno';
+                }
+                return null;
+              },
+            ),
+          ],
           const SizedBox(height: 10),
           AppTextFormField(
             controller: _direccionCtrl,

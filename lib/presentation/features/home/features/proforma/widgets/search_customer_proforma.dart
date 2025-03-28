@@ -28,6 +28,9 @@ class _SearchCustomerProformaState extends State<SearchCustomerProforma> {
             isValid: (value) => setState(() => dniIsValid = value),
             validator: (value) {
               if (value!.isEmpty) return 'Campo requerido';
+              if (value.length != 8 && value.length != 11) {
+                return 'Debe ser DNI (8 dígitos) o RUC (11 dígitos)';
+              }
               return null;
             },
             suffixIcon: dniCtrl.text.isNotEmpty
@@ -48,11 +51,14 @@ class _SearchCustomerProformaState extends State<SearchCustomerProforma> {
           child: ElevatedButton(
             onPressed: dniIsValid
                 ? () {
-                    context.read<ProformaBloc>().add(
-                          GetCustomerProformasByDni(
-                            dniCtrl.text,
-                          ),
-                        );
+                    final documento = dniCtrl.text;
+                    if (documento.length == 8 || documento.length == 11) {
+                      context.read<ProformaBloc>().add(
+                            GetCustomerProformasByDni(
+                              documento,
+                            ),
+                          );
+                    }
                   }
                 : null,
             child: const Text('Buscar'),
