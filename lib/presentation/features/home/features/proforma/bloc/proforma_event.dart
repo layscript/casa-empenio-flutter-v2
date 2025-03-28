@@ -65,3 +65,8 @@ class GenerateProformasProduct extends ProformaEvent {
   final int userId;
   final int sucursalId;
 }
+
+class SetManualCustomerData extends ProformaEvent {
+  const SetManualCustomerData(this.customer);
+  final CustomerSunatEntity customer;
+}

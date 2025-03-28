@@ -16,6 +16,7 @@ final _initialState = ProformaState(
   totalSales: 0.0,
   customer: null,
   selectedProductsSales: null,
+  lastSearchedDocument: '',
 );
 
 class ProformaBloc extends Bloc<ProformaEvent, ProformaState> {
@@ -46,6 +47,7 @@ class ProformaBloc extends Bloc<ProformaEvent, ProformaState> {
     on<DeleteProductProformasToCart>(_onDeleteProductProformasToCart);
     on<UpdateProductProformasToCart>(_onUpdateProductProformasToCart);
     on<GenerateProformasProduct>(_onGenerateProformasProduct);
+    on<SetManualCustomerData>(_onSetManualCustomerData);
   }
 
   final ProformaRepository _proformaRepository;
@@ -118,6 +120,7 @@ class ProformaBloc extends Bloc<ProformaEvent, ProformaState> {
       state.copyWith(
         addStatus: ProformaStatus.loading,
         saveStatus: ProformaStatus.initial,
+        lastSearchedDocument: event.value,
       ),
     );
 
@@ -129,12 +132,14 @@ class ProformaBloc extends Bloc<ProformaEvent, ProformaState> {
       (message) => emit(
         state.copyWith(
           addStatus: ProformaStatus.error,
+          lastSearchedDocument: event.value,
         ),
       ),
       (customer) => emit(
         state.copyWith(
           addStatus: ProformaStatus.success,
           customer: customer,
+          lastSearchedDocument: event.value,
         ),
       ),
     );
@@ -286,5 +291,17 @@ class ProformaBloc extends Bloc<ProformaEvent, ProformaState> {
         ),
       );
     }
+  }
+
+  void _onSetManualCustomerData(
+    SetManualCustomerData event,
+    Emitter<ProformaState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        addStatus: ProformaStatus.success,
+        customer: event.customer,
+      ),
+    );
   }
 }

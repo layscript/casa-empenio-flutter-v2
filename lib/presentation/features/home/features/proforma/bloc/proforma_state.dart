@@ -19,6 +19,7 @@ class ProformaState extends Equatable {
     required this.totalSales,
     required this.customer,
     required this.selectedProductsSales,
+    this.lastSearchedDocument,
   });
 
   final bool? openBox;
@@ -29,6 +30,7 @@ class ProformaState extends Equatable {
   final DateTime endTimeSales;
   final List<SalesEntity> listSales;
   final double totalSales;
+  final String? lastSearchedDocument;
 
   final CustomerSunatEntity? customer;
   final List<ProductSales>? selectedProductsSales;
@@ -56,6 +58,7 @@ class ProformaState extends Equatable {
     double? totalSales,
     CustomerSunatEntity? customer,
     List<ProductSales>? selectedProductsSales,
+    String? lastSearchedDocument,
   }) =>
       ProformaState(
         openBox: openBox,
@@ -68,6 +71,7 @@ class ProformaState extends Equatable {
         totalSales: totalSales ?? this.totalSales,
         customer: customer,
         selectedProductsSales: selectedProductsSales,
+        lastSearchedDocument: lastSearchedDocument,
       );
 
   @override
@@ -82,5 +86,6 @@ class ProformaState extends Equatable {
         totalSales,
         customer,
         selectedProductsSales,
+        lastSearchedDocument,
       ];
 }
