@@ -189,13 +189,25 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
       );
       result.fold(
         (message) {
-          emit(_errorState(message));
+          // En caso de error, cambiar el estado a loaded pero con un mensaje de error
+          // Esto permite que la UI siga mostrando el formulario sin quedarse bloqueada
+          emit(
+            state.copyWith(
+              loansStatus: LoansStatus.loaded,
+              error: message,
+              customerSunat: null, // Asegurarse de que no haya datos antiguos
+            ),
+          );
+          
+          // Mostrar el mensaje de error en la consola para depuración
+          log('Error al buscar DNI: $message');
         },
         (customerSunat) {
           emit(
             state.copyWith(
               loansStatus: LoansStatus.loaded,
               customerSunat: customerSunat,
+              error: null, // Limpiar cualquier error anterior
             ),
           );
         },

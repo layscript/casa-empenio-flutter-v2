@@ -42,6 +42,20 @@ class _ShowDialogBillingLoanState extends State<ShowDialogBillingLoan> {
       onTap: () => Keyboard.unfocus(context),
       child: BlocConsumer<LoansBloc, LoansState>(
         listener: (context, state) {
+          // Manejar el error cuando no se encuentra información para el DNI
+          if (state.isLoansError && state.loansStatus == LoansStatus.error) {
+            // Mostrar mensaje de error sin cerrar el modal
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('No se encontró información para este documento. Intente nuevamente.'),
+                backgroundColor: Colors.red,
+                duration: Duration(seconds: 3),
+              ),
+            );
+            // Resetear el estado para permitir nuevos intentos sin cerrar el modal
+            context.read<LoansBloc>().add(GetLoansInitial());
+          }
+
           if (state.isLoansElectronicTicketSuccess) {
             showDialog(
               barrierDismissible: false,
@@ -107,6 +121,8 @@ class _ShowDialogBillingLoanState extends State<ShowDialogBillingLoan> {
                 ),
               );
 
+            case LoansStatus.error:
+            case LoansStatus.loadingDetailsSunat:
             case LoansStatus.loaded:
               final loan = state.loanDetails;
               return AlertDialog(
@@ -160,7 +176,29 @@ class _ShowDialogBillingLoanState extends State<ShowDialogBillingLoan> {
                           }
                         },
                       ),
-                      if (state.customerSunat != null &&
+                      if (state.isLoadingDetailsSunat) ...[
+                        const SizedBox(height: 15),
+                        const Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        ),
+                      ] else if (state.error != null && state.loansStatus == LoansStatus.loaded && dniCtrl.text.length == 8) ...[
+                        // Mostrar mensaje de error cuando no se encuentra información
+                        const SizedBox(height: 15),
+                        const Text(
+                          'No se encontró información para este documento. Intente nuevamente.',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontSize: 12,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ] else if (state.customerSunat != null &&
                           dniCtrl.text.length == 8) ...[
                         const SizedBox(height: 15),
                         Text(
@@ -187,11 +225,13 @@ class _ShowDialogBillingLoanState extends State<ShowDialogBillingLoan> {
                         ),
                       ),
                       TextButton(
-                        onPressed: (dniCtrl.text.length == 8 ||
+                        onPressed: (dniCtrl.text.length == 8 &&
+                                    state.customerSunat != null &&
+                                    state.error == null) ||
                                 (dniCtrl.text.isEmpty &&
                                     double.parse(loan?.ganancia.toString() ??
                                             '0.00') <
-                                        700))
+                                        700)
                             ? () {
                                 if (dniCtrl.text.isEmpty) {
                                   // Crear factura sin nada
