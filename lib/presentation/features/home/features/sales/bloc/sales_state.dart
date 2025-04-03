@@ -54,6 +54,7 @@ class SalesState extends Equatable {
     required this.totalSales,
     required this.customer,
     required this.selectedProductsSales,
+    this.lastSearchedDocument,
   });
 
   final bool? openBox;
@@ -64,6 +65,7 @@ class SalesState extends Equatable {
   final DateTime endTimeSales;
   final List<SalesEntity> listSales;
   final double totalSales;
+  final String? lastSearchedDocument;
 
   final CustomerSunatEntity? customer;
   final List<ProductSales>? selectedProductsSales;
@@ -91,6 +93,7 @@ class SalesState extends Equatable {
     double? totalSales,
     CustomerSunatEntity? customer,
     List<ProductSales>? selectedProductsSales,
+    String? lastSearchedDocument,
   }) =>
       SalesState(
         openBox: openBox,
@@ -103,6 +106,7 @@ class SalesState extends Equatable {
         totalSales: totalSales ?? this.totalSales,
         customer: customer,
         selectedProductsSales: selectedProductsSales,
+        lastSearchedDocument: lastSearchedDocument,
       );
 
   @override
@@ -117,5 +121,6 @@ class SalesState extends Equatable {
         totalSales,
         customer,
         selectedProductsSales,
+        lastSearchedDocument,
       ];
 }

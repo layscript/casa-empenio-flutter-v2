@@ -49,6 +49,8 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
     on<DeleteProductSalesToCart>(_onDeleteProductSalesToCart);
     on<UpdateProductSalesToCart>(_onUpdateProductSalesToCart);
     on<GenerateSalesProduct>(_onGenerateSalesProduct);
+    on<UseGenericCustomer>(_onUseGenericCustomer);
+    on<SetSalesManualCustomerData>(_onSetManualCustomerData);
   }
 
   final SalesRepository _salesRepository;
@@ -128,6 +130,7 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
       state.copyWith(
         addStatus: SalesStatus.loading,
         saveStatus: SalesStatus.initial,
+        lastSearchedDocument: event.value,
       ),
     );
 
@@ -139,12 +142,14 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
       (message) => emit(
         state.copyWith(
           addStatus: SalesStatus.error,
+          lastSearchedDocument: event.value,
         ),
       ),
       (customer) => emit(
         state.copyWith(
           addStatus: SalesStatus.success,
           customer: customer,
+          lastSearchedDocument: event.value,
         ),
       ),
     );
@@ -296,5 +301,29 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
         ),
       );
     }
+  }
+
+  void _onUseGenericCustomer(
+    UseGenericCustomer event,
+    Emitter<SalesState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        addStatus: SalesStatus.error,
+        lastSearchedDocument: '',
+      ),
+    );
+  }
+
+  void _onSetManualCustomerData(
+    SetSalesManualCustomerData event,
+    Emitter<SalesState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        addStatus: SalesStatus.success,
+        customer: event.customer,
+      ),
+    );
   }
 }

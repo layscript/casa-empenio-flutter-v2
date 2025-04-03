@@ -64,3 +64,12 @@ class GenerateSalesProduct extends SalesEvent {
   final int userId;
   final int sucursalId;
 }
+
+class UseGenericCustomer extends SalesEvent {
+  const UseGenericCustomer();
+}
+
+class SetSalesManualCustomerData extends SalesEvent {
+  const SetSalesManualCustomerData(this.customer);
+  final CustomerSunatEntity customer;
+}

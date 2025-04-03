@@ -86,8 +86,27 @@ class _AddFormSalesState extends State<AddFormSales> {
                     );
 
                   case SalesStatus.error:
-                    return const Center(
-                      child: Text('No pudimos obtener datos del DNI/RUC'),
+                    return Column(
+                      children: [
+                        const Text(
+                          'No pudimos obtener datos del DNI/RUC',
+                          style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'Puedes ingresar los datos manualmente:',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 15),
+                        ManualCustomerForm(
+                          documentNumber: state.lastSearchedDocument ?? '',
+                          onSave: (customerData) {
+                            context.read<SalesBloc>().add(
+                                  SetSalesManualCustomerData(customerData),
+                                );
+                          },
+                        ),
+                      ],
                     );
 
                   case SalesStatus.success:
