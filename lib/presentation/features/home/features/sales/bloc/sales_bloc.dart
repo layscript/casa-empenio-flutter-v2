@@ -51,6 +51,7 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
     on<GenerateSalesProduct>(_onGenerateSalesProduct);
     on<UseGenericCustomer>(_onUseGenericCustomer);
     on<SetSalesManualCustomerData>(_onSetManualCustomerData);
+    on<ResetSalesErrorState>(_onResetSalesErrorState);
   }
 
   final SalesRepository _salesRepository;
@@ -172,6 +173,9 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
         state.copyWith(
           customer: state.customer,
           selectedProductsSales: newProducts,
+          // Restablecer el estado de error
+          saveStatus: SalesStatus.initial,
+          errorMessage: null,
         ),
       );
     } else {
@@ -183,6 +187,9 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
         state.copyWith(
           customer: state.customer,
           selectedProductsSales: newProducts,
+          // Restablecer el estado de error
+          saveStatus: SalesStatus.initial,
+          errorMessage: null,
         ),
       );
     }
@@ -203,6 +210,9 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
         state.copyWith(
           customer: state.customer,
           selectedProductsSales: filterProduct,
+          // Restablecer el estado de error
+          saveStatus: SalesStatus.initial,
+          errorMessage: null,
         ),
       );
     }
@@ -226,6 +236,9 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
         state.copyWith(
           customer: state.customer,
           selectedProductsSales: filterProduct,
+          // Restablecer el estado de error
+          saveStatus: SalesStatus.initial,
+          errorMessage: null,
         ),
       );
     }
@@ -236,14 +249,8 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
     Emitter<SalesState> emit,
   ) async {
     if (state.isSaveSalesLoading == true) return;
-    emit(
-      state.copyWith(
-        saveStatus: SalesStatus.loading,
-        customer: state.customer,
-        selectedProductsSales: state.selectedProductsSales,
-      ),
-    );
 
+    // Calcular el total de la venta
     List<Map<String, dynamic>> detalles = state.selectedProductsSales!.map((e) {
       final id = e.selectedProducts?.id.toString();
 
@@ -268,17 +275,49 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
       }
     }).toList();
 
+    final total = detalles.fold(
+        0.0,
+        (previousValue, element) =>
+            previousValue + (element['cantidad']! * element['precio']!));
+
+    // Verificar si es cliente genérico (DNI = "00000000")
+    final isGenericCustomer = state.customer?.dni == "00000000" ||
+        (state.customer?.nombre == "Cliente Genérico" &&
+                state.customer?.dni != null ||
+            state.customer?.dni == "");
+
+    // Validar monto máximo para cliente genérico (solo para boletas/DNI)
+    if (isGenericCustomer && total > 700.0) {
+      // Si el cliente es genérico y el monto es mayor a 700, mostrar error
+      emit(
+        state.copyWith(
+          saveStatus: SalesStatus.error,
+          errorMessage:
+              "Para ventas mayores a S/. 700.00 debe usar un cliente con DNI real.",
+          // Mantener los datos del cliente y productos
+          customer: state.customer,
+          selectedProductsSales: state.selectedProductsSales,
+        ),
+      );
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        saveStatus: SalesStatus.loading,
+        customer: state.customer,
+        selectedProductsSales: state.selectedProductsSales,
+      ),
+    );
+
     final data = <String, dynamic>{
       'detalleVentaDto': detalles,
-      'total': detalles.fold(
-          0.0,
-          (previousValue, element) =>
-              previousValue + (element['cantidad']! * element['precio']!)),
+      'total': total,
       'nombres': state.customer?.nombre,
       'apellidos':
           '${state.customer?.apellidoPaterno} ${state.customer?.apellidoMaterno}',
       'direccion': '${state.customer?.domicilio?.direccion}',
-      'dni': '${state.customer?.customerDocument}',
+      'dni': '${state.customer?.customerDocument == '' ? '00000000' : state.customer?.customerDocument}',
       'usuarioId': event.userId,
       'sucursalId': event.sucursalId,
     };
@@ -296,8 +335,10 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
       emit(
         state.copyWith(
           saveStatus: SalesStatus.error,
-          customer: null,
-          selectedProductsSales: null,
+          errorMessage: "Ocurrió un error al procesar la venta.",
+          // Mantener los datos para que el usuario pueda intentar nuevamente
+          customer: state.customer,
+          selectedProductsSales: state.selectedProductsSales,
         ),
       );
     }
@@ -323,6 +364,21 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
       state.copyWith(
         addStatus: SalesStatus.success,
         customer: event.customer,
+      ),
+    );
+  }
+
+  void _onResetSalesErrorState(
+    ResetSalesErrorState event,
+    Emitter<SalesState> emit,
+  ) {
+    // Restablecer el estado de error pero mantener los datos del cliente y productos
+    emit(
+      state.copyWith(
+        saveStatus: SalesStatus.initial,
+        errorMessage: null,
+        customer: state.customer,
+        selectedProductsSales: state.selectedProductsSales,
       ),
     );
   }

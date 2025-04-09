@@ -73,3 +73,7 @@ class SetSalesManualCustomerData extends SalesEvent {
   const SetSalesManualCustomerData(this.customer);
   final CustomerSunatEntity customer;
 }
+
+class ResetSalesErrorState extends SalesEvent {
+  const ResetSalesErrorState();
+}

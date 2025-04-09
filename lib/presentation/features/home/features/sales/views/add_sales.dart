@@ -59,10 +59,19 @@ class _AddFormSalesState extends State<AddFormSales> {
                 } else {
                   OverlayLoader.hide();
                   if (state.isSaveSalesError) {
+                    // Mostrar el mensaje de error una sola vez
                     ErrorSnackbar.show(
                       context,
-                      'Ocurrió un problema con la venta',
+                      state.errorMessage ?? 'Ocurrió un problema con la venta',
                     );
+                    
+                    // Restablecer el estado de error después de mostrar el mensaje
+                    // pero mantener los datos del cliente y productos
+                    Future.delayed(const Duration(milliseconds: 100), () {
+                      if (mounted) {
+                        context.read<SalesBloc>().add(const ResetSalesErrorState());
+                      }
+                    });
                   }
 
                   if (state.isSaveSalesSuccess) {

@@ -59,11 +59,16 @@ class _ManualCustomerFormState extends State<ManualCustomerForm> {
               : (_nombreCtrl.text.isEmpty ? 'Cliente Genérico' : _nombreCtrl.text);
 
       // Crear un objeto CustomerSunatEntity con los datos ingresados manualmente
+      // Si es cliente genérico (todos los campos vacíos), usar DNI "00000000"
+      final String dniValue = allFieldsEmpty || nombre == 'Cliente Genérico' 
+          ? "00000000" 
+          : widget.documentNumber;
+          
       final manualCustomer = CustomerSunatEntity(
         nombre: nombre,
         apellidoPaterno: isRuc ? '' : _apellidoPaternoCtrl.text,
         apellidoMaterno: isRuc ? '' : _apellidoMaternoCtrl.text,
-        dni: isRuc ? null : widget.documentNumber,
+        dni: isRuc ? null : dniValue,
         ruc: isRuc ? widget.documentNumber : null,
         domicilio: HomeSunatEntity(
           direccion: _direccionCtrl.text,
