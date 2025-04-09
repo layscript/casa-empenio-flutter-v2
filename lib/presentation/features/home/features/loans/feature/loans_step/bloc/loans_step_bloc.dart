@@ -137,10 +137,13 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
     ChangeDocumentClient event,
     Emitter<LoansStepState> emit,
   ) async {
+    // Actualizar el valor del documento primero
+    emit(state.copyWith(documentClient: event.value));
+    
+    // Si el campo está vacío, limpiar todos los campos
     if (event.value.isEmpty) {
       emit(
         state.copyWith(
-          documentClient: '',
           fullNamesClient: '',
           fullLastNamesClient: '',
           homeClient: '',
@@ -148,32 +151,64 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
       );
       return;
     }
+    
+    // Solo buscar datos cuando el DNI tenga 8 dígitos
     if (event.value.length == 8) {
-      final getCustomerByDni = await _customerRepository.getCustomerSunatByDni(
-        dni: event.value,
-      );
+      // Indicar que estamos cargando datos
+      emit(state.copyWith(
+        loansStepStatus: LoansStepStatus.loading,
+      ));
+      
+      try {
+        final getCustomerByDni = await _customerRepository.getCustomerSunatByDni(
+          dni: event.value,
+        );
 
-      getCustomerByDni.fold(
-        (error) {
-          emit(state.copyWith(documentClient: event.value));
-        },
-        (customer) {
-          final customerDni = customer.dni ?? '';
-          final customerName = customer.nombre ?? '';
-          final customerLastName =
-              '${customer.apellidoPaterno} ${customer.apellidoMaterno}';
-          final customerDomicilio = customer.domicilio?.direccion ?? '';
+        getCustomerByDni.fold(
+          (error) {
+            // En caso de error, emitir un estado de error
+            print('Error al buscar cliente por DNI: $error');
+            emit(state.copyWith(
+              loansStepStatus: LoansStepStatus.error,
+              message: 'No se encontraron datos para este DNI',
+            ));
+          },
+          (customer) {
+            // Verificar si tenemos datos válidos
+            if (customer.nombre != null || customer.apellidoPaterno != null) {
+              final customerName = customer.nombre ?? '';
+              final customerLastName =
+                  '${customer.apellidoPaterno ?? ''} ${customer.apellidoMaterno ?? ''}';
+              final customerDomicilio = customer.domicilio?.direccion ?? '';
 
-          emit(
-            state.copyWith(
-              documentClient: customerDni,
-              fullNamesClient: customerName,
-              fullLastNamesClient: customerLastName,
-              homeClient: customerDomicilio,
-            ),
-          );
-        },
-      );
+              print('Datos encontrados: $customerName, $customerLastName, $customerDomicilio');
+              
+              // Actualizar los campos con los datos del cliente
+              emit(
+                state.copyWith(
+                  loansStepStatus: LoansStepStatus.loaded,
+                  fullNamesClient: customerName,
+                  fullLastNamesClient: customerLastName,
+                  homeClient: customerDomicilio,
+                ),
+              );
+            } else {
+              // No hay datos válidos
+              print('No se encontraron datos válidos para este DNI');
+              emit(state.copyWith(
+                loansStepStatus: LoansStepStatus.error,
+                message: 'No se encontraron datos para este DNI',
+              ));
+            }
+          },
+        );
+      } catch (e) {
+        print('Excepción al buscar cliente: $e');
+        emit(state.copyWith(
+          loansStepStatus: LoansStepStatus.error,
+          message: 'Error al buscar datos del cliente',
+        ));
+      }
     }
   }
 

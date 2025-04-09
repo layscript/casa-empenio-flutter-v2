@@ -6,17 +6,64 @@ import 'package:casa_empenio_pe/presentation/features/home/features/loans/featur
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class LoansStepOneView extends StatelessWidget {
+class LoansStepOneView extends StatefulWidget {
   const LoansStepOneView({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final loansStepBloc = context.read<LoansStepBloc>();
-    final preferences = context.read<Preferences>();
-    final localState =
-        preferences.getLoansPreferences ?? LoansPreferencesEntity.init();
+  State<LoansStepOneView> createState() => _LoansStepOneViewState();
+}
 
-    return Column(
+class _LoansStepOneViewState extends State<LoansStepOneView> {
+  late TextEditingController _dniController;
+  late TextEditingController _nombresController;
+  late TextEditingController _apellidosController;
+  late TextEditingController _domicilioController;
+  late LoansStepBloc loansStepBloc;
+  late Preferences preferences;
+  late LoansPreferencesEntity localState;
+
+  @override
+  void initState() {
+    super.initState();
+    loansStepBloc = context.read<LoansStepBloc>();
+    preferences = context.read<Preferences>();
+    localState = preferences.getLoansPreferences ?? LoansPreferencesEntity.init();
+    
+    _dniController = TextEditingController(text: localState.documentClient);
+    _nombresController = TextEditingController(text: localState.fullNamesClient);
+    _apellidosController = TextEditingController(text: localState.fullLastNamesClient);
+    _domicilioController = TextEditingController(text: localState.domicilioClient);
+  }
+
+  @override
+  void dispose() {
+    _dniController.dispose();
+    _nombresController.dispose();
+    _apellidosController.dispose();
+    _domicilioController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<LoansStepBloc, LoansStepState>(
+      listenWhen: (previous, current) => 
+        previous.fullNamesClient != current.fullNamesClient ||
+        previous.fullLastNamesClient != current.fullLastNamesClient ||
+        previous.homeClient != current.homeClient,
+      listener: (context, state) {
+        // Actualizar los controladores cuando cambie el estado
+        if (state.fullNamesClient != null && state.fullNamesClient!.isNotEmpty) {
+          _nombresController.text = state.fullNamesClient!;
+        }
+        if (state.fullLastNamesClient != null && state.fullLastNamesClient!.isNotEmpty) {
+          _apellidosController.text = state.fullLastNamesClient!;
+        }
+        if (state.homeClient != null && state.homeClient!.isNotEmpty) {
+          _domicilioController.text = state.homeClient!;
+        }
+      },
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 15),
@@ -24,7 +71,7 @@ class LoansStepOneView extends StatelessWidget {
           children: [
             Expanded(
               child: AppTextFormField(
-                initialValue: localState.documentClient,
+                controller: _dniController,
                 labelText: 'DNI (requerido)',
                 keyboardType: TextInputType.number,
                 maxLength: 8,
@@ -42,22 +89,17 @@ class LoansStepOneView extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: BlocBuilder<LoansStepBloc, LoansStepState>(
-                builder: (context, state) {
-                  return AppTextFormField(
-                    labelText: 'Nombres (requerido)',
-                    initialValue:
-                        state.fullNamesClient ?? localState.fullNamesClient,
-                    onChanged: (e) => loansStepBloc.add(
-                      ChangeFullNamesClient(
-                        value: e,
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value!.isEmpty) return 'Campo Requerido';
-                      return null;
-                    },
-                  );
+              child: AppTextFormField(
+                controller: _nombresController,
+                labelText: 'Nombres (requerido)',
+                onChanged: (e) => loansStepBloc.add(
+                  ChangeFullNamesClient(
+                    value: e,
+                  ),
+                ),
+                validator: (value) {
+                  if (value!.isEmpty) return 'Campo Requerido';
+                  return null;
                 },
               ),
             ),
@@ -86,23 +128,18 @@ class LoansStepOneView extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: BlocBuilder<LoansStepBloc, LoansStepState>(
-                builder: (context, state) {
-                  return AppTextFormField(
-                    labelText: 'Apellidos (requerido)',
-                    initialValue: state.fullLastNamesClient ??
-                        localState.fullLastNamesClient,
-                    validator: (value) {
-                      if (value!.isEmpty) return 'Campo Requerido';
-                      return null;
-                    },
-                    onChanged: (e) => loansStepBloc.add(
-                      ChangeFullLastNamesClient(
-                        value: e,
-                      ),
-                    ),
-                  );
+              child: AppTextFormField(
+                controller: _apellidosController,
+                labelText: 'Apellidos (requerido)',
+                validator: (value) {
+                  if (value!.isEmpty) return 'Campo Requerido';
+                  return null;
                 },
+                onChanged: (e) => loansStepBloc.add(
+                  ChangeFullLastNamesClient(
+                    value: e,
+                  ),
+                ),
               ),
             ),
           ],
@@ -120,19 +157,15 @@ class LoansStepOneView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 15),
-        BlocBuilder<LoansStepBloc, LoansStepState>(
-          builder: (context, state) {
-            return AppTextFormField(
-              labelText: 'Domicilio (requerido)',
-              initialValue: state.homeClient ?? localState.domicilioClient,
-              onChanged: (e) => loansStepBloc.add(
-                ChangeHomeClient(value: e),
-              ),
-              validator: (value) {
-                if (value!.isEmpty) return 'Campo Requerido';
-                return null;
-              },
-            );
+        AppTextFormField(
+          controller: _domicilioController,
+          labelText: 'Domicilio (requerido)',
+          onChanged: (e) => loansStepBloc.add(
+            ChangeHomeClient(value: e),
+          ),
+          validator: (value) {
+            if (value!.isEmpty) return 'Campo Requerido';
+            return null;
           },
         ),
         const SizedBox(height: 15),
@@ -353,6 +386,7 @@ class LoansStepOneView extends StatelessWidget {
         ),
         const SizedBox(height: 35),
       ],
+    ),
     );
   }
 }
