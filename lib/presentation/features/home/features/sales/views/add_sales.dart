@@ -18,6 +18,62 @@ class AddFormSales extends StatefulWidget {
 }
 
 class _AddFormSalesState extends State<AddFormSales> {
+  // Método para mostrar el diálogo de edición de precio
+  void _showEditPriceDialog(BuildContext context, ProductSales product) {
+    final TextEditingController priceController = TextEditingController();
+    priceController.text = product.precio.toString();
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Editar Precio'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '${product.selectedProducts?.descripcion}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 15),
+              TextField(
+                controller: priceController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Nuevo precio',
+                  prefixText: 'S/. ',
+                ),
+                autofocus: true,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () {
+                // Validar que sea un número válido
+                final newPrice = double.tryParse(priceController.text);
+                if (newPrice != null && newPrice > 0) {
+                  // Actualizar el precio en el bloc
+                  context.read<SalesBloc>().add(
+                        UpdateProductPriceInCart(
+                          id: product.selectedProducts?.id ?? 0,
+                          newPrice: newPrice,
+                        ),
+                      );
+                  Navigator.pop(dialogContext);
+                }
+              },
+              child: const Text('Guardar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
   @override
   Widget build(BuildContext context) {
     final authBloc = context.read<AuthBloc>().state as Authenticated;
@@ -64,12 +120,14 @@ class _AddFormSalesState extends State<AddFormSales> {
                       context,
                       state.errorMessage ?? 'Ocurrió un problema con la venta',
                     );
-                    
+
                     // Restablecer el estado de error después de mostrar el mensaje
                     // pero mantener los datos del cliente y productos
                     Future.delayed(const Duration(milliseconds: 100), () {
                       if (mounted) {
-                        context.read<SalesBloc>().add(const ResetSalesErrorState());
+                        context
+                            .read<SalesBloc>()
+                            .add(const ResetSalesErrorState());
                       }
                     });
                   }
@@ -99,7 +157,8 @@ class _AddFormSalesState extends State<AddFormSales> {
                       children: [
                         const Text(
                           'No pudimos obtener datos del DNI/RUC',
-                          style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              color: Colors.red, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 10),
                         const Text(
@@ -257,10 +316,27 @@ class _AddFormSalesState extends State<AddFormSales> {
                                               color: Colors.blue,
                                             ),
                                           ),
-                                          Text(
-                                            '${selectedProduct.precio.toStringAsFixed(2)} x Und.',
-                                            style:
-                                                const TextStyle(fontSize: 11),
+                                          InkWell(
+                                            onTap: () {
+                                              // Mostrar diálogo para editar precio
+                                              _showEditPriceDialog(
+                                                  context, selectedProduct);
+                                            },
+                                            child: Row(
+                                              children: [
+                                                Text(
+                                                  '${selectedProduct.precio.toStringAsFixed(2)} x Und.',
+                                                  style: const TextStyle(
+                                                      fontSize: 11),
+                                                ),
+                                                const SizedBox(width: 3),
+                                                const Icon(
+                                                  Icons.edit,
+                                                  size: 11,
+                                                  color: Colors.blue,
+                                                ),
+                                              ],
+                                            ),
                                           )
                                         ],
                                       ),

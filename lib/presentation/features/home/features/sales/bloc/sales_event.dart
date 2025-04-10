@@ -77,3 +77,13 @@ class SetSalesManualCustomerData extends SalesEvent {
 class ResetSalesErrorState extends SalesEvent {
   const ResetSalesErrorState();
 }
+
+class UpdateProductPriceInCart extends SalesEvent {
+  const UpdateProductPriceInCart({
+    required this.id,
+    required this.newPrice,
+  });
+
+  final int id;
+  final double newPrice;
+}

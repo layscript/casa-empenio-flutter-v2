@@ -48,6 +48,7 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
     on<SaveProductSalesToCart>(_onSaveProductSalesToCart);
     on<DeleteProductSalesToCart>(_onDeleteProductSalesToCart);
     on<UpdateProductSalesToCart>(_onUpdateProductSalesToCart);
+    on<UpdateProductPriceInCart>(_onUpdateProductPriceInCart);
     on<GenerateSalesProduct>(_onGenerateSalesProduct);
     on<UseGenericCustomer>(_onUseGenericCustomer);
     on<SetSalesManualCustomerData>(_onSetManualCustomerData);
@@ -317,7 +318,8 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
       'apellidos':
           '${state.customer?.apellidoPaterno} ${state.customer?.apellidoMaterno}',
       'direccion': '${state.customer?.domicilio?.direccion}',
-      'dni': '${state.customer?.customerDocument == '' ? '00000000' : state.customer?.customerDocument}',
+      'dni':
+          '${state.customer?.customerDocument == '' ? '00000000' : state.customer?.customerDocument}',
       'usuarioId': event.userId,
       'sucursalId': event.sucursalId,
     };
@@ -381,5 +383,32 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
         selectedProductsSales: state.selectedProductsSales,
       ),
     );
+  }
+
+  void _onUpdateProductPriceInCart(
+    UpdateProductPriceInCart event,
+    Emitter<SalesState> emit,
+  ) {
+    if (state.selectedProductsSales != null) {
+      final updatedProducts = state.selectedProductsSales!.map(
+        (e) {
+          if (e.selectedProducts?.id == event.id) {
+            return e.copyWith(precio: event.newPrice);
+          } else {
+            return e;
+          }
+        },
+      ).toList();
+
+      emit(
+        state.copyWith(
+          customer: state.customer,
+          selectedProductsSales: updatedProducts,
+          // Restablecer el estado de error
+          saveStatus: SalesStatus.initial,
+          errorMessage: null,
+        ),
+      );
+    }
   }
 }
