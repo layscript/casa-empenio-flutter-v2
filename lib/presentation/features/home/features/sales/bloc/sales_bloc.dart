@@ -49,6 +49,8 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
     on<DeleteProductSalesToCart>(_onDeleteProductSalesToCart);
     on<UpdateProductSalesToCart>(_onUpdateProductSalesToCart);
     on<UpdateProductPriceInCart>(_onUpdateProductPriceInCart);
+    on<UpdateProductObservationsInCart>(_onUpdateProductObservationsInCart);
+    on<UpdateProductDescriptionInCart>(_onUpdateProductDescriptionInCart);
     on<GenerateSalesProduct>(_onGenerateSalesProduct);
     on<UseGenericCustomer>(_onUseGenericCustomer);
     on<SetSalesManualCustomerData>(_onSetManualCustomerData);
@@ -405,6 +407,89 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
           customer: state.customer,
           selectedProductsSales: updatedProducts,
           // Restablecer el estado de error
+          saveStatus: SalesStatus.initial,
+          errorMessage: null,
+        ),
+      );
+    }
+  }
+
+  void _onUpdateProductObservationsInCart(
+    UpdateProductObservationsInCart event,
+    Emitter<SalesState> emit,
+  ) {
+    if (state.selectedProductsSales != null) {
+      final updatedProducts = state.selectedProductsSales!.map(
+        (e) {
+          if (e.selectedProducts?.id == event.id) {
+            return e.copyWith(observaciones: event.observations);
+          } else {
+            return e;
+          }
+        },
+      ).toList();
+
+      emit(
+        state.copyWith(
+          customer: state.customer,
+          selectedProductsSales: updatedProducts,
+          // Restablecer el estado de error
+          saveStatus: SalesStatus.initial,
+          errorMessage: null,
+        ),
+      );
+    }
+  }
+
+  // Para productos personalizados, necesitamos actualizar la descripción
+  void _onUpdateProductDescriptionInCart(
+    UpdateProductDescriptionInCart event,
+    Emitter<SalesState> emit,
+  ) {
+    if (state.selectedProductsSales != null) {
+      final updatedProducts = state.selectedProductsSales!.map(
+        (e) {
+          if (e.selectedProducts?.id == event.id) {
+            // Crear un nuevo ProductEntity con la descripción actualizada
+            final currentProduct = e.selectedProducts;
+            if (currentProduct != null) {
+              // Crear un nuevo ProductEntity con todos los campos necesarios
+              final updatedProduct = ProductEntity(
+                id: currentProduct.id,
+                descripcion: event.description,
+                categoria: currentProduct.categoria,
+                estado: currentProduct.estado,
+                marca: currentProduct.marca,
+                modelo: currentProduct.modelo,
+                color: currentProduct.color,
+                serie: currentProduct.serie,
+                placa: currentProduct.placa,
+                carroceria: currentProduct.carroceria,
+                motor: currentProduct.motor,
+                anio: currentProduct.anio,
+                valorizacion: currentProduct.valorizacion,
+                observaciones: currentProduct.observaciones,
+                cantidad: currentProduct.cantidad,
+                imagen: currentProduct.imagen,
+                activo: currentProduct.activo,
+                updatedAt: currentProduct.updatedAt,
+                createdAt: currentProduct.createdAt,
+                prestamo: currentProduct.prestamo,
+                imagenDos: currentProduct.imagenDos,
+                imagenTres: currentProduct.imagenTres,
+              );
+              
+              return e.copyWith(selectedProducts: updatedProduct);
+            }
+          }
+          return e;
+        },
+      ).toList();
+
+      emit(
+        state.copyWith(
+          customer: state.customer, // Mantener el cliente actual
+          selectedProductsSales: updatedProducts,
           saveStatus: SalesStatus.initial,
           errorMessage: null,
         ),

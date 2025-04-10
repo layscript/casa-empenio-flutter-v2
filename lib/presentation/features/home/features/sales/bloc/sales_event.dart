@@ -87,3 +87,23 @@ class UpdateProductPriceInCart extends SalesEvent {
   final int id;
   final double newPrice;
 }
+
+class UpdateProductObservationsInCart extends SalesEvent {
+  const UpdateProductObservationsInCart({
+    required this.id,
+    required this.observations,
+  });
+
+  final int id;
+  final String observations;
+}
+
+class UpdateProductDescriptionInCart extends SalesEvent {
+  const UpdateProductDescriptionInCart({
+    required this.id,
+    required this.description,
+  });
+
+  final int id;
+  final String description;
+}

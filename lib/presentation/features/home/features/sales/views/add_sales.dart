@@ -18,34 +18,78 @@ class AddFormSales extends StatefulWidget {
 }
 
 class _AddFormSalesState extends State<AddFormSales> {
-  // Método para mostrar el diálogo de edición de precio
+  // Método para mostrar el diálogo de edición de producto
   void _showEditPriceDialog(BuildContext context, ProductSales product) {
     final TextEditingController priceController = TextEditingController();
+    final TextEditingController observationsController = TextEditingController();
+    final TextEditingController descriptionController = TextEditingController();
+    
+    // Inicializar controladores con valores actuales
     priceController.text = product.precio.toString();
+    observationsController.text = product.observaciones ?? '';
+    
+    // Verificar si es un producto personalizado
+    final bool isCustomProduct = product.selectedProducts?.isProductPersonalizado ?? false;
+    
+    // Si es un producto personalizado, inicializar el controlador de descripción
+    if (isCustomProduct) {
+      descriptionController.text = product.selectedProducts?.descripcion ?? '';
+    }
     
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Editar Precio'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '${product.selectedProducts?.descripcion}',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 15),
-              TextField(
-                controller: priceController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Nuevo precio',
-                  prefixText: 'S/. ',
+          title: Text(isCustomProduct ? 'Editar Producto Personalizado' : 'Editar Producto'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Para productos de almacén, mostrar la descripción como texto no editable
+                if (!isCustomProduct) ...[  
+                  Text(
+                    '${product.selectedProducts?.descripcion}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 15),
+                ],
+                
+                // Para productos personalizados, mostrar campo de edición de descripción
+                if (isCustomProduct) ...[  
+                  TextField(
+                    controller: descriptionController,
+                    decoration: const InputDecoration(
+                      labelText: 'Descripción',
+                    ),
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 15),
+                ],
+                
+                // Campo de precio para todos los productos
+                TextField(
+                  controller: priceController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Precio',
+                    prefixText: 'S/. ',
+                  ),
+                  autofocus: true,
                 ),
-                autofocus: true,
-              ),
-            ],
+                const SizedBox(height: 15),
+                
+                // Campo de observaciones para todos los productos
+                TextField(
+                  controller: observationsController,
+                  decoration: const InputDecoration(
+                    labelText: 'Observaciones',
+                    hintText: 'Ingrese observaciones (opcional)',
+                  ),
+                  maxLines: 2,
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -54,7 +98,7 @@ class _AddFormSalesState extends State<AddFormSales> {
             ),
             TextButton(
               onPressed: () {
-                // Validar que sea un número válido
+                // Validar que el precio sea un número válido
                 final newPrice = double.tryParse(priceController.text);
                 if (newPrice != null && newPrice > 0) {
                   // Actualizar el precio en el bloc
@@ -64,6 +108,32 @@ class _AddFormSalesState extends State<AddFormSales> {
                           newPrice: newPrice,
                         ),
                       );
+                  
+                  // Actualizar las observaciones
+                  final newObservations = observationsController.text.trim();
+                  if (newObservations != (product.observaciones ?? '')) {
+                    context.read<SalesBloc>().add(
+                          UpdateProductObservationsInCart(
+                            id: product.selectedProducts?.id ?? 0,
+                            observations: newObservations,
+                          ),
+                        );
+                  }
+                  
+                  // Actualizar la descripción si es un producto personalizado
+                  if (isCustomProduct) {
+                    final newDescription = descriptionController.text.trim();
+                    if (newDescription != (product.selectedProducts?.descripcion ?? '') && 
+                        newDescription.isNotEmpty) {
+                      context.read<SalesBloc>().add(
+                            UpdateProductDescriptionInCart(
+                              id: product.selectedProducts?.id ?? 0,
+                              description: newDescription,
+                            ),
+                          );
+                    }
+                  }
+                  
                   Navigator.pop(dialogContext);
                 }
               },
@@ -316,27 +386,9 @@ class _AddFormSalesState extends State<AddFormSales> {
                                               color: Colors.blue,
                                             ),
                                           ),
-                                          InkWell(
-                                            onTap: () {
-                                              // Mostrar diálogo para editar precio
-                                              _showEditPriceDialog(
-                                                  context, selectedProduct);
-                                            },
-                                            child: Row(
-                                              children: [
-                                                Text(
-                                                  '${selectedProduct.precio.toStringAsFixed(2)} x Und.',
-                                                  style: const TextStyle(
-                                                      fontSize: 11),
-                                                ),
-                                                const SizedBox(width: 3),
-                                                const Icon(
-                                                  Icons.edit,
-                                                  size: 11,
-                                                  color: Colors.blue,
-                                                ),
-                                              ],
-                                            ),
+                                          Text(
+                                            '${selectedProduct.precio.toStringAsFixed(2)} x Und.',
+                                            style: const TextStyle(fontSize: 11),
                                           )
                                         ],
                                       ),
@@ -357,15 +409,46 @@ class _AddFormSalesState extends State<AddFormSales> {
                                             color: Colors.green,
                                           ),
                                         ),
-                                      if (selectedProduct.observaciones != null)
-                                        Text(
-                                          'Obs: ${selectedProduct.observaciones}',
-                                          style: const TextStyle(
-                                            fontSize: 11,
-                                            color: AppColors.red,
-                                            fontWeight: FontWeight.w500,
+                                      // Botón de edición único para editar todos los campos
+                                      Row(
+                                        children: [
+                                          // Mostrar observaciones si existen
+                                          Expanded(
+                                            child: selectedProduct.observaciones != null && selectedProduct.observaciones!.isNotEmpty
+                                              ? Text(
+                                                  'Obs: ${selectedProduct.observaciones}',
+                                                  style: const TextStyle(
+                                                    fontSize: 11,
+                                                    color: AppColors.red,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                )
+                                              : const Text(
+                                                  'Sin observaciones',
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    color: Colors.grey,
+                                                    fontStyle: FontStyle.italic,
+                                                  ),
+                                                ),
                                           ),
-                                        ),
+                                          // Botón de edición
+                                          IconButton(
+                                            onPressed: () {
+                                              _showEditPriceDialog(context, selectedProduct);
+                                            },
+                                            icon: const Icon(
+                                              Icons.edit,
+                                              size: 16,
+                                              color: Colors.blue,
+                                            ),
+                                            tooltip: 'Editar producto',
+                                            constraints: const BoxConstraints(),
+                                            padding: const EdgeInsets.all(4),
+                                          ),
+                                        ],
+                                      ),
                                     ],
                                   ),
                                   trailing: QuantityInput(
