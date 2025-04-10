@@ -70,3 +70,33 @@ class SetManualCustomerData extends ProformaEvent {
   const SetManualCustomerData(this.customer);
   final CustomerSunatEntity customer;
 }
+
+class ProformaUpdateProductPriceInCart extends ProformaEvent {
+  const ProformaUpdateProductPriceInCart({
+    required this.id,
+    required this.newPrice,
+  });
+
+  final int id;
+  final double newPrice;
+}
+
+class ProformaUpdateProductObservationsInCart extends ProformaEvent {
+  const ProformaUpdateProductObservationsInCart({
+    required this.id,
+    required this.observations,
+  });
+
+  final int id;
+  final String observations;
+}
+
+class ProformaUpdateProductDescriptionInCart extends ProformaEvent {
+  const ProformaUpdateProductDescriptionInCart({
+    required this.id,
+    required this.description,
+  });
+
+  final int id;
+  final String description;
+}

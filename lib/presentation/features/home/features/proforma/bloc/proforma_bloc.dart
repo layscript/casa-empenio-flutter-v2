@@ -48,6 +48,9 @@ class ProformaBloc extends Bloc<ProformaEvent, ProformaState> {
     on<UpdateProductProformasToCart>(_onUpdateProductProformasToCart);
     on<GenerateProformasProduct>(_onGenerateProformasProduct);
     on<SetManualCustomerData>(_onSetManualCustomerData);
+    on<ProformaUpdateProductPriceInCart>(_onUpdateProductPriceInCart);
+    on<ProformaUpdateProductObservationsInCart>(_onUpdateProductObservationsInCart);
+    on<ProformaUpdateProductDescriptionInCart>(_onUpdateProductDescriptionInCart);
   }
 
   final ProformaRepository _proformaRepository;
@@ -303,5 +306,116 @@ class ProformaBloc extends Bloc<ProformaEvent, ProformaState> {
         customer: event.customer,
       ),
     );
+  }
+
+  void _onUpdateProductPriceInCart(
+    ProformaUpdateProductPriceInCart event,
+    Emitter<ProformaState> emit,
+  ) {
+    if (state.selectedProductsSales != null) {
+      final updatedProducts = state.selectedProductsSales!.map(
+        (e) {
+          if (e.selectedProducts?.id == event.id) {
+            return e.copyWith(precio: event.newPrice);
+          } else {
+            return e;
+          }
+        },
+      ).toList();
+
+      emit(
+        state.copyWith(
+          customer: state.customer,
+          selectedProductsSales: updatedProducts,
+          saveStatus: ProformaStatus.initial,
+        ),
+      );
+    }
+  }
+
+  void _onUpdateProductObservationsInCart(
+    ProformaUpdateProductObservationsInCart event,
+    Emitter<ProformaState> emit,
+  ) {
+    if (state.selectedProductsSales != null) {
+      final updatedProducts = state.selectedProductsSales!.map(
+        (e) {
+          if (e.selectedProducts?.id == event.id) {
+            return e.copyWith(observaciones: event.observations);
+          } else {
+            return e;
+          }
+        },
+      ).toList();
+
+      emit(
+        state.copyWith(
+          customer: state.customer,
+          selectedProductsSales: updatedProducts,
+          saveStatus: ProformaStatus.initial,
+        ),
+      );
+    }
+  }
+
+  void _onUpdateProductDescriptionInCart(
+    ProformaUpdateProductDescriptionInCart event,
+    Emitter<ProformaState> emit,
+  ) {
+    if (state.selectedProductsSales != null) {
+      final updatedProducts = state.selectedProductsSales!.map(
+        (e) {
+          if (e.selectedProducts?.id == event.id) {
+            // Crear un nuevo ProductEntity con la descripción actualizada
+            final currentProduct = e.selectedProducts;
+            if (currentProduct != null) {
+              try {
+                // Crear un nuevo ProductEntity con todos los campos necesarios
+                final updatedProduct = ProductEntity(
+                  id: currentProduct.id,
+                  descripcion: event.description,
+                  categoria: currentProduct.categoria,
+                  estado: currentProduct.estado,
+                  marca: currentProduct.marca,
+                  modelo: currentProduct.modelo,
+                  color: currentProduct.color,
+                  serie: currentProduct.serie,
+                  placa: currentProduct.placa,
+                  carroceria: currentProduct.carroceria,
+                  motor: currentProduct.motor,
+                  anio: currentProduct.anio,
+                  valorizacion: currentProduct.valorizacion,
+                  observaciones: currentProduct.observaciones,
+                  cantidad: currentProduct.cantidad,
+                  imagen: currentProduct.imagen,
+                  activo: currentProduct.activo,
+                  updatedAt: currentProduct.updatedAt,
+                  createdAt: currentProduct.createdAt,
+                  prestamo: currentProduct.prestamo,
+                  imagenDos: currentProduct.imagenDos,
+                  imagenTres: currentProduct.imagenTres,
+                );
+
+                return e.copyWith(selectedProducts: updatedProduct);
+              } catch (error) {
+                // Si hay un error al crear el ProductEntity, devolver el producto sin cambios
+                // Esto evita que la aplicación se bloquee si hay un problema con los parámetros
+                print('Error al actualizar la descripción del producto: $error');
+                return e;
+              }
+            }
+          }
+          return e;
+        },
+      ).toList();
+
+      emit(
+        state.copyWith(
+          customer: state.customer,
+          selectedProductsSales: updatedProducts,
+          saveStatus: ProformaStatus.initial,
+        ),
+      );
+    }
   }
 }
