@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const endPointPrincipal = 'http://161.132.38.162:31032';
+
 // const endPointPrincipal = 'http://161.132.38.162:31037';
 // const endPointPrincipal = 'http://192.168.20.199:3000';
 
@@ -19,7 +20,7 @@ const downloadFactura =
     'https://facturacion.beyzon.dev/public/api/getFile?nombreFile=';
 
 const appTitle = 'Casa de Empeño';
-const appVersion = 'v. 2.0.0';
+const appVersion = 'v. 2.0.1';
 
 const invalidEmptyValue = 'Es requerido';
 const invalidEmail = 'El correo electrónico no es válido';
