@@ -259,7 +259,7 @@ class HttpLoansRepository implements LoansRepository {
   }
 
   @override
-  Future<bool> savePayment({
+  Future<Either<String, bool>> savePayment({
     required int codigo,
     required double monto,
     required String userId,
@@ -290,17 +290,22 @@ class HttpLoansRepository implements LoansRepository {
           detalle: 'realizar el pago del prestamo del codigo: $codigo',
           usuarioId: int.parse(userId),
         );
-        return true;
+        return const Right(true);
       } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
-        //return Left(message);
-        return false;
+        return Left(message);
       }
     } catch (e, stackTrace) {
       //print('responseee ee: $e');
       //return const Left('Ocurrió un error 2');
-      return false;
+      if (e is DioException && e.response?.data != null) {
+        final data = e.response!.data;
+        if (data is Map<String, dynamic>) {
+          return Left(data['message']?.toString() ?? 'No se pudo registrar el pago.');
+        }
+      }
+      return const Left('No se pudo registrar el pago. Verifique los datos e intente nuevamente.');
     }
   }
 
@@ -410,7 +415,7 @@ class HttpLoansRepository implements LoansRepository {
   }
 
   @override
-  Future<bool> createInvoceLoans({
+  Future<Either<String, bool>> createInvoceLoans({
     required String dni,
     required String fullName,
     required String? direccion,
@@ -428,10 +433,10 @@ class HttpLoansRepository implements LoansRepository {
 
     try {
       final response = await _dio.post<String>(path, data: payload);
-      if (response.statusCode != 201) {
+      if (response.statusCode != 201 && response.statusCode != 200) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
-        return false;
+        return Left(message);
       } else {
         await _customerRepository.createHistory(
           accion: 'GENERAR BOLETA',
@@ -439,13 +444,19 @@ class HttpLoansRepository implements LoansRepository {
               'Generar boleta electrónica del prestamo del codigo: $idPrestamo',
           usuarioId: int.parse(userId),
         );
-        return true;
+        return const Right(true);
         //final map = json.decode(response.data!) as Map<String, dynamic>;
         //return const Right(true);
         /* return true; */
       }
     } catch (e, stackTrace) {
-      return false;
+      if (e is DioException && e.response?.data != null) {
+        final data = e.response!.data;
+        if (data is Map<String, dynamic>) {
+          return Left(data['message']?.toString() ?? 'No se pudo generar la boleta.');
+        }
+      }
+      return const Left('No se pudo generar la boleta. Verifique los datos e intente nuevamente.');
       //print('responseee ee: $e');
       //return const Left('Ocurrió un error 2');
       /* return false; */
@@ -505,7 +516,7 @@ class HttpLoansRepository implements LoansRepository {
   }
 
   @override
-  Future<bool> payOffLoan({
+  Future<Either<String, bool>> payOffLoan({
     required int id,
     required int idPrestamo,
     required String userId,
@@ -522,17 +533,22 @@ class HttpLoansRepository implements LoansRepository {
           usuarioId: int.parse(userId),
         );
 
-        return true;
+        return const Right(true);
       } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final message = map['message'] ?? 'Ocurrió un error';
-        //return Left(message);
-        return false;
+        return Left(message);
       }
     } catch (e, stackTrace) {
       //print('responseee ee: $e');
       //return const Left('Ocurrió un error 2');
-      return false;
+      if (e is DioException && e.response?.data != null) {
+        final data = e.response!.data;
+        if (data is Map<String, dynamic>) {
+          return Left(data['message']?.toString() ?? 'No se pudo completar la liquidación.');
+        }
+      }
+      return const Left('No se pudo completar la liquidación. Verifique los datos e intente nuevamente.');
     }
   }
 

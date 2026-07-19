@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
-import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:image_picker/image_picker.dart';
@@ -223,60 +222,53 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     emit(_loadingState);
 
     final urlImg = await savePhotoPayment(event.photos);
-    if (double.parse(event.monto) >= double.parse(event.montoRestante)) {
-      final resultPayment = await _loansRepository.savePayment(
-        codigo: event.idPrestamo,
-        monto: double.parse(event.monto),
-        userId: event.userId,
-        url: urlImg,
-        efectivo: event.efectivo,
-        cajaId: state.cajaId,
-        isLiquidacion: true,
-      );
+    final monto = double.tryParse(event.monto);
+    final montoRestante = double.tryParse(event.montoRestante);
 
-      final resultLoand = await _loansRepository.payOffLoan(
-        id: event.codigo,
-        idPrestamo: event.idPrestamo,
-        userId: event.userId,
+    if (monto == null || monto <= 0 || montoRestante == null) {
+      emit(
+        state.copyWith(
+          loansStatus: LoansStatus.paymentError,
+          error: 'Ingrese un monto válido mayor que cero.',
+        ),
       );
-
-      if (resultPayment && resultLoand) {
-        emit(
-          state.copyWith(
-            loansStatus: LoansStatus.settlementSuccess,
-          ),
-        );
-      } else {
-        emit(
-          state.copyWith(
-            loansStatus: LoansStatus.settlementError,
-          ),
-        );
-      }
-    } else {
-      final resultPayment = await _loansRepository.savePayment(
-        codigo: event.idPrestamo,
-        monto: double.parse(event.monto),
-        userId: event.userId,
-        url: urlImg,
-        efectivo: event.efectivo,
-        cajaId: state.cajaId,
-      );
-
-      if (resultPayment) {
-        emit(
-          state.copyWith(
-            loansStatus: LoansStatus.paymentSuccess,
-          ),
-        );
-      } else {
-        emit(
-          state.copyWith(
-            loansStatus: LoansStatus.paymentError,
-          ),
-        );
-      }
+      return;
     }
+
+    if ((monto - montoRestante).abs() > 0.009) {
+      emit(
+        state.copyWith(
+          loansStatus: LoansStatus.paymentError,
+          error:
+              'El monto ingresado debe coincidir exactamente con el importe pendiente: S/ ${montoRestante.toStringAsFixed(2)}.',
+        ),
+      );
+      return;
+    }
+
+    final resultPayment = await _loansRepository.savePayment(
+      codigo: event.idPrestamo,
+      monto: monto,
+      userId: event.userId,
+      url: urlImg,
+      efectivo: event.efectivo,
+      cajaId: state.cajaId,
+    );
+
+    resultPayment.fold(
+      (message) => emit(
+        state.copyWith(
+          loansStatus: LoansStatus.paymentError,
+          error: message,
+        ),
+      ),
+      (_) => emit(
+        state.copyWith(
+          loansStatus: LoansStatus.paymentSuccess,
+          error: 'El pago se registró correctamente.',
+        ),
+      ),
+    );
   }
 
   Future<void> _onSaveSettlementLoan(
@@ -286,9 +278,20 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     if (state.loansStatus == LoansStatus.loading) return;
     emit(_loadingState);
     final urlImg = await savePhotoPayment(event.photos);
+    final monto = double.tryParse(event.monto);
+    if (monto == null || monto <= 0) {
+      emit(
+        state.copyWith(
+          loansStatus: LoansStatus.settlementError,
+          error: 'El monto de liquidación debe ser mayor que cero.',
+        ),
+      );
+      return;
+    }
+
     final resultPayment = await _loansRepository.savePayment(
       codigo: event.idPrestamo,
-      monto: double.parse(event.monto),
+      monto: monto,
       userId: event.userId,
       url: urlImg,
       efectivo: event.efectivo,
@@ -296,34 +299,20 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
       isLiquidacion: true,
     );
 
-    if (resultPayment == false) {
-      emit(
+    resultPayment.fold(
+      (message) => emit(
         state.copyWith(
           loansStatus: LoansStatus.settlementError,
+          error: message,
         ),
-      );
-      return;
-    }
-
-    final resultLoand = await _loansRepository.payOffLoan(
-      id: event.codigo,
-      idPrestamo: event.idPrestamo,
-      userId: event.userId,
-    );
-
-    if (resultLoand) {
-      emit(
+      ),
+      (_) => emit(
         state.copyWith(
           loansStatus: LoansStatus.settlementSuccess,
+          error: 'La liquidación se registró correctamente y la operación fue cerrada.',
         ),
-      );
-    } else {
-      emit(
-        state.copyWith(
-          loansStatus: LoansStatus.settlementError,
-        ),
-      );
-    }
+      ),
+    );
   }
 
   Future<void> _onAddAmountLoan(
@@ -377,19 +366,20 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
       userId: event.userId,
     );
 
-    if (result) {
-      emit(
-        state.copyWith(
-          loansStatus: LoansStatus.electronicTicketSuccess,
-        ),
-      );
-    } else {
-      emit(
+    result.fold(
+      (message) => emit(
         state.copyWith(
           loansStatus: LoansStatus.electronicTicketError,
+          error: message,
         ),
-      );
-    }
+      ),
+      (_) => emit(
+        state.copyWith(
+          loansStatus: LoansStatus.electronicTicketSuccess,
+          error: 'La boleta se generó correctamente.',
+        ),
+      ),
+    );
   }
 
   Future<void> _onGetCashStatus(

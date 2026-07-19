@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/custom_image_picker.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
@@ -120,7 +118,8 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                         color: Colors.red,
                       ),
                     ),
-                    content: const Text('Vuelve a intentarlo de nuevo'),
+                    content: Text(state.error ??
+                        'No se pudo registrar el pago. Verifique los datos e intente nuevamente.'),
                     actions: [
                       TextButton(
                         onPressed: () {
@@ -146,7 +145,8 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                         color: Colors.red,
                       ),
                     ),
-                    content: const Text('Vuelve a intentarlo de nuevo'),
+                    content: Text(state.error ??
+                        'No se pudo completar la liquidación. Verifique los datos e intente nuevamente.'),
                     actions: [
                       TextButton(
                         onPressed: () {
@@ -286,15 +286,14 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                         keyboardType: TextInputType.number,
                         preffix: const Text('S/.'),
                         onChanged: (value) {
-                          if (double.parse(value == '' ? '0' : value) >
-                              montoRestante) {
+                          final montoIngresado = double.tryParse(value) ?? 0;
+                          if (montoIngresado > montoRestante) {
                             setState(() {
                               restante = 0;
                             });
                           } else {
                             setState(() {
-                              restante = montoRestante -
-                                  double.parse(value == '' ? '0' : value);
+                              restante = montoRestante - montoIngresado;
                             });
                           }
                         },

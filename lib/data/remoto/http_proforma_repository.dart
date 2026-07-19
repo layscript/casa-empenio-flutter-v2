@@ -80,7 +80,7 @@ class HttpProformaRepository implements ProformaRepository {
           data: parsedMap,
         );
 
-        if (responseFactura.statusCode != 201) {
+        if (responseFactura.statusCode != 201 && responseFactura.statusCode != 200) {
           return false;
         } else {
           return true;

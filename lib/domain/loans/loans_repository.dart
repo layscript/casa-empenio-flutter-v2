@@ -70,7 +70,7 @@ abstract class LoansRepository {
     required int userId,
   });
 
-  Future<bool> savePayment({
+  Future<Either<String, bool>> savePayment({
     required int codigo,
     required double monto,
     required String userId,
@@ -80,7 +80,7 @@ abstract class LoansRepository {
     bool isLiquidacion,
   });
 
-  Future<bool> payOffLoan({
+  Future<Either<String, bool>> payOffLoan({
     required int id,
     required int idPrestamo,
     required String userId,
@@ -97,7 +97,7 @@ abstract class LoansRepository {
   Future<Uint8List> createInvoicePdf({required String url});
   Future<void> createSalesNote({required String id});
   Future<void> createLoanNote({required String id});
-  Future<bool> createInvoceLoans({
+  Future<Either<String, bool>> createInvoceLoans({
     required String dni,
     required String fullName,
     required String? direccion,
