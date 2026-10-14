@@ -4,16 +4,21 @@ import 'dart:ui' as ui;
 
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/custom_image_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Expediente digital de un préstamo (Etapa 1):
-/// generar -> firma cliente / aval -> firma empresa -> finalizar -> ver PDF.
-/// Usa los endpoints /expediente/* del servidor. `prestamoCodigo` es el código del préstamo.
+/// Expediente digital de un préstamo.
+/// - Generar expediente
+/// - Firma cliente (auto-llenado desde el préstamo) y aval (si existe)
+/// - Firma de la empresa (se guarda y reutiliza)
+/// - Evidencia fotográfica (mínimo 1, máximo 3)
+/// - Finalizar y ver PDF
 class ExpedientePage extends StatefulWidget {
   const ExpedientePage({Key? key, required this.prestamoCodigo})
       : super(key: key);
@@ -39,21 +44,15 @@ class _ExpedientePageState extends State<ExpedientePage> {
   bool _busy = false;
   String? _error;
 
-  // Préstamo (para auto-llenar datos del cliente/aval)
   LoansEntity? _loan;
-
-  // Firma de la empresa guardada en este dispositivo (para no repetirla)
   Uint8List? _empresaFirmaPng;
 
+  final TextEditingController _obsCtrl = TextEditingController();
+  List<XFile> _evidencias = [];
+
   int get _userId => context.read<Preferences>().token?.id ?? 0;
-  String get _userFullName {
-    final t = context.read<Preferences>().token;
-    if (t == null) return '';
-    return t.fullName;
-  }
-
+  String get _userFullName => context.read<Preferences>().token?.fullName ?? '';
   bool get _esFinal => (_exp?['estado'] ?? '').toString() == 'FINAL';
-
   String get _prefKey => 'empresa_firma_base64_${_userId}';
 
   @override
@@ -61,6 +60,12 @@ class _ExpedientePageState extends State<ExpedientePage> {
     super.initState();
     _cargar();
     _cargarFirmaEmpresa();
+  }
+
+  @override
+  void dispose() {
+    _obsCtrl.dispose();
+    super.dispose();
   }
 
   dynamic _body(Response<dynamic> r) {
@@ -106,7 +111,6 @@ class _ExpedientePageState extends State<ExpedientePage> {
       _error = e.toString();
     }
 
-    // Firmas ya registradas (para mostrar quién firmó)
     _roles = <String>{};
     if (_exp != null) {
       try {
@@ -123,16 +127,13 @@ class _ExpedientePageState extends State<ExpedientePage> {
       } catch (_) {}
     }
 
-    // Datos del préstamo (para auto-llenar cliente/aval en las firmas)
     try {
       final loansRepo = context.read<LoansRepository>();
       final res = await loansRepo.getLoan(
         id: widget.prestamoCodigo,
         userId: _userId,
       );
-      res.fold((_) {}, (loan) {
-        _loan = loan;
-      });
+      res.fold((_) {}, (loan) => _loan = loan);
     } catch (_) {}
 
     if (mounted) setState(() => _loading = false);
@@ -213,7 +214,6 @@ class _ExpedientePageState extends State<ExpedientePage> {
       'firmante': _userFullName,
       'firmaBase64': 'data:image/png;base64,${base64Encode(png)}',
     });
-    // Guardar para no repetir en otros expedientes
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefKey, base64Encode(png));
     _empresaFirmaPng = png;
@@ -224,7 +224,6 @@ class _ExpedientePageState extends State<ExpedientePage> {
       _snack('La empresa ya firmó este expediente');
       return;
     }
-    // Si ya tiene firma guardada, reutilizarla sin volver a dibujarla
     if (_empresaFirmaPng != null) {
       await _accion(() => _postFirmaEmpresa(_empresaFirmaPng!), 'Firma de la empresa registrada');
       await _cargarFirmaEmpresa();
@@ -242,6 +241,37 @@ class _ExpedientePageState extends State<ExpedientePage> {
     if (r == null) return;
     await _accion(() => _postFirmaEmpresa(r.png), 'Firma de la empresa guardada');
     await _cargarFirmaEmpresa();
+  }
+
+  Future<void> _guardarEvidencia() async {
+    if (_evidencias.isEmpty) {
+      _snack('Agrega al menos 1 foto');
+      return;
+    }
+    if (_obsCtrl.text.trim().isEmpty) {
+      _snack('Escribe una observación');
+      return;
+    }
+    await _accion(() async {
+      final repo = context.read<AnexoRepository>();
+      for (final foto in _evidencias) {
+        final urlRes = await repo.createImage(path: foto.path);
+        final url = urlRes.fold((e) => throw Exception(e), (u) => u);
+        final ok = await repo.createAnexo(
+          description: _obsCtrl.text.trim(),
+          url: [
+            {'url': url}
+          ],
+          prestamoId: widget.prestamoCodigo.toString(),
+        );
+        final exito = ok.fold((l) => false, (r) => r);
+        if (!exito) throw Exception('No se pudo guardar la evidencia');
+      }
+      if (mounted) {
+        _evidencias = [];
+        _obsCtrl.clear();
+      }
+    }, 'Evidencia guardada');
   }
 
   Future<void> _finalizar() async {
@@ -311,13 +341,52 @@ class _ExpedientePageState extends State<ExpedientePage> {
 
   Widget _boton(String texto, IconData icono, VoidCallback? onTap) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: SizedBox(
         width: double.infinity,
         child: ElevatedButton.icon(
           onPressed: _busy ? null : onTap,
           icon: Icon(icono),
           label: Text(texto),
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 18),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            elevation: 4,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _seccion(String titulo, IconData icono, List<Widget> children) {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      margin: const EdgeInsets.only(bottom: 14),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icono, color: Colors.deepPurple),
+                const SizedBox(width: 8),
+                Text(
+                  titulo,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.deepPurple,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ...children,
+          ],
         ),
       ),
     );
@@ -328,7 +397,7 @@ class _ExpedientePageState extends State<ExpedientePage> {
     final estado = (_exp?['estado'] ?? '').toString();
     return Scaffold(
       appBar: AppBar(
-        title: Text('Expediente - Préstamo ${widget.prestamoCodigo}'),
+        title: const Text('Expediente digital'),
         actions: [
           IconButton(
             onPressed: _busy ? null : _cargar,
@@ -342,69 +411,122 @@ class _ExpedientePageState extends State<ExpedientePage> {
               padding: const EdgeInsets.all(16),
               children: [
                 if (_error != null)
-                  Card(
-                    color: Colors.red.shade50,
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Text(_error!,
-                          style: const TextStyle(color: Colors.red)),
-                    ),
+                  _seccion(
+                    'Error',
+                    Icons.error_outline,
+                    [
+                      Text(_error!, style: const TextStyle(color: Colors.red)),
+                    ],
                   ),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _exp == null
-                              ? 'Aún no se generó el expediente'
-                              : _esFinal
-                                  ? 'Expediente FINAL (cerrado, no se puede modificar)'
-                                  : 'Expediente generado ($estado): faltan firmas / finalizar',
-                          style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                        if (_exp != null) ...[
-                          const SizedBox(height: 10),
-                          Wrap(
-                            spacing: 8,
-                            children: [
-                              _chipFirma('Cliente', 'CLIENTE'),
-                              _chipFirma('Aval', 'AVAL'),
-                              _chipFirma('Empresa', 'EMPRESA'),
-                            ],
-                          ),
+                _seccion(
+                  'Estado del expediente',
+                  Icons.info_outline,
+                  [
+                    Text(
+                      _exp == null
+                          ? 'Aún no se generó el expediente'
+                          : _esFinal
+                              ? 'Expediente FINAL (cerrado, no se puede modificar)'
+                              : 'Expediente generado ($estado): faltan firmas / finalizar',
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w600),
+                    ),
+                    if (_exp != null) ...[
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: [
+                          _chipFirma('Cliente', 'CLIENTE'),
+                          _chipFirma('Aval', 'AVAL'),
+                          _chipFirma('Empresa', 'EMPRESA'),
                         ],
-                      ],
-                    ),
-                  ),
+                      ),
+                    ],
+                  ],
                 ),
-                const SizedBox(height: 12),
-                if (_busy) const LinearProgressIndicator(),
-                if (_busy) const SizedBox(height: 12),
+                if (_busy) ...[
+                  const LinearProgressIndicator(),
+                  const SizedBox(height: 12),
+                ],
                 if (_exp == null)
-                  _boton('Generar expediente', Icons.note_add, _generar),
+                  _seccion(
+                    'Generar',
+                    Icons.note_add,
+                    [
+                      _boton('Generar expediente', Icons.note_add, _generar),
+                    ],
+                  ),
                 if (_exp != null && !_esFinal) ...[
-                  _boton('Firma del cliente', Icons.draw,
-                      () => _firmar('CLIENTE')),
-                  _boton('Firma del aval', Icons.draw_outlined,
-                      () => _firmar('AVAL')),
-                  if (_empresaFirmaPng == null)
-                    _boton(
-                        'Registrar firma de la empresa (mi firma)',
-                        Icons.business,
-                        _roles.contains('EMPRESA') ? null : _firmaEmpresa)
-                  else
-                    _boton(
-                        'Registrar firma de empresa guardada',
-                        Icons.business,
-                        _roles.contains('EMPRESA') ? null : _firmaEmpresa),
-                  _boton('Finalizar expediente', Icons.lock, _finalizar),
+                  _seccion(
+                    'Firmas',
+                    Icons.draw,
+                    [
+                      _boton('Firma del cliente', Icons.draw,
+                          () => _firmar('CLIENTE')),
+                      _boton('Firma del aval', Icons.draw_outlined,
+                          () => _firmar('AVAL')),
+                      if (_empresaFirmaPng == null)
+                        _boton(
+                          'Registrar firma de la empresa (mi firma)',
+                          Icons.business,
+                          _roles.contains('EMPRESA') ? null : _firmaEmpresa,
+                        )
+                      else
+                        _boton(
+                          'Registrar firma de empresa guardada',
+                          Icons.business,
+                          _roles.contains('EMPRESA') ? null : _firmaEmpresa,
+                        ),
+                      _boton('Finalizar expediente', Icons.lock, _finalizar),
+                    ],
+                  ),
+                  _seccion(
+                    'Evidencia fotográfica',
+                    Icons.photo_camera,
+                    [
+                      const Text(
+                        'Mínimo 1 foto, máximo 3. Agrega observación y guarda.',
+                        style: TextStyle(fontSize: 13, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: _obsCtrl,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: const InputDecoration(
+                          labelText: 'Observación / constancia',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      CustomImagePicker(
+                        onImagesSelected: (photos) {
+                          setState(() {
+                            _evidencias = photos ?? [];
+                          });
+                        },
+                        initialSelectedPhotos: _evidencias,
+                        limit: 3,
+                      ),
+                      const SizedBox(height: 10),
+                      _boton(
+                        'Guardar evidencia',
+                        Icons.save_alt,
+                        _evidencias.isEmpty ? null : _guardarEvidencia,
+                      ),
+                    ],
+                  ),
                 ],
                 if (_exp != null)
-                  _boton('Ver PDF del expediente', Icons.picture_as_pdf,
-                      _verPdf),
+                  _seccion(
+                    'Documento',
+                    Icons.picture_as_pdf,
+                    [
+                      _boton('Ver PDF del expediente', Icons.picture_as_pdf,
+                          _verPdf),
+                    ],
+                  ),
               ],
             ),
     );
@@ -576,85 +698,111 @@ class _FirmaDialogState extends State<_FirmaDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      insetPadding: const EdgeInsets.all(16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(widget.titulo,
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            if (widget.firmanteNombre != null &&
-                widget.firmanteNombre!.isNotEmpty &&
-                !widget.pedirDatos) ...[
-              Text('Firmante: ${widget.firmanteNombre}',
-                  style: const TextStyle(fontWeight: FontWeight.w600)),
+      insetPadding: const EdgeInsets.all(12),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(widget.titulo,
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
-            ],
-            if (widget.pedirDatos) ...[
-              TextField(
-                controller: _nombre,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
+              if (widget.firmanteNombre != null &&
+                  widget.firmanteNombre!.isNotEmpty &&
+                  !widget.pedirDatos) ...[
+                Text('Firmante: ${widget.firmanteNombre}',
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 12),
+              ],
+              if (widget.pedirDatos) ...[
+                TextField(
+                  controller: _nombre,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
                     labelText: 'Nombre de quien firma',
                     border: OutlineInputBorder(),
-                    isDense: true),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _dni,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
+                    isDense: true,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _dni,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
                     labelText: 'DNI (opcional)',
                     border: OutlineInputBorder(),
-                    isDense: true),
-              ),
-              const SizedBox(height: 12),
-            ],
-            Container(
-              height: 180,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: Colors.grey),
-              ),
-              child: LayoutBuilder(
-                builder: (context, c) {
-                  _size = Size(c.maxWidth, c.maxHeight);
-                  return Listener(
-                    behavior: HitTestBehavior.opaque,
-                    onPointerDown: (e) => _ctrl.start(e.localPosition),
-                    onPointerMove: (e) => _ctrl.add(e.localPosition),
-                    child: AnimatedBuilder(
-                      animation: _ctrl,
-                      builder: (_, __) => CustomPaint(
-                        painter: _SignaturePainter(_ctrl.strokes),
-                        size: Size.infinite,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 4),
-            const Text('Firme dentro del recuadro',
-                style: TextStyle(fontSize: 12, color: Colors.grey)),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(onPressed: _ctrl.clear, child: const Text('Limpiar')),
-                TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Cancelar')),
-                ElevatedButton(
-                    onPressed: _aceptar, child: const Text('Guardar firma')),
+                    isDense: true,
+                  ),
+                ),
+                const SizedBox(height: 12),
               ],
-            ),
-          ],
+              Container(
+                height: 190,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 6,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: LayoutBuilder(
+                  builder: (context, c) {
+                    _size = Size(c.maxWidth, c.maxHeight);
+                    return Listener(
+                      behavior: HitTestBehavior.opaque,
+                      onPointerDown: (e) => _ctrl.start(e.localPosition),
+                      onPointerMove: (e) => _ctrl.add(e.localPosition),
+                      child: AnimatedBuilder(
+                        animation: _ctrl,
+                        builder: (_, __) => CustomPaint(
+                          painter: _SignaturePainter(_ctrl.strokes),
+                          size: Size.infinite,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text('Firme dentro del recuadro',
+                  style: TextStyle(fontSize: 12, color: Colors.grey)),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _aceptar,
+                  icon: const Icon(Icons.save_outlined),
+                  label: const Text('Guardar firma'),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: _ctrl.clear,
+                    child: const Text('Limpiar'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancelar'),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
