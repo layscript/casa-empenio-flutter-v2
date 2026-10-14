@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Expediente digital de un préstamo (Etapa 1):
 /// generar -> firma cliente / aval -> firma empresa -> finalizar -> ver PDF.
@@ -38,13 +39,28 @@ class _ExpedientePageState extends State<ExpedientePage> {
   bool _busy = false;
   String? _error;
 
+  // Préstamo (para auto-llenar datos del cliente/aval)
+  LoansEntity? _loan;
+
+  // Firma de la empresa guardada en este dispositivo (para no repetirla)
+  Uint8List? _empresaFirmaPng;
+
   int get _userId => context.read<Preferences>().token?.id ?? 0;
+  String get _userFullName {
+    final t = context.read<Preferences>().token;
+    if (t == null) return '';
+    return t.fullName;
+  }
+
   bool get _esFinal => (_exp?['estado'] ?? '').toString() == 'FINAL';
+
+  String get _prefKey => 'empresa_firma_base64_${_userId}';
 
   @override
   void initState() {
     super.initState();
     _cargar();
+    _cargarFirmaEmpresa();
   }
 
   dynamic _body(Response<dynamic> r) {
@@ -89,6 +105,7 @@ class _ExpedientePageState extends State<ExpedientePage> {
     } catch (e) {
       _error = e.toString();
     }
+
     // Firmas ya registradas (para mostrar quién firmó)
     _roles = <String>{};
     if (_exp != null) {
@@ -105,8 +122,38 @@ class _ExpedientePageState extends State<ExpedientePage> {
         }
       } catch (_) {}
     }
+
+    // Datos del préstamo (para auto-llenar cliente/aval en las firmas)
+    try {
+      final loansRepo = context.read<LoansRepository>();
+      final res = await loansRepo.getLoan(
+        id: widget.prestamoCodigo,
+        userId: _userId,
+      );
+      res.fold((_) {}, (loan) {
+        _loan = loan;
+      });
+    } catch (_) {}
+
     if (mounted) setState(() => _loading = false);
   }
+
+  Future<void> _cargarFirmaEmpresa() async {
+    try {
+      if (_userId == 0) return;
+      final prefs = await SharedPreferences.getInstance();
+      final b64 = prefs.getString(_prefKey);
+      if (b64 != null && b64.isNotEmpty) {
+        _empresaFirmaPng = base64Decode(b64);
+        if (mounted) setState(() {});
+      }
+    } catch (_) {}
+  }
+
+  String _clienteNombre() => _loan?.cliente?.customerFullName ?? '';
+  String _clienteDni() => _loan?.cliente?.dni ?? '';
+  String _avalNombre() => _loan?.aval?.customerFullName ?? '';
+  String _avalDni() => _loan?.aval?.dni ?? '';
 
   Future<void> _accion(Future<void> Function() fn, String exito) async {
     setState(() => _busy = true);
@@ -128,12 +175,15 @@ class _ExpedientePageState extends State<ExpedientePage> {
       }, 'Expediente generado');
 
   Future<void> _firmar(String rol) async {
+    final esAval = rol == 'AVAL';
     final r = await showDialog<_FirmaResultado>(
       context: context,
       barrierDismissible: false,
       builder: (_) => _FirmaDialog(
-        titulo: rol == 'AVAL' ? 'Firma del aval' : 'Firma del cliente',
+        titulo: esAval ? 'Firma del aval' : 'Firma del cliente',
         pedirDatos: true,
+        nombreInicial: esAval ? _avalNombre() : _clienteNombre(),
+        dniInicial: esAval ? _avalDni() : _clienteDni(),
       ),
     );
     if (r == null) return;
@@ -149,22 +199,49 @@ class _ExpedientePageState extends State<ExpedientePage> {
     }, 'Firma registrada');
   }
 
+  Future<void> _postFirmaEmpresa(Uint8List png) async {
+    await _dio.put(
+      '/usuarios/$_userId/firma',
+      data: FormData.fromMap({
+        'firma': MultipartFile.fromBytes(png, filename: 'firma_empresa.png'),
+      }),
+    );
+    await _dio.post('/expediente/firmas', data: {
+      'prestamoId': widget.prestamoCodigo,
+      'expedienteId': _exp?['id'],
+      'rol': 'EMPRESA',
+      'firmante': _userFullName,
+      'firmaBase64': 'data:image/png;base64,${base64Encode(png)}',
+    });
+    // Guardar para no repetir en otros expedientes
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefKey, base64Encode(png));
+    _empresaFirmaPng = png;
+  }
+
   Future<void> _firmaEmpresa() async {
+    if (_roles.contains('EMPRESA')) {
+      _snack('La empresa ya firmó este expediente');
+      return;
+    }
+    // Si ya tiene firma guardada, reutilizarla sin volver a dibujarla
+    if (_empresaFirmaPng != null) {
+      await _accion(() => _postFirmaEmpresa(_empresaFirmaPng!), 'Firma de la empresa registrada');
+      await _cargarFirmaEmpresa();
+      return;
+    }
     final r = await showDialog<_FirmaResultado>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const _FirmaDialog(
+      builder: (_) => _FirmaDialog(
         titulo: 'Firma de la empresa (su firma)',
         pedirDatos: false,
+        firmanteNombre: _userFullName,
       ),
     );
     if (r == null) return;
-    await _accion(() async {
-      final form = FormData.fromMap({
-        'firma': MultipartFile.fromBytes(r.png, filename: 'firma_empresa.png'),
-      });
-      await _dio.put('/usuarios/$_userId/firma', data: form);
-    }, 'Firma de la empresa guardada');
+    await _accion(() => _postFirmaEmpresa(r.png), 'Firma de la empresa guardada');
+    await _cargarFirmaEmpresa();
   }
 
   Future<void> _finalizar() async {
@@ -313,8 +390,16 @@ class _ExpedientePageState extends State<ExpedientePage> {
                       () => _firmar('CLIENTE')),
                   _boton('Firma del aval', Icons.draw_outlined,
                       () => _firmar('AVAL')),
-                  _boton('Registrar firma de la empresa (mi firma)',
-                      Icons.business, _firmaEmpresa),
+                  if (_empresaFirmaPng == null)
+                    _boton(
+                        'Registrar firma de la empresa (mi firma)',
+                        Icons.business,
+                        _roles.contains('EMPRESA') ? null : _firmaEmpresa)
+                  else
+                    _boton(
+                        'Registrar firma de empresa guardada',
+                        Icons.business,
+                        _roles.contains('EMPRESA') ? null : _firmaEmpresa),
                   _boton('Finalizar expediente', Icons.lock, _finalizar),
                 ],
                 if (_exp != null)
@@ -427,11 +512,20 @@ class _SignaturePainter extends CustomPainter {
 }
 
 class _FirmaDialog extends StatefulWidget {
-  const _FirmaDialog({Key? key, required this.titulo, required this.pedirDatos})
-      : super(key: key);
+  const _FirmaDialog({
+    Key? key,
+    required this.titulo,
+    required this.pedirDatos,
+    this.nombreInicial,
+    this.dniInicial,
+    this.firmanteNombre,
+  }) : super(key: key);
 
   final String titulo;
   final bool pedirDatos;
+  final String? nombreInicial;
+  final String? dniInicial;
+  final String? firmanteNombre;
 
   @override
   State<_FirmaDialog> createState() => _FirmaDialogState();
@@ -439,9 +533,16 @@ class _FirmaDialog extends StatefulWidget {
 
 class _FirmaDialogState extends State<_FirmaDialog> {
   final _SignatureController _ctrl = _SignatureController();
-  final TextEditingController _nombre = TextEditingController();
-  final TextEditingController _dni = TextEditingController();
+  late final TextEditingController _nombre;
+  late final TextEditingController _dni;
   Size _size = const Size(300, 180);
+
+  @override
+  void initState() {
+    super.initState();
+    _nombre = TextEditingController(text: widget.nombreInicial ?? '');
+    _dni = TextEditingController(text: widget.dniInicial ?? '');
+  }
 
   @override
   void dispose() {
@@ -486,6 +587,13 @@ class _FirmaDialogState extends State<_FirmaDialog> {
                 style:
                     const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
+            if (widget.firmanteNombre != null &&
+                widget.firmanteNombre!.isNotEmpty &&
+                !widget.pedirDatos) ...[
+              Text('Firmante: ${widget.firmanteNombre}',
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 12),
+            ],
             if (widget.pedirDatos) ...[
               TextField(
                 controller: _nombre,
@@ -543,7 +651,7 @@ class _FirmaDialogState extends State<_FirmaDialog> {
                     onPressed: () => Navigator.of(context).pop(),
                     child: const Text('Cancelar')),
                 ElevatedButton(
-                    onPressed: _aceptar, child: const Text('Aceptar')),
+                    onPressed: _aceptar, child: const Text('Guardar firma')),
               ],
             ),
           ],
