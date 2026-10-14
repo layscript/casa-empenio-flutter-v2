@@ -2,6 +2,7 @@ import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/expediente_page.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/auth/auth.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/anexos/widgets/add_anexo_dialog.dart';
@@ -457,6 +458,31 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                                   trailing: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
+                                      //Expediente digital (firma)
+                                      SizedBox(
+                                        height: 38,
+                                        width: 38,
+                                        child: IconButton(
+                                          padding: EdgeInsets.zero,
+                                          tooltip: 'Expediente digital',
+                                          onPressed: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) => ExpedientePage(
+                                                  prestamoCodigo:
+                                                      prestamo?.codigo ?? 0,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          icon: const FaIcon(
+                                            FontAwesomeIcons.fileSignature,
+                                            size: 18,
+                                            color: Colors.deepPurple,
+                                          ),
+                                        ),
+                                      ),
                                       //Visualizar
                                       SizedBox(
                                         height: 38,
