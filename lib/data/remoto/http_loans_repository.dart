@@ -344,7 +344,12 @@ class HttpLoansRepository implements LoansRepository {
   @override
   Future<Uint8List> createInvoicePdf({required String url}) async {
     try {
-      final dio = Dio(BaseOptions(baseUrl: downloadFactura));
+      // Las proformas se generan en nuestro propio servidor (carpeta /files);
+      // el resto de comprobantes siguen descargandose del servicio de facturacion.
+      final esProformaLocal = url.startsWith('proforma-');
+      final dio = Dio(BaseOptions(
+        baseUrl: esProformaLocal ? '$endPointPrincipal/files/' : downloadFactura,
+      ));
       final path = url;
       final response = await dio.get<List<int>>(
         path,
