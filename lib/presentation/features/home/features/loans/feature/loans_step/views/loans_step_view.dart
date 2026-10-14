@@ -1,6 +1,7 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/expediente_page.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/feature/loans_step/bloc/loans_step_bloc.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/feature/loans_step/views/loans_step_one_view.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/feature/loans_step/views/loans_step_three_view.dart';
@@ -98,26 +99,29 @@ class LoansStepView extends StatelessWidget {
                     context,
                     state.message ?? 'Ocurrió un error, intentelo de nuevo.',
                   );
-                  /*  ErrorSnackbar.show(
-                              context,
-                              state.message ?? 'Ocurrió un error, intentelo más tarde',
-                            ); */
                 }
                 if (state.isLoansStepStatusSavedSuccess) {
                   Navigator.pop(context);
                   SuccessDialog.show(
                     context,
                     'Guardado correctamente',
-                    onPressed: () {
-                      Navigator.pop(context);
+                    onPressed: () async {
                       preferences.removeLoansPreferences();
-                      Navigator.pop(context, state.documentClient);
+                      final codigo = int.tryParse(state.codeLoans ?? '') ?? 0;
+                      Navigator.pop(context);
+                      if (codigo > 0) {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ExpedientePage(prestamoCodigo: codigo),
+                          ),
+                        );
+                      }
+                      if (context.mounted) {
+                        Navigator.pop(context, state.documentClient);
+                      }
                     },
                   );
-                  /* SuccessSnackbar.show(
-                              context,
-                              'Guardado correctamente',
-                            ); */
                 }
               }
             },
