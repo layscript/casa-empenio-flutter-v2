@@ -7,6 +7,7 @@ import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/custom_image_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pdf/pdf.dart';
@@ -20,10 +21,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// - Evidencia fotográfica (mínimo 1, máximo 3)
 /// - Finalizar y ver PDF
 class ExpedientePage extends StatefulWidget {
-  const ExpedientePage({Key? key, required this.prestamoCodigo})
-      : super(key: key);
+  const ExpedientePage({
+    Key? key,
+    required this.prestamoCodigo,
+    this.autoFlujo = false,
+  }) : super(key: key);
 
   final int prestamoCodigo;
+
+  /// Si es true (al terminar de crear un préstamo): genera el expediente,
+  /// pide la firma del cliente (y aval), la huella, la firma de la empresa
+  /// y ofrece finalizar, todo seguido.
+  final bool autoFlujo;
 
   @override
   State<ExpedientePage> createState() => _ExpedientePageState();
@@ -40,6 +49,7 @@ class _ExpedientePageState extends State<ExpedientePage> {
 
   Map<String, dynamic>? _exp;
   Set<String> _roles = <String>{};
+  List<Map<String, dynamic>> _huellas = <Map<String, dynamic>>[];
   bool _loading = true;
   bool _busy = false;
   String? _error;
@@ -58,8 +68,73 @@ class _ExpedientePageState extends State<ExpedientePage> {
   @override
   void initState() {
     super.initState();
-    _cargar();
+    _cargar().then((_) {
+      if (widget.autoFlujo && mounted) _flujoAutomatico();
+    });
     _cargarFirmaEmpresa();
+  }
+
+  bool _autoEnCurso = false;
+
+  /// Flujo seguido para firmar directo con el cliente y cerrar el expediente.
+  /// Si en algún paso se cancela, se detiene y queda todo en la pantalla normal.
+  Future<void> _flujoAutomatico() async {
+    if (_autoEnCurso) return;
+    _autoEnCurso = true;
+    try {
+      if (_esFinal) return;
+      // 1) Generar el expediente si todavía no existe
+      if (_exp == null) {
+        await _generar();
+        if (!mounted || _exp == null) return;
+      }
+      // 2) Firma del cliente
+      if (!_roles.contains('CLIENTE')) {
+        await _firmar('CLIENTE');
+        if (!mounted || !_roles.contains('CLIENTE')) return;
+      }
+      // 3) Firma del aval (solo si el préstamo tiene aval)
+      final tieneAval = _avalNombre().isNotEmpty || _avalDni().isNotEmpty;
+      if (tieneAval && !_roles.contains('AVAL')) {
+        await _firmar('AVAL');
+        if (!mounted) return;
+      }
+      // 4) Huella del cliente (opcional)
+      if (_huellas.isEmpty) {
+        final capturar = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Huella del cliente'),
+            content: const Text(
+                '¿Desea capturar la huella del cliente ahora con el lector?'),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Omitir')),
+              ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Capturar huella')),
+            ],
+          ),
+        );
+        if (!mounted) return;
+        if (capturar == true) {
+          await _capturarHuella();
+          if (!mounted) return;
+        }
+      }
+      // 5) Firma de la empresa (se reutiliza la guardada)
+      if (!_roles.contains('EMPRESA')) {
+        await _firmaEmpresa();
+        if (!mounted) return;
+      }
+      // 6) Finalizar (pregunta antes de cerrar el expediente)
+      if (!_esFinal && _roles.contains('CLIENTE')) {
+        await _finalizar();
+      }
+    } finally {
+      _autoEnCurso = false;
+    }
   }
 
   @override
@@ -122,6 +197,21 @@ class _ExpedientePageState extends State<ExpedientePage> {
             if (f is Map && f['rol'] != null) {
               _roles.add(f['rol'].toString());
             }
+          }
+        }
+      } catch (_) {}
+    }
+
+    // Huella del cliente ya guardada
+    _huellas = <Map<String, dynamic>>[];
+    if (_exp != null) {
+      try {
+        final r = await _dio.get(
+            '/expediente/huellas/prestamo/${widget.prestamoCodigo}/activas');
+        final b = _body(r);
+        if (b is List) {
+          for (final h in b) {
+            if (h is Map) _huellas.add(Map<String, dynamic>.from(h));
           }
         }
       } catch (_) {}
@@ -274,6 +364,26 @@ class _ExpedientePageState extends State<ExpedientePage> {
     }, 'Evidencia guardada');
   }
 
+  Future<void> _capturarHuella() async {
+    final res = await showDialog<_HuellaResultado>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const _HuellaDialog(),
+    );
+    if (res == null) return;
+    await _accion(() async {
+      await _dio.post('/expediente/huellas', data: {
+        'prestamoId': widget.prestamoCodigo,
+        'expedienteId': _exp?['id'],
+        'rol': 'CLIENTE',
+        'templateBase64': res.template,
+        'templateType': res.templateType,
+        'imageDataUrl': 'data:image/png;base64,${res.image}',
+        'quality': res.quality,
+      });
+    }, 'Huella del cliente guardada.');
+  }
+
   Future<void> _finalizar() async {
     final ok = await showDialog<bool>(
       context: context,
@@ -325,6 +435,18 @@ class _ExpedientePageState extends State<ExpedientePage> {
       _snack(_mensaje(e));
     }
     if (mounted) setState(() => _busy = false);
+  }
+
+  Widget _chipHuella() {
+    final guardada = _huellas.isNotEmpty;
+    return Chip(
+      avatar: Icon(
+        guardada ? Icons.check_circle : Icons.radio_button_unchecked,
+        color: guardada ? Colors.green : Colors.grey,
+        size: 18,
+      ),
+      label: const Text('Huella'),
+    );
   }
 
   Widget _chipFirma(String etiqueta, String rol) {
@@ -440,6 +562,7 @@ class _ExpedientePageState extends State<ExpedientePage> {
                           _chipFirma('Cliente', 'CLIENTE'),
                           _chipFirma('Aval', 'AVAL'),
                           _chipFirma('Empresa', 'EMPRESA'),
+                          _chipHuella(),
                         ],
                       ),
                     ],
@@ -466,6 +589,12 @@ class _ExpedientePageState extends State<ExpedientePage> {
                           () => _firmar('CLIENTE')),
                       _boton('Firma del aval', Icons.draw_outlined,
                           () => _firmar('AVAL')),
+                      _boton(
+                          _huellas.isNotEmpty
+                              ? 'Volver a capturar huella (cliente)'
+                              : 'Capturar huella del cliente',
+                          Icons.fingerprint,
+                          _capturarHuella),
                       if (_empresaFirmaPng == null)
                         _boton(
                           'Registrar firma de la empresa (mi firma)',
@@ -805,6 +934,136 @@ class _FirmaDialogState extends State<_FirmaDialog> {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Captura de huella con el lector BioMini (código Android: HuelleroChannel.java)
+// ---------------------------------------------------------------------------
+
+class _HuellaResultado {
+  _HuellaResultado(this.template, this.templateType, this.quality, this.image);
+  final String template;
+  final int templateType;
+  final int quality;
+  final String image; // PNG en base64
+}
+
+class _HuellaDialog extends StatefulWidget {
+  const _HuellaDialog({Key? key}) : super(key: key);
+
+  @override
+  State<_HuellaDialog> createState() => _HuellaDialogState();
+}
+
+class _HuellaDialogState extends State<_HuellaDialog> {
+  static const MethodChannel _canal = MethodChannel('casa_empenio/huellero');
+
+  bool _capturando = true;
+  String? _error;
+  Map<String, dynamic>? _datos;
+
+  @override
+  void initState() {
+    super.initState();
+    _capturar();
+  }
+
+  Future<void> _capturar() async {
+    setState(() {
+      _capturando = true;
+      _error = null;
+      _datos = null;
+    });
+    try {
+      final r = await _canal.invokeMapMethod<String, dynamic>('capturar');
+      if (!mounted) return;
+      setState(() {
+        _datos = r;
+        _capturando = false;
+      });
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.message ?? 'No se pudo capturar la huella';
+        _capturando = false;
+      });
+    } on MissingPluginException {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Esta versión de la app no tiene el lector de huellas.';
+        _capturando = false;
+      });
+    }
+  }
+
+  Future<void> _cancelar() async {
+    try {
+      await _canal.invokeMethod('cancelar');
+    } catch (_) {}
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  void _guardar() {
+    final d = _datos;
+    if (d == null) return;
+    Navigator.of(context).pop(_HuellaResultado(
+      (d['template'] ?? '').toString(),
+      (d['templateType'] as num?)?.toInt() ?? 0,
+      (d['quality'] as num?)?.toInt() ?? 0,
+      (d['image'] ?? '').toString(),
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Widget contenido;
+    List<Widget> acciones;
+    if (_capturando) {
+      contenido = Column(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          SizedBox(height: 8),
+          CircularProgressIndicator(),
+          SizedBox(height: 16),
+          Text('Pida al cliente que coloque el dedo en el lector.',
+              textAlign: TextAlign.center),
+        ],
+      );
+      acciones = [
+        TextButton(onPressed: _cancelar, child: const Text('Cancelar')),
+      ];
+    } else if (_error != null) {
+      contenido = Text(_error!, style: const TextStyle(color: Colors.red));
+      acciones = [
+        TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cerrar')),
+        ElevatedButton(onPressed: _capturar, child: const Text('Reintentar')),
+      ];
+    } else {
+      Uint8List? bytes;
+      try {
+        bytes = base64Decode((_datos?['image'] ?? '').toString());
+      } catch (_) {}
+      contenido = Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (bytes != null) Image.memory(bytes, height: 180),
+          const SizedBox(height: 8),
+          Text('Calidad de la huella: ${_datos?['quality'] ?? '-'}'),
+        ],
+      );
+      acciones = [
+        TextButton(onPressed: _capturar, child: const Text('Repetir')),
+        ElevatedButton(onPressed: _guardar, child: const Text('Guardar huella')),
+      ];
+    }
+    return AlertDialog(
+      title: const Text('Huella del cliente'),
+      content: contenido,
+      actions: acciones,
     );
   }
 }
