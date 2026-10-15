@@ -48,12 +48,16 @@ android {
         applicationId "com.example.casa_empenio_pe"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        minSdkVersion flutter.minSdkVersion
+        minSdkVersion 21 // el SDK del lector BioMini exige Android 5.0 o superior
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
 
+    packagingOptions {
+        // El SDK BioMini y otras librerías traen la misma librería nativa
+        pickFirst '**/libc++_shared.so'
+    }
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
@@ -69,4 +73,6 @@ flutter {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    // SDK del lector de huellas Suprema BioMini (archivo libBioMini-v3.0.3.3.aar junto a este build.gradle)
+    implementation files('libBioMini-v3.0.3.3.aar')
 }
