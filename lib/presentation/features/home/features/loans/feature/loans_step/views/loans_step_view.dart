@@ -113,7 +113,10 @@ class LoansStepView extends StatelessWidget {
                         await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => ExpedientePage(prestamoCodigo: codigo),
+                            builder: (_) => ExpedientePage(
+                              prestamoCodigo: codigo,
+                              autoFlujo: true,
+                            ),
                           ),
                         );
                       }
