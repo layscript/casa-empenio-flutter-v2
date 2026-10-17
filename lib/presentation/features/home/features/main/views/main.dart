@@ -1,5 +1,6 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/auditoria_view.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/expedientes_view.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/plantilla/widgets/widgets.dart';
@@ -90,11 +91,16 @@ class _MainViewState extends State<MainView> {
               drawer: const AppDrawer(),
               body: BlocBuilder<HomeBloc, HomeState>(
                 builder: (context, state) {
-                  // Módulo "Expedientes": se reconoce por el nombre del módulo
-                  if ((state.selected?.nombre ?? '')
-                      .toLowerCase()
-                      .contains('expediente')) {
+                  // Módulos "Expedientes" y "Auditoría": se reconocen por el nombre del módulo
+                  final nombreModulo =
+                      (state.selected?.nombre ?? '').toLowerCase();
+                  if (nombreModulo.contains('expediente')) {
                     return const ExpedientesView();
+                  }
+                  if (nombreModulo.contains('auditor') ||
+                      nombreModulo.contains('bitacora') ||
+                      nombreModulo.contains('bitácora')) {
+                    return const AuditoriaView();
                   }
                   switch (state.selected?.id) {
                     case 1:
