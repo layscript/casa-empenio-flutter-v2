@@ -94,6 +94,14 @@ void configDio(Preferences preferences) {
         if (preferences.token != null) {
           options.headers['Authorization'] = 'Token ${preferences.token}';
         }
+        // Identifica al usuario para la auditoría del servidor
+        final usuarioActual = preferences.token;
+        if (usuarioActual != null) {
+          options.headers['x-usuario-id'] = usuarioActual.id.toString();
+          options.headers['x-usuario-nombre'] = Uri.encodeComponent(
+              '${usuarioActual.nombre ?? ''} ${usuarioActual.apellido ?? ''}'
+                  .trim());
+        }
 
         log('********* ${options.uri.toString()} *********');
         log('httpRequest - data: ${options.data}');
