@@ -1,5 +1,6 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/campos_dinamicos_form.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/custom_image_picker.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
@@ -157,6 +158,12 @@ class AddFormWarranty extends StatelessWidget {
           onChanged: (e) => loansStepBloc.add(ChangeSerie(value: e)),
         ),
         const SizedBox(height: 15),
+        // Campos extra de la categoría elegida (se crean en Administración > Campos)
+        BlocBuilder<LoansStepBloc, LoansStepState>(
+          buildWhen: (a, b) => a.categories?.id != b.categories?.id,
+          builder: (context, state) =>
+              CamposDinamicosForm(categoriaId: state.categories?.id),
+        ),
         AppTextFormField(
           labelText: 'Observaciones (requerido)',
           onChanged: (e) =>
@@ -253,7 +260,26 @@ class AddFormWarranty extends StatelessWidget {
                               state.warrantyObservations != null) &&
                           (state.price != '' && state.price != null)
                       ? () {
+                          final faltan = CamposDinamicosEstado.faltantes();
+                          if (faltan.isNotEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Complete: ${faltan.join(', ')}'),
+                              ),
+                            );
+                            return;
+                          }
+                          // Los datos extra se guardan junto a las observaciones del bien
+                          final extra = CamposDinamicosEstado.resumen();
+                          if (extra.isNotEmpty) {
+                            loansStepBloc.add(
+                              ChangeWarrantyObservations(
+                                value: '${state.warrantyObservations} | $extra',
+                              ),
+                            );
+                          }
                           loansStepBloc.add(const AddListWarranty());
+                          CamposDinamicosEstado.limpiar();
                         }
                       : null,
               child: const Text('Guardar'),
