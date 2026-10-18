@@ -1,5 +1,6 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/administracion_view.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/auditoria_view.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/expedientes_view.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
@@ -101,6 +102,9 @@ class _MainViewState extends State<MainView> {
                       nombreModulo.contains('bitacora') ||
                       nombreModulo.contains('bitácora')) {
                     return const AuditoriaView();
+                  }
+                  if (nombreModulo.contains('administraci')) {
+                    return const AdministracionView();
                   }
                   switch (state.selected?.id) {
                     case 1:
