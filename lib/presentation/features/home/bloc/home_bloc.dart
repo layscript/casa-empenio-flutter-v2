@@ -58,7 +58,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
             )
             .toList();
 
-        final modulos = [...moduloInicio!, ...otrosModulos!];
+        final modulos = [
+          ...moduloInicio!,
+          ...otrosModulos!,
+          ..._extrasAdministrador(user, otrosModulos!),
+        ];
         emit(
           state.copyWith(
             modulos: modulos,
@@ -66,6 +70,27 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         );
       },
     );
+  }
+
+  /// Los administradores siempre ven Administración, Auditoría y Expedientes,
+  /// aunque no estén creados ni asignados como módulos en el rol.
+  List<ModulosEntity> _extrasAdministrador(
+    UserEntity user,
+    List<ModulosEntity> actuales,
+  ) {
+    final esAdmin = user.isAdmin == true ||
+        (user.role?.nombre ?? '').toLowerCase().contains('admin');
+    if (!esAdmin) return const <ModulosEntity>[];
+    bool yaEsta(String clave) =>
+        actuales.any((m) => m.nombre.toLowerCase().contains(clave));
+    return <ModulosEntity>[
+      if (!yaEsta('administraci'))
+        const ModulosEntity(id: 9001, nombre: 'Administración'),
+      if (!yaEsta('auditor'))
+        const ModulosEntity(id: 9002, nombre: 'Auditoría'),
+      if (!yaEsta('expediente'))
+        const ModulosEntity(id: 9003, nombre: 'Expedientes'),
+    ];
   }
 
   void _onGoToPage(GoToPage event, Emitter<HomeState> emit) {
