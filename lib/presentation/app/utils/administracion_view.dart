@@ -1470,7 +1470,13 @@ class _CamposTabState extends State<_CamposTab> {
           data: {'category_id': _categoria, 'plantilla': clave});
       final d = res.data;
       if (mounted) {
-        _aviso(context, 'Se agregaron ${d is Map ? d['creados'] : 0} campos (opcionales)');
+        final nuevos = d is Map ? (d['creados'] ?? 0) : 0;
+        final act = d is Map ? (d['actualizados'] ?? 0) : 0;
+        _aviso(
+            context,
+            'Campos nuevos: $nuevos'
+            '${act is num && act > 0 ? ' · Opciones completadas en $act campos' : ''}'
+            '${nuevos == 0 && (act is! num || act == 0) ? ' (ya estaba todo al día)' : ''}');
       }
     } catch (e) {
       if (mounted) _aviso(context, _msg(e));
