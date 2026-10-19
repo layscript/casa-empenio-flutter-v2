@@ -15,7 +15,10 @@ String setTimeToLocal(String hora) {
 /// horario de verano). No depende de la zona horaria del celular.
 DateTime? fechaPeru(String? iso) {
   if (iso == null || iso.isEmpty) return null;
-  final dt = DateTime.tryParse(iso);
+  // Si el texto no trae zona horaria, es hora del servidor (UTC)
+  var texto = iso.trim().replaceFirst(' ', 'T');
+  if (!RegExp(r'(Z|[+-]\d{2}:?\d{2})$').hasMatch(texto)) texto = '${texto}Z';
+  final dt = DateTime.tryParse(texto);
   if (dt == null) return null;
   final utc = dt.isUtc ? dt : dt.toUtc();
   return utc.subtract(const Duration(hours: 5));

@@ -353,6 +353,8 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
       observaciones: event.obs,
       userId: event.userId,
       url: imgUrl,
+      medioPago: event.medioPago,
+      banco: event.banco,
     );
     if (result) {
       emit(

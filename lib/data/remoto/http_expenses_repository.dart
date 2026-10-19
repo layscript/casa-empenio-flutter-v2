@@ -19,6 +19,8 @@ class HttpExpensesRepository implements ExpensesRepository {
     required double monto,
     required List<Map> url,
     required int sucursalId,
+    String? medioPago,
+    String? banco,
   }) async {
     const path = '/finanza/movimiento/gasto';
     final payload = {
@@ -27,6 +29,8 @@ class HttpExpensesRepository implements ExpensesRepository {
       'usuarioId': id,
       'imagenes': url,
       'sucursalId': sucursalId,
+      if (medioPago != null) 'medioPago': medioPago,
+      if (banco != null) 'banco': banco,
     };
 
     try {

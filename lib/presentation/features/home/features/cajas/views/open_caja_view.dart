@@ -83,13 +83,14 @@ class _OpenCajaViewState extends State<OpenCajaView> {
                               double ingresos = 0.0;
                               double egresos = 0.0;
                               for (var e in movimiento.movimientos!) {
+                                if (esAnulado(e)) continue;
                                 if (e.suma == true) {
                                   ingresos += double.parse(e.monto ?? '0.00');
                                 } else {
                                   egresos += double.parse(e.monto ?? '0.00');
                                 }
                               }
-                              final total = ingresos - egresos;
+                              final total = efectivoEnMano(movimiento.movimientos!);
                               return Column(
                                 children: [
                                   Container(
@@ -102,7 +103,7 @@ class _OpenCajaViewState extends State<OpenCajaView> {
                                     child: Column(
                                       children: [
                                         const Text(
-                                          'Saldo Actual en caja',
+                                          'Efectivo que debe haber en caja',
                                           style: TextStyle(
                                             color: Colors.white70,
                                             fontSize: 14,
@@ -118,7 +119,7 @@ class _OpenCajaViewState extends State<OpenCajaView> {
                                           ),
                                         ),
                                         const Text(
-                                          'Apertura + ingresos − egresos',
+                                          'Apertura + cobros en efectivo − egresos en efectivo',
                                           style: TextStyle(
                                             color: Colors.white60,
                                             fontSize: 11,

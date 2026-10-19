@@ -104,7 +104,9 @@ class ExpensesBloc extends Bloc<ExpensesEvent, ExpensesState> {
           url: images.map((e) {
             return {'url': e};
           }).toList(),
-          sucursalId: _preferences.token?.sucursal?.id ?? 1
+          sucursalId: _preferences.token?.sucursal?.id ?? 1,
+          medioPago: event.medioPago,
+          banco: event.banco,
         );
 
         result.fold(

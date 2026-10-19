@@ -13,6 +13,8 @@ abstract class ExpensesRepository {
     required double monto,
     required List<Map> url,
     required int sucursalId,
+    String? medioPago,
+    String? banco,
   });
 
   Future<Either<String, bool>> deleteExpense({

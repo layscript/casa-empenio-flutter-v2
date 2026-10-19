@@ -102,18 +102,9 @@ class _CloseBoxViewState extends State<CloseBoxView> {
               Builder(
                 builder: (context) {
                   final movimientos = state.movements?.movimientos ?? [];
-                  var movimientoDiferencia = 0.0;
-                  if (movimientos.isNotEmpty) {
-                    for (var movimiento in movimientos) {
-                      if (movimiento.suma == true) {
-                        movimientoDiferencia +=
-                            double.parse(movimiento.monto.toString());
-                      } else {
-                        movimientoDiferencia -=
-                            double.parse(movimiento.monto.toString());
-                      }
-                    }
-                  }
+                  // Solo el EFECTIVO cuenta: lo que entró/salió por depósito,
+                  // Yape o Plin no está dentro de la caja física.
+                  final movimientoDiferencia = efectivoEnMano(movimientos);
 
                   return Container(
                     width: double.infinity,
@@ -125,17 +116,18 @@ class _CloseBoxViewState extends State<CloseBoxView> {
                     child: Column(
                       children: [
                         Text(
-                          'Saldo Teórico (lo que debe haber): s/.${movimientoDiferencia.toStringAsFixed(2)}',
+                          'Efectivo que debe haber en caja: s/.${movimientoDiferencia.toStringAsFixed(2)}',
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             color: AppColors.white,
                           ),
                         ),
                         const SizedBox(height: 6),
-                        Text(
-                          'Efectivo que debe haber en mano: s/.${efectivoEnMano(movimientos).toStringAsFixed(2)}',
+                        const Text(
+                          'Cuenta solo el EFECTIVO (billetes y monedas). '
+                          'Depósitos, Yape y Plin no van aquí.',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.white,
                             fontSize: 12,
                           ),

@@ -102,12 +102,16 @@ class AddAmountLoan extends LoansEvent {
     required this.obs,
     required this.userId,
     required this.photos,
+    this.medioPago,
+    this.banco,
   });
   final int idPrestamo;
   final double monto;
   final String obs;
   final String userId;
   final List<XFile>? photos;
+  final String? medioPago;
+  final String? banco;
 }
 
 class CreateInvoiceLoans extends LoansEvent {
