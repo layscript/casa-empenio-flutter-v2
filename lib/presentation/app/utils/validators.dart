@@ -3,14 +3,36 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 String setTimeToLocal(String hora) {
-  final time = DateFormat('hh:mm:ss a').parse(hora).toLocal();
-  String formattedTime = DateFormat('hh:mm:ss a', 'es_ES').format(time);
-  return formattedTime;
+  try {
+    final time = DateFormat('hh:mm:ss a').parse(hora);
+    return DateFormat('hh:mm:ss a', 'es_ES').format(time);
+  } catch (_) {
+    return hora;
+  }
 }
 
-String setDateTimeToLocal(String fecha) {
-  return DateFormat('dd/MM/yyyy - hh:mm')
-      .format(DateTime.parse(fecha).toLocal());
+/// Convierte una fecha ISO del servidor (UTC) a hora de Perú (UTC-5, sin
+/// horario de verano). No depende de la zona horaria del celular.
+DateTime? fechaPeru(String? iso) {
+  if (iso == null || iso.isEmpty) return null;
+  final dt = DateTime.tryParse(iso);
+  if (dt == null) return null;
+  final utc = dt.isUtc ? dt : dt.toUtc();
+  return utc.subtract(const Duration(hours: 5));
+}
+
+/// Ej.: 18/10/2026 - 11:47 PM
+String setDateTimeToLocal(String? fecha) {
+  final d = fechaPeru(fecha);
+  if (d == null) return '-';
+  return DateFormat('dd/MM/yyyy - hh:mm a').format(d);
+}
+
+/// Ej.: 18/10/2026
+String fechaCortaPeru(String? fecha) {
+  final d = fechaPeru(fecha);
+  if (d == null) return '-';
+  return DateFormat('dd/MM/yyyy').format(d);
 }
 
 final removeBlankSpaces = [
