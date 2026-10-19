@@ -1,7 +1,7 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:excel/excel.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
@@ -37,11 +37,7 @@ class _LeadingDownloadCajasState extends State<LeadingDownloadCajas> {
           movimientos[i].observaciones,
           double.parse(movimientos[i].monto ?? '0.00'),
           movimientos[i].tipo?.codigo ?? '',
-          movimientos[i].createdAt != null
-              ? DateFormat('dd/MM/yyyy').format(
-                  DateTime.parse(movimientos[i].createdAt ?? ''),
-                )
-              : DateFormat('dd/MM/yyyy'),
+          fechaCortaPeru(movimientos[i].createdAt),
         ],
         i + 1,
       );

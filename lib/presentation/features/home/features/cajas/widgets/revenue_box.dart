@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:casa_empenio_pe/domain/caja/caja_entity.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -77,7 +78,7 @@ class _RevenueBoxState extends State<RevenueBox> {
                         'Monto: s/ ${movimiento.monto}',
                       ),
                       subtitle: Text(
-                        'Fecha: ${DateFormat('dd/MM/yyyy - hh:mm').format(DateTime.parse(movimiento.createdAt ?? '').toLocal())}',
+                        'Fecha: ${setDateTimeToLocal(movimiento.createdAt)}',
                         style: const TextStyle(
                           fontSize: 13,
                           color: AppColors.primaryText,

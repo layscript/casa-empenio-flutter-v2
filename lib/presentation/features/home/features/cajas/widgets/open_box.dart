@@ -53,12 +53,25 @@ class _OpenBoxViewState extends State<OpenBoxView> {
             ),
           ],
         ),
-        content: Column(
+        content: SingleChildScrollView(child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.blue[50],
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Text(
+                'Escribe el dinero en efectivo con el que empiezas el día (el sencillo/fondo inicial). Puedes dejar una observación.',
+                style: TextStyle(fontSize: 12.5),
+              ),
+            ),
+            const SizedBox(height: 14),
             AppTextFormField(
               controller: montoCtrl,
-              labelText: 'Monto',
+              labelText: 'Monto con el que abres (S/.)',
               keyboardType: TextInputType.number,
               isValid: (value) {
                 setState(() {
@@ -87,7 +100,7 @@ class _OpenBoxViewState extends State<OpenBoxView> {
               child: const Text('Continuar'),
             ),
           ],
-        ),
+        )),
       ),
     );
   }

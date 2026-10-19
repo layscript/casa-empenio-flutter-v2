@@ -54,12 +54,25 @@ class _IncreaseBoxViewState extends State<IncreaseBoxView> {
               ),
             ],
           ),
-          content: Column(
+          content: SingleChildScrollView(child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Text(
+                  'Úsalo cuando METES más dinero a la caja (ej.: aporte del dueño). Explica el motivo en observaciones.',
+                  style: TextStyle(fontSize: 12.5),
+                ),
+              ),
+              const SizedBox(height: 14),
               AppTextFormField(
                 controller: montoCtrl,
-                labelText: 'Monto',
+                labelText: 'Monto a aumentar (S/.)',
                 keyboardType: TextInputType.number,
                 isValid: (value) {
                   setState(() {
@@ -88,7 +101,7 @@ class _IncreaseBoxViewState extends State<IncreaseBoxView> {
                 child: const Text('Continuar'),
               ),
             ],
-          ),
+          )),
         );
       },
     );

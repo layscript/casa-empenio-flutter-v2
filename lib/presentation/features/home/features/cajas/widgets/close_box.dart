@@ -20,6 +20,14 @@ class _CloseBoxViewState extends State<CloseBoxView> {
   bool isValidMonto = false;
 
   @override
+  void initState() {
+    super.initState();
+    montoCtrl.addListener(() {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final auth = context.read<AuthBloc>().state as Authenticated;
 
@@ -55,12 +63,25 @@ class _CloseBoxViewState extends State<CloseBoxView> {
               ),
             ],
           ),
-          content: Column(
+          content: SingleChildScrollView(child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Text(
+                  '1) Cuenta el dinero que hay físicamente en caja. 2) Escribe ese monto. 3) Mira la diferencia: si es 0 la caja cuadra; si no, explica el motivo en observaciones.',
+                  style: TextStyle(fontSize: 12.5),
+                ),
+              ),
+              const SizedBox(height: 14),
               AppTextFormField(
                 controller: montoCtrl,
-                labelText: 'Monto',
+                labelText: 'Dinero contado en caja (S/.)',
                 keyboardType: TextInputType.number,
                 isValid: (value) {
                   setState(() {
@@ -100,12 +121,34 @@ class _CloseBoxViewState extends State<CloseBoxView> {
                       color: AppColors.green.withOpacity(0.9),
                       borderRadius: BorderRadius.circular(5),
                     ),
-                    child: Text(
-                      'Saldo Teórico: s/.$movimientoDiferencia',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: AppColors.white,
-                      ),
+                    child: Column(
+                      children: [
+                        Text(
+                          'Saldo Teórico (lo que debe haber): s/.${movimientoDiferencia.toStringAsFixed(2)}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: AppColors.white,
+                          ),
+                        ),
+                        if (double.tryParse(montoCtrl.text) != null) ...[
+                          const SizedBox(height: 6),
+                          Builder(builder: (_) {
+                            final dif = double.parse(montoCtrl.text) -
+                                movimientoDiferencia;
+                            return Text(
+                              dif.abs() < 0.005
+                                  ? '✔ La caja cuadra'
+                                  : (dif < 0
+                                      ? '⚠ Faltan s/.${dif.abs().toStringAsFixed(2)}'
+                                      : '⚠ Sobran s/.${dif.toStringAsFixed(2)}'),
+                              style: const TextStyle(
+                                color: AppColors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            );
+                          }),
+                        ],
+                      ],
                     ),
                   );
                 },
@@ -126,7 +169,7 @@ class _CloseBoxViewState extends State<CloseBoxView> {
                 child: const Text('Continuar'),
               ),
             ],
-          ),
+          )),
         );
       },
     );
