@@ -58,14 +58,26 @@ class _AppDrawerState extends State<AppDrawer> {
               itemCount: homeState.modulos?.length,
               itemBuilder: (context, index) {
                 final modulo = homeState.modulos?[index];
+                final activo = homeState.selected == modulo;
                 return ListTile(
-                  tileColor:
-                      homeState.selected == modulo ? Colors.black12 : null,
+                  tileColor: activo ? AppColors.blue.withOpacity(0.10) : null,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 18),
                   leading: FaIcon(
                     getIcon(modulo?.id ?? 19),
                     size: 20,
+                    color: activo ? AppColors.blue : AppColors.secondaryText,
                   ),
-                  title: Text(modulo?.nombre.toUpperCase() ?? 'aea'),
+                  title: Text(
+                    modulo?.nombre.toUpperCase() ?? '',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: activo ? FontWeight.bold : FontWeight.w500,
+                      color: activo ? AppColors.blue : AppColors.primaryText,
+                    ),
+                  ),
                   onTap: () {
                     preferences.setRefresh(true);
                     context.read<HomeBloc>().add(
@@ -117,9 +129,13 @@ class AppDrawerHeader extends StatelessWidget {
 
     return DrawerHeader(
       margin: EdgeInsets.zero,
-      /* decoration: const BoxDecoration(
-        color: Color.fromARGB(255, 7, 91, 65),
-      ), */
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF0D3EFB), Color(0xFF3F7BFF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -141,7 +157,7 @@ class AppDrawerHeader extends StatelessWidget {
                 '${auth.nombre} ${auth.apellido}',
                 maxLines: 1,
                 style: const TextStyle(
-                  color: AppColors.primaryText,
+                  color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
@@ -149,7 +165,7 @@ class AppDrawerHeader extends StatelessWidget {
               Text(
                 '${auth.role?.nombre} ',
                 style: const TextStyle(
-                  color: AppColors.primaryText,
+                  color: Colors.white,
                   fontSize: 13,
                 ),
               ),
@@ -162,7 +178,7 @@ class AppDrawerHeader extends StatelessWidget {
                 'username',
                 maxLines: 1,
                 style: TextStyle(
-                  color: AppColors.black,
+                  color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
@@ -170,7 +186,7 @@ class AppDrawerHeader extends StatelessWidget {
               const Text(
                 'role',
                 style: TextStyle(
-                  color: AppColors.black,
+                  color: Colors.white,
                   fontSize: 13,
                 ),
               ),
