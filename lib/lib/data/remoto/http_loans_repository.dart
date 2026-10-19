@@ -1,0 +1,992 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:casa_empenio_pe/presentation/app/config/config.dart';
+import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
+
+class HttpLoansRepository implements LoansRepository {
+  const HttpLoansRepository({
+    required Dio dio,
+    required CustomerRepository customerRepository,
+  })  : _dio = dio,
+        _customerRepository = customerRepository;
+
+  final Dio _dio;
+  final CustomerRepository _customerRepository;
+
+  @override
+  Future<Either<String, int>> getLastCode() async {
+    const path = '/prestamos/prestamos/ultimoCodigo';
+    try {
+      final response = await _dio.get<String>(path);
+      if (response.statusCode != 200) {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final message = map['message'] ?? 'Ocurrió un error';
+        return Left(message);
+      } else {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final code = map['body'] as int;
+        return Right(code);
+      }
+    } catch (e, stackTrace) {
+      //print('responseee ee: $e');
+      return const Left('Ocurrió un error con el servidor');
+    }
+  }
+
+  @override
+  Future<Either<String, LoansEntity>> getLoan({
+    required int id,
+    required int? userId,
+  }) async {
+    final path = '/prestamos/prestamos/$id';
+    try {
+      final response = await _dio.get<String>(path);
+      if (response.statusCode != 200) {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final message = map['message'] ?? 'Ocurrió un error';
+        return Left(message);
+      } else {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        if (userId != null) {
+          await _customerRepository.createHistory(
+            accion: 'VISUALIZAR',
+            detalle: 'ver detalle del prestamo con el codigo: $id',
+            usuarioId: userId,
+          );
+        }
+
+        if (map['body'] == null) {
+          return const Left('No hay información registrada');
+        } else {
+          return Right(LoansEntity.getLoanFromMap(map['body']));
+        }
+      }
+    } catch (e, stackTrace) {
+      return const Left('Ocurrió un error con el servidor');
+    }
+  }
+
+  @override
+  Future<Either<String, List<LoansEntity>>> getLoans({
+    required String? criterio,
+    required int sucursal,
+    required int? userId,
+    String? categoria,
+    int offset = 0,
+  }) async {
+    const path = '/prestamos/prestamos/criterio';
+    final payload = {
+      'criterio': criterio != null
+          ? criterio.isEmpty
+              ? null
+              : criterio
+          : null,
+      'sucursal': sucursal,
+      'categoria': categoria,
+      'limit': 10,
+      'offset': offset
+    };
+
+    try {
+      final response = await _dio.post<String>(path, data: payload);
+      if (response.statusCode != 201) {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final message = map['message'] ?? 'Ocurrió un error';
+        return Left(message);
+      } else {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final body = map['body'][0];
+        if (userId != null) {
+          await _customerRepository.createHistory(
+            accion: 'BUSQUEDA',
+            detalle: 'busqueda en prestamos con el criterio: $criterio',
+            usuarioId: userId,
+          );
+        }
+        return Right(LoansEntity.listGetSalesDetailFromMap(body));
+      }
+    } catch (e, stackTrace) {
+      return const Left('Ocurrió un error con el servidor');
+    }
+  }
+
+  @override
+  Future<Either<String, ContratoEntity>> saveLoan({
+    required int plazoDias,
+    required double interes,
+    required DateTime fechaPago,
+    required double monto,
+    required String observaciones,
+    required CustomerEntity cliente,
+    required CustomerEntity? aval,
+    required List<Map<String, dynamic>> bienes,
+    required String usuarioId,
+    required bool renew,
+    required int? cajaId,
+    required int? sucursalId,
+    int? parentLoanId,
+  }) async {
+    const path = '/prestamos/prestamos';
+
+    final endDateTime = DateTime(
+      fechaPago.year,
+      fechaPago.month,
+      fechaPago.day,
+      23,
+      59,
+      59,
+    );
+
+    final payload = {
+      'plazoDias': plazoDias,
+      'interes': interes,
+      'fechaPago': endDateTime.toIso8601String(),
+      'monto': monto,
+      'observaciones': observaciones,
+      'cliente': {
+        'nombres': cliente.nombres,
+        'apellidos': cliente.apellidos,
+        'dni': cliente.dni,
+        'celular': cliente.celular,
+        'email': cliente.email,
+        'domicilio': cliente.domicilio,
+      },
+      'aval': aval == null
+          ? null
+          : {
+              'nombres': aval.nombres,
+              'apellidos': aval.apellidos,
+              'dni': aval.dni,
+              'celular': aval.celular,
+              'email': aval.email,
+              'domicilio': aval.domicilio,
+            },
+      'bienesGarantia': bienes,
+      'usuarioId': usuarioId,
+      'isRenewed': renew,
+      'cajaId': cajaId,
+      'sucursalId': sucursalId,
+    };
+    // Renovación inteligente: el servidor enlaza este préstamo con el anterior
+    if (renew && parentLoanId != null && parentLoanId > 0) {
+      payload['parentLoanId'] = parentLoanId;
+    }
+
+    try {
+      final response = await _dio.post<String>(path, data: payload);
+      if (response.statusCode != 201) {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final message = map['message'] ?? 'Ocurrió un error';
+        return Left(message);
+      } else {
+        // Crear historial
+        await _customerRepository.createHistory(
+          accion: 'CREAR',
+          detalle:
+              'crear prestamo con el codigo: ${json.decode(response.data!)['body']['codigo']}',
+          usuarioId: int.parse(usuarioId),
+        );
+
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final bienesResponse = map['body']['bienesGarantia'] as List<dynamic>?;
+
+        if (cliente.imagenUno != null) {
+          await updateCustomerPhotos(
+            dni: (cliente.dni ?? '').trim(),
+            imagen: cliente.imagenUno!,
+            imagen2: cliente.imagenDos,
+          );
+        }
+
+        if (aval != null && aval.imagenUno != null) {
+          await updateCustomerPhotos(
+            dni: (aval.dni ?? '').trim(),
+            imagen: aval.imagenUno!,
+            imagen2: aval.imagenDos,
+          );
+        }
+
+        if (bienesResponse != null) {
+          for (var bienResponse in bienesResponse) {
+            final imagenUno = bienResponse['imagen'] as String?;
+            if (imagenUno != null) {
+              final imagenDos = bienResponse['imagen2'] as String?;
+              final imagenTres = bienResponse['imagen3'] as String?;
+
+              await updateWarrantyPhotos(
+                idGarantia: bienResponse['id'],
+                imagen: imagenUno!,
+                imagen2: imagenDos,
+                imagen3: imagenTres,
+              );
+            }
+          }
+        }
+
+        final prendas = bienes
+            .map(
+              (e) => PrendaEntity(
+                nombre: e['descripcion'],
+                marca: e['marca'],
+                modelo: e['modelo'],
+                serie: e['serie'],
+                color: e['color'],
+                estado: e['estado'],
+              ),
+            )
+            .toList();
+
+        final contrato = ContratoEntity(
+          interes: interes,
+          numero: json.decode(response.data!)['body']['codigo'],
+          nombre: '${cliente.nombres} ${cliente.apellidos}',
+          dni: cliente.dni ?? '',
+          domicilio: cliente.domicilio ?? '',
+          fechaVencimiento: endDateTime,
+          monto: monto,
+          montoPagar: monto + (monto * interes / 100),
+          prendas: prendas,
+          nombreAval: aval == null
+              ? ''
+              : '${aval.nombres ?? ''} ${aval.apellidos ?? ''}',
+          dniAval: aval == null ? '' : aval.dni ?? '',
+        );
+
+        return Right(contrato);
+      }
+    } catch (e, stackTrace) {
+      return const Left('Ocurrió un error con el servidor');
+    }
+  }
+
+  @override
+  Future<Either<String, Map<String, dynamic>>> getResumenPeriodo({
+    required DateTime inicio,
+    required DateTime fin,
+    required int sucursalId,
+  }) async {
+    try {
+      final response = await _dio.post<String>(
+        '/prestamos/reportes/resumen',
+        data: {
+          'fechaInicio': inicio.toUtc().toIso8601String(),
+          'fechaFin': fin.toUtc().toIso8601String(),
+          'sucursalId': sucursalId,
+        },
+      );
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        return const Left('No se pudo cargar el resumen');
+      }
+      final map = json.decode(response.data!) as Map<String, dynamic>;
+      return Right((map['body'] as Map).cast<String, dynamic>());
+    } catch (e) {
+      return const Left('No se pudo cargar el resumen');
+    }
+  }
+
+  @override
+  Future<Either<String, Map<String, dynamic>>> getPanel({
+    required int sucursalId,
+  }) async {
+    try {
+      final response =
+          await _dio.get<String>('/prestamos/prestamos/panel/$sucursalId');
+      if (response.statusCode != 200) {
+        return const Left('No se pudo cargar el panel');
+      }
+      final map = json.decode(response.data!) as Map<String, dynamic>;
+      return Right((map['body'] as Map).cast<String, dynamic>());
+    } catch (e) {
+      return const Left('No se pudo cargar el panel');
+    }
+  }
+
+  @override
+  Future<bool> savePayment({
+    required int codigo,
+    required double monto,
+    required String userId,
+    //required List<XFile>? photos,
+    required String url,
+    required bool? efectivo,
+    required int? cajaId,
+    bool isLiquidacion = false,
+    String? medioPago,
+    String? banco,
+  }) async {
+    const path = '/prestamos/pagos';
+    final payload = <String, dynamic>{
+      'monto': monto,
+      'prestamoId': codigo,
+      'usuarioId': userId,
+      'cajaId': cajaId,
+      'isLiquidacion': isLiquidacion,
+      'url': url,
+    };
+
+    if (efectivo != null) {
+      payload['efectivo'] = efectivo;
+    }
+    if (medioPago != null) {
+      payload['medioPago'] = medioPago;
+      payload['efectivo'] = medioPago == 'EFECTIVO';
+    }
+    if (banco != null && banco.trim().isNotEmpty) {
+      payload['banco'] = banco.trim();
+    }
+    try {
+      final response = await _dio.post<String>(path, data: payload);
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        await _customerRepository.createHistory(
+          accion: 'PAGAR',
+          detalle: 'realizar el pago del prestamo del codigo: $codigo',
+          usuarioId: int.parse(userId),
+        );
+        return true;
+      } else {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final message = map['message'] ?? 'Ocurrió un error';
+        //return Left(message);
+        return false;
+      }
+    } catch (e, stackTrace) {
+      //print('responseee ee: $e');
+      //return const Left('Ocurrió un error 2');
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> addAmountLoan({
+    required int codigo,
+    required double monto,
+    required String observaciones,
+    required String userId,
+    required String url,
+  }) async {
+    const path = '/prestamos/prestamos/aumentarMonto';
+    final payload = {
+      'monto': monto,
+      'prestamoId': codigo,
+      'observaciones': observaciones,
+      'usuarioId': userId,
+      'url': url,
+    };
+    try {
+      final response = await _dio.post<String>(path, data: payload);
+      if (response.statusCode != 201) {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final message = map['message'] ?? 'Ocurrió un error';
+        return false;
+      } else {
+        await _customerRepository.createHistory(
+          accion: 'AGREGAR MONTO',
+          detalle: 'Agregar monto del prestamo del codigo: $codigo',
+          usuarioId: int.parse(userId),
+        );
+        return true;
+      }
+    } catch (e, stackTrace) {
+      //print('responseee ee: $e');
+      //return const Left('Ocurrió un error 2');
+      return false;
+    }
+  }
+
+  @override
+  Future<Uint8List> createInvoicePdf({required String url}) async {
+    try {
+      // Las proformas se generan en nuestro propio servidor (carpeta /files);
+      // el resto de comprobantes siguen descargandose del servicio de facturacion.
+      final esProformaLocal = url.startsWith('proforma-');
+      final dio = Dio(BaseOptions(
+        baseUrl: esProformaLocal ? '$endPointPrincipal/files/' : downloadFactura,
+      ));
+      final path = url;
+      final response = await dio.get<List<int>>(
+        path,
+        options: Options(
+          responseType: ResponseType.bytes,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return Uint8List.fromList(response.data!);
+      } else {
+        return Uint8List(0);
+      }
+    } catch (e, stackTrace) {
+      return Uint8List(0);
+    }
+  }
+
+  @override
+  Future<void> createLoanNote({required String id}) async {
+    const path = '/facturacion/facturacion/nota/empenio';
+    final payload = {'prestamoId': id};
+    try {
+      final response = await _dio.post<String>(path, data: payload);
+      if (response.statusCode != 201) {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final message = map['message'] ?? 'Ocurrió un error';
+        /*  return false; */
+        //return Left(message);
+      } else {
+        //final map = json.decode(response.data!) as Map<String, dynamic>;
+        //return const Right(true);
+        /* return true; */
+      }
+    } catch (e, stackTrace) {
+      //print('responseee ee: $e');
+      //return const Left('Ocurrió un error 2');
+      /* return false; */
+    }
+  }
+
+  @override
+  Future<void> createSalesNote({required String id}) async {
+    const path = '/facturacion/facturacion/nota/venta';
+    final payload = {'ventaId': id};
+    try {
+      final response = await _dio.post<String>(path, data: payload);
+      if (response.statusCode != 201) {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final message = map['message'] ?? 'Ocurrió un error';
+        /*  return false; */
+        //return Left(message);
+      } else {
+        //final map = json.decode(response.data!) as Map<String, dynamic>;
+        //return const Right(true);
+        /* return true; */
+      }
+    } catch (e, stackTrace) {
+      //print('responseee ee: $e');
+      //return const Left('Ocurrió un error 2');
+      /* return false; */
+    }
+  }
+
+  @override
+  Future<bool> createInvoceLoans({
+    required String dni,
+    required String fullName,
+    required String? direccion,
+    required int idPrestamo,
+    required String userId,
+  }) async {
+    final payload = {
+      'dni': dni,
+      'nombreCompleto': fullName,
+      'direccion': direccion,
+      'prestamoId': idPrestamo,
+    };
+
+    const path = '/facturacion/facturacion/';
+
+    try {
+      final response = await _dio.post<String>(path, data: payload);
+      if (response.statusCode != 201) {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final message = map['message'] ?? 'Ocurrió un error';
+        return false;
+      } else {
+        await _customerRepository.createHistory(
+          accion: 'GENERAR BOLETA',
+          detalle:
+              'Generar boleta electrónica del prestamo del codigo: $idPrestamo',
+          usuarioId: int.parse(userId),
+        );
+        return true;
+        //final map = json.decode(response.data!) as Map<String, dynamic>;
+        //return const Right(true);
+        /* return true; */
+      }
+    } catch (e, stackTrace) {
+      return false;
+      //print('responseee ee: $e');
+      //return const Left('Ocurrió un error 2');
+      /* return false; */
+    }
+  }
+
+  @override
+  Future<Either<String, ReportsPaymentEntity>> getPayments({
+    required int id,
+  }) async {
+    final path = '/prestamos/pagos/$id';
+    try {
+      final response = await _dio.get<String>(path);
+      if (response.statusCode != 200) {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final message = map['message'] ?? 'Ocurrió un error';
+        return Left(message);
+      } else {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final body = map['body'];
+        return Right(ReportsPaymentEntity.getReportsPaymentFromMap(body));
+      }
+    } catch (e, stackTrace) {
+      //print('responseee ee: $e');
+      return const Left('Ocurrió un error con el servidor');
+    }
+  }
+
+  @override
+  Future<Either<String, bool>> deletePayment({
+    required int id,
+    required int userId,
+  }) async {
+    final path = '/prestamos/pagos/eliminar/$id';
+    final payload = {
+      'usuarioId': userId,
+    };
+
+    try {
+      final response = await _dio.put<String>(
+        path,
+        data: payload,
+      );
+      if (response.statusCode != 200) {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final message = map['message'] ?? 'Ocurrió un error';
+        return Left(message);
+      } else {
+        /*  final map = json.decode(response.data!) as Map<String, dynamic>;
+        final body = map['body']; */
+        return const Right(true);
+      }
+    } catch (e, stackTrace) {
+      //print('responseee ee: $e');
+      return const Left('Ocurrió un error con el servidor');
+    }
+  }
+
+  @override
+  Future<bool> payOffLoan({
+    required int id,
+    required int idPrestamo,
+    required String userId,
+  }) async {
+    final path = '/prestamos/prestamos/liquidar/$id';
+
+    try {
+      final response = await _dio.put<String>(path);
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        await _customerRepository.createHistory(
+          accion: 'LIQUIDAR',
+          detalle:
+              'realizar la liquidacion del prestamo del codigo: $idPrestamo',
+          usuarioId: int.parse(userId),
+        );
+
+        return true;
+      } else {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final message = map['message'] ?? 'Ocurrió un error';
+        //return Left(message);
+        return false;
+      }
+    } catch (e, stackTrace) {
+      //print('responseee ee: $e');
+      //return const Left('Ocurrió un error 2');
+      return false;
+    }
+  }
+
+  @override
+  Future<Either<String, String>> createImagePagos({
+    required String path,
+  }) async {
+    final img = File(path);
+    try {
+      const path = '/prestamos/prestamos/imagenPagos';
+      FormData formData = FormData.fromMap({
+        'imagen': await MultipartFile.fromFile(
+          img.path,
+          filename: img.path.split('/').last,
+        )
+      });
+
+      final response = await _dio.put(path, data: formData);
+      if (response.statusCode == 200) {
+        final body = response.data['body']['imagenPagos'] as String;
+        return Right(body);
+      } else {
+        return const Left('No se pudo grabar la imagen');
+      }
+    } catch (e, stackTrace) {
+      return Left(e.toString());
+    }
+  }
+
+  @override
+  Future<Either<String, String>> createImageAumentos({
+    required String path,
+  }) async {
+    final img = File(path);
+    try {
+      const path = '/prestamos/prestamos/imagenAumentos';
+      FormData formData = FormData.fromMap({
+        'imagen': await MultipartFile.fromFile(
+          img.path,
+          filename: img.path.split('/').last,
+        )
+      });
+
+      final response = await _dio.put(path, data: formData);
+      if (response.statusCode == 200) {
+        final body = response.data['body']['imagenAumentos'] as String;
+        return Right(body);
+      } else {
+        return const Left('No se pudo grabar la imagen');
+      }
+    } catch (e, stackTrace) {
+      return Left(e.toString());
+    }
+  }
+
+// TODO:: Probar Aca 2
+
+  /// Un archivo es "local" (recién tomado con la cámara/galería) solo si existe
+  /// en el teléfono. Las rutas del servidor (ya subidas) no existen aquí.
+  bool _esArchivoLocal(String? ruta) {
+    if (ruta == null || ruta.isEmpty) return false;
+    try {
+      return File(ruta).existsSync();
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Sube las fotos del cliente con hasta 3 intentos (si falla internet un
+  /// instante, ya no se pierde la foto en silencio).
+  Future<bool> updateCustomerPhotos({
+    required String dni,
+    required String? imagen,
+    required String? imagen2,
+  }) async {
+    for (var intento = 1; intento <= 3; intento++) {
+      final ok = await _updateCustomerPhotosOnce(
+        dni: dni,
+        imagen: imagen,
+        imagen2: imagen2,
+      );
+      if (ok) return true;
+      await Future.delayed(Duration(seconds: intento));
+    }
+    return false;
+  }
+
+  Future<bool> updateWarrantyPhotos({
+    required String? imagen,
+    required String? imagen2,
+    required String? imagen3,
+    required int idGarantia,
+  }) async {
+    for (var intento = 1; intento <= 3; intento++) {
+      final ok = await _updateWarrantyPhotosOnce(
+        imagen: imagen,
+        imagen2: imagen2,
+        imagen3: imagen3,
+        idGarantia: idGarantia,
+      );
+      if (ok) return true;
+      await Future.delayed(Duration(seconds: intento));
+    }
+    return false;
+  }
+
+  Future<bool> _updateCustomerPhotosOnce({
+    required String dni,
+    required String? imagen,
+    required String? imagen2,
+  }) async {
+    try {
+      FormData formData = FormData();
+      if (_esArchivoLocal(imagen)) {
+        final imagenPath = imagen!;
+        final img = File(imagenPath);
+        formData.files.add(MapEntry(
+            'imagen',
+            await MultipartFile.fromFile(
+              img.path,
+              filename: img.path.split('/').last,
+            )));
+      }
+      if (_esArchivoLocal(imagen2)) {
+        final imagen2Path = imagen2!;
+        final img2 = File(imagen2Path);
+        formData.files.add(MapEntry(
+            'imagen2',
+            await MultipartFile.fromFile(
+              img2.path,
+              filename: img2.path.split('/').last,
+            )));
+      }
+      if (formData.files.isNotEmpty) {
+        final path = '/clientes/clientes/imagenCliente/$dni';
+        final response = await _dio.put(path, data: formData);
+        if (response.statusCode == 201 || response.statusCode == 200) {
+          return true;
+        } else {
+          return false;
+        }
+      } else {
+        return true;
+      }
+    } catch (e, stackTrace) {
+      return false;
+    }
+  }
+
+  Future<bool> _updateWarrantyPhotosOnce({
+    required String? imagen,
+    required String? imagen2,
+    required String? imagen3,
+    required int idGarantia,
+  }) async {
+    final data = {
+      'imagen': imagen,
+      'imagen2': imagen2,
+      'imagen3': imagen3,
+      'id': idGarantia,
+    };
+
+    try {
+      FormData formData = FormData();
+      if (_esArchivoLocal(imagen)) {
+        final imagenPath = imagen!;
+        final img = File(imagenPath);
+        formData.files.add(MapEntry(
+            'imagen',
+            await MultipartFile.fromFile(
+              img.path,
+              filename: img.path.split('/').last,
+            )));
+      }
+      if (_esArchivoLocal(imagen2)) {
+        final imagen2Path = imagen2!;
+        final img2 = File(imagen2Path);
+        formData.files.add(MapEntry(
+            'imagen2',
+            await MultipartFile.fromFile(
+              img2.path,
+              filename: img2.path.split('/').last,
+            )));
+      }
+      if (_esArchivoLocal(imagen3)) {
+        final imagen3Path = imagen3!;
+        final img3 = File(imagen3Path);
+        formData.files.add(MapEntry(
+            'imagen3',
+            await MultipartFile.fromFile(
+              img3.path,
+              filename: img3.path.split('/').last,
+            )));
+      }
+      if (formData.files.isNotEmpty) {
+        final path = '/prestamos/prestamos/imagenGarantia/$idGarantia';
+        final response = await _dio.put(path, data: formData);
+        if (response.statusCode == 201 || response.statusCode == 200) {
+          return true;
+        } else {
+          return false;
+        }
+      } else {
+        return true;
+      }
+    } catch (e, stackTrace) {
+      return false;
+    }
+  }
+
+  @override
+  Future<Either<String, bool>> updateLoan({
+    required int plazoDias,
+    required double interes,
+    required DateTime fechaPago,
+    required double monto,
+    required String observaciones,
+    required CustomerEntity cliente,
+    required CustomerEntity? aval,
+    required List<Map<String, dynamic>> bienes,
+    required String usuarioId,
+    required int idLoan,
+    required int? cajaId,
+    required int? sucursalId,
+  }) async {
+    final path = '/prestamos/prestamos/$idLoan';
+
+    final payload = {
+      'plazoDias': plazoDias,
+      'interes': interes,
+      'fechaPago': fechaPago.toIso8601String(),
+      'monto': monto,
+      'observaciones': observaciones,
+      'cliente': {
+        'nombres': cliente.nombres,
+        'apellidos': cliente.apellidos,
+        'dni': cliente.dni,
+        'celular': cliente.celular,
+        'email': cliente.email,
+        'domicilio': cliente.domicilio,
+      },
+      'aval': aval == null
+          ? null
+          : {
+              'nombres': aval.nombres,
+              'apellidos': aval.apellidos,
+              'dni': aval.dni,
+              'celular': aval.celular,
+              'email': aval.email,
+              'domicilio': aval.domicilio,
+            },
+      'bienesGarantia': bienes,
+      'adminId': usuarioId,
+      'isRenewed': false,
+      'cajaId': cajaId,
+      'sucursalId': sucursalId,
+    };
+
+    try {
+      final response = await _dio.put<String>(path, data: payload);
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        await _customerRepository.createHistory(
+          accion: 'ACTUALIZAR',
+          detalle: 'actualizar prestamo del codigo: $idLoan',
+          usuarioId: int.parse(usuarioId),
+        );
+
+        final bienesResponse = map['body']['bienesGarantia'] as List<dynamic>?;
+
+        if (cliente.imagenUno != null) {
+          await updateCustomerPhotos(
+            dni: (cliente.dni ?? '').trim(),
+            imagen: cliente.imagenUno!,
+            imagen2: cliente.imagenDos,
+          );
+        }
+
+        if (aval != null && aval.imagenUno != null) {
+          await updateCustomerPhotos(
+            dni: (aval.dni ?? '').trim(),
+            imagen: aval.imagenUno!,
+            imagen2: aval.imagenDos,
+          );
+        }
+
+        if (bienesResponse != null) {
+          for (var bienResponse in bienesResponse) {
+            final imagenUno = bienResponse['imagen'] as String?;
+            final imagenDos = bienResponse['imagen2'] as String?;
+            final imagenTres = bienResponse['imagen3'] as String?;
+
+            final mapa = {
+              'idGarantia': bienResponse['id'],
+              'imagen': imagenUno,
+              'imagen2': imagenDos,
+              'imagen3': imagenTres,
+            };
+
+            final exito = await updateWarrantyPhotos(
+              idGarantia: bienResponse['id'],
+              imagen: imagenUno,
+              imagen2: imagenDos,
+              imagen3: imagenTres,
+            );
+
+            if (!exito) {
+              return const Left(
+                'Ocurrió un problema con las imágenes de la garantía',
+              );
+            }
+          }
+        }
+
+        return const Right(true);
+      } else {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final message = map['message'] ?? 'Ocurrió un error';
+        return Left(message);
+      }
+    } catch (e, stackTrace) {
+      return const Left('Ocurrió un error con el servidor');
+    }
+  }
+
+  @override
+  Future<Either<String, bool>> deleteLoan({
+    required int idLoan,
+    required String userId,
+  }) async {
+    final path = '/prestamos/prestamos/$idLoan/$userId';
+    try {
+      final response = await _dio.delete<String>(path);
+      if (response.statusCode != 200) {
+        final map = json.decode(response.data!) as Map<String, dynamic>;
+        final message = map['message'] ?? 'Ocurrió un error';
+        return Left(message);
+      } else {
+        await _customerRepository.createHistory(
+          accion: 'ELIMINAR',
+          detalle: 'eliminar el prestamo con el codigo: $idLoan',
+          usuarioId: int.parse(userId),
+        );
+        return const Right(true);
+      }
+    } catch (e, stackTrace) {
+      //print('responseee ee: $e');
+      return Left(e.toString());
+    }
+  }
+
+  @override
+  Future<bool> anularLoan({
+    required int idLoan,
+    required String userId,
+  }) async {
+    final path = '/prestamos/prestamos/anularPrestamo/$idLoan';
+    try {
+      final response = await _dio.put<String>(path);
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        await _customerRepository.createHistory(
+          accion: 'ANULAR',
+          detalle: 'anular el prestamo con el codigo: $idLoan',
+          usuarioId: int.parse(userId),
+        );
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e, stackTrace) {
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> updateStatusLoan({
+    required int idLoan,
+    required String value,
+  }) async {
+    final path = '/prestamos/prestamos/cambiar-estado/$idLoan';
+    final payload = {
+      'estado': value,
+    };
+
+    try {
+      final response = await _dio.put<String>(path, data: payload);
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e, stackTrace) {
+      return false;
+    }
+  }
+}
