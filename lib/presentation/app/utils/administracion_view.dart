@@ -113,7 +113,7 @@ class AdministracionView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 7,
+      length: 9,
       child: Column(
         children: [
           Container(
@@ -123,11 +123,13 @@ class AdministracionView extends StatelessWidget {
               labelColor: Colors.black87,
               tabs: [
                 Tab(icon: Icon(Icons.home), text: 'Inicio'),
-                Tab(icon: Icon(Icons.admin_panel_settings), text: 'Puestos y módulos'),
                 Tab(icon: Icon(Icons.people), text: 'Usuarios'),
+                Tab(icon: Icon(Icons.store), text: 'Sucursales'),
+                Tab(icon: Icon(Icons.admin_panel_settings), text: 'Puestos y módulos'),
                 Tab(icon: Icon(Icons.shield), text: 'Permisos'),
                 Tab(icon: Icon(Icons.how_to_reg), text: 'Solicitudes'),
                 Tab(icon: Icon(Icons.playlist_add_check), text: 'Campos'),
+                Tab(icon: Icon(Icons.category), text: 'Catálogos'),
                 Tab(icon: Icon(Icons.tune), text: 'Sistema'),
               ],
             ),
@@ -136,11 +138,13 @@ class AdministracionView extends StatelessWidget {
             child: TabBarView(
               children: [
                 _InicioTab(),
-                _RolesTab(),
                 _UsuariosTab(),
+                _SucursalesTab(),
+                _RolesTab(),
                 _PermisosTab(),
                 _SolicitudesTab(),
                 _CamposTab(),
+                _CatalogosTab(),
                 _SistemaTab(),
               ],
             ),
@@ -259,18 +263,22 @@ class _InicioTabState extends State<_InicioTab> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ),
           _opcion(Icons.how_to_reg, Colors.red, 'Aprobar solicitudes',
-              'Personas que pidieron permiso para una acción bloqueada.', 4,
+              'Personas que pidieron permiso para una acción bloqueada.', 5,
               insignia: _pendientes > 0 ? '$_pendientes' : null),
+          _opcion(Icons.people, Colors.teal, 'Usuarios',
+              'Cree, edite o elimine a las personas que usan el sistema.', 1),
+          _opcion(Icons.store, Colors.green, 'Sucursales',
+              'Agregue y edite los locales de su negocio.', 2),
           _opcion(Icons.shield, Colors.indigo, 'Controlar qué puede hacer cada puesto',
-              'Ordene los puestos por autoridad y bloquee crear, editar, eliminar o anular.', 3),
-          _opcion(Icons.people, Colors.teal, 'Asignar puestos a las personas',
-              'Cambie el puesto de un usuario o márquelo como administrador.', 2),
+              'Ordene los puestos por autoridad y bloquee crear, editar, eliminar o anular.', 4),
           _opcion(Icons.admin_panel_settings, Colors.blueGrey, 'Elegir qué ve cada puesto en el menú',
-              'Cree puestos y marque los módulos que pueden abrir.', 1),
+              'Cree puestos y marque los módulos que pueden abrir.', 3),
           _opcion(Icons.playlist_add_check, Colors.orange, 'Campos extra por categoría',
-              'Por ejemplo, "Placa" solo para Vehículos.', 5),
+              'Por ejemplo, "Placa" solo para Vehículos.', 6),
+          _opcion(Icons.category, Colors.purple, 'Catálogos',
+              'Categorías de productos, tipos de movimiento e intereses.', 7),
           _opcion(Icons.tune, Colors.brown, 'Configuración del sistema',
-              'Mora, tasas de interés, descuentos y rangos.', 6),
+              'Mora, tasas de interés, descuentos y rangos.', 8),
           const Padding(
             padding: EdgeInsets.all(16),
             child: Text(
@@ -615,6 +623,7 @@ class _UsuariosTabState extends State<_UsuariosTab> {
   final TextEditingController _buscar = TextEditingController();
   List<Map<String, dynamic>> _usuarios = <Map<String, dynamic>>[];
   List<Map<String, dynamic>> _roles = <Map<String, dynamic>>[];
+  List<Map<String, dynamic>> _sucursales = <Map<String, dynamic>>[];
   bool _cargando = true;
   String? _error;
 
@@ -640,58 +649,42 @@ class _UsuariosTabState extends State<_UsuariosTab> {
       final rr = await _dio.get('/auth/roles', queryParameters: {'limit': 200, 'offset': 0});
       _usuarios = _filas(_cuerpo(ru));
       _roles = _filas(_cuerpo(rr));
+      try {
+        final rs = await _dio.get('/sucursal');
+        _sucursales = _filas(_cuerpo(rs));
+      } catch (_) {}
     } catch (e) {
       _error = _msg(e);
     }
     if (mounted) setState(() => _cargando = false);
   }
 
-  Future<void> _editar(Map<String, dynamic> u) async {
-    int rolId = (u['role'] is Map ? (u['role']['id'] as num?)?.toInt() : null) ?? 0;
-    bool esAdmin = u['isAdmin'] == true;
-    final guardar = await showDialog<bool>(
+  Future<void> _formulario({Map<String, dynamic>? u}) async {
+    final r = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setS) => AlertDialog(
-          title: Text('${u['nombre'] ?? ''} ${u['apellido'] ?? ''}'.trim()),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<int>(
-                value: _roles.any((r) => (r['id'] as num).toInt() == rolId) ? rolId : null,
-                decoration: const InputDecoration(labelText: 'Rol (puesto)'),
-                items: [
-                  for (final r in _roles)
-                    DropdownMenuItem<int>(
-                      value: (r['id'] as num).toInt(),
-                      child: Text((r['nombre'] ?? '').toString()),
-                    ),
-                ],
-                onChanged: (v) => setS(() => rolId = v ?? rolId),
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Es administrador'),
-                subtitle: const Text('Acceso total de administración'),
-                value: esAdmin,
-                onChanged: (v) => setS(() => esAdmin = v),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-            ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Guardar')),
-          ],
-        ),
-      ),
+      builder: (_) => _UsuarioDialog(usuario: u, roles: _roles, sucursales: _sucursales),
     );
-    if (guardar != true) return;
+    if (r == null) return;
     try {
-      await _dio.put('/usuarios/${u['id']}', data: {
-        if (rolId > 0) 'rolId': rolId,
-        'isAdmin': esAdmin,
-      });
-      _aviso(context, 'Usuario actualizado');
+      if (u == null) {
+        await _dio.post('/usuarios', data: r);
+      } else {
+        await _dio.put('/usuarios/${u['id']}', data: r);
+      }
+      _aviso(context, u == null ? 'Usuario creado' : 'Usuario actualizado');
+    } catch (e) {
+      _aviso(context, _msg(e));
+    }
+    await _cargar();
+  }
+
+  Future<void> _borrar(Map<String, dynamic> u) async {
+    final ok = await _confirmar(context, 'Eliminar usuario',
+        'Se eliminará a "${u['nombre']} ${u['apellido']}". Si tiene movimientos registrados, el sistema puede no permitirlo. ¿Continuar?');
+    if (!ok) return;
+    try {
+      await _dio.delete('/usuarios/${u['id']}');
+      _aviso(context, 'Usuario eliminado');
     } catch (e) {
       _aviso(context, _msg(e));
     }
@@ -710,7 +703,7 @@ class _UsuariosTabState extends State<_UsuariosTab> {
     final t = _buscar.text.trim().toLowerCase();
     final lista = _usuarios.where((u) {
       if (t.isEmpty) return true;
-      final s = '${u['nombre'] ?? ''} ${u['apellido'] ?? ''} ${u['userName'] ?? ''}'.toLowerCase();
+      final s = '${u['nombre'] ?? ''} ${u['apellido'] ?? ''} ${u['userName'] ?? ''} ${u['email'] ?? ''}'.toLowerCase();
       return s.contains(t);
     }).toList();
     return RefreshIndicator(
@@ -720,26 +713,38 @@ class _UsuariosTabState extends State<_UsuariosTab> {
         padding: const EdgeInsets.only(bottom: 30),
         children: [
           const _Aviso(
-              'Aquí asigna a cada persona su rol. El rol decide qué módulos ve. '
+              'Aquí crea, edita y elimina a las personas que usan el sistema. Cada una tiene un puesto (rol) y una sucursal. '
               'Marque "administrador" solo a personas de total confianza.'),
           Padding(
-            padding: const EdgeInsets.all(12),
-            child: TextField(
-              controller: _buscar,
-              onChanged: (_) => setState(() {}),
-              decoration: const InputDecoration(
-                hintText: 'Buscar usuario',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _buscar,
+                    onChanged: (_) => setState(() {}),
+                    decoration: const InputDecoration(
+                      hintText: 'Buscar usuario',
+                      prefixIcon: Icon(Icons.search),
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed: () => _formulario(),
+                  icon: const Icon(Icons.person_add),
+                  label: const Text('Nuevo'),
+                ),
+              ],
             ),
           ),
           for (final u in lista)
             Card(
               margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               child: ListTile(
-                onTap: () => _editar(u),
+                onTap: () => _formulario(u: u),
                 leading: CircleAvatar(
                   child: Text(((u['nombre'] ?? '?').toString().isEmpty
                           ? '?'
@@ -748,13 +753,26 @@ class _UsuariosTabState extends State<_UsuariosTab> {
                 ),
                 title: Text('${u['nombre'] ?? ''} ${u['apellido'] ?? ''}'.trim()),
                 subtitle: Text(
-                    'Rol: ${u['role'] is Map ? u['role']['nombre'] : 'Sin rol'}'
-                    '${u['userName'] != null ? '  ·  @${u['userName']}' : ''}'),
-                trailing: u['isAdmin'] == true
-                    ? const Chip(
-                        label: Text('ADMIN', style: TextStyle(fontSize: 11)),
-                        visualDensity: VisualDensity.compact)
-                    : const Icon(Icons.chevron_right),
+                    '${u['userName'] != null ? '@${u['userName']}  ·  ' : ''}'
+                    'Rol: ${u['role'] is Map ? u['role']['nombre'] : 'Sin rol'}\n'
+                    'Sucursal: ${u['sucursal'] is Map ? u['sucursal']['nombre'] : 'Sin sucursal'}'),
+                isThreeLine: true,
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (u['isAdmin'] == true)
+                      const Chip(
+                          label: Text('ADMIN', style: TextStyle(fontSize: 10)),
+                          visualDensity: VisualDensity.compact),
+                    PopupMenuButton<String>(
+                      onSelected: (v) => v == 'e' ? _formulario(u: u) : _borrar(u),
+                      itemBuilder: (_) => const [
+                        PopupMenuItem(value: 'e', child: Text('Editar')),
+                        PopupMenuItem(value: 'b', child: Text('Eliminar')),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           if (lista.isEmpty)
@@ -763,6 +781,531 @@ class _UsuariosTabState extends State<_UsuariosTab> {
                 child: Text('No hay usuarios.', textAlign: TextAlign.center)),
         ],
       ),
+    );
+  }
+}
+
+class _UsuarioDialog extends StatefulWidget {
+  const _UsuarioDialog({
+    Key? key,
+    this.usuario,
+    required this.roles,
+    required this.sucursales,
+  }) : super(key: key);
+
+  final Map<String, dynamic>? usuario;
+  final List<Map<String, dynamic>> roles;
+  final List<Map<String, dynamic>> sucursales;
+
+  @override
+  State<_UsuarioDialog> createState() => _UsuarioDialogState();
+}
+
+class _UsuarioDialogState extends State<_UsuarioDialog> {
+  late final TextEditingController _nombre =
+      TextEditingController(text: (widget.usuario?['nombre'] ?? '').toString());
+  late final TextEditingController _apellido =
+      TextEditingController(text: (widget.usuario?['apellido'] ?? '').toString());
+  late final TextEditingController _email =
+      TextEditingController(text: (widget.usuario?['email'] ?? '').toString());
+  late final TextEditingController _userName =
+      TextEditingController(text: (widget.usuario?['userName'] ?? '').toString());
+  late final TextEditingController _celular =
+      TextEditingController(text: (widget.usuario?['celular'] ?? '').toString());
+  final TextEditingController _password = TextEditingController();
+  late int _rolId = (widget.usuario?['role'] is Map
+          ? (widget.usuario!['role']['id'] as num?)?.toInt()
+          : null) ??
+      0;
+  late int _sucursalId = (widget.usuario?['sucursal'] is Map
+          ? (widget.usuario!['sucursal']['id'] as num?)?.toInt()
+          : null) ??
+      0;
+  late bool _admin = widget.usuario?['isAdmin'] == true;
+  bool _ver = false;
+  String? _error;
+
+  bool get _nuevo => widget.usuario == null;
+
+  @override
+  void dispose() {
+    _nombre.dispose();
+    _apellido.dispose();
+    _email.dispose();
+    _userName.dispose();
+    _celular.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
+  void _guardar() {
+    String? falta;
+    if (_nombre.text.trim().isEmpty) {
+      falta = 'Escriba el nombre';
+    } else if (_apellido.text.trim().isEmpty) {
+      falta = 'Escriba el apellido';
+    } else if (!_email.text.contains('@')) {
+      falta = 'Escriba un correo válido';
+    } else if (_userName.text.trim().isEmpty) {
+      falta = 'Escriba el nombre de usuario para ingresar';
+    } else if (_nuevo && _password.text.length < 4) {
+      falta = 'La contraseña debe tener al menos 4 caracteres';
+    } else if (_rolId == 0) {
+      falta = 'Elija el rol (puesto)';
+    } else if (_sucursalId == 0) {
+      falta = 'Elija la sucursal';
+    } else if (_nuevo && int.tryParse(_celular.text.trim()) == null) {
+      falta = 'Escriba el celular (solo números)';
+    }
+    if (falta != null) {
+      setState(() => _error = falta);
+      return;
+    }
+    Navigator.pop(context, <String, dynamic>{
+      'nombre': _nombre.text.trim(),
+      'apellido': _apellido.text.trim(),
+      'email': _email.text.trim(),
+      'userName': _userName.text.trim(),
+      if (_password.text.isNotEmpty) 'password': _password.text,
+      'rolId': _rolId,
+      'sucursalId': _sucursalId,
+      if (int.tryParse(_celular.text.trim()) != null)
+        'celular': int.parse(_celular.text.trim()),
+      'isAdmin': _admin,
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(_nuevo ? 'Nuevo usuario' : 'Editar usuario'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+                controller: _nombre,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(labelText: 'Nombre')),
+            TextField(
+                controller: _apellido,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(labelText: 'Apellido')),
+            TextField(
+                controller: _email,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(labelText: 'Correo')),
+            TextField(
+                controller: _userName,
+                decoration: const InputDecoration(
+                    labelText: 'Usuario para ingresar')),
+            TextField(
+              controller: _password,
+              obscureText: !_ver,
+              decoration: InputDecoration(
+                labelText: _nuevo ? 'Contraseña' : 'Contraseña (vacía = no cambiarla)',
+                suffixIcon: IconButton(
+                  icon: Icon(_ver ? Icons.visibility_off : Icons.visibility),
+                  onPressed: () => setState(() => _ver = !_ver),
+                ),
+              ),
+            ),
+            TextField(
+                controller: _celular,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Celular')),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<int>(
+              value: widget.roles.any((r) => (r['id'] as num).toInt() == _rolId)
+                  ? _rolId
+                  : null,
+              decoration: const InputDecoration(labelText: 'Rol (puesto)'),
+              items: [
+                for (final r in widget.roles)
+                  DropdownMenuItem<int>(
+                    value: (r['id'] as num).toInt(),
+                    child: Text((r['nombre'] ?? '').toString()),
+                  ),
+              ],
+              onChanged: (v) => setState(() => _rolId = v ?? 0),
+            ),
+            DropdownButtonFormField<int>(
+              value: widget.sucursales.any((r) => (r['id'] as num).toInt() == _sucursalId)
+                  ? _sucursalId
+                  : null,
+              decoration: const InputDecoration(labelText: 'Sucursal'),
+              items: [
+                for (final r in widget.sucursales)
+                  DropdownMenuItem<int>(
+                    value: (r['id'] as num).toInt(),
+                    child: Text((r['nombre'] ?? '').toString()),
+                  ),
+              ],
+              onChanged: (v) => setState(() => _sucursalId = v ?? 0),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Es administrador'),
+              subtitle: const Text('Acceso total de administración'),
+              value: _admin,
+              onChanged: (v) => setState(() => _admin = v),
+            ),
+            if (_error != null)
+              Text(_error!, style: const TextStyle(color: Colors.red)),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+        ElevatedButton(onPressed: _guardar, child: const Text('Guardar')),
+      ],
+    );
+  }
+}
+
+// ===========================================================================
+// Catálogos genéricos: sucursales, categorías, tipos de movimiento, intereses
+// ===========================================================================
+
+class _CampoCat {
+  const _CampoCat(this.clave, this.etiqueta,
+      {this.numero = false, this.obligatorio = true});
+  final String clave;
+  final String etiqueta;
+  final bool numero;
+  final bool obligatorio;
+}
+
+class _CatalogoView extends StatefulWidget {
+  const _CatalogoView({
+    Key? key,
+    required this.ruta,
+    required this.singular,
+    required this.campos,
+    required this.titulo,
+    this.subtitulo,
+    this.ayuda,
+    this.extras,
+  }) : super(key: key);
+
+  final String ruta;
+  final String singular;
+  final List<_CampoCat> campos;
+  final String Function(Map<String, dynamic>) titulo;
+  final String Function(Map<String, dynamic>)? subtitulo;
+  final String? ayuda;
+  final Map<String, dynamic> Function()? extras;
+
+  @override
+  State<_CatalogoView> createState() => _CatalogoViewState();
+}
+
+class _CatalogoViewState extends State<_CatalogoView> {
+  late final Dio _dio = _dioUsuario(context);
+  List<Map<String, dynamic>> _items = <Map<String, dynamic>>[];
+  bool _cargando = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargar();
+  }
+
+  Future<void> _cargar() async {
+    setState(() {
+      _cargando = true;
+      _error = null;
+    });
+    try {
+      final r = await _dio.get(widget.ruta);
+      _items = _filas(_cuerpo(r));
+    } catch (e) {
+      _error = _msg(e);
+    }
+    if (mounted) setState(() => _cargando = false);
+  }
+
+  Future<void> _formulario({Map<String, dynamic>? item}) async {
+    final r = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => _CatalogoDialog(
+          singular: widget.singular, campos: widget.campos, item: item),
+    );
+    if (r == null) return;
+    try {
+      if (item == null) {
+        await _dio.post(widget.ruta, data: {...r, ...?widget.extras?.call()});
+      } else {
+        await _dio.put('${widget.ruta}/${item['id']}', data: r);
+      }
+      _aviso(context, 'Guardado');
+    } catch (e) {
+      _aviso(context, _msg(e));
+    }
+    await _cargar();
+  }
+
+  Future<void> _borrar(Map<String, dynamic> item) async {
+    final ok = await _confirmar(context, 'Eliminar ${widget.singular}',
+        'Se eliminará "${widget.titulo(item)}". Si ya se usa en otros registros, el sistema puede no permitirlo. ¿Continuar?');
+    if (!ok) return;
+    try {
+      await _dio.delete('${widget.ruta}/${item['id']}');
+      _aviso(context, 'Eliminado');
+    } catch (e) {
+      _aviso(context, _msg(e));
+    }
+    await _cargar();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_cargando) return const Center(child: CircularProgressIndicator());
+    if (_error != null) {
+      return Center(
+          child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Text(_error!, style: const TextStyle(color: Colors.red))));
+    }
+    return RefreshIndicator(
+      onRefresh: _cargar,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 30),
+        children: [
+          if (widget.ayuda != null) _Aviso(widget.ayuda!),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton.icon(
+                onPressed: () => _formulario(),
+                icon: const Icon(Icons.add),
+                label: Text('Agregar ${widget.singular}'),
+              ),
+            ),
+          ),
+          for (final it in _items)
+            Card(
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              child: ListTile(
+                onTap: () => _formulario(item: it),
+                title: Text(widget.titulo(it),
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: widget.subtitulo == null
+                    ? null
+                    : Text(widget.subtitulo!(it)),
+                trailing: PopupMenuButton<String>(
+                  onSelected: (v) => v == 'e' ? _formulario(item: it) : _borrar(it),
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value: 'e', child: Text('Editar')),
+                    PopupMenuItem(value: 'b', child: Text('Eliminar')),
+                  ],
+                ),
+              ),
+            ),
+          if (_items.isEmpty)
+            Padding(
+                padding: const EdgeInsets.all(30),
+                child: Text('Todavía no hay registros de ${widget.singular}.',
+                    textAlign: TextAlign.center)),
+        ],
+      ),
+    );
+  }
+}
+
+class _CatalogoDialog extends StatefulWidget {
+  const _CatalogoDialog({
+    Key? key,
+    required this.singular,
+    required this.campos,
+    this.item,
+  }) : super(key: key);
+
+  final String singular;
+  final List<_CampoCat> campos;
+  final Map<String, dynamic>? item;
+
+  @override
+  State<_CatalogoDialog> createState() => _CatalogoDialogState();
+}
+
+class _CatalogoDialogState extends State<_CatalogoDialog> {
+  late final List<TextEditingController> _c = [
+    for (final f in widget.campos)
+      TextEditingController(text: (widget.item?[f.clave] ?? '').toString()),
+  ];
+  String? _error;
+
+  @override
+  void dispose() {
+    for (final c in _c) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  void _guardar() {
+    final datos = <String, dynamic>{};
+    for (var i = 0; i < widget.campos.length; i++) {
+      final f = widget.campos[i];
+      final t = _c[i].text.trim();
+      if (f.obligatorio && t.isEmpty) {
+        setState(() => _error = 'Complete: ${f.etiqueta}');
+        return;
+      }
+      if (f.numero) {
+        final n = num.tryParse(t.replaceAll(',', '.'));
+        if (n == null) {
+          setState(() => _error = '${f.etiqueta} debe ser un número');
+          return;
+        }
+        datos[f.clave] = n;
+      } else {
+        datos[f.clave] = t;
+      }
+    }
+    Navigator.pop(context, datos);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.item == null
+          ? 'Nuevo ${widget.singular}'
+          : 'Editar ${widget.singular}'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < widget.campos.length; i++)
+              TextField(
+                controller: _c[i],
+                keyboardType:
+                    widget.campos[i].numero ? TextInputType.number : TextInputType.text,
+                decoration: InputDecoration(
+                    labelText:
+                        '${widget.campos[i].etiqueta}${widget.campos[i].obligatorio ? '' : ' (opcional)'}'),
+              ),
+            if (_error != null)
+              Text(_error!, style: const TextStyle(color: Colors.red)),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+        ElevatedButton(onPressed: _guardar, child: const Text('Guardar')),
+      ],
+    );
+  }
+}
+
+class _SucursalesTab extends StatelessWidget {
+  const _SucursalesTab({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return _CatalogoView(
+      ruta: '/sucursal',
+      singular: 'sucursal',
+      ayuda:
+          'Las sucursales son los locales de su negocio. Cada usuario y cada caja pertenece a una sucursal.',
+      campos: const [
+        _CampoCat('nombre', 'Nombre'),
+        _CampoCat('direccion', 'Dirección'),
+        _CampoCat('telefono', 'Teléfono'),
+        _CampoCat('extas', 'Información adicional', obligatorio: false),
+      ],
+      titulo: (m) => (m['nombre'] ?? '').toString(),
+      subtitulo: (m) =>
+          '${m['direccion'] ?? ''}${(m['telefono'] ?? '').toString().isNotEmpty ? '  ·  Tel. ${m['telefono']}' : ''}',
+    );
+  }
+}
+
+class _CatalogosTab extends StatefulWidget {
+  const _CatalogosTab({Key? key}) : super(key: key);
+
+  @override
+  State<_CatalogosTab> createState() => _CatalogosTabState();
+}
+
+class _CatalogosTabState extends State<_CatalogosTab> {
+  int _sel = 0;
+  static const List<String> _nombres = [
+    'Categorías de productos',
+    'Tipos de movimiento',
+    'Intereses (%)',
+  ];
+
+  Widget _contenido() {
+    switch (_sel) {
+      case 1:
+        return _CatalogoView(
+          key: const ValueKey('tipos'),
+          ruta: '/finanza/tipo-movimiento',
+          singular: 'tipo de movimiento',
+          ayuda:
+              'Los tipos de movimiento clasifican las entradas y salidas de dinero de la caja (gastos, ingresos, etc.).',
+          campos: const [
+            _CampoCat('codigo', 'Código'),
+            _CampoCat('descripcion', 'Descripción'),
+          ],
+          titulo: (m) => (m['descripcion'] ?? '').toString(),
+          subtitulo: (m) => 'Código: ${m['codigo'] ?? ''}',
+          extras: () => {
+            'usuarioId': context.read<Preferences>().token?.id ?? 0,
+          },
+        );
+      case 2:
+        return _CatalogoView(
+          key: const ValueKey('intereses'),
+          ruta: '/configuraciones/intereses',
+          singular: 'interés',
+          ayuda:
+              'Los porcentajes de interés que se pueden elegir al crear un préstamo.',
+          campos: const [_CampoCat('interes', 'Interés (%)', numero: true)],
+          titulo: (m) => '${m['interes'] ?? ''} %',
+        );
+      default:
+        return _CatalogoView(
+          key: const ValueKey('categorias'),
+          ruta: '/almacen/producto/categoria',
+          singular: 'categoría',
+          ayuda:
+              'Las categorías agrupan los bienes que recibe (celulares, vehículos, artefactos...). Los campos extra de cada categoría se crean en la pestaña "Campos".',
+          campos: const [_CampoCat('descripcion', 'Nombre de la categoría')],
+          titulo: (m) => (m['descripcion'] ?? '').toString(),
+        );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          height: 52,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            children: [
+              for (var i = 0; i < _nombres.length; i++)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(_nombres[i]),
+                    selected: _sel == i,
+                    onSelected: (_) => setState(() => _sel = i),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        Expanded(child: _contenido()),
+      ],
     );
   }
 }
