@@ -3,6 +3,7 @@ import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/custom_image_picker.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/feature/loans_step/bloc/loans_step_bloc.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/loans/feature/loans_step/widgets/selector_categoria.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -29,39 +30,12 @@ class EditFormWarranty extends StatelessWidget {
           },
         ),
         const SizedBox(height: 15),
-        Row(
-          children: [
-            BlocBuilder<LoansStepBloc, LoansStepState>(
-              builder: (context, state) {
-                return Expanded(
-                  child: AppDropdownButtonFormField<CategoriesEntity?>(
-                    labelText: 'Categoría (requerido)',
-                    value: state.categories,
-                    onChanged: (e) =>
-                        loansStepBloc.add(ChangeCategoryWarranty(e)),
-                    items: state.listCategories != null
-                        ? state.listCategories!
-                            .map(
-                              (e) => DropdownMenuItem<CategoriesEntity?>(
-                                value: e,
-                                child: Text(e.descripcion),
-                              ),
-                            )
-                            .toList()
-                        : null,
-                  ),
-                );
-              },
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: AppTextFormField(
-                labelText: 'Placa (opcional)',
-                initialValue: loansState.placa,
-                onChanged: (e) => loansStepBloc.add(ChangePlacaWarranty(e)),
-              ),
-            ),
-          ],
+        const SelectorCategoria(),
+        const SizedBox(height: 15),
+        AppTextFormField(
+          labelText: 'Placa (opcional)',
+          initialValue: loansState.placa,
+          onChanged: (e) => loansStepBloc.add(ChangePlacaWarranty(e)),
         ),
         const SizedBox(height: 15),
         Row(

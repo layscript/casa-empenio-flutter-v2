@@ -217,20 +217,42 @@ class _CamposDinamicosFormState extends State<CamposDinamicosForm> {
   @override
   Widget build(BuildContext context) {
     if (_campos.isEmpty) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Datos extra de esta categoría',
-            style: TextStyle(fontWeight: FontWeight.bold)),
-        const Text('Llene solo lo que tenga a la mano; todo es opcional '
-            'salvo lo marcado con *.',
-            style: TextStyle(fontSize: 12, color: Colors.black54)),
-        const SizedBox(height: 10),
-        for (final c in _campos) ...[
-          _campo(c),
-          const SizedBox(height: 15),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3F7FB),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFD5E1EE)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.fact_check_outlined, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Datos de este bien (${_campos.length} campos)',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Llene lo que tenga a la mano. Todo es opcional salvo lo marcado '
+            'con *. Lo que ponga aquí sale en el expediente.',
+            style: TextStyle(fontSize: 12, color: Colors.black54),
+          ),
+          const SizedBox(height: 12),
+          for (final c in _campos) ...[
+            _campo(c),
+            const SizedBox(height: 15),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
