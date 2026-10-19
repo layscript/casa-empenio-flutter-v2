@@ -333,77 +333,6 @@ class _RolesTabState extends State<_RolesTab> {
     if (mounted) setState(() => _cargando = false);
   }
 
-  Map<String, dynamic>? _catPorId(int? id) {
-    if (id == null) return null;
-    for (final c in _categorias) {
-      if ((c['id'] as num).toInt() == id) return c;
-    }
-    return null;
-  }
-
-  String _etiquetaCategoria(Map<String, dynamic> c) {
-    final nombre = (c['descripcion'] ?? c['nombre'] ?? '').toString();
-    final padre = _catPorId((c['padreId'] as num?)?.toInt());
-    return padre == null
-        ? nombre
-        : '${(padre['descripcion'] ?? '').toString()} › $nombre';
-  }
-
-  List<Map<String, dynamic>> _categoriasOrdenadas() {
-    String n(Map<String, dynamic> c) => (c['descripcion'] ?? '').toString().toLowerCase();
-    final ids = _categorias.map((c) => (c['id'] as num).toInt()).toSet();
-    final raices = _categorias
-        .where((c) => c['padreId'] == null || !ids.contains((c['padreId'] as num).toInt()))
-        .toList()
-      ..sort((a, b) => n(a).compareTo(n(b)));
-    final out = <Map<String, dynamic>>[];
-    for (final r in raices) {
-      out.add(r);
-      out.addAll(_categorias
-          .where((c) => c['padreId'] != null && (c['padreId'] as num).toInt() == (r['id'] as num).toInt())
-          .toList()
-        ..sort((a, b) => n(a).compareTo(n(b))));
-    }
-    return out;
-  }
-
-  String? _infoPadre() {
-    final padre = _catPorId((_catPorId(_categoria)?['padreId'] as num?)?.toInt());
-    if (padre == null) return null;
-    return 'Es subcategoría de «${padre['descripcion']}»: además de estos campos, '
-        'también pide los campos de «${padre['descripcion']}».';
-  }
-
-  Future<void> _ordenarCategorias() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => CategoriasOrdenPage(dio: _dio)),
-    );
-    await _cargarCategorias();
-  }
-
-  Future<void> _plantilla() async {
-    try {
-      final r = await _dio.get<dynamic>('/api/dynamic-fields/plantillas');
-      final lista = _filas(r.data);
-      final cat = _catPorId(_categoria);
-      final sug = sugerirPlantillaCategoria(
-          (cat?['descripcion'] ?? '').toString(), lista);
-      if (!mounted) return;
-      final clave = await elegirPlantilla(context, lista,
-          sugerida: sug?['clave']?.toString());
-      if (clave == null) return;
-      final res = await _dio.post<dynamic>('/api/dynamic-fields/plantillas/aplicar',
-          data: {'category_id': _categoria, 'plantilla': clave});
-      final d = res.data;
-      if (mounted) {
-        _aviso(context, 'Se agregaron ${d is Map ? d['creados'] : 0} campos (opcionales)');
-      }
-    } catch (e) {
-      if (mounted) _aviso(context, _msg(e));
-    }
-    await _cargarCategorias();
-  }
-
   Future<void> _ejecutar(Future<void> Function() fn, String ok) async {
     try {
       await fn();
@@ -1476,6 +1405,77 @@ class _CamposTabState extends State<_CamposTab> {
       _error = _msg(e);
     }
     if (mounted) setState(() => _cargando = false);
+  }
+
+  Map<String, dynamic>? _catPorId(int? id) {
+    if (id == null) return null;
+    for (final c in _categorias) {
+      if ((c['id'] as num).toInt() == id) return c;
+    }
+    return null;
+  }
+
+  String _etiquetaCategoria(Map<String, dynamic> c) {
+    final nombre = (c['descripcion'] ?? c['nombre'] ?? '').toString();
+    final padre = _catPorId((c['padreId'] as num?)?.toInt());
+    return padre == null
+        ? nombre
+        : '${(padre['descripcion'] ?? '').toString()} › $nombre';
+  }
+
+  List<Map<String, dynamic>> _categoriasOrdenadas() {
+    String n(Map<String, dynamic> c) => (c['descripcion'] ?? '').toString().toLowerCase();
+    final ids = _categorias.map((c) => (c['id'] as num).toInt()).toSet();
+    final raices = _categorias
+        .where((c) => c['padreId'] == null || !ids.contains((c['padreId'] as num).toInt()))
+        .toList()
+      ..sort((a, b) => n(a).compareTo(n(b)));
+    final out = <Map<String, dynamic>>[];
+    for (final r in raices) {
+      out.add(r);
+      out.addAll(_categorias
+          .where((c) => c['padreId'] != null && (c['padreId'] as num).toInt() == (r['id'] as num).toInt())
+          .toList()
+        ..sort((a, b) => n(a).compareTo(n(b))));
+    }
+    return out;
+  }
+
+  String? _infoPadre() {
+    final padre = _catPorId((_catPorId(_categoria)?['padreId'] as num?)?.toInt());
+    if (padre == null) return null;
+    return 'Es subcategoría de «${padre['descripcion']}»: además de estos campos, '
+        'también pide los campos de «${padre['descripcion']}».';
+  }
+
+  Future<void> _ordenarCategorias() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => CategoriasOrdenPage(dio: _dio)),
+    );
+    await _cargarCategorias();
+  }
+
+  Future<void> _plantilla() async {
+    try {
+      final r = await _dio.get<dynamic>('/api/dynamic-fields/plantillas');
+      final lista = _filas(r.data);
+      final cat = _catPorId(_categoria);
+      final sug = sugerirPlantillaCategoria(
+          (cat?['descripcion'] ?? '').toString(), lista);
+      if (!mounted) return;
+      final clave = await elegirPlantilla(context, lista,
+          sugerida: sug?['clave']?.toString());
+      if (clave == null) return;
+      final res = await _dio.post<dynamic>('/api/dynamic-fields/plantillas/aplicar',
+          data: {'category_id': _categoria, 'plantilla': clave});
+      final d = res.data;
+      if (mounted) {
+        _aviso(context, 'Se agregaron ${d is Map ? d['creados'] : 0} campos (opcionales)');
+      }
+    } catch (e) {
+      if (mounted) _aviso(context, _msg(e));
+    }
+    await _cargarCategorias();
   }
 
   Future<void> _ejecutar(Future<void> Function() fn, String ok) async {
