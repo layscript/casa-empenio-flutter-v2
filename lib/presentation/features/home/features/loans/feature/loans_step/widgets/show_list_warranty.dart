@@ -46,12 +46,17 @@ class ShowListWarranty extends StatelessWidget {
               children: [
                 Text('Descripción: ${warranty.description}'),
                 Text('Categoria: ${warranty.category?.descripcion}'),
-                Text('Modelo: ${warranty.model}'),
-                Text('Marca: ${warranty.brand}'),
+                if ((warranty.model ?? '').isNotEmpty)
+                  Text('Modelo: ${warranty.model}'),
+                if ((warranty.brand ?? '').isNotEmpty)
+                  Text('Marca: ${warranty.brand}'),
                 if (warranty.placa != null) Text('Placa: ${warranty.placa}'),
-                Text('Color: ${warranty.color}'),
-                Text('Estado: ${warranty.status}'),
-                Text('Serie: ${warranty.serie}'),
+                if ((warranty.color ?? '').isNotEmpty)
+                  Text('Color: ${warranty.color}'),
+                if ((warranty.status ?? '').isNotEmpty)
+                  Text('Estado: ${warranty.status}'),
+                if ((warranty.serie ?? '').isNotEmpty)
+                  Text('Serie: ${warranty.serie}'),
                 Text('Observaciones: ${warranty.warrantyObservations}'),
                 Text('Precio Referencial: ${warranty.price}'),
                 const SizedBox(height: 10),

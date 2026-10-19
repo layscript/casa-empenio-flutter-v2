@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/categorias_orden_view.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -1320,6 +1321,10 @@ const Map<String, String> _tipos = <String, String>{
   'date': 'Fecha',
   'select': 'Lista de opciones',
   'multi-select': 'Selección múltiple',
+  'textarea': 'Texto largo',
+  'checkbox': 'Sí / No',
+  'photo': 'Foto',
+  'file': 'Documento (foto)',
 };
 
 String _slug(String t) {
@@ -1400,6 +1405,77 @@ class _CamposTabState extends State<_CamposTab> {
       _error = _msg(e);
     }
     if (mounted) setState(() => _cargando = false);
+  }
+
+  Map<String, dynamic>? _catPorId(int? id) {
+    if (id == null) return null;
+    for (final c in _categorias) {
+      if ((c['id'] as num).toInt() == id) return c;
+    }
+    return null;
+  }
+
+  String _etiquetaCategoria(Map<String, dynamic> c) {
+    final nombre = (c['descripcion'] ?? c['nombre'] ?? '').toString();
+    final padre = _catPorId((c['padreId'] as num?)?.toInt());
+    return padre == null
+        ? nombre
+        : '${(padre['descripcion'] ?? '').toString()} › $nombre';
+  }
+
+  List<Map<String, dynamic>> _categoriasOrdenadas() {
+    String n(Map<String, dynamic> c) => (c['descripcion'] ?? '').toString().toLowerCase();
+    final ids = _categorias.map((c) => (c['id'] as num).toInt()).toSet();
+    final raices = _categorias
+        .where((c) => c['padreId'] == null || !ids.contains((c['padreId'] as num).toInt()))
+        .toList()
+      ..sort((a, b) => n(a).compareTo(n(b)));
+    final out = <Map<String, dynamic>>[];
+    for (final r in raices) {
+      out.add(r);
+      out.addAll(_categorias
+          .where((c) => c['padreId'] != null && (c['padreId'] as num).toInt() == (r['id'] as num).toInt())
+          .toList()
+        ..sort((a, b) => n(a).compareTo(n(b))));
+    }
+    return out;
+  }
+
+  String? _infoPadre() {
+    final padre = _catPorId((_catPorId(_categoria)?['padreId'] as num?)?.toInt());
+    if (padre == null) return null;
+    return 'Es subcategoría de «${padre['descripcion']}»: además de estos campos, '
+        'también pide los campos de «${padre['descripcion']}».';
+  }
+
+  Future<void> _ordenarCategorias() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => CategoriasOrdenPage(dio: _dio)),
+    );
+    await _cargarCategorias();
+  }
+
+  Future<void> _plantilla() async {
+    try {
+      final r = await _dio.get<dynamic>('/api/dynamic-fields/plantillas');
+      final lista = _filas(r.data);
+      final cat = _catPorId(_categoria);
+      final sug = sugerirPlantillaCategoria(
+          (cat?['descripcion'] ?? '').toString(), lista);
+      if (!mounted) return;
+      final clave = await elegirPlantilla(context, lista,
+          sugerida: sug?['clave']?.toString());
+      if (clave == null) return;
+      final res = await _dio.post<dynamic>('/api/dynamic-fields/plantillas/aplicar',
+          data: {'category_id': _categoria, 'plantilla': clave});
+      final d = res.data;
+      if (mounted) {
+        _aviso(context, 'Se agregaron ${d is Map ? d['creados'] : 0} campos (opcionales)');
+      }
+    } catch (e) {
+      if (mounted) _aviso(context, _msg(e));
+    }
+    await _cargarCategorias();
   }
 
   Future<void> _ejecutar(Future<void> Function() fn, String ok) async {
@@ -1490,11 +1566,12 @@ class _CamposTabState extends State<_CamposTab> {
                 : null,
             decoration: const InputDecoration(
                 labelText: 'Categoría', border: OutlineInputBorder(), isDense: true),
+            isExpanded: true,
             items: [
-              for (final c in _categorias)
+              for (final c in _categoriasOrdenadas())
                 DropdownMenuItem<int>(
                   value: (c['id'] as num).toInt(),
-                  child: Text((c['descripcion'] ?? c['nombre'] ?? '').toString()),
+                  child: Text(_etiquetaCategoria(c), overflow: TextOverflow.ellipsis),
                 ),
             ],
             onChanged: (v) {
@@ -1503,17 +1580,38 @@ class _CamposTabState extends State<_CamposTab> {
             },
           ),
         ),
-        if (_categoria > 0)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: ElevatedButton.icon(
-                onPressed: () => _editar(),
-                icon: const Icon(Icons.add),
-                label: const Text('Agregar campo'),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            alignment: WrapAlignment.end,
+            children: [
+              OutlinedButton.icon(
+                onPressed: _ordenarCategorias,
+                icon: const Icon(Icons.account_tree_outlined),
+                label: const Text('Ordenar mis categorías'),
               ),
-            ),
+              if (_categoria > 0)
+                OutlinedButton.icon(
+                  onPressed: _plantilla,
+                  icon: const Icon(Icons.auto_awesome),
+                  label: const Text('Campos sugeridos'),
+                ),
+              if (_categoria > 0)
+                ElevatedButton.icon(
+                  onPressed: () => _editar(),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Agregar campo'),
+                ),
+            ],
+          ),
+        ),
+        if (_infoPadre() != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+            child: Text(_infoPadre()!,
+                style: const TextStyle(fontSize: 12, color: Colors.black54)),
           ),
         Expanded(
           child: _cargando

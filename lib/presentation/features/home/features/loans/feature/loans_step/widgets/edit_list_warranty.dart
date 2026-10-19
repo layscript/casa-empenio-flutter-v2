@@ -192,10 +192,13 @@ class EditFormWarranty extends StatelessWidget {
               onPressed:
                   (state.description != '' && state.description != null) &&
                           (state.categories != null) &&
-                          (state.brand != '' && state.brand != null) &&
-                          (state.model != '' && state.model != null) &&
-                          (state.color != '' && state.color != null) &&
-                          (state.status != '' && state.status != null) &&
+                          (categoriaOcultaBasicos(
+                                  state.categories, state.listCategories) ||
+                              ((state.brand != '' && state.brand != null) &&
+                                  (state.model != '' && state.model != null) &&
+                                  (state.color != '' && state.color != null) &&
+                                  (state.status != '' &&
+                                      state.status != null))) &&
                           (state.warrantyObservations != '' &&
                               state.warrantyObservations != null) &&
                           (state.price != '' && state.price != null)
