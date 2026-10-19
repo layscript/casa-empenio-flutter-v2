@@ -26,10 +26,24 @@ class AddFormWarranty extends StatelessWidget {
           const SizedBox(height: 15),
           _buildCategoryAndPlacaRow(loansStepBloc),
           const SizedBox(height: 15),
-          _buildBrandAndModelRow(loansStepBloc),
-          const SizedBox(height: 15),
-          _buildColorAndStatusRow(loansStepBloc),
-          const SizedBox(height: 15),
+          BlocBuilder<LoansStepBloc, LoansStepState>(
+            buildWhen: (a, b) => a.categories?.id != b.categories?.id,
+            builder: (context, state) {
+              // En terrenos, casas, etc. no se piden marca/modelo/color/estado
+              if (categoriaOcultaBasicos(
+                  state.categories, state.listCategories)) {
+                return const SizedBox.shrink();
+              }
+              return Column(
+                children: [
+                  _buildBrandAndModelRow(loansStepBloc),
+                  const SizedBox(height: 15),
+                  _buildColorAndStatusRow(loansStepBloc),
+                  const SizedBox(height: 15),
+                ],
+              );
+            },
+          ),
           _buildOptionalFields(loansStepBloc),
           const SizedBox(height: 15),
           _buildPhotoSelectionRow(loansStepBloc),
@@ -65,12 +79,17 @@ class AddFormWarranty extends StatelessWidget {
                 value: state.categories,
                 onChanged: (value) =>
                     loansStepBloc.add(ChangeCategoryWarranty(value)),
-                items: state.listCategories
-                    ?.map((e) => DropdownMenuItem<CategoriesEntity?>(
-                          value: e,
-                          child: Text(e.descripcion),
-                        ))
-                    .toList(),
+                items: state.listCategories == null
+                    ? null
+                    : ordenarCategorias(state.listCategories!)
+                        .map((e) => DropdownMenuItem<CategoriesEntity?>(
+                              value: e,
+                              child: Text(
+                                nombreCategoria(e, state.listCategories),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ))
+                        .toList(),
               ),
             );
           },
@@ -252,10 +271,13 @@ class AddFormWarranty extends StatelessWidget {
               onPressed:
                   (state.description != '' && state.description != null) &&
                           (state.categories != null) &&
-                          (state.brand != '' && state.brand != null) &&
-                          (state.model != '' && state.model != null) &&
-                          (state.color != '' && state.color != null) &&
-                          (state.status != '' && state.status != null) &&
+                          (categoriaOcultaBasicos(
+                                  state.categories, state.listCategories) ||
+                              ((state.brand != '' && state.brand != null) &&
+                                  (state.model != '' && state.model != null) &&
+                                  (state.color != '' && state.color != null) &&
+                                  (state.status != '' &&
+                                      state.status != null))) &&
                           (state.warrantyObservations != '' &&
                               state.warrantyObservations != null) &&
                           (state.price != '' && state.price != null)

@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 // ---------------------------------------------------------------------------
 // Campos extra por categoría para el formulario de bienes en garantía.
@@ -116,7 +118,11 @@ class _CamposDinamicosFormState extends State<CamposDinamicosForm> {
     if (id != null) {
       try {
         final r = await _dio.get('/api/dynamic-fields/definitions',
-            queryParameters: {'category_id': id, 'is_active': true});
+            queryParameters: {
+              'category_id': id,
+              'is_active': true,
+              'include_parent': true,
+            });
         final data = r.data;
         if (data is List) {
           for (final x in data) {
@@ -170,6 +176,26 @@ class _CamposDinamicosFormState extends State<CamposDinamicosForm> {
           ],
           onChanged: (v) => guardar(v ?? ''),
         );
+      case 'textarea':
+        return TextFormField(
+          key: key,
+          minLines: 2,
+          maxLines: 5,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: _deco(label),
+          onChanged: guardar,
+        );
+      case 'checkbox':
+        return _CampoSiNo(key: key, label: label, onChanged: guardar);
+      case 'photo':
+      case 'file':
+        return _CampoFoto(
+          key: key,
+          label: label,
+          dio: _dio,
+          esDocumento: tipo == 'file',
+          onChanged: guardar,
+        );
       case 'multi-select':
         return _CampoMulti(
           key: key,
@@ -195,6 +221,9 @@ class _CamposDinamicosFormState extends State<CamposDinamicosForm> {
       children: [
         const Text('Datos extra de esta categoría',
             style: TextStyle(fontWeight: FontWeight.bold)),
+        const Text('Llene solo lo que tenga a la mano; todo es opcional '
+            'salvo lo marcado con *.',
+            style: TextStyle(fontSize: 12, color: Colors.black54)),
         const SizedBox(height: 10),
         for (final c in _campos) ...[
           _campo(c),
@@ -296,6 +325,172 @@ class _CampoMultiState extends State<_CampoMulti> {
               ),
           ],
         ),
+      ],
+    );
+  }
+}
+
+
+class _CampoSiNo extends StatefulWidget {
+  const _CampoSiNo(
+      {Key? key, required this.label, required this.onChanged})
+      : super(key: key);
+
+  final String label;
+  final ValueChanged<String> onChanged;
+
+  @override
+  State<_CampoSiNo> createState() => _CampoSiNoState();
+}
+
+class _CampoSiNoState extends State<_CampoSiNo> {
+  bool _v = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(widget.label, style: const TextStyle(fontSize: 14)),
+      subtitle: Text(_v ? 'Sí' : 'No'),
+      value: _v,
+      onChanged: (x) {
+        setState(() => _v = x);
+        widget.onChanged(x ? 'Sí' : 'No');
+      },
+    );
+  }
+}
+
+/// Foto (o foto de un documento): se toma o se elige, se sube al servidor y
+/// el campo guarda el enlace.
+class _CampoFoto extends StatefulWidget {
+  const _CampoFoto({
+    Key? key,
+    required this.label,
+    required this.dio,
+    required this.esDocumento,
+    required this.onChanged,
+  }) : super(key: key);
+
+  final String label;
+  final Dio dio;
+  final bool esDocumento;
+  final ValueChanged<String> onChanged;
+
+  @override
+  State<_CampoFoto> createState() => _CampoFotoState();
+}
+
+class _CampoFotoState extends State<_CampoFoto> {
+  final List<String> _rutas = <String>[];
+  final List<String> _urls = <String>[];
+  bool _subiendo = false;
+  String? _error;
+
+  Future<void> _agregar() async {
+    final fuente = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera),
+              title: const Text('Tomar foto'),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Elegir de la galería'),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (fuente == null) return;
+    try {
+      final f = await ImagePicker()
+          .pickImage(source: fuente, imageQuality: 70, maxWidth: 1800);
+      if (f == null) return;
+      setState(() {
+        _subiendo = true;
+        _error = null;
+      });
+      final form = FormData.fromMap({
+        'archivo': await MultipartFile.fromFile(f.path, filename: f.name),
+      });
+      final r = await widget.dio.post('/api/dynamic-fields/archivo', data: form);
+      final data = r.data;
+      final ruta = data is Map ? (data['ruta'] ?? data['url'])?.toString() : null;
+      if (ruta == null || ruta.isEmpty) throw Exception('Respuesta inválida');
+      setState(() {
+        _rutas.add(f.path);
+        _urls.add('$endPointPrincipal/$ruta');
+      });
+      widget.onChanged(_urls.join(' , '));
+    } catch (_) {
+      setState(() => _error = 'No se pudo subir la foto. Revise su internet e intente otra vez.');
+    }
+    if (mounted) setState(() => _subiendo = false);
+  }
+
+  void _quitar(int i) {
+    setState(() {
+      _rutas.removeAt(i);
+      _urls.removeAt(i);
+    });
+    widget.onChanged(_urls.join(' , '));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(widget.label, style: const TextStyle(fontSize: 13)),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (var i = 0; i < _rutas.length; i++)
+              Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.file(File(_rutas[i]),
+                        width: 80, height: 80, fit: BoxFit.cover),
+                  ),
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: InkWell(
+                      onTap: () => _quitar(i),
+                      child: const CircleAvatar(
+                        radius: 10,
+                        backgroundColor: Colors.red,
+                        child: Icon(Icons.close, size: 12, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            if (_subiendo)
+              const SizedBox(
+                  width: 80,
+                  height: 80,
+                  child: Center(child: CircularProgressIndicator())),
+            OutlinedButton.icon(
+              onPressed: _subiendo ? null : _agregar,
+              icon: Icon(widget.esDocumento
+                  ? Icons.description_outlined
+                  : Icons.add_a_photo_outlined),
+              label: Text(_rutas.isEmpty ? 'Agregar foto' : 'Otra foto'),
+            ),
+          ],
+        ),
+        if (_error != null)
+          Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 12)),
       ],
     );
   }
