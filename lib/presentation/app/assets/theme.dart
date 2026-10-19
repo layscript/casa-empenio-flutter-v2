@@ -8,14 +8,55 @@ const _defaultTextStyle = TextStyle(
 );
 ThemeData buildTheme(BuildContext context) {
   final themeData = Theme.of(context);
+  const radio = BorderRadius.all(Radius.circular(14));
   return ThemeData(
     useMaterial3: false,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: AppColors.blue,
+      primary: AppColors.blue,
+    ),
+    primaryColor: AppColors.blue,
+    dividerColor: Colors.transparent,
+    appBarTheme: const AppBarTheme(
+      backgroundColor: AppColors.blue,
+      foregroundColor: AppColors.white,
+      elevation: 0,
+      centerTitle: true,
+      titleTextStyle: TextStyle(
+        color: AppColors.white,
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+    cardTheme: const CardTheme(
+      color: AppColors.white,
+      elevation: 2,
+      margin: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+      shape: RoundedRectangleBorder(borderRadius: radio),
+    ),
+    dialogTheme: const DialogTheme(
+      backgroundColor: AppColors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(22)),
+      ),
+    ),
+    snackBarTheme: const SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: radio),
+    ),
+    chipTheme: ChipThemeData(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    ),
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      backgroundColor: AppColors.blue,
+      foregroundColor: AppColors.white,
+    ),
     dividerTheme: const DividerThemeData(
       color: AppColors.divider,
       space: 1,
       thickness: 1,
     ),
-    scaffoldBackgroundColor: AppColors.white,
+    scaffoldBackgroundColor: const Color(0xFFF4F6FB),
     platform: TargetPlatform.iOS,
     checkboxTheme: CheckboxThemeData(
       shape: const RoundedRectangleBorder(
@@ -73,35 +114,43 @@ ThemeData buildTheme(BuildContext context) {
       ),
     ), */
     inputDecorationTheme: const InputDecorationTheme(
+      enabledBorder: OutlineInputBorder(
+        borderRadius: radio,
+        borderSide: BorderSide(color: Color(0xFFCDD6E0)),
+      ),
       errorStyle: TextStyle(
         color: AppColors.error,
         fontSize: 9,
         height: 0.8,
       ),
       border: OutlineInputBorder(
+        borderRadius: radio,
         borderSide: BorderSide(
           color: AppColors.secondaryText,
         ),
       ),
       errorBorder: OutlineInputBorder(
+        borderRadius: radio,
         borderSide: BorderSide(
           color: AppColors.error,
         ),
       ),
       focusedErrorBorder: OutlineInputBorder(
+        borderRadius: radio,
         borderSide: BorderSide(
           color: AppColors.error,
         ),
       ),
       filled: true,
       isDense: true,
-      fillColor: Colors.transparent,
+      fillColor: AppColors.white,
       labelStyle: TextStyle(
         fontSize: 14,
       ),
       // contentPadding: EdgeInsets.fromLTRB(12, 20, 0, 20),
       contentPadding: EdgeInsets.only(left: 15, top: 18, bottom: 18),
       focusedBorder: OutlineInputBorder(
+        borderRadius: radio,
         borderSide: BorderSide(
           color: AppColors.buttonPrimary,
         ),
@@ -117,7 +166,9 @@ ThemeData buildTheme(BuildContext context) {
         ),
         //overlayColor: MaterialStateProperty.all(AppColors.primaryHover),
         animationDuration: const Duration(seconds: 500),
-        //shape: MaterialStateProperty.all(shapeButtonBorderRadius),
+        shape: MaterialStateProperty.all(
+          const RoundedRectangleBorder(borderRadius: radio),
+        ),
         //padding: MaterialStateProperty.all(horizontalViewSpacing),
         fixedSize: MaterialStateProperty.all(const Size.fromHeight(50)),
         minimumSize: MaterialStateProperty.all(const Size.fromHeight(50)),
