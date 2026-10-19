@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/custom_image_picker.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
