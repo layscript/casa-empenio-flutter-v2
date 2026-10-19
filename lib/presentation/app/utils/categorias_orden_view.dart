@@ -1,7 +1,10 @@
 import 'dart:convert';
 
+import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 // ---------------------------------------------------------------------------
 // "Ordenar mis categorías": revisa las categorías reales del negocio, avisa
@@ -9,6 +12,24 @@ import 'package:flutter/material.dart';
 // campos propios (plantillas: vehículo, terreno, laptop...). Nada se borra de
 // los préstamos ya hechos; todo se confirma antes de aplicarse.
 // ---------------------------------------------------------------------------
+
+/// Cliente de red que identifica a la persona que usa la pantalla (para la auditoría).
+Dio crearDioCategorias(BuildContext c) {
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: endPointPrincipal,
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 90),
+    ),
+  );
+  final u = c.read<Preferences>().token;
+  if (u != null) {
+    dio.options.headers['x-usuario-id'] = u.id.toString();
+    dio.options.headers['x-usuario-nombre'] =
+        Uri.encodeComponent('${u.nombre ?? ''} ${u.apellido ?? ''}'.trim());
+  }
+  return dio;
+}
 
 List<Map<String, dynamic>> _lista(dynamic d) {
   dynamic x = d;
@@ -373,8 +394,17 @@ class _CategoriasOrdenPageState extends State<CategoriasOrdenPage> {
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
       );
 
-  Future<void> _unirGrupo(List<Map<String, dynamic>> grupo) async {
+  Future<void> _ejecutarUnir(List<Map<String, dynamic>> grupo) async {
     // se queda la que tiene más campos (o la primera)
+    final orden = [...grupo]
+      ..sort((a, b) => _nCampos(_id(b)).compareTo(_nCampos(_id(a))));
+    final destino = orden.first;
+    for (final o in orden.skip(1)) {
+      await _unir(_id(o), _id(destino));
+    }
+  }
+
+  Future<void> _unirGrupo(List<Map<String, dynamic>> grupo) async {
     final orden = [...grupo]
       ..sort((a, b) => _nCampos(_id(b)).compareTo(_nCampos(_id(a))));
     final destino = orden.first;
@@ -388,11 +418,26 @@ class _CategoriasOrdenPageState extends State<CategoriasOrdenPage> {
     );
     if (!ok) return;
     await _hacer(() async {
-      for (final o in otras) {
-        await _unir(_id(o), _id(destino));
-      }
+      await _ejecutarUnir(grupo);
       return 'Categorías unidas en «${_nombre(destino)}»';
     });
+  }
+
+  Future<String> _ejecutarAgrupar(_Familia f) async {
+    final nombrePadre = f.general != null
+        ? _nombre(f.general!)
+        : f.plantilla['nombre'].toString();
+    final padreId = f.general != null
+        ? _id(f.general!)
+        : await _crearCategoria(nombrePadre);
+    for (final h in f.hijos) {
+      await _ponerPadre(_id(h), padreId);
+    }
+    // los campos van en la categoría principal; los hijos los heredan
+    if (f.general == null || _nCampos(padreId) == 0) {
+      await _aplicarPlantilla(padreId, f.plantilla['clave'].toString());
+    }
+    return 'Listo: «$nombrePadre» agrupa ${f.hijos.length} subcategorías';
   }
 
   Future<void> _agruparFamilia(_Familia f) async {
@@ -408,19 +453,49 @@ class _CategoriasOrdenPageState extends State<CategoriasOrdenPage> {
           'de cada una. Todo lo registrado antes sigue igual. ¿Continuar?',
     );
     if (!ok) return;
-    await _hacer(() async {
-      final padreId = f.general != null
-          ? _id(f.general!)
-          : await _crearCategoria(nombrePadre);
-      for (final h in f.hijos) {
-        await _ponerPadre(_id(h), padreId);
+    await _hacer(() => _ejecutarAgrupar(f));
+  }
+
+  /// Hace los tres pasos seguidos: unir repetidas, agrupar y poner los campos.
+  Future<void> _todoAutomatico() async {
+    final rep = _repetidas();
+    final fam = _familias();
+    final sc = _sinCampos();
+    if (rep.isEmpty && fam.isEmpty && sc.isEmpty) {
+      _aviso('No hay nada pendiente: todo está en orden');
+      return;
+    }
+    final lineas = <String>[
+      if (rep.isNotEmpty) '• Unir ${rep.length} grupo(s) de categorías repetidas',
+      for (final f in fam)
+        '• Agrupar ${f.hijos.map(_nombre).join(', ')} en «${f.general != null ? _nombre(f.general!) : f.plantilla['nombre']}»',
+      if (sc.isNotEmpty) '• Poner sus campos a ${sc.length} categoría(s)',
+    ];
+    final ok = await _confirmar(
+      'Ordenar todo automáticamente',
+      '${lineas.join('\n')}\n\nTodos los campos quedan opcionales. Los préstamos '
+          'y bienes ya registrados NO se tocan. ¿Continuar?',
+    );
+    if (!ok) return;
+    setState(() => _trabajando = true);
+    try {
+      for (final g in rep) {
+        await _ejecutarUnir(g);
       }
-      // los campos van en la categoría principal; los hijos los heredan
-      if ((f.general == null) || _nCampos(padreId) == 0) {
-        await _aplicarPlantilla(padreId, f.plantilla['clave'].toString());
+      await _cargar();
+      for (final f in _familias()) {
+        await _ejecutarAgrupar(f);
       }
-      return 'Listo: «$nombrePadre» agrupa ${f.hijos.length} subcategorías';
-    });
+      await _cargar();
+      for (final x in _sinCampos()) {
+        await _aplicarPlantilla(_id(x.cat), x.plantilla['clave'].toString());
+      }
+      _aviso('Listo: categorías y campos ordenados');
+    } catch (e) {
+      _aviso(_mensajeError(e));
+    }
+    await _cargar();
+    if (mounted) setState(() => _trabajando = false);
   }
 
   Future<void> _elegirPadre(Map<String, dynamic> c) async {
@@ -538,6 +613,17 @@ class _CategoriasOrdenPageState extends State<CategoriasOrdenPage> {
                             style: const TextStyle(fontSize: 13),
                           ),
                         ),
+                        if (repetidas.isNotEmpty ||
+                            familias.isNotEmpty ||
+                            sinCampos.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: ElevatedButton.icon(
+                              onPressed: _trabajando ? null : _todoAutomatico,
+                              icon: const Icon(Icons.auto_fix_high),
+                              label: const Text('Ordenar todo automáticamente'),
+                            ),
+                          ),
                         if (repetidas.isEmpty && familias.isEmpty && sinCampos.isEmpty)
                           _tarjeta(Colors.green, Icons.check_circle, 'Todo en orden',
                               'No encontré categorías repetidas ni sin campos. Abajo puede '

@@ -1,5 +1,7 @@
+import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/categorias_orden_view.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/categories/widgets/widgets.dart';
@@ -60,7 +62,31 @@ class CategoriesView extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 20),
+                              const SizedBox(height: 12),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                child: OutlinedButton.icon(
+                                  onPressed: () async {
+                                    await Navigator.of(context).push(
+                                      MaterialPageRoute<void>(
+                                        builder: (_) => CategoriasOrdenPage(
+                                          dio: crearDioCategorias(context),
+                                        ),
+                                      ),
+                                    );
+                                    if (context.mounted) {
+                                      context
+                                          .read<CategoriesBloc>()
+                                          .add(GetCategories());
+                                    }
+                                  },
+                                  icon: const Icon(Icons.account_tree_outlined),
+                                  label: const Text(
+                                      'Ordenar categorías, subcategorías y campos'),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
                               if (state.listCategories != null)
                                 ListView.separated(
                                   physics: const NeverScrollableScrollPhysics(),
@@ -69,16 +95,17 @@ class CategoriesView extends StatelessWidget {
                                     height: 10,
                                   ),
                                   shrinkWrap: true,
-                                  itemCount: state.listCategories!.length,
+                                  itemCount: ordenarCategorias(state.listCategories!).length,
                                   itemBuilder: (context, index) {
-                                    final category =
-                                        state.listCategories![index];
+                                    final category = ordenarCategorias(
+                                        state.listCategories!)[index];
                                     return ListTile(
                                       title: Row(
                                         children: [
                                           Expanded(
                                             child: Text(
-                                              category.descripcion,
+                                              nombreCategoria(category,
+                                                  state.listCategories),
                                               maxLines: 3,
                                               style: const TextStyle(
                                                 fontWeight: FontWeight.normal,
