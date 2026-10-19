@@ -432,9 +432,12 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                                             ),
                                             if (prestamo.isRenewed != null &&
                                                 prestamo.isRenewed == true)
-                                              const Text(
-                                                'RENOVADO',
-                                                style: TextStyle(
+                                              Text(
+                                                (prestamo.renewalCount ?? 0) > 0
+                                                    ? 'RENOVACIÓN N° ${prestamo.renewalCount}'
+                                                        '${prestamo.parentLoanId != null ? ' (de #${prestamo.parentLoanId.toString().padLeft(6, '0')})' : ''}'
+                                                    : 'RENOVADO',
+                                                style: const TextStyle(
                                                   color: Colors.purple,
                                                   fontWeight: FontWeight.w500,
                                                   fontSize: 12,

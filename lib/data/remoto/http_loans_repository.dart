@@ -128,6 +128,7 @@ class HttpLoansRepository implements LoansRepository {
     required bool renew,
     required int? cajaId,
     required int? sucursalId,
+    int? parentLoanId,
   }) async {
     const path = '/prestamos/prestamos';
 
@@ -170,6 +171,10 @@ class HttpLoansRepository implements LoansRepository {
       'cajaId': cajaId,
       'sucursalId': sucursalId,
     };
+    // Renovación inteligente: el servidor enlaza este préstamo con el anterior
+    if (renew && parentLoanId != null && parentLoanId > 0) {
+      payload['parentLoanId'] = parentLoanId;
+    }
 
     try {
       final response = await _dio.post<String>(path, data: payload);
@@ -191,7 +196,7 @@ class HttpLoansRepository implements LoansRepository {
 
         if (cliente.imagenUno != null) {
           await updateCustomerPhotos(
-            dni: int.parse(cliente.dni ?? '0'),
+            dni: (cliente.dni ?? '').trim(),
             imagen: cliente.imagenUno!,
             imagen2: cliente.imagenDos,
           );
@@ -199,7 +204,7 @@ class HttpLoansRepository implements LoansRepository {
 
         if (aval != null && aval.imagenUno != null) {
           await updateCustomerPhotos(
-            dni: int.parse(aval.dni ?? '0'),
+            dni: (aval.dni ?? '').trim(),
             imagen: aval.imagenUno!,
             imagen2: aval.imagenDos,
           );
@@ -268,9 +273,11 @@ class HttpLoansRepository implements LoansRepository {
     required bool? efectivo,
     required int? cajaId,
     bool isLiquidacion = false,
+    String? medioPago,
+    String? banco,
   }) async {
     const path = '/prestamos/pagos';
-    final payload = {
+    final payload = <String, dynamic>{
       'monto': monto,
       'prestamoId': codigo,
       'usuarioId': userId,
@@ -281,6 +288,13 @@ class HttpLoansRepository implements LoansRepository {
 
     if (efectivo != null) {
       payload['efectivo'] = efectivo;
+    }
+    if (medioPago != null) {
+      payload['medioPago'] = medioPago;
+      payload['efectivo'] = medioPago == 'EFECTIVO';
+    }
+    if (banco != null && banco.trim().isNotEmpty) {
+      payload['banco'] = banco.trim();
     }
     try {
       final response = await _dio.post<String>(path, data: payload);
@@ -595,15 +609,65 @@ class HttpLoansRepository implements LoansRepository {
 
 // TODO:: Probar Aca 2
 
+  /// Un archivo es "local" (recién tomado con la cámara/galería) solo si existe
+  /// en el teléfono. Las rutas del servidor (ya subidas) no existen aquí.
+  bool _esArchivoLocal(String? ruta) {
+    if (ruta == null || ruta.isEmpty) return false;
+    try {
+      return File(ruta).existsSync();
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Sube las fotos del cliente con hasta 3 intentos (si falla internet un
+  /// instante, ya no se pierde la foto en silencio).
   Future<bool> updateCustomerPhotos({
-    required int dni,
+    required String dni,
+    required String? imagen,
+    required String? imagen2,
+  }) async {
+    for (var intento = 1; intento <= 3; intento++) {
+      final ok = await _updateCustomerPhotosOnce(
+        dni: dni,
+        imagen: imagen,
+        imagen2: imagen2,
+      );
+      if (ok) return true;
+      await Future.delayed(Duration(seconds: intento));
+    }
+    return false;
+  }
+
+  Future<bool> updateWarrantyPhotos({
+    required String? imagen,
+    required String? imagen2,
+    required String? imagen3,
+    required int idGarantia,
+  }) async {
+    for (var intento = 1; intento <= 3; intento++) {
+      final ok = await _updateWarrantyPhotosOnce(
+        imagen: imagen,
+        imagen2: imagen2,
+        imagen3: imagen3,
+        idGarantia: idGarantia,
+      );
+      if (ok) return true;
+      await Future.delayed(Duration(seconds: intento));
+    }
+    return false;
+  }
+
+  Future<bool> _updateCustomerPhotosOnce({
+    required String dni,
     required String? imagen,
     required String? imagen2,
   }) async {
     try {
       FormData formData = FormData();
-      if (imagen != null && !imagen.contains('files/')) {
-        final img = File(imagen);
+      if (_esArchivoLocal(imagen)) {
+        final imagenPath = imagen!;
+        final img = File(imagenPath);
         formData.files.add(MapEntry(
             'imagen',
             await MultipartFile.fromFile(
@@ -611,8 +675,9 @@ class HttpLoansRepository implements LoansRepository {
               filename: img.path.split('/').last,
             )));
       }
-      if (imagen2 != null && !imagen2.contains('files/')) {
-        final img2 = File(imagen2);
+      if (_esArchivoLocal(imagen2)) {
+        final imagen2Path = imagen2!;
+        final img2 = File(imagen2Path);
         formData.files.add(MapEntry(
             'imagen2',
             await MultipartFile.fromFile(
@@ -636,7 +701,7 @@ class HttpLoansRepository implements LoansRepository {
     }
   }
 
-  Future<bool> updateWarrantyPhotos({
+  Future<bool> _updateWarrantyPhotosOnce({
     required String? imagen,
     required String? imagen2,
     required String? imagen3,
@@ -651,8 +716,9 @@ class HttpLoansRepository implements LoansRepository {
 
     try {
       FormData formData = FormData();
-      if (imagen != null && !imagen.contains('files/')) {
-        final img = File(imagen);
+      if (_esArchivoLocal(imagen)) {
+        final imagenPath = imagen!;
+        final img = File(imagenPath);
         formData.files.add(MapEntry(
             'imagen',
             await MultipartFile.fromFile(
@@ -660,8 +726,9 @@ class HttpLoansRepository implements LoansRepository {
               filename: img.path.split('/').last,
             )));
       }
-      if (imagen2 != null && !imagen2.contains('files/')) {
-        final img2 = File(imagen2);
+      if (_esArchivoLocal(imagen2)) {
+        final imagen2Path = imagen2!;
+        final img2 = File(imagen2Path);
         formData.files.add(MapEntry(
             'imagen2',
             await MultipartFile.fromFile(
@@ -669,8 +736,9 @@ class HttpLoansRepository implements LoansRepository {
               filename: img2.path.split('/').last,
             )));
       }
-      if (imagen3 != null && !imagen3.contains('files/')) {
-        final img3 = File(imagen3);
+      if (_esArchivoLocal(imagen3)) {
+        final imagen3Path = imagen3!;
+        final img3 = File(imagen3Path);
         formData.files.add(MapEntry(
             'imagen3',
             await MultipartFile.fromFile(
@@ -756,7 +824,7 @@ class HttpLoansRepository implements LoansRepository {
 
         if (cliente.imagenUno != null) {
           await updateCustomerPhotos(
-            dni: int.parse(cliente.dni ?? '0'),
+            dni: (cliente.dni ?? '').trim(),
             imagen: cliente.imagenUno!,
             imagen2: cliente.imagenDos,
           );
@@ -764,7 +832,7 @@ class HttpLoansRepository implements LoansRepository {
 
         if (aval != null && aval.imagenUno != null) {
           await updateCustomerPhotos(
-            dni: int.parse(aval.dni ?? '0'),
+            dni: (aval.dni ?? '').trim(),
             imagen: aval.imagenUno!,
             imagen2: aval.imagenDos,
           );

@@ -32,6 +32,9 @@ class LoansEntity extends Equatable {
     required this.bienesGarantia,
     required this.isRenewed,
     required this.caja,
+    this.renewalCount,
+    this.parentLoanId,
+    this.renewalCode,
   });
 
   final int? codigo;
@@ -63,6 +66,12 @@ class LoansEntity extends Equatable {
   final List<WarrantyEntity>? bienesGarantia;
   final bool? isRenewed;
   final CajaEntity? caja;
+
+  /// Renovación inteligente: N° de renovación (1, 2, 3...), préstamo del que
+  /// viene y código de la cadena (ej. 000123-R2). Null en préstamos antiguos.
+  final int? renewalCount;
+  final int? parentLoanId;
+  final String? renewalCode;
 
   @override
   String toString() {
@@ -152,6 +161,9 @@ caja: $caja,
             )
           : null,
       isRenewed: map['isRenewed'] as bool?,
+      renewalCount: (map['renewal_count'] as num?)?.toInt(),
+      parentLoanId: (map['parent_loan_id'] as num?)?.toInt(),
+      renewalCode: map['current_renewal_code'] as String?,
       caja: map['caja'] != null
           ? CajaEntity.getCajaFromMap(
               map['caja'],
@@ -192,6 +204,9 @@ caja: $caja,
         bienesGarantia,
         isRenewed,
         caja,
+        renewalCount,
+        parentLoanId,
+        renewalCode,
       ];
 }
 

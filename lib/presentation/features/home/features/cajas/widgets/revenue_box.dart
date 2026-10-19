@@ -5,6 +5,7 @@ import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/cajas/widgets/desglose_medios.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -100,6 +101,19 @@ class _RevenueBoxState extends State<RevenueBox> {
                             ),
                             const Spacer(),
                             Text(movimiento?.tipo?.descripcion ?? ''),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            const Text(
+                              'Medio de pago: ',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(etiquetaMedio(movimiento)),
                           ],
                         ),
                         const SizedBox(height: 10),

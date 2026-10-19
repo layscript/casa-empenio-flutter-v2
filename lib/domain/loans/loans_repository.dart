@@ -30,6 +30,7 @@ abstract class LoansRepository {
     required bool renew,
     required int? cajaId,
     required int? sucursalId,
+    int? parentLoanId,
   });
 
   Future<Either<String, bool>> updateLoan({
@@ -78,6 +79,8 @@ abstract class LoansRepository {
     required bool? efectivo,
     required int? cajaId,
     bool isLiquidacion,
+    String? medioPago,
+    String? banco,
   });
 
   Future<bool> payOffLoan({

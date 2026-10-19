@@ -2,6 +2,7 @@ import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:excel/excel.dart';
 import 'package:flutter/material.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/cajas/widgets/desglose_medios.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
@@ -25,7 +26,7 @@ class _LeadingDownloadCajasState extends State<LeadingDownloadCajas> {
     excel.rename('Sheet1', 'Reporte');
     excel.insertRowIterables(
       'Reporte',
-      ['Id', 'Observaciones', 'Monto', 'Tipo', 'Fecha'],
+      ['Id', 'Observaciones', 'Monto', 'Tipo', 'Medio de pago', 'Fecha'],
       0,
     );
     final movimientos = widget.movimientos;
@@ -37,6 +38,7 @@ class _LeadingDownloadCajasState extends State<LeadingDownloadCajas> {
           movimientos[i].observaciones,
           double.parse(movimientos[i].monto ?? '0.00'),
           movimientos[i].tipo?.codigo ?? '',
+          etiquetaMedio(movimientos[i]),
           fechaCortaPeru(movimientos[i].createdAt),
         ],
         i + 1,

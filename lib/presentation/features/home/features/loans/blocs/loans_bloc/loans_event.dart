@@ -60,6 +60,8 @@ class SavePaymentLoan extends LoansEvent {
     required this.montoRestante,
     required this.codigo,
     required this.efectivo,
+    this.medioPago,
+    this.banco,
   });
   final int idPrestamo;
   final String monto;
@@ -68,6 +70,8 @@ class SavePaymentLoan extends LoansEvent {
   final String montoRestante;
   final int codigo;
   final bool efectivo;
+  final String? medioPago;
+  final String? banco;
 }
 
 class SaveSettlementLoan extends LoansEvent {
@@ -78,6 +82,8 @@ class SaveSettlementLoan extends LoansEvent {
     required this.codigo,
     required this.photos,
     required this.efectivo,
+    this.medioPago,
+    this.banco,
   });
   final int idPrestamo;
   final String monto;
@@ -85,6 +91,8 @@ class SaveSettlementLoan extends LoansEvent {
   final int codigo;
   final List<XFile>? photos;
   final bool efectivo;
+  final String? medioPago;
+  final String? banco;
 }
 
 class AddAmountLoan extends LoansEvent {

@@ -10,6 +10,7 @@ import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/auth/auth.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/blocs/loans_bloc/loans_bloc.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/expediente_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -605,13 +606,22 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
           }
 
           if (state.isLoansRenevSuccess) {
+            // Al crear (duplicar/renovar) se abre el expediente digital del nuevo préstamo
+            final codigoNuevo =
+                widget.isNuevo ? context.read<LoansBloc>().ultimoPrestamoCreado : null;
+            final rootNav = Navigator.of(context, rootNavigator: true);
             showDialog(
               context: context,
+              barrierDismissible: false,
               builder: (context) {
                 return AlertDialog(
                   title: const Text('Mensaje'),
-                  content: const Text(
-                    'Prestamo guardado correctamente',
+                  content: Text(
+                    widget.isNuevo
+                        ? (widget.isRenew == true
+                            ? 'Renovación guardada correctamente. Ahora se abrirá el expediente digital para la firma y la huella del cliente.'
+                            : 'Préstamo guardado correctamente. Ahora se abrirá el expediente digital para la firma y la huella del cliente.')
+                        : 'Prestamo guardado correctamente',
                     style: TextStyle(
                         color: AppColors.primaryText,
                         fontWeight: FontWeight.normal),
@@ -622,6 +632,14 @@ class _EditLoanBottomSheetState extends State<EditLoanBottomSheet> {
                         Navigator.pop(context);
                         Navigator.pop(context);
                         Navigator.pop(context, true);
+                        if (codigoNuevo != null && codigoNuevo > 0) {
+                          rootNav.push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  ExpedientePage(prestamoCodigo: codigoNuevo),
+                            ),
+                          );
+                        }
                       },
                       child: const Text('Aceptar'),
                     ),

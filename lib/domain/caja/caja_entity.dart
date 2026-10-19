@@ -180,7 +180,13 @@ class MovimientosEntity extends Equatable {
     required this.createdAt,
     required this.updatedAt,
     required this.tipo,
+    this.medioPago,
+    this.banco,
   });
+
+  /// EFECTIVO | DEPOSITO | YAPE | PLIN | OTRO (null = efectivo, datos antiguos)
+  final String? medioPago;
+  final String? banco;
 
   final int? id;
   final String? observaciones;
@@ -208,8 +214,12 @@ class MovimientosEntity extends Equatable {
     String? createdAt,
     String? updatedAt,
     TypeBoxEntity? tipo,
+    String? medioPago,
+    String? banco,
   }) {
     return MovimientosEntity(
+      medioPago: medioPago ?? this.medioPago,
+      banco: banco ?? this.banco,
       id: id ?? this.id,
       observaciones: observaciones ?? this.observaciones,
       monto: monto ?? this.monto,
@@ -246,6 +256,8 @@ class MovimientosEntity extends Equatable {
       eliminado: map['eliminado'],
       createdAt: map['createdAt'],
       updatedAt: map['updatedAt'],
+      medioPago: map['medioPago'] as String?,
+      banco: map['banco'] as String?,
       tipo: map['tipo'] != null
           ? TypeBoxEntity.getTypeFromMap(map['tipo'])
           : null,
@@ -271,6 +283,8 @@ class MovimientosEntity extends Equatable {
         createdAt,
         updatedAt,
         tipo,
+        medioPago,
+        banco,
       ];
 }
 

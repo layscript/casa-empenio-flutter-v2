@@ -12,6 +12,10 @@ part 'loans_event.dart';
 part 'loans_state.dart';
 
 class LoansBloc extends Bloc<LoansEvent, LoansState> {
+  /// Código del último préstamo creado por 'Renovar' o 'Crear nuevo (duplicar)'.
+  /// Sirve para abrir su expediente digital al terminar.
+  int? ultimoPrestamoCreado;
+
   LoansBloc({
     required CustomerRepository customerRepository,
     required LoansRepository loansRepository,
@@ -230,6 +234,8 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
         userId: event.userId,
         url: urlImg,
         efectivo: event.efectivo,
+        medioPago: event.medioPago,
+        banco: event.banco,
         cajaId: state.cajaId,
         isLiquidacion: true,
       );
@@ -260,6 +266,8 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
         userId: event.userId,
         url: urlImg,
         efectivo: event.efectivo,
+        medioPago: event.medioPago,
+        banco: event.banco,
         cajaId: state.cajaId,
       );
 
@@ -292,6 +300,8 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
       userId: event.userId,
       url: urlImg,
       efectivo: event.efectivo,
+      medioPago: event.medioPago,
+      banco: event.banco,
       cajaId: state.cajaId,
       isLiquidacion: true,
     );
@@ -517,6 +527,7 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
         usuarioId: event.userId,
         //renew: true,
         renew: event.isRenew ?? false,
+        parentLoanId: event.codigo,
         // TODO:: ID SUCURSSCAL
         sucursalId: _preferences.token?.sucursal?.id ?? 1,
       );
@@ -524,9 +535,12 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
         (error) => emit(
           state.copyWith(loansRenewStatus: LoansStatus.updateLoansError),
         ),
-        (contrato) => emit(
-          state.copyWith(loansRenewStatus: LoansStatus.updateLoansSuccess),
-        ),
+        (contrato) {
+          ultimoPrestamoCreado = contrato.numero;
+          emit(
+            state.copyWith(loansRenewStatus: LoansStatus.updateLoansSuccess),
+          );
+        },
       );
     } else {
       final result = await _loansRepository.updateLoan(

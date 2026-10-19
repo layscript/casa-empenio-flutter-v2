@@ -29,7 +29,38 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
 
   bool liquidar = false;
   double restante = 0;
-  bool efectivo = false;
+  bool efectivo = true;
+  String medioPago = 'EFECTIVO';
+  String? banco;
+  final otroBancoCtrl = TextEditingController();
+
+  static const _medios = <String, String>{
+    'EFECTIVO': '💵 Efectivo',
+    'DEPOSITO': '🏦 Depósito',
+    'YAPE': '📱 Yape',
+    'PLIN': '📱 Plin',
+    'OTRO': '➕ Otro',
+  };
+  static const _bancos = [
+    'BCP',
+    'Interbank',
+    'BBVA',
+    'Scotiabank',
+    'Caja Huancayo',
+    'Banco de la Nación',
+    'Otro banco',
+  ];
+
+  String? get _bancoFinal {
+    if (medioPago != 'DEPOSITO') return null;
+    if (banco == 'Otro banco') {
+      final t = otroBancoCtrl.text.trim();
+      return t.isEmpty ? null : t;
+    }
+    return banco;
+  }
+
+  bool get _medioValido => medioPago != 'DEPOSITO' || _bancoFinal != null;
 
   @override
   void initState() {
@@ -300,18 +331,64 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                         },
                       ),
                       const SizedBox(height: 15),
-                      CheckboxMenuButton(
-                        value: efectivo,
-                        onChanged: (e) {
-                          setState(() {
-                            efectivo = e ?? false;
-                          });
-                        },
-                        child: const Text('Pago en efectivo'),
-                      ),
                       const Text(
-                        '(Si no se selecciona el check, se considerará como pago en depósito)',
-                        style: TextStyle(fontSize: 12, color: Colors.red),
+                        '¿Cómo te pagó el cliente?',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: [
+                          for (final e in _medios.entries)
+                            ChoiceChip(
+                              label: Text(e.value),
+                              selected: medioPago == e.key,
+                              onSelected: (_) {
+                                setState(() {
+                                  medioPago = e.key;
+                                  efectivo = e.key == 'EFECTIVO';
+                                  if (e.key != 'DEPOSITO') banco = null;
+                                });
+                              },
+                            ),
+                        ],
+                      ),
+                      if (medioPago == 'DEPOSITO') ...[
+                        const SizedBox(height: 10),
+                        DropdownButtonFormField<String>(
+                          value: banco,
+                          decoration: const InputDecoration(
+                            labelText: '¿En qué banco depositó?',
+                          ),
+                          items: _bancos
+                              .map((b) =>
+                                  DropdownMenuItem(value: b, child: Text(b)))
+                              .toList(),
+                          onChanged: (v) => setState(() => banco = v),
+                        ),
+                        if (banco == 'Otro banco') ...[
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: otroBancoCtrl,
+                            onChanged: (_) => setState(() {}),
+                            decoration: const InputDecoration(
+                              labelText: 'Nombre del banco',
+                            ),
+                          ),
+                        ],
+                      ],
+                      const SizedBox(height: 6),
+                      Text(
+                        medioPago == 'EFECTIVO'
+                            ? 'El dinero entra como efectivo a la caja.'
+                            : 'Se registra en caja como ${_medios[medioPago]!.substring(3)}'
+                                '${_bancoFinal != null ? ' ($_bancoFinal)' : ''}, '
+                                'no como efectivo en mano.',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.secondaryText,
+                        ),
                       ),
                       const SizedBox(height: 15),
                       ItemPaymentLoan(
@@ -348,6 +425,7 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                                       montoCtrl.text != "" &&
                                       montoCtrl.text != "0" &&
                                       liquidar &&
+                                      _medioValido &&
                                       selectedPhotosLiquidar!.isNotEmpty) &&
                                   state.loansStatus != LoansStatus.loading
                               ? () {
@@ -410,6 +488,8 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                                                             photos:
                                                                 selectedPhotosLiquidar,
                                                             efectivo: efectivo,
+                                                            medioPago: medioPago,
+                                                            banco: _bancoFinal,
                                                           ),
                                                         );
                                                   }
@@ -434,6 +514,7 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                           onPressed: (loan?.ganancia != null &&
                                       montoCtrl.text != "" &&
                                       montoCtrl.text != "0" &&
+                                      _medioValido &&
                                       selectedPhotosLiquidar!.isNotEmpty) &&
                                   state.loansStatus != LoansStatus.loading
                               ? () {
@@ -449,6 +530,8 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                                               montoRestante.toString(),
                                           codigo: loan?.codigo ?? 0,
                                           efectivo: efectivo,
+                                          medioPago: medioPago,
+                                          banco: _bancoFinal,
                                         ),
                                       );
                                 }

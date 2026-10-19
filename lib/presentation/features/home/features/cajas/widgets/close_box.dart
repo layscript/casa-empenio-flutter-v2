@@ -3,6 +3,7 @@ import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/cajas/widgets/desglose_medios.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -128,6 +129,15 @@ class _CloseBoxViewState extends State<CloseBoxView> {
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             color: AppColors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Efectivo que debe haber en mano: s/.${efectivoEnMano(movimientos).toStringAsFixed(2)}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: AppColors.white,
+                            fontSize: 12,
                           ),
                         ),
                         if (double.tryParse(montoCtrl.text) != null) ...[

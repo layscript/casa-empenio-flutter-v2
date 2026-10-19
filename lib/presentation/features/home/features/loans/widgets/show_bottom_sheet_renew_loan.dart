@@ -21,7 +21,7 @@ class ShowBottomSheetRenewLoan extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const Text(
-            'Seleccione la opción que desee realizar con la información del préstamo:',
+            '¿Qué deseas hacer con los datos de este préstamo?',
             style: TextStyle(
               color: AppColors.primaryText,
               fontWeight: FontWeight.w500,
@@ -37,7 +37,14 @@ class ShowBottomSheetRenewLoan extends StatelessWidget {
                 false,
               );
             },
-            child: const Text('Crear Nuevo'),
+            child: const Text('🆕 Crear nuevo (el cliente vuelve a dejar su prenda)'),
+          ),
+          const Padding(
+            padding: EdgeInsets.only(top: 4),
+            child: Text(
+              'Copia los datos como un préstamo independiente.',
+              style: TextStyle(fontSize: 11, color: AppColors.secondaryText),
+            ),
           ),
           const SizedBox(height: 10),
           ElevatedButton(
@@ -47,7 +54,16 @@ class ShowBottomSheetRenewLoan extends StatelessWidget {
                 true,
               );
             },
-            child: const Text('Renovar'),
+            child: const Text('🔁 Renovar (continúa el préstamo anterior)'),
+          ),
+          const Padding(
+            padding: EdgeInsets.only(top: 4),
+            child: Text(
+              'El sistema enlaza el nuevo préstamo con el anterior y cuenta '
+              'las renovaciones (N° 1, 2, 3...).',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 11, color: AppColors.secondaryText),
+            ),
           ),
         ],
       ),

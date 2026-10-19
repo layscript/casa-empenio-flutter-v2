@@ -1010,6 +1010,18 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
         (caja) => cajaId = caja?.id,
       );
 
+      // Fotos: se usa lo que el usuario tiene en pantalla; si no hay, el borrador
+      // guardado. (Antes se exigía que existieran las dos cosas y la foto del
+      // cliente se perdía sin avisar.)
+      final fotosCliente = _elegirFotos(
+        state.photosClient,
+        loansLocalState?.imagesClient,
+      );
+      final fotosAval = _elegirFotos(
+        state.photosAval,
+        loansLocalState?.imagesAval,
+      );
+
       final result = await _loansRepository.saveLoan(
         cajaId: cajaId ?? state.cajaId,
         renew: false,
@@ -1039,20 +1051,8 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
           ventas: null,
           updatedAt: '',
           createdAt: '',
-          imagenUno: (loansLocalState?.imagesClient == null ||
-                  loansLocalState?.imagesClient?.length == 0 ||
-                  state.photosClient == null ||
-                  state.photosClient?.length == 0)
-              ? null
-              : loansLocalState?.imagesClient?[0].path ??
-                  state.photosClient?[0].path,
-          imagenDos: (loansLocalState?.imagesClient == null ||
-                  loansLocalState?.imagesClient?.length == 1 ||
-                  state.photosClient == null ||
-                  state.photosClient?.length == 1)
-              ? null
-              : loansLocalState?.imagesClient?[1].path ??
-                  state.photosClient?[1].path,
+          imagenUno: _rutaFoto(fotosCliente, 0),
+          imagenDos: _rutaFoto(fotosCliente, 1),
         ),
         aval: loansLocalState?.isAval == true || state.isAval == true
             ? CustomerEntity(
@@ -1069,20 +1069,8 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
                 ventas: null,
                 updatedAt: '',
                 createdAt: '',
-                imagenUno: (loansLocalState?.imagesAval == null ||
-                        loansLocalState?.imagesAval?.length == 0 ||
-                        state.photosAval == null ||
-                        state.photosAval?.length == 0)
-                    ? null
-                    : loansLocalState?.imagesAval?[0].path ??
-                        state.photosAval?[0].path,
-                imagenDos: (loansLocalState?.imagesAval == null ||
-                        loansLocalState?.imagesAval?.length == 1 ||
-                        state.photosAval == null ||
-                        state.photosAval?.length == 1)
-                    ? null
-                    : loansLocalState?.imagesAval?[1].path ??
-                        state.photosAval?[1].path,
+                imagenUno: _rutaFoto(fotosAval, 0),
+                imagenDos: _rutaFoto(fotosAval, 1),
               )
             : null,
         bienes: garantiasData,
@@ -1115,6 +1103,14 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
       );
     }
   }
+
+  List<XFile> _elegirFotos(List<XFile>? enPantalla, List<XFile>? borrador) {
+    if (enPantalla != null && enPantalla.isNotEmpty) return enPantalla;
+    return borrador ?? <XFile>[];
+  }
+
+  String? _rutaFoto(List<XFile> fotos, int i) =>
+      i < fotos.length ? fotos[i].path : null;
 
   void _onSaveFirstStepOne(
     SaveFirstStepOne event,

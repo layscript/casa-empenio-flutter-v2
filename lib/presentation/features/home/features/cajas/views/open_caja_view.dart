@@ -145,6 +145,10 @@ class _OpenCajaViewState extends State<OpenCajaView> {
                                       ),
                                     ],
                                   ),
+                                  const SizedBox(height: 10),
+                                  DesgloseMedios(
+                                    movimientos: movimiento.movimientos!,
+                                  ),
                                 ],
                               );
                             }),
