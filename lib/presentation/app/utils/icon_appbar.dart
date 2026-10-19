@@ -69,6 +69,9 @@ IconData getIcon(int id) {
     case 9003:
       return FontAwesomeIcons.gears;
 
+    case 9004:
+      return FontAwesomeIcons.store;
+
     default:
       return FontAwesomeIcons.house;
   }

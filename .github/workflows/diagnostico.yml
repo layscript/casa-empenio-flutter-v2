@@ -1,0 +1,20 @@
+name: Diagnostico
+on:
+  push:
+    branches: [prueba-sucursales]
+jobs:
+  analiza:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.5'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Analizar y mostrar errores
+        run: |
+          flutter analyze --no-fatal-infos --no-fatal-warnings > analisis.txt 2>&1 || true
+          grep -E "^\s*error" analisis.txt | head -40 | while IFS= read -r l; do echo "::error title=ERR::$l"; done
+          tail -3 analisis.txt | while IFS= read -r l; do echo "::notice title=RESUMEN::$l"; done

@@ -90,6 +90,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         const ModulosEntity(id: 9002, nombre: 'Auditoría'),
       if (!yaEsta('expediente'))
         const ModulosEntity(id: 9003, nombre: 'Expedientes'),
+      if (!yaEsta('panel de sucursal'))
+        const ModulosEntity(id: 9004, nombre: 'Panel de Sucursales'),
     ];
   }
 

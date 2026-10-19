@@ -3,6 +3,7 @@ import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/administracion_view.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/auditoria_view.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/expedientes_view.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/sucursales_panel/sucursales_panel_view.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/plantilla/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/home/home.dart';
@@ -107,6 +108,9 @@ class _MainViewState extends State<MainView> {
                     return const AdministracionView();
                   }
                   switch (state.selected?.id) {
+                    case 9004:
+                      return const SucursalesPanelView();
+
                     case 1:
                       return const LoansView();
 
