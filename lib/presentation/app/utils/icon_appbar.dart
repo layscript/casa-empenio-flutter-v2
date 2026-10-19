@@ -60,6 +60,15 @@ IconData getIcon(int id) {
     case 19:
       return FontAwesomeIcons.house;
 
+    case 9001:
+      return FontAwesomeIcons.folderOpen;
+
+    case 9002:
+      return FontAwesomeIcons.userShield;
+
+    case 9003:
+      return FontAwesomeIcons.gears;
+
     default:
       return FontAwesomeIcons.house;
   }
