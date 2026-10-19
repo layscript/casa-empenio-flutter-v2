@@ -15,6 +15,8 @@ class CajasView extends StatefulWidget {
 }
 
 class _CajasViewState extends State<CajasView> {
+  String _filtro = 'Todas';
+
   @override
   Widget build(BuildContext context) {
     final oCcy = NumberFormat("#,##0.00", "en_US");
@@ -42,9 +44,28 @@ class _CajasViewState extends State<CajasView> {
 
               case CajasStatus.loaded || CajasStatus.success:
                 final cajaBloc = context.read<CajasBloc>();
+                final todas = state.listCajas ?? [];
+
+                // Diferencia = lo contado - lo que debía haber (0 = caja cuadrada)
+                double difDe(dynamic caja) {
+                  if (caja == null) return 0;
+                  final d = double.tryParse(caja.montoDiferencia ?? '0') ?? 0;
+                  return d != 0 ? d * -1 : 0;
+                }
+
+                final cuadradas = todas.where((c) => difDe(c) == 0).length;
+                final conDif = todas.length - cuadradas;
+                final lista = todas.where((c) {
+                  final d = difDe(c);
+                  if (_filtro == 'Cuadradas') return d == 0;
+                  if (_filtro == 'Con diferencia') return d != 0;
+                  return true;
+                }).toList();
+
                 return SizedBox(
                   width: double.infinity,
                   child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
                     child: Column(
                       children: [
                         const SizedBox(height: 20),
@@ -58,230 +79,189 @@ class _CajasViewState extends State<CajasView> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        if (state.listCajas != null)
-                          ListView.separated(
-                            physics: const NeverScrollableScrollPhysics(),
-                            separatorBuilder: (context, index) =>
-                                const SizedBox(
-                              height: 10,
+                        const SizedBox(height: 10),
+                        // ---- Guía didáctica ----
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[50],
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.lightbulb_outline,
+                                  color: Colors.blue),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Aquí ves el historial de cajas ya cerradas. '
+                                  'Verde = la caja cuadró exacto. Rojo = hubo '
+                                  'diferencia (faltó o sobró dinero). Toca una '
+                                  'caja para ver el detalle.',
+                                  style: TextStyle(fontSize: 13),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        // ---- Resumen ----
+                        Row(
+                          children: [
+                            _Resumen(
+                              icono: Icons.inventory_2_outlined,
+                              titulo: 'Cajas',
+                              valor: '${todas.length}',
+                              color: Colors.blueGrey,
                             ),
-                            shrinkWrap: true,
-                            itemCount: state.listCajas!.length,
-                            itemBuilder: (context, index) {
-                              final caja = state.listCajas![index];
+                            const SizedBox(width: 8),
+                            _Resumen(
+                              icono: Icons.check_circle_outline,
+                              titulo: 'Cuadradas',
+                              valor: '$cuadradas',
+                              color: Colors.green,
+                            ),
+                            const SizedBox(width: 8),
+                            _Resumen(
+                              icono: Icons.warning_amber_rounded,
+                              titulo: 'Con diferencia',
+                              valor: '$conDif',
+                              color: Colors.red,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          children: [
+                            for (final f in const [
+                              'Todas',
+                              'Cuadradas',
+                              'Con diferencia'
+                            ])
+                              ChoiceChip(
+                                label: Text(f),
+                                selected: _filtro == f,
+                                onSelected: (_) => setState(() => _filtro = f),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        if (lista.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.all(30),
+                            child: Text('No hay cajas para mostrar.'),
+                          ),
+                        ListView.separated(
+                          physics: const NeverScrollableScrollPhysics(),
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 10),
+                          shrinkWrap: true,
+                          itemCount: lista.length,
+                          itemBuilder: (context, index) {
+                            final caja = lista[index];
+                            final valor = difDe(caja);
+                            final cuadra = valor == 0;
+                            final color = cuadra ? Colors.green : Colors.red;
 
-                              final valor = caja == null
-                                  ? '0.00'
-                                  : double.parse(caja.montoDiferencia!) != 0
-                                      ? double.parse(caja.montoDiferencia!) * -1
-                                      : 0;
-
-                              return Container(
-                                color: valor == 0
-                                    ? Colors.green[100]
-                                    : Colors.red[100],
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: color.withOpacity(0.5),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
                                 child: ExpansionTile(
-                                  backgroundColor: valor == 0
-                                      ? Colors.green[100]
-                                      : Colors.red[100],
+                                  backgroundColor: color.withOpacity(0.06),
+                                  collapsedBackgroundColor:
+                                      color.withOpacity(0.06),
+                                  leading: CircleAvatar(
+                                    backgroundColor: color.withOpacity(0.15),
+                                    child: Icon(
+                                      cuadra
+                                          ? Icons.check_circle
+                                          : Icons.error_outline,
+                                      color: color,
+                                    ),
+                                  ),
                                   title: Text(
                                     'Caja N°: ${caja?.id}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                   subtitle: Text(
                                     //'Fecha: ${DateFormat('dd/MM/yyyy - hh:mm').format(DateTime.parse(caja?.createdAt ?? '').toLocal())}',
-                                    'Estado: ${caja?.estado}',
+                                    '${caja?.fecha ?? ''}  ·  ${caja?.estado}\n'
+                                    '${cuadra ? 'Cuadró exacto' : (valor < 0 ? 'Faltó dinero' : 'Sobró dinero')}',
                                     style: const TextStyle(
-                                      fontSize: 13,
+                                      fontSize: 12.5,
                                       color: AppColors.primaryText,
                                     ),
                                   ),
-                                  trailing: SizedBox(
-                                    width: 150,
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.max,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        const Text(
-                                          'Dif.: ',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                  trailing: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      const Text('Diferencia',
+                                          style: TextStyle(fontSize: 11)),
+                                      Text(
+                                        'S/.${oCcy.format(valor)}',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: color,
                                         ),
-                                        Text(
-                                          'S/.${oCcy.format(valor)}',
-                                        ),
-                                        const Icon(
-                                          Icons.arrow_drop_down,
-                                        )
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
                                   childrenPadding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                  ).copyWith(
-                                    bottom: 20,
-                                  ),
+                                    horizontal: 18,
+                                  ).copyWith(bottom: 16),
                                   children: [
                                     if (caja?.estado != 'Abierta') ...[
-                                      Row(
-                                        children: [
-                                          const Text(
-                                            'Monto de Apertura: ',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          const Spacer(),
-                                          Text(
-                                            'S/.${caja?.montoApertura}',
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          const Text(
-                                            'Usuario de Apertura: ',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          const Spacer(),
-                                          Text(
-                                            caja?.usuarioApertura?.fullName ?? '',
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          const Text(
-                                            'Usuario de Cierre: ',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          const Spacer(),
-                                          Text(
-                                            caja?.usuarioCierre?.fullName ?? '',
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          const Text(
-                                            'Fecha y Hora de Apertura: ',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          const Spacer(),
-                                          Text(
-                                            '${caja?.fecha} / ${caja?.horaApertura}',
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          const Text(
-                                            'Monto de Cierre Real: ',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          const Spacer(),
-                                          Text(
-                                            'S/.${caja?.montoCierreReal}',
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          const Text(
-                                            'Monto de Cierre Teórico: ',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          const Spacer(),
-                                          Text(
-                                            'S/.${caja?.montoCierreTeorico}',
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          const Text(
-                                            'Monto de Cierre Diferencia: ',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          const Spacer(),
-                                          Text(
-                                            'S/.${oCcy.format(valor)}',
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.end,
-                                        children: [
-                                          const Text(
-                                            'Observaciones: ',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 20),
-                                          Expanded(
-                                            flex: 3,
-                                            child: Text(
-                                              '${caja?.observaciones}',
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          const Text(
-                                            'Total Ingresos: ',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          const Spacer(),
-                                          Text(
-                                            caja?.totalIngresos ?? '',
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          const Text(
-                                            'Total Egresos: ',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          const Spacer(),
-                                          Text(
-                                            caja?.totalEgresos ?? '',
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 10),
+                                      _Fila('Monto de Apertura',
+                                          'S/.${caja?.montoApertura}'),
+                                      _Fila('Usuario de Apertura',
+                                          caja?.usuarioApertura?.fullName ?? ''),
+                                      _Fila('Usuario de Cierre',
+                                          caja?.usuarioCierre?.fullName ?? ''),
+                                      _Fila('Fecha y Hora de Apertura',
+                                          '${caja?.fecha} / ${setTimeToLocal(caja?.horaApertura ?? '')}'),
+                                      _Fila('Hora de Cierre',
+                                          setTimeToLocal(caja?.horaCierre ?? '')),
+                                      const Divider(),
+                                      _Fila('Total Ingresos (+)',
+                                          caja?.totalIngresos ?? '',
+                                          color: Colors.green[800]),
+                                      _Fila('Total Egresos (−)',
+                                          caja?.totalEgresos ?? '',
+                                          color: Colors.red[800]),
+                                      _Fila('Monto de Cierre Teórico',
+                                          'S/.${caja?.montoCierreTeorico}',
+                                          ayuda: 'Lo que DEBÍA haber en caja'),
+                                      _Fila('Monto de Cierre Real',
+                                          'S/.${caja?.montoCierreReal}',
+                                          ayuda: 'Lo que se contó al cerrar'),
+                                      _Fila('Diferencia',
+                                          'S/.${oCcy.format(valor)}',
+                                          color: color, negrita: true),
+                                      if ((caja?.observaciones ?? '')
+                                          .toString()
+                                          .isNotEmpty)
+                                        _Fila('Observaciones',
+                                            '${caja?.observaciones}'),
+                                      const SizedBox(height: 6),
                                     ],
                                     if (caja != null &&
                                         caja.movimientos!.isNotEmpty)
@@ -316,10 +296,11 @@ class _CajasViewState extends State<CajasView> {
                                       )
                                   ],
                                 ),
-                              );
-                            },
-                          ),
-                        const SizedBox(height: 15),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 20),
                       ],
                     ),
                   ),
@@ -328,6 +309,89 @@ class _CajasViewState extends State<CajasView> {
           },
         );
       }),
+    );
+  }
+}
+
+class _Resumen extends StatelessWidget {
+  const _Resumen({
+    required this.icono,
+    required this.titulo,
+    required this.valor,
+    required this.color,
+  });
+  final IconData icono;
+  final String titulo;
+  final String valor;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          children: [
+            Icon(icono, color: color),
+            Text(valor,
+                style: TextStyle(
+                    fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+            Text(titulo,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 11)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Fila extends StatelessWidget {
+  const _Fila(this.etiqueta, this.valor,
+      {this.color, this.negrita = false, this.ayuda});
+  final String etiqueta;
+  final String valor;
+  final Color? color;
+  final bool negrita;
+  final String? ayuda;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 5,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(etiqueta,
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                if (ayuda != null)
+                  Text(ayuda!,
+                      style: const TextStyle(fontSize: 11, color: Colors.grey)),
+              ],
+            ),
+          ),
+          Expanded(
+            flex: 4,
+            child: Text(
+              valor,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: color,
+                fontWeight: negrita ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
