@@ -119,6 +119,14 @@ class _ListPagos extends StatelessWidget {
                                           Text(
                                             '${pago.prestamo?.cliente?.nombres} ${pago.prestamo?.cliente?.apellidos}',
                                           ),
+                                          const SizedBox(height: 3),
+                                          Text(
+                                            pago.medioTexto,
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Color(0xFF707E9B),
+                                            ),
+                                          ),
                                         ],
                                       ),
                                       trailing: Row(

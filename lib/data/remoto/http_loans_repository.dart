@@ -264,6 +264,48 @@ class HttpLoansRepository implements LoansRepository {
   }
 
   @override
+  Future<Either<String, Map<String, dynamic>>> getResumenPeriodo({
+    required DateTime inicio,
+    required DateTime fin,
+    required int sucursalId,
+  }) async {
+    try {
+      final response = await _dio.post<String>(
+        '/prestamos/reportes/resumen',
+        data: {
+          'fechaInicio': inicio.toUtc().toIso8601String(),
+          'fechaFin': fin.toUtc().toIso8601String(),
+          'sucursalId': sucursalId,
+        },
+      );
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        return const Left('No se pudo cargar el resumen');
+      }
+      final map = json.decode(response.data!) as Map<String, dynamic>;
+      return Right((map['body'] as Map).cast<String, dynamic>());
+    } catch (e) {
+      return const Left('No se pudo cargar el resumen');
+    }
+  }
+
+  @override
+  Future<Either<String, Map<String, dynamic>>> getPanel({
+    required int sucursalId,
+  }) async {
+    try {
+      final response =
+          await _dio.get<String>('/prestamos/prestamos/panel/$sucursalId');
+      if (response.statusCode != 200) {
+        return const Left('No se pudo cargar el panel');
+      }
+      final map = json.decode(response.data!) as Map<String, dynamic>;
+      return Right((map['body'] as Map).cast<String, dynamic>());
+    } catch (e) {
+      return const Left('No se pudo cargar el panel');
+    }
+  }
+
+  @override
   Future<bool> savePayment({
     required int codigo,
     required double monto,

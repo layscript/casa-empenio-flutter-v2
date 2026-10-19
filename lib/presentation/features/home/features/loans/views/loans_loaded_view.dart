@@ -9,6 +9,7 @@ import 'package:casa_empenio_pe/presentation/features/home/features/anexos/widge
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/blocs/loans_bloc/loans_bloc.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/feature/loans_step/views/loans_step_view.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/views/loan_client_view.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/loans/widgets/panel_prestamos.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -38,6 +39,23 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
   CustomerEntity? customer;
 
   bool? typeSearch;
+  String _filtroEstado = 'Todos';
+  final _panelKey = GlobalKey<PanelPrestamosState>();
+
+  List<LoansEntity> _filtrados() {
+    switch (_filtroEstado) {
+      case 'Vigentes':
+        return loans.where((e) => e.estado == 'VIGENTE').toList();
+      case 'Vencidos':
+        return loans.where((e) => e.estado == 'VENCIDO').toList();
+      case 'Pagados':
+        return loans
+            .where((e) => e.estado == 'PAGADO' || e.estado == 'LIQUIDADO')
+            .toList();
+      default:
+        return loans;
+    }
+  }
 
   @override
   void initState() {
@@ -173,7 +191,31 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
+                  if (typeSearch == null)
+                    PanelPrestamos(
+                      key: _panelKey,
+                      onAbrirCliente: (dni) {
+                        if (dni.isEmpty) return;
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => BlocProvider.value(
+                              value: widget.loansBloc,
+                              child: LoanClientView(document: dni),
+                            ),
+                          ),
+                        ).then((_) => _panelKey.currentState?.cargar());
+                      },
+                    ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 14),
+                    child: Text(
+                      '🔎 Buscar un préstamo: elige por DNI del cliente o búsqueda general (nombre, prenda, código).',
+                      style: TextStyle(fontSize: 12, color: AppColors.secondaryText),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
@@ -241,6 +283,20 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                             )
                           ],
                         ),
+                        if (typeSearch != null)
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton.icon(
+                              onPressed: () => setState(() {
+                                typeSearch = null;
+                                customer = null;
+                                loans = [];
+                                _filtroEstado = 'Todos';
+                              }),
+                              icon: const Icon(Icons.dashboard_outlined),
+                              label: const Text('Volver al panel'),
+                            ),
+                          ),
                         if (typeSearch == true) ...[
                           const SizedBox(height: 15),
                           SearchLoansClientByDNI(
@@ -283,6 +339,27 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                       ],
                     ),
                   ),
+                  if (loans.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                      child: Wrap(
+                        spacing: 8,
+                        children: [
+                          for (final f in const [
+                            'Todos',
+                            'Vigentes',
+                            'Vencidos',
+                            'Pagados'
+                          ])
+                            ChoiceChip(
+                              label: Text(f),
+                              selected: _filtroEstado == f,
+                              onSelected: (_) =>
+                                  setState(() => _filtroEstado = f),
+                            ),
+                        ],
+                      ),
+                    ),
                   //if (widget.state.customer?.prestamos != null)
                   if (loans.isNotEmpty)
                     ListView.separated(
@@ -292,13 +369,14 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                       ),
                       shrinkWrap: true,
                       //itemCount: widget.state.customer!.prestamos!.length + 1,
-                      itemCount: loans.length + 1,
+                      itemCount: _filtrados().length + 1,
                       itemBuilder: (context, index) {
-                        if (index < loans.length) {
+                        final visibles = _filtrados();
+                        if (index < visibles.length) {
                           /* final prestamo =
                                 widget.state.customer?.prestamos?[index] */
 
-                          final prestamo = loans[index];
+                          final prestamo = visibles[index];
 
                           final montoFinal = oCcy
                               .format(

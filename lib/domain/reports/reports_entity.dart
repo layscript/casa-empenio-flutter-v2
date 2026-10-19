@@ -13,7 +13,28 @@ class ReportsPaymentEntity extends Equatable {
     required this.createdAt,
     required this.efectivo,
     required this.caja,
+    this.medioPago,
+    this.banco,
   });
+
+  final String? medioPago;
+  final String? banco;
+
+  /// Texto listo para mostrar: Efectivo, Depósito · BCP, Yape...
+  String get medioTexto {
+    switch ((medioPago ?? (efectivo == false ? 'DEPOSITO' : 'EFECTIVO')).toUpperCase()) {
+      case 'DEPOSITO':
+        return (banco ?? '').trim().isEmpty ? '🏦 Depósito' : '🏦 Depósito · $banco';
+      case 'YAPE':
+        return '📱 Yape';
+      case 'PLIN':
+        return '📱 Plin';
+      case 'OTRO':
+        return '➕ Otro medio';
+      default:
+        return '💵 Efectivo';
+    }
+  }
 
   final int? id;
   final String? monto;
@@ -52,6 +73,8 @@ class ReportsPaymentEntity extends Equatable {
       updatedAt: map['updatedAt'],
       createdAt: map['createdAt'],
       efectivo: map['efectivo'],
+      medioPago: map['medioPago'] as String?,
+      banco: map['banco'] as String?,
       caja: map['caja'] != null
           ? CajaEntity.getCajaFromMap(
               map['caja'],
@@ -92,6 +115,8 @@ class ReportsPaymentEntity extends Equatable {
         createdAt,
         efectivo,
         caja,
+        medioPago,
+        banco,
       ];
 }
 

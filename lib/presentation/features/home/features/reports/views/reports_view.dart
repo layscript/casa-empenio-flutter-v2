@@ -2,6 +2,7 @@ import 'package:casa_empenio_pe/presentation/features/home/features/reports/bloc
 import 'package:casa_empenio_pe/presentation/features/home/features/reports/views/contract/contract_reports_view.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/reports/views/deudas/deudas_reports_view.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/reports/views/payment/payments_reports_view.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/reports/views/resumen_reports_view.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/reports/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,6 +17,13 @@ class ReportsView extends StatefulWidget {
 class _ReportsViewState extends State<ReportsView> {
   final pageCtrl = PageController();
   int selectedIndex = 0;
+
+  static const _titulos = [
+    '📊 Resumen',
+    'Reportes de Pago',
+    'Reportes de Contratos',
+    'Reportes de Deudas',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -37,55 +45,28 @@ class _ReportsViewState extends State<ReportsView> {
           child: Column(
             children: [
               SizedBox(
-                height: 35,
+                height: 38,
                 child: ListView(
                   shrinkWrap: true,
                   scrollDirection: Axis.horizontal,
                   children: [
-                    TabsReports(
-                      onTap: () {
-                        setState(() {
-                          selectedIndex = 0;
-                        });
-                        pageCtrl.animateToPage(
-                          0,
-                          duration: const Duration(seconds: 1),
-                          curve: Curves.ease,
-                        );
-                      },
-                      isSelected: selectedIndex == 0,
-                      text: 'Reportes de Pago',
-                    ),
-                    const SizedBox(width: 10),
-                    TabsReports(
-                      onTap: () {
-                        setState(() {
-                          selectedIndex = 1;
-                        });
-                        pageCtrl.animateToPage(
-                          1,
-                          duration: const Duration(seconds: 1),
-                          curve: Curves.ease,
-                        );
-                      },
-                      isSelected: selectedIndex == 1,
-                      text: 'Reportes de Contratos',
-                    ),
-                    const SizedBox(width: 10),
-                    TabsReports(
-                      onTap: () {
-                        setState(() {
-                          selectedIndex = 2;
-                        });
-                        pageCtrl.animateToPage(
-                          2,
-                          duration: const Duration(seconds: 1),
-                          curve: Curves.ease,
-                        );
-                      },
-                      isSelected: selectedIndex == 2,
-                      text: 'Reportes de Deudas',
-                    ),
+                    for (var i = 0; i < _titulos.length; i++) ...[
+                      TabsReports(
+                        onTap: () {
+                          setState(() {
+                            selectedIndex = i;
+                          });
+                          pageCtrl.animateToPage(
+                            i,
+                            duration: const Duration(milliseconds: 400),
+                            curve: Curves.ease,
+                          );
+                        },
+                        isSelected: selectedIndex == i,
+                        text: _titulos[i],
+                      ),
+                      const SizedBox(width: 10),
+                    ],
                   ],
                 ),
               ),
@@ -100,14 +81,16 @@ class _ReportsViewState extends State<ReportsView> {
                   },
                   scrollDirection: Axis.horizontal,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: 3,
+                  itemCount: 4,
                   itemBuilder: (context, index) {
                     switch (index) {
                       case 0:
-                        return const PaymentsReportsView();
+                        return const ResumenReportsView();
                       case 1:
-                        return const ContractReportsView();
+                        return const PaymentsReportsView();
                       case 2:
+                        return const ContractReportsView();
+                      case 3:
                         return const DeudasReportsView();
                     }
                     return null;

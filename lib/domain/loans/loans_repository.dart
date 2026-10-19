@@ -71,6 +71,18 @@ abstract class LoansRepository {
     required int userId,
   });
 
+  /// Resumen del periodo (prestado, cobrado por medio, renovaciones, serie diaria).
+  Future<Either<String, Map<String, dynamic>>> getResumenPeriodo({
+    required DateTime inicio,
+    required DateTime fin,
+    required int sucursalId,
+  });
+
+  /// Panel de control: cartera, vencidos, por vencer, cobrado y prestado hoy.
+  Future<Either<String, Map<String, dynamic>>> getPanel({
+    required int sucursalId,
+  });
+
   Future<bool> savePayment({
     required int codigo,
     required double monto,
