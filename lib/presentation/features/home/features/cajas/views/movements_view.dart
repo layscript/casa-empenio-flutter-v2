@@ -214,6 +214,22 @@ class _MovementsViewState extends State<MovementsView> {
               _mini(Icons.arrow_upward, 'Salió', egresos, Colors.orangeAccent),
             ],
           ),
+          Builder(builder: (_) {
+            final c = cobrosDe(widget.movimientos);
+            if (c.total.abs() < 0.005) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Row(
+                children: [
+                  _mini(Icons.percent, 'Intereses cobrados', c.interes,
+                      Colors.lightBlueAccent),
+                  const SizedBox(width: 10),
+                  _mini(Icons.savings_outlined, 'Capital recuperado',
+                      c.capital + c.sinDetalle, Colors.amberAccent),
+                ],
+              ),
+            );
+          }),
           const SizedBox(height: 6),
           const Text(
             'No cuenta apertura/cierre ni movimientos anulados.',
@@ -715,6 +731,15 @@ class _MovementsViewState extends State<MovementsView> {
                 fila('Tipo', m.tipo?.descripcion),
                 fila('Sentido', entra ? 'Ingreso (entró dinero)' : 'Egreso (salió dinero)'),
                 fila('Medio de pago', etiquetaMedio(m)),
+                fila(
+                  'De lo cobrado: interés',
+                  m.interesMonto == null ? null : 'S/.${_oCcy.format(m.interesMonto)}',
+                ),
+                fila(
+                  'De lo cobrado: capital',
+                  m.capitalMonto == null ? null : 'S/.${_oCcy.format(m.capitalMonto)}',
+                ),
+                fila('Motivo de anulación', m.motivoAnulacion),
                 fila('Cliente', m.clienteNombre),
                 fila('DNI', m.clienteDni),
                 fila(

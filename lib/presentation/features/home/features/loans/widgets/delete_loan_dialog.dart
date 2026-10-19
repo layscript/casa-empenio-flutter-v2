@@ -7,7 +7,7 @@ import 'package:casa_empenio_pe/presentation/features/home/features/loans/blocs/
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class DeleteLoanDialog extends StatelessWidget {
+class DeleteLoanDialog extends StatefulWidget {
   const DeleteLoanDialog({
     super.key,
     required this.idLoan,
@@ -17,6 +17,24 @@ class DeleteLoanDialog extends StatelessWidget {
   final int idLoan;
   final bool isPayment;
   final int idCaja;
+
+  @override
+  State<DeleteLoanDialog> createState() => _DeleteLoanDialogState();
+}
+
+class _DeleteLoanDialogState extends State<DeleteLoanDialog> {
+  final TextEditingController _motivoCtrl = TextEditingController();
+  String? _errorMotivo;
+
+  int get idLoan => widget.idLoan;
+  bool get isPayment => widget.isPayment;
+  int get idCaja => widget.idCaja;
+
+  @override
+  void dispose() {
+    _motivoCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +57,7 @@ class DeleteLoanDialog extends StatelessWidget {
           if (state.isLoansDeleteSuccess) {
             SuccessSnackbar.show(
               context,
-              'Eliminado Correctamente',
+              isPayment ? 'Pago anulado y registrado' : 'Eliminado Correctamente',
             );
             Navigator.pop(context, true);
           }
@@ -47,21 +65,50 @@ class DeleteLoanDialog extends StatelessWidget {
       },
       child: AlertDialog(
         title: Text(
-          isPayment ? 'Eliminar Pago' : 'Eliminar Préstamo',
+          isPayment ? 'Anular pago' : 'Eliminar Préstamo',
           style: const TextStyle(
             color: AppColors.primaryText,
             fontWeight: FontWeight.bold,
           ),
         ),
-        content: Text(
-          isPayment
-              ? '¿Esta seguro que desea eliminar el pago?'
-              : '¿Esta seguro que desea eliminar el prestamo?',
-          style: const TextStyle(
-            color: AppColors.primaryText,
-            fontWeight: FontWeight.normal,
-          ),
-        ),
+        content: isPayment
+            ? SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'El pago NO se borra: queda anulado y registrado '
+                      '(quién, cuándo y por qué) en caja, movimientos y '
+                      'auditoría. El préstamo vuelve a mostrar ese monto como '
+                      'pendiente.',
+                      style: TextStyle(
+                        color: AppColors.primaryText,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _motivoCtrl,
+                      textCapitalization: TextCapitalization.sentences,
+                      maxLines: 2,
+                      decoration: InputDecoration(
+                        labelText: 'Motivo (obligatorio)',
+                        hintText: 'Ej. Me equivoqué de monto',
+                        errorText: _errorMotivo,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : const Text(
+                '¿Esta seguro que desea eliminar el prestamo?',
+                style: TextStyle(
+                  color: AppColors.primaryText,
+                  fontWeight: FontWeight.normal,
+                ),
+              ),
         actions: [
           TextButton(
             style: TextButton.styleFrom(
@@ -104,16 +151,22 @@ class DeleteLoanDialog extends StatelessWidget {
                 backgroundColor: AppColors.green,
               ),
               onPressed: () {
+                final motivo = _motivoCtrl.text.trim();
+                if (motivo.length < 3) {
+                  setState(() => _errorMotivo = 'Escriba por qué se anula');
+                  return;
+                }
                 context.read<LoansBloc>().add(
                       DeletePaymentLoanId(
                         paymentId: idLoan,
                         userId: preferences.token?.id.toString() ?? '0',
                         idCaja: idCaja,
+                        motivo: motivo,
                       ),
                     );
               },
               child: const Text(
-                'Si, Eliminar Pago',
+                'Sí, anular pago',
                 style: TextStyle(
                   color: AppColors.white,
                 ),

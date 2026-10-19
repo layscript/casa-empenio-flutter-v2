@@ -379,6 +379,38 @@ class _LoanClientViewState extends State<LoanClientView> {
                                       ),
                                     ),
                                   ),
+                                if (prestamo?.cerrado == false &&
+                                    prestamo != null &&
+                                    (prestamo.estado == 'VIGENTE' ||
+                                        prestamo.estado == 'VENCIDO'))
+                                  // Renovar cobrando solo intereses
+                                  SizedBox(
+                                    height: 38,
+                                    width: 38,
+                                    child: IconButton(
+                                      padding: EdgeInsets.zero,
+                                      tooltip: 'Renovar (solo intereses)',
+                                      onPressed: () async {
+                                        final result = await showDialog<bool>(
+                                          barrierDismissible: false,
+                                          context: context,
+                                          builder: (_) =>
+                                              RenewInterestDialog(prestamo: prestamo),
+                                        );
+                                        if (result == true && mounted) {
+                                          context.read<LoansBloc>().add(
+                                                GetLoansByDni(
+                                                  value: state.searchText,
+                                                ),
+                                              );
+                                        }
+                                      },
+                                      icon: const Icon(
+                                        Icons.autorenew,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ),
                                 if (prestamo?.cerrado == false)
                                   // Agregar monto
                                   SizedBox(

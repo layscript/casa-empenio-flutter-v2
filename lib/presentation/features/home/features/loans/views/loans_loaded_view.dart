@@ -827,6 +827,45 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                                             ),
                                           ),
                                         ),
+                                      if (prestamo?.cerrado == false &&
+                                          prestamo != null &&
+                                          (prestamo.estado == 'VIGENTE' ||
+                                              prestamo.estado == 'VENCIDO'))
+                                        // Renovar cobrando solo intereses
+                                        SizedBox(
+                                          height: 38,
+                                          width: 38,
+                                          child: IconButton(
+                                            padding: EdgeInsets.zero,
+                                            tooltip: 'Renovar (solo intereses)',
+                                            onPressed: () async {
+                                              final result =
+                                                  await showDialog<bool>(
+                                                barrierDismissible: false,
+                                                context: context,
+                                                builder: (_) =>
+                                                    RenewInterestDialog(
+                                                        prestamo: prestamo),
+                                              );
+                                              if (result == true) {
+                                                if (typeSearch == true) {
+                                                  _handleSearchByDni(
+                                                    searchDocument,
+                                                  );
+                                                } else {
+                                                  _handleSearchByGeneral(
+                                                    searchCriterio,
+                                                    searchCategoria,
+                                                  );
+                                                }
+                                              }
+                                            },
+                                            icon: const Icon(
+                                              Icons.autorenew,
+                                              color: Colors.blue,
+                                            ),
+                                          ),
+                                        ),
                                       if (prestamo?.cerrado == false)
                                         // Agregar monto
                                         SizedBox(

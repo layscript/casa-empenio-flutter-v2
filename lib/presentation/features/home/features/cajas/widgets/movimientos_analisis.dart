@@ -84,6 +84,34 @@ bool esDeControl(MovimientosEntity m) {
   return c == ClaseMov.apertura || c == ClaseMov.cierre;
 }
 
+/// Lo cobrado en pagos y renovaciones, separado en interés y capital
+/// (sin contar anulados; las reversas restan).
+class CobrosCaja {
+  const CobrosCaja(this.interes, this.capital, this.sinDetalle);
+  final double interes;
+  final double capital;
+
+  /// Cobros antiguos que no traen la separación
+  final double sinDetalle;
+  double get total => interes + capital + sinDetalle;
+}
+
+CobrosCaja cobrosDe(List<MovimientosEntity> movs) {
+  double interes = 0, capital = 0, sin = 0;
+  for (final m in movs) {
+    if (m.eliminado == true) continue;
+    if (claseDe(m) != ClaseMov.pago) continue;
+    final signo = m.suma == false ? -1 : 1;
+    if (m.interesMonto == null && m.capitalMonto == null) {
+      sin += signo * montoDe(m);
+    } else {
+      interes += signo * (m.interesMonto ?? 0);
+      capital += signo * (m.capitalMonto ?? 0);
+    }
+  }
+  return CobrosCaja(interes, capital, sin);
+}
+
 /// Un aviso que ayuda a encontrar rápido un error en la caja.
 class AlertaMov {
   const AlertaMov({

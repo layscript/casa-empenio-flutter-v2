@@ -3,6 +3,7 @@ export 'delete_loan_dialog.dart';
 export 'edit_loan_bottom_sheet.dart';
 export 'list_anexos_by_loan.dart';
 export 'payment_loan_dialog_client.dart';
+export 'renew_interest_dialog.dart';
 export 'search_loans_client_by_dni.dart';
 export 'search_loans_client_by_general.dart';
 export 'show_bottom_sheet_renew_loan.dart';

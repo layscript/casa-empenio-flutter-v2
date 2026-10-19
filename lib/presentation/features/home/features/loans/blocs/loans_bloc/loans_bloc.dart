@@ -651,52 +651,32 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
   ) async {
     emit(state.copyWith(loansStatus: LoansStatus.deleteLoanLoading));
     try {
-      final getCajaOfTheDay = await _cajaRepository.getCajaOfTheDay(
-        sucursalId: _preferences.token?.sucursal?.id ?? 1,
+      // Se puede anular un pago de cualquier día: el servidor decide si se
+      // anula en la caja abierta o se registra una reversa en la caja de hoy.
+      final result = await _loansRepository.deletePayment(
+        userId: int.parse(event.userId),
+        id: event.paymentId,
+        motivo: event.motivo,
       );
 
-      await getCajaOfTheDay.fold(
-        (error) async => emit(
+      result.fold(
+        (error) => emit(
           state.copyWith(
             loansStatus: LoansStatus.deleteLoanError,
             error: error,
           ),
         ),
-        (caja) async {
-          if (caja?.id == event.idCaja) {
-            final result = await _loansRepository.deletePayment(
-              userId: int.parse(event.userId),
-              id: event.paymentId,
-            );
-
-            result.fold(
-              (error) => emit(
-                state.copyWith(
-                  loansStatus: LoansStatus.deleteLoanError,
-                  error: error,
-                ),
-              ),
-              (success) => emit(
-                state.copyWith(
-                  loansStatus: LoansStatus.deleteLoanSuccess,
-                ),
-              ),
-            );
-          } else {
-            emit(
-              state.copyWith(
-                loansStatus: LoansStatus.deleteLoanError,
-                error:
-                    'No se puede eliminar porque no pertenece a la caja actual',
-              ),
-            );
-          }
-        },
+        (success) => emit(
+          state.copyWith(
+            loansStatus: LoansStatus.deleteLoanSuccess,
+          ),
+        ),
       );
     } catch (e) {
       emit(
         state.copyWith(
-          loansStatus: LoansStatus.deleteLoanSuccess,
+          loansStatus: LoansStatus.deleteLoanError,
+          error: 'Ocurrió un error al anular el pago',
         ),
       );
     }

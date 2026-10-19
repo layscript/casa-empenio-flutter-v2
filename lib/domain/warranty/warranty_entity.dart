@@ -26,7 +26,11 @@ class WarrantyEntity extends Equatable {
     required this.placa,
     required this.updatedAt,
     required this.valorizacion,
+    this.codigoInventario,
   });
+
+  /// Código de inventario (CEL-0001...). Solo los bienes nuevos lo tienen.
+  final String? codigoInventario;
 
   final int? id;
   final String? description;
@@ -89,6 +93,7 @@ class WarrantyEntity extends Equatable {
       placa: map['placa'],
       updatedAt: map['updatedAt'],
       valorizacion: map['valorizacion'],
+      codigoInventario: map['codigoInventario']?.toString(),
     );
   }
 
@@ -117,5 +122,6 @@ class WarrantyEntity extends Equatable {
         activo,
         updatedAt,
         createdAt,
+        codigoInventario,
       ];
 }

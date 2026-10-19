@@ -69,6 +69,7 @@ abstract class LoansRepository {
   Future<Either<String, bool>> deletePayment({
     required int id,
     required int userId,
+    String motivo = '',
   });
 
   /// Resumen del periodo (prestado, cobrado por medio, renovaciones, serie diaria).

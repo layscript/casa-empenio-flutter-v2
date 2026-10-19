@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -384,11 +385,13 @@ class _CampoFoto extends StatefulWidget {
 class _CampoFotoState extends State<_CampoFoto> {
   final List<String> _rutas = <String>[];
   final List<String> _urls = <String>[];
+  final List<bool> _esPdf = <bool>[];
   bool _subiendo = false;
   String? _error;
 
   Future<void> _agregar() async {
-    final fuente = await showModalBottomSheet<ImageSource>(
+    // 'pdf' = archivo PDF del teléfono
+    final fuente = await showModalBottomSheet<String>(
       context: context,
       builder: (ctx) => SafeArea(
         child: Wrap(
@@ -396,40 +399,66 @@ class _CampoFotoState extends State<_CampoFoto> {
             ListTile(
               leading: const Icon(Icons.photo_camera),
               title: const Text('Tomar foto'),
-              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              onTap: () => Navigator.pop(ctx, 'camera'),
             ),
             ListTile(
               leading: const Icon(Icons.photo_library),
               title: const Text('Elegir de la galería'),
-              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              onTap: () => Navigator.pop(ctx, 'gallery'),
             ),
+            if (widget.esDocumento)
+              ListTile(
+                leading: const Icon(Icons.picture_as_pdf),
+                title: const Text('Subir un archivo PDF'),
+                onTap: () => Navigator.pop(ctx, 'pdf'),
+              ),
           ],
         ),
       ),
     );
     if (fuente == null) return;
     try {
-      final f = await ImagePicker()
-          .pickImage(source: fuente, imageQuality: 70, maxWidth: 1800);
-      if (f == null) return;
+      String? path;
+      String? nombre;
+      var pdf = false;
+      if (fuente == 'pdf') {
+        final r = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['pdf'],
+        );
+        if (r == null || r.files.isEmpty || r.files.first.path == null) return;
+        path = r.files.first.path!;
+        nombre = r.files.first.name;
+        pdf = true;
+      } else {
+        final f = await ImagePicker().pickImage(
+          source: fuente == 'camera' ? ImageSource.camera : ImageSource.gallery,
+          imageQuality: 70,
+          maxWidth: 1800,
+        );
+        if (f == null) return;
+        path = f.path;
+        nombre = f.name;
+      }
       setState(() {
         _subiendo = true;
         _error = null;
       });
       final form = FormData.fromMap({
-        'archivo': await MultipartFile.fromFile(f.path, filename: f.name),
+        'archivo': await MultipartFile.fromFile(path, filename: nombre),
       });
       final r = await widget.dio.post('/api/dynamic-fields/archivo', data: form);
       final data = r.data;
       final ruta = data is Map ? (data['ruta'] ?? data['url'])?.toString() : null;
       if (ruta == null || ruta.isEmpty) throw Exception('Respuesta inválida');
       setState(() {
-        _rutas.add(f.path);
+        _rutas.add(path!);
+        _esPdf.add(pdf);
         _urls.add('$endPointPrincipal/$ruta');
       });
       widget.onChanged(_urls.join(' , '));
     } catch (_) {
-      setState(() => _error = 'No se pudo subir la foto. Revise su internet e intente otra vez.');
+      setState(() => _error = 'No se pudo subir el archivo. Revise su internet e intente otra vez.');
     }
     if (mounted) setState(() => _subiendo = false);
   }
@@ -437,6 +466,7 @@ class _CampoFotoState extends State<_CampoFoto> {
   void _quitar(int i) {
     setState(() {
       _rutas.removeAt(i);
+      _esPdf.removeAt(i);
       _urls.removeAt(i);
     });
     widget.onChanged(_urls.join(' , '));
@@ -458,8 +488,21 @@ class _CampoFotoState extends State<_CampoFoto> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: Image.file(File(_rutas[i]),
-                        width: 80, height: 80, fit: BoxFit.cover),
+                    child: _esPdf[i]
+                        ? Container(
+                            width: 80,
+                            height: 80,
+                            color: Colors.red.withOpacity(0.08),
+                            child: const Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.picture_as_pdf, color: Colors.red, size: 30),
+                                Text('PDF', style: TextStyle(fontSize: 11)),
+                              ],
+                            ),
+                          )
+                        : Image.file(File(_rutas[i]),
+                            width: 80, height: 80, fit: BoxFit.cover),
                   ),
                   Positioned(
                     right: 0,
@@ -485,7 +528,9 @@ class _CampoFotoState extends State<_CampoFoto> {
               icon: Icon(widget.esDocumento
                   ? Icons.description_outlined
                   : Icons.add_a_photo_outlined),
-              label: Text(_rutas.isEmpty ? 'Agregar foto' : 'Otra foto'),
+              label: Text(_rutas.isEmpty
+                  ? (widget.esDocumento ? 'Agregar documento' : 'Agregar foto')
+                  : 'Agregar otro'),
             ),
           ],
         ),

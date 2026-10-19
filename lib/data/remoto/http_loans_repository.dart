@@ -543,10 +543,12 @@ class HttpLoansRepository implements LoansRepository {
   Future<Either<String, bool>> deletePayment({
     required int id,
     required int userId,
+    String motivo = '',
   }) async {
     final path = '/prestamos/pagos/eliminar/$id';
     final payload = {
       'usuarioId': userId,
+      'motivo': motivo,
     };
 
     try {
@@ -565,6 +567,15 @@ class HttpLoansRepository implements LoansRepository {
       }
     } catch (e, stackTrace) {
       //print('responseee ee: $e');
+      if (e is DioException) {
+        final d = e.response?.data;
+        try {
+          final m = d is String ? json.decode(d) : d;
+          if (m is Map && m['message'] != null) {
+            return Left(m['message'].toString());
+          }
+        } catch (_) {}
+      }
       return const Left('Ocurrió un error con el servidor');
     }
   }

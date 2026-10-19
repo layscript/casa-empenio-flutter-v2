@@ -379,6 +379,24 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                 height: 20,
                                 color: Colors.black,
                               ),
+                              if ((bien.codigoInventario ?? '').isNotEmpty)
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text(
+                                      'Código de inventario: ',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                    Text(
+                                      bien.codigoInventario!,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.blue),
+                                    ),
+                                  ],
+                                ),
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,

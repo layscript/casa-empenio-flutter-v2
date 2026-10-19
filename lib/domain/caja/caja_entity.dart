@@ -187,7 +187,15 @@ class MovimientosEntity extends Equatable {
     this.clienteNombre,
     this.clienteDni,
     this.prestamoCodigo,
+    this.interesMonto,
+    this.capitalMonto,
+    this.motivoAnulacion,
   });
+
+  /// Cuánto de lo cobrado fue interés y cuánto capital (pagos y renovaciones)
+  final double? interesMonto;
+  final double? capitalMonto;
+  final String? motivoAnulacion;
 
   /// Quién registró el movimiento y a qué cliente/préstamo corresponde
   /// (el servidor lo calcula; los movimientos antiguos pueden no traerlo).
@@ -234,8 +242,14 @@ class MovimientosEntity extends Equatable {
     String? clienteNombre,
     String? clienteDni,
     String? prestamoCodigo,
+    double? interesMonto,
+    double? capitalMonto,
+    String? motivoAnulacion,
   }) {
     return MovimientosEntity(
+      interesMonto: interesMonto ?? this.interesMonto,
+      capitalMonto: capitalMonto ?? this.capitalMonto,
+      motivoAnulacion: motivoAnulacion ?? this.motivoAnulacion,
       usuarioId: usuarioId ?? this.usuarioId,
       usuarioNombre: usuarioNombre ?? this.usuarioNombre,
       clienteNombre: clienteNombre ?? this.clienteNombre,
@@ -286,6 +300,9 @@ class MovimientosEntity extends Equatable {
       clienteNombre: map['clienteNombre'] as String?,
       clienteDni: map['clienteDni']?.toString(),
       prestamoCodigo: map['prestamoCodigo']?.toString(),
+      interesMonto: double.tryParse('${map['interesMonto'] ?? ''}'),
+      capitalMonto: double.tryParse('${map['capitalMonto'] ?? ''}'),
+      motivoAnulacion: map['motivoAnulacion']?.toString(),
       tipo: map['tipo'] != null
           ? TypeBoxEntity.getTypeFromMap(map['tipo'])
           : null,
@@ -318,6 +335,9 @@ class MovimientosEntity extends Equatable {
         clienteNombre,
         clienteDni,
         prestamoCodigo,
+        interesMonto,
+        capitalMonto,
+        motivoAnulacion,
       ];
 }
 

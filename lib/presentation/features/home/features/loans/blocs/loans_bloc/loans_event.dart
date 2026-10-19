@@ -185,10 +185,12 @@ class DeletePaymentLoanId extends LoansEvent {
     required this.paymentId,
     required this.userId,
     required this.idCaja,
+    this.motivo = '',
   });
   final int paymentId;
   final String userId;
   final int idCaja;
+  final String motivo;
 }
 
 class UpdateStatusLoanById extends LoansEvent {
