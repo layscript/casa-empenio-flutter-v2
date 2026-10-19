@@ -39,6 +39,8 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
   CustomerEntity? customer;
 
   bool? typeSearch;
+  final _busquedaCtrl = TextEditingController();
+  String? _categoriaSel;
   String _filtroEstado = 'Todos';
   final _panelKey = GlobalKey<PanelPrestamosState>();
 
@@ -65,6 +67,7 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
 
   @override
   void dispose() {
+    _busquedaCtrl.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -150,6 +153,144 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
     setState(() {});
   }
 
+  /// Un solo campo para todo: 8 o más números = DNI del cliente; cualquier otra
+  /// cosa = búsqueda general (nombre, prenda, código de préstamo).
+  void _buscarRapido() {
+    final t = _busquedaCtrl.text.trim();
+    FocusScope.of(context).unfocus();
+    if (t.isEmpty && _categoriaSel == null) return;
+    final esDni = RegExp(r'^\d{8,12}$').hasMatch(t);
+    setState(() {
+      typeSearch = esDni;
+      customer = null;
+      _filtroEstado = 'Todos';
+    });
+    if (esDni) {
+      _handleSearchByDni(t);
+    } else {
+      _handleSearchByGeneral(t.isEmpty ? null : t, _categoriaSel);
+    }
+  }
+
+  Future<void> _elegirCategoria() async {
+    final cats = widget.state.listCategories ?? [];
+    final r = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(ctx).size.height * 0.7,
+          ),
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              const ListTile(
+                title: Text('Filtrar por categoría',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              ListTile(
+                leading: const Icon(Icons.clear_all),
+                title: const Text('Todas las categorías'),
+                onTap: () => Navigator.pop(ctx, ''),
+              ),
+              for (final c in ordenarCategorias(cats))
+                ListTile(
+                  leading: Icon(c.padreId != null
+                      ? Icons.subdirectory_arrow_right
+                      : Icons.folder_outlined),
+                  title: Text(nombreCategoria(c, cats)),
+                  onTap: () => Navigator.pop(ctx, c.descripcion),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (r == null) return;
+    setState(() => _categoriaSel = r.isEmpty ? null : r);
+    if (_busquedaCtrl.text.trim().isNotEmpty || _categoriaSel != null) {
+      _buscarRapido();
+    }
+  }
+
+  Widget _barraBusqueda() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _busquedaCtrl,
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: (_) => _buscarRapido(),
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    hintText: 'Buscar: DNI, nombre, prenda o código',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _busquedaCtrl.text.isEmpty
+                        ? null
+                        : IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => setState(_busquedaCtrl.clear),
+                          ),
+                    filled: true,
+                    fillColor: Colors.grey[100],
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filledTonal(
+                tooltip: 'Filtrar por categoría',
+                onPressed: _elegirCategoria,
+                icon: Icon(_categoriaSel == null
+                    ? Icons.filter_list
+                    : Icons.filter_alt),
+              ),
+              const SizedBox(width: 4),
+              IconButton.filled(
+                tooltip: 'Buscar',
+                onPressed: _buscarRapido,
+                icon: const Icon(Icons.search),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 4, left: 4),
+            child: Wrap(
+              spacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  '8 números = DNI · otra cosa = nombre, prenda o código',
+                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                ),
+                if (_categoriaSel != null)
+                  InputChip(
+                    label: Text(_categoriaSel!,
+                        style: const TextStyle(fontSize: 11)),
+                    visualDensity: VisualDensity.compact,
+                    onDeleted: () {
+                      setState(() => _categoriaSel = null);
+                      if (typeSearch != null) _buscarRapido();
+                    },
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _handleTypeSearch(bool value) {
     setState(() {
       typeSearch = value;
@@ -191,6 +332,8 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 10),
+                  _barraBusqueda(),
                   const SizedBox(height: 12),
                   if (typeSearch == null)
                     PanelPrestamos(
@@ -208,81 +351,12 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                         ).then((_) => _panelKey.currentState?.cargar());
                       },
                     ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 14),
-                    child: Text(
-                      '🔎 Buscar un préstamo: elige por DNI del cliente o búsqueda general (nombre, prenda, código).',
-                      style: TextStyle(fontSize: 12, color: AppColors.secondaryText),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
                     ),
                     child: Column(
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: GestureDetector(
-                                /*  onTap: () => widget.loansBloc
-                                      .add(const ChangeTypeSearch(true)), */
-                                onTap: () {
-                                  _handleTypeSearch(true);
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(10),
-                                    color: typeSearch == true
-                                        ? AppColors.blue
-                                        : Colors.grey[300],
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      'Busqueda por DNI',
-                                      style: TextStyle(
-                                        color: typeSearch == true
-                                            ? AppColors.white
-                                            : Colors.grey,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: GestureDetector(
-                                /* onTap: () => widget.loansBloc
-                                      .add(const ChangeTypeSearch(false)), */
-                                onTap: () {
-                                  _handleTypeSearch(false);
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(10),
-                                    color: typeSearch == false
-                                        ? AppColors.blue
-                                        : Colors.grey[300],
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      'Busqueda General',
-                                      style: TextStyle(
-                                        color: typeSearch == false
-                                            ? AppColors.white
-                                            : Colors.grey,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            )
-                          ],
-                        ),
                         if (typeSearch != null)
                           Align(
                             alignment: Alignment.centerRight,
@@ -292,28 +366,13 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                                 customer = null;
                                 loans = [];
                                 _filtroEstado = 'Todos';
+                                _busquedaCtrl.clear();
+                                _categoriaSel = null;
                               }),
                               icon: const Icon(Icons.dashboard_outlined),
                               label: const Text('Volver al panel'),
                             ),
                           ),
-                        if (typeSearch == true) ...[
-                          const SizedBox(height: 15),
-                          SearchLoansClientByDNI(
-                            onPressed: (dni) {
-                              _handleSearchByDni(dni);
-                            },
-                          ),
-                        ],
-                        if (typeSearch == false) ...[
-                          const SizedBox(height: 15),
-                          SearchLoansClientByGeneral(
-                            categories: widget.state.listCategories ?? [],
-                            onPressed: (dto) {
-                              _handleSearchByGeneral(dto.text, dto.category);
-                            },
-                          ),
-                        ],
                         const SizedBox(height: 15),
                         if (customer != null && customer?.nombres != null)
                           Row(
