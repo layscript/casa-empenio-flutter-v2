@@ -367,6 +367,8 @@ class HttpLoansRepository implements LoansRepository {
     required String observaciones,
     required String userId,
     required String url,
+    String? medioPago,
+    String? banco,
   }) async {
     const path = '/prestamos/prestamos/aumentarMonto';
     final payload = {
@@ -375,6 +377,8 @@ class HttpLoansRepository implements LoansRepository {
       'observaciones': observaciones,
       'usuarioId': userId,
       'url': url,
+      if (medioPago != null) 'medioPago': medioPago,
+      if (banco != null) 'banco': banco,
     };
     try {
       final response = await _dio.post<String>(path, data: payload);

@@ -182,7 +182,20 @@ class MovimientosEntity extends Equatable {
     required this.tipo,
     this.medioPago,
     this.banco,
+    this.usuarioId,
+    this.usuarioNombre,
+    this.clienteNombre,
+    this.clienteDni,
+    this.prestamoCodigo,
   });
+
+  /// Quién registró el movimiento y a qué cliente/préstamo corresponde
+  /// (el servidor lo calcula; los movimientos antiguos pueden no traerlo).
+  final int? usuarioId;
+  final String? usuarioNombre;
+  final String? clienteNombre;
+  final String? clienteDni;
+  final String? prestamoCodigo;
 
   /// EFECTIVO | DEPOSITO | YAPE | PLIN | OTRO (null = efectivo, datos antiguos)
   final String? medioPago;
@@ -216,8 +229,18 @@ class MovimientosEntity extends Equatable {
     TypeBoxEntity? tipo,
     String? medioPago,
     String? banco,
+    int? usuarioId,
+    String? usuarioNombre,
+    String? clienteNombre,
+    String? clienteDni,
+    String? prestamoCodigo,
   }) {
     return MovimientosEntity(
+      usuarioId: usuarioId ?? this.usuarioId,
+      usuarioNombre: usuarioNombre ?? this.usuarioNombre,
+      clienteNombre: clienteNombre ?? this.clienteNombre,
+      clienteDni: clienteDni ?? this.clienteDni,
+      prestamoCodigo: prestamoCodigo ?? this.prestamoCodigo,
       medioPago: medioPago ?? this.medioPago,
       banco: banco ?? this.banco,
       id: id ?? this.id,
@@ -258,6 +281,11 @@ class MovimientosEntity extends Equatable {
       updatedAt: map['updatedAt'],
       medioPago: map['medioPago'] as String?,
       banco: map['banco'] as String?,
+      usuarioId: map['usuarioId'] as int?,
+      usuarioNombre: map['usuarioNombre'] as String?,
+      clienteNombre: map['clienteNombre'] as String?,
+      clienteDni: map['clienteDni']?.toString(),
+      prestamoCodigo: map['prestamoCodigo']?.toString(),
       tipo: map['tipo'] != null
           ? TypeBoxEntity.getTypeFromMap(map['tipo'])
           : null,
@@ -285,6 +313,11 @@ class MovimientosEntity extends Equatable {
         tipo,
         medioPago,
         banco,
+        usuarioId,
+        usuarioNombre,
+        clienteNombre,
+        clienteDni,
+        prestamoCodigo,
       ];
 }
 

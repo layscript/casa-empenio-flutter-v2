@@ -25,13 +25,27 @@ String etiquetaMedio(MovimientosEntity m) {
 bool esEfectivo(MovimientosEntity m) =>
     (m.medioPago ?? 'EFECTIVO').toUpperCase() == 'EFECTIVO';
 
+/// Un movimiento anulado/eliminado ya no cuenta para el cuadre de caja.
+bool esAnulado(MovimientosEntity m) => m.eliminado == true;
+
 double _monto(MovimientosEntity m) => double.tryParse(m.monto ?? '0') ?? 0;
 
 /// Suma de ingresos por medio (Efectivo, Depósito · BCP, Yape...).
 Map<String, double> desgloseIngresos(List<MovimientosEntity> movs) {
   final mapa = <String, double>{};
   for (final m in movs) {
-    if (m.suma != true) continue;
+    if (esAnulado(m) || m.suma != true) continue;
+    final k = etiquetaMedio(m);
+    mapa[k] = (mapa[k] ?? 0) + _monto(m);
+  }
+  return mapa;
+}
+
+/// Suma de egresos por medio (lo que salió en efectivo, por depósito, Yape...).
+Map<String, double> desgloseEgresos(List<MovimientosEntity> movs) {
+  final mapa = <String, double>{};
+  for (final m in movs) {
+    if (esAnulado(m) || m.suma == true) continue;
     final k = etiquetaMedio(m);
     mapa[k] = (mapa[k] ?? 0) + _monto(m);
   }
@@ -39,15 +53,13 @@ Map<String, double> desgloseIngresos(List<MovimientosEntity> movs) {
 }
 
 /// Efectivo que debe haber físicamente en la caja:
-/// ingresos en efectivo (incluye la apertura) − todos los egresos.
+/// ingresos en efectivo (incluye la apertura) − egresos en efectivo.
+/// Lo que se movió por depósito/Yape/Plin no entra ni sale de la caja.
 double efectivoEnMano(List<MovimientosEntity> movs) {
   var total = 0.0;
   for (final m in movs) {
-    if (m.suma == true) {
-      if (esEfectivo(m)) total += _monto(m);
-    } else {
-      total -= _monto(m);
-    }
+    if (esAnulado(m) || !esEfectivo(m)) continue;
+    total += m.suma == true ? _monto(m) : -_monto(m);
   }
   return total;
 }
@@ -64,6 +76,11 @@ class DesgloseMedios extends StatelessWidget {
     final entradas = mapa.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     final enMano = efectivoEnMano(movimientos);
+    final salidas = desgloseEgresos(movimientos);
+    final salidasOtros = salidas.entries
+        .where((e) => e.key != 'Efectivo')
+        .toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
 
     return Container(
       width: double.infinity,
@@ -104,6 +121,32 @@ class DesgloseMedios extends StatelessWidget {
                 ],
               ),
             ),
+          if (salidasOtros.isNotEmpty) ...[
+            const Divider(height: 18),
+            const Text(
+              'Salió SIN tocar la caja (depósito, Yape, Plin…)',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+            for (final e in salidasOtros)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.send_to_mobile_outlined,
+                      size: 18,
+                      color: AppColors.secondaryText,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(e.key)),
+                    Text(
+                      'S/.${oCcy.format(e.value)}',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+          ],
           const Divider(height: 18),
           Row(
             children: [
@@ -124,8 +167,9 @@ class DesgloseMedios extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           const Text(
-            'Es la apertura + cobros en efectivo − egresos. Lo que entró por '
-            'depósito, Yape o Plin está en el banco o celular, no en la caja.',
+            'Es la apertura + cobros en efectivo − egresos en efectivo. Lo que '
+            'entró o salió por depósito, Yape o Plin está en el banco o '
+            'celular, no en la caja.',
             style: TextStyle(fontSize: 11, color: AppColors.secondaryText),
           ),
         ],

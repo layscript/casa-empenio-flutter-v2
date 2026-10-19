@@ -25,11 +25,15 @@ class SaveExpense extends ExpensesEvent {
     required this.usuarioId,
     required this.monto,
     required this.imagenes,
+    this.medioPago,
+    this.banco,
   });
   final String obs;
   final int usuarioId;
   final String monto;
   final List<XFile>? imagenes;
+  final String? medioPago;
+  final String? banco;
 }
 
 class DeleteExpense extends ExpensesEvent {

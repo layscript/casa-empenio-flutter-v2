@@ -107,6 +107,8 @@ abstract class LoansRepository {
     required String observaciones,
     required String userId,
     required String url,
+    String? medioPago,
+    String? banco,
   });
 
   Future<Uint8List> createInvoicePdf({required String url});

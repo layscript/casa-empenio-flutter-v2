@@ -1,6 +1,7 @@
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/custom_image_picker.dart';
+import 'package:casa_empenio_pe/presentation/app/widgets/selector_medio_pago.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/expenses/bloc/expenses_bloc.dart';
@@ -20,6 +21,9 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
   final montoCtrl = TextEditingController();
   final obsCtrl = TextEditingController();
   bool isValidMonto = false;
+  String medioPago = 'EFECTIVO';
+  String? banco;
+  bool medioCompleto = true;
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +49,16 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
             controller: obsCtrl,
             labelText: 'Observaciones',
           ),
+          const SizedBox(height: 16),
+          SelectorMedioPago(
+            pregunta: '¿Cómo se pagó este gasto?',
+            ayudaEfectivo: 'Sale dinero de la caja (efectivo).',
+            alCambiar: (medio, b, completo) => setState(() {
+              medioPago = medio;
+              banco = b;
+              medioCompleto = completo;
+            }),
+          ),
           const SizedBox(height: 20),
           CustomImagePicker(
             onImagesSelected: (photo) {
@@ -62,7 +76,9 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
       ),
       actions: [
         TextButton.icon(
-          onPressed: !isValidMonto || !selectedPhotosGastos!.isNotEmpty
+          onPressed: !isValidMonto ||
+                  !medioCompleto ||
+                  !selectedPhotosGastos!.isNotEmpty
               ? null
               : () {
                   context.read<ExpensesBloc>().add(
@@ -71,6 +87,8 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
                           usuarioId: authBloc.user?.id ?? 1,
                           monto: montoCtrl.text,
                           imagenes: selectedPhotosGastos,
+                          medioPago: medioPago,
+                          banco: banco,
                         ),
                       );
                 },

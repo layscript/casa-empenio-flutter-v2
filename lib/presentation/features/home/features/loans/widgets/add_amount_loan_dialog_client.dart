@@ -2,6 +2,7 @@ import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/custom_image_picker.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
+import 'package:casa_empenio_pe/presentation/app/widgets/selector_medio_pago.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/blocs/loans_bloc/loans_bloc.dart';
 import 'package:flutter/material.dart';
@@ -32,6 +33,9 @@ class _AddAmountLoanDialogClientState extends State<AddAmountLoanDialogClient> {
   final montoCtrl = TextEditingController();
   final obsCtrl = TextEditingController();
   bool isMontoValid = false;
+  String medioPago = 'EFECTIVO';
+  String? banco;
+  bool medioCompleto = true;
   List<XFile>? selectedPhotosLiquidar = [];
 
   @override
@@ -44,6 +48,7 @@ class _AddAmountLoanDialogClientState extends State<AddAmountLoanDialogClient> {
       child: GestureDetector(
         onTap: () => Keyboard.unfocus(context),
         child: AlertDialog(
+          scrollable: true,
           insetPadding: EdgeInsets.zero,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 15,
@@ -154,6 +159,17 @@ class _AddAmountLoanDialogClientState extends State<AddAmountLoanDialogClient> {
                         labelText: 'Observación',
                         controller: obsCtrl,
                       ),
+                      const SizedBox(height: 16),
+                      SelectorMedioPago(
+                        pregunta: '¿Cómo le entregas este dinero al cliente?',
+                        ayudaEfectivo:
+                            'Sale efectivo de la caja y se descuenta del cuadre.',
+                        alCambiar: (medio, b, completo) => setState(() {
+                          medioPago = medio;
+                          banco = b;
+                          medioCompleto = completo;
+                        }),
+                      ),
                       const SizedBox(height: 20),
                       CustomImagePicker(
                         onImagesSelected: (photos) {
@@ -184,7 +200,9 @@ class _AddAmountLoanDialogClientState extends State<AddAmountLoanDialogClient> {
                   ),
                 ),
                 TextButton(
-                  onPressed: !isMontoValid || selectedPhotosLiquidar!.isEmpty
+                  onPressed: !isMontoValid ||
+                          !medioCompleto ||
+                          selectedPhotosLiquidar!.isEmpty
                       ? null
                       : () {
                           context.read<LoansBloc>().add(
@@ -195,6 +213,8 @@ class _AddAmountLoanDialogClientState extends State<AddAmountLoanDialogClient> {
                                   userId:
                                       preferences.token?.id.toString() ?? '0',
                                   photos: selectedPhotosLiquidar,
+                                  medioPago: medioPago,
+                                  banco: banco,
                                 ),
                               );
                         },
