@@ -436,6 +436,11 @@ class _AuditoriaViewState extends State<AuditoriaView> {
             if (datos is Map && datos['codigoPrestamo'] != null)
               _bloque('Préstamo modificado',
                   'N° ${datos['codigoPrestamo']}  ·  ${datos['cliente'] ?? ''}'),
+            if (datos is Map &&
+                datos['codigoPrestamo'] == null &&
+                datos['tabla'] != null)
+              _bloque('Registro afectado',
+                  '${datos['tabla']} N° ${datos['registro'] ?? ''}'),
             if (cambios.isNotEmpty) ...[
               const SizedBox(height: 4),
               const Text('Qué se cambió',
