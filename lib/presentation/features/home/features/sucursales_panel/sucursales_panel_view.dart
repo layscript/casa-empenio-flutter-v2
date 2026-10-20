@@ -6,7 +6,9 @@ import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/cajas/views/movements_view.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/cajas/widgets/desglose_medios.dart';
 import 'package:dio/dio.dart';
+import 'package:casa_empenio_pe/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 // ---------------------------------------------------------------------------
@@ -521,11 +523,141 @@ class _CajaHoyTabState extends State<_CajaHoyTab>
                 icon: const Icon(Icons.list_alt),
                 label: Text('Ver los ${movs.length} movimientos con detalle'),
               ),
+              const SizedBox(height: 10),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red[700],
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () => _cerrarCaja(context, enMano),
+                icon: const Icon(Icons.lock_outline),
+                label: const Text('Cerrar esta caja'),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Sirve para cerrar la caja de esta sucursal sin tener que '
+                'entrar con otro usuario.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: Colors.black54),
+              ),
             ],
           ),
         );
       },
     );
+  }
+
+  Future<void> _cerrarCaja(BuildContext context, double esperado) async {
+    final auth = context.read<AuthBloc>().state;
+    final usuarioId = auth.user?.id ?? 0;
+    if (usuarioId == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo identificar tu usuario')),
+      );
+      return;
+    }
+    final montoCtrl = TextEditingController(text: esperado.toStringAsFixed(2));
+    final obsCtrl = TextEditingController(text: 'Cierre desde el panel de sucursales');
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSt) {
+          final contado = double.tryParse(montoCtrl.text.replaceAll(',', '.'));
+          final dif = contado == null ? null : contado - esperado;
+          return AlertDialog(
+            title: const Text('Cerrar caja'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'Efectivo que debe haber en caja: ${_s(esperado)}.\n'
+                      'Escribe cuánto dinero hay realmente. Si la sucursal '
+                      'ya no se usa, deja ese mismo monto.',
+                      style: const TextStyle(fontSize: 12.5),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: montoCtrl,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    onChanged: (_) => setSt(() {}),
+                    decoration: const InputDecoration(
+                      labelText: 'Dinero contado en caja (S/.)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  if (dif != null) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      dif.abs() < 0.005
+                          ? '✔ La caja cuadra'
+                          : (dif < 0
+                              ? '⚠ Faltan ${_s(dif.abs())}'
+                              : '⚠ Sobran ${_s(dif)}'),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: dif.abs() < 0.005
+                            ? Colors.green[700]
+                            : Colors.red[700],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: obsCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Observaciones',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: contado == null || contado < 0
+                    ? null
+                    : () => Navigator.pop(ctx, true),
+                child: const Text('Cerrar caja'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    if (confirmar != true) return;
+    final monto = double.tryParse(montoCtrl.text.replaceAll(',', '.')) ?? 0;
+    try {
+      await _dio.post<dynamic>('/finanza/caja/cerrar', data: {
+        'usuarioId': usuarioId,
+        'monto': monto,
+        'observaciones': obsCtrl.text,
+        'sucursalId': widget.sucursalId,
+      });
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Caja cerrada correctamente')),
+      );
+      _recargar();
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo cerrar: ${_error(e)}')),
+      );
+    }
   }
 }
 
