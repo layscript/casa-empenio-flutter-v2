@@ -372,6 +372,12 @@ class _AuditoriaViewState extends State<AuditoriaView> {
         lineas.add(MapEntry('Usuario que intentó entrar', datos['intento_con'].toString()));
       }
     }
+    final cambios = <Map<String, dynamic>>[];
+    if (datos is Map && datos['cambios'] is List) {
+      for (final c in (datos['cambios'] as List)) {
+        if (c is Map) cambios.add(Map<String, dynamic>.from(c));
+      }
+    }
     final fallo = (it['resultado'] ?? 'OK') == 'ERROR';
     final uid = (it['usuarioId'] as num?)?.toInt() ?? 0;
     final usuarioTxt = (it['usuario'] ?? '').toString();
@@ -412,7 +418,14 @@ class _AuditoriaViewState extends State<AuditoriaView> {
               ],
             ),
             const SizedBox(height: 12),
-            _bloque('¿Qué pasó?', (it['descripcion'] ?? '').toString()),
+            _bloque(
+                '¿Qué pasó?',
+                () {
+                  final d = (it['descripcion'] ?? '').toString();
+                  if (cambios.isEmpty) return d;
+                  final i = d.indexOf('. ');
+                  return i > 0 ? d.substring(0, i) : d;
+                }()),
             _bloque('¿Quién lo hizo?', quien),
             _bloque('¿Cuándo?', '${_fechaHora(it['fecha'])}  ${_hace(it['fecha'])}'),
             _bloque('¿Desde dónde?',
@@ -420,6 +433,55 @@ class _AuditoriaViewState extends State<AuditoriaView> {
             _bloque('¿En qué parte?',
                 '${it['modulo']}${it['entidadId'] != null ? ' · registro N° ${it['entidadId']}' : ''}'),
             _bloque('Resultado', resultadoTxt),
+            if (datos is Map && datos['codigoPrestamo'] != null)
+              _bloque('Préstamo modificado',
+                  'N° ${datos['codigoPrestamo']}  ·  ${datos['cliente'] ?? ''}'),
+            if (cambios.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              const Text('Qué se cambió',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 6),
+              for (final c in cambios)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF6F8FB),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFD9E2EC)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text((c['campo'] ?? '').toString(),
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text.rich(TextSpan(children: [
+                        const TextSpan(
+                            text: 'Antes: ',
+                            style: TextStyle(
+                                color: Color(0xFFC62828),
+                                fontWeight: FontWeight.w600)),
+                        TextSpan(text: (c['antes'] ?? '').toString()),
+                      ])),
+                      const SizedBox(height: 2),
+                      Text.rich(TextSpan(children: [
+                        const TextSpan(
+                            text: 'Quedó: ',
+                            style: TextStyle(
+                                color: Color(0xFF2E7D32),
+                                fontWeight: FontWeight.w600)),
+                        TextSpan(text: (c['despues'] ?? '').toString()),
+                      ])),
+                    ],
+                  ),
+                ),
+            ] else if (datos is Map && datos['codigoPrestamo'] != null)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: Text('Se guardó sin cambios en los datos.',
+                    style: TextStyle(color: Colors.grey)),
+              ),
             if (lineas.isNotEmpty) ...[
               const SizedBox(height: 8),
               const Text('Datos que se enviaron',
@@ -482,7 +544,8 @@ class _AuditoriaViewState extends State<AuditoriaView> {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text((it['descripcion'] ?? '').toString()),
+            Text((it['descripcion'] ?? '').toString(),
+                maxLines: 4, overflow: TextOverflow.ellipsis),
             const SizedBox(height: 2),
             Text(
               '${_fechaHora(it['fecha'])}  ${_hace(it['fecha'])}'
