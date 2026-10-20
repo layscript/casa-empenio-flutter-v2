@@ -5,6 +5,7 @@ import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/categorias_orden_view.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 // ---------------------------------------------------------------------------
@@ -408,6 +409,28 @@ class _RolesTabState extends State<_RolesTab> {
     }, 'Módulo guardado');
   }
 
+  Future<void> _crearBasicos() async {
+    final ok = await _confirmar(context, 'Crear puestos básicos',
+        'Se crearán los puestos que falten entre: Administrador, Gerente y Encargado de tienda. '
+        'Los que ya existan no se tocan. Después podrá cambiar los módulos de cada uno. ¿Continuar?');
+    if (!ok) return;
+    try {
+      final r = await _dio.post('/auth/roles/basicos');
+      final b = _cuerpo(r);
+      final creados = b is Map && b['creados'] is List ? (b['creados'] as List) : const [];
+      final yaEstaban = b is Map && b['yaExistian'] is List ? (b['yaExistian'] as List) : const [];
+      _aviso(
+          context,
+          creados.isEmpty
+              ? 'Ya existían los tres puestos'
+              : 'Creados: ${creados.join(', ')}'
+                  '${yaEstaban.isEmpty ? '' : ' · Ya existían: ${yaEstaban.join(', ')}'}');
+    } catch (e) {
+      _aviso(context, _msg(e));
+    }
+    await _cargar();
+  }
+
   Future<void> _borrarModulo(Map<String, dynamic> m) async {
     final ok = await _confirmar(context, 'Eliminar módulo',
         'Se quitará el módulo "${m['nombre']}" de la lista. Los roles que lo tenían dejarán de verlo. ¿Continuar?');
@@ -442,6 +465,12 @@ class _RolesTabState extends State<_RolesTab> {
                 const Expanded(
                     child: Text('Roles',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
+                OutlinedButton.icon(
+                  onPressed: _crearBasicos,
+                  icon: const Icon(Icons.auto_awesome),
+                  label: const Text('Puestos básicos'),
+                ),
+                const SizedBox(width: 8),
                 ElevatedButton.icon(
                   onPressed: () => _editarRol(),
                   icon: const Icon(Icons.add),
@@ -679,6 +708,92 @@ class _UsuariosTabState extends State<_UsuariosTab> {
     await _cargar();
   }
 
+  bool get _puedeRestablecer {
+    final yo = context.read<Preferences>().token;
+    if (yo == null) return false;
+    if (yo.isAdmin == true) return true;
+    final rol = (yo.role?.nombre ?? '')
+        .toLowerCase()
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .trim();
+    return rol == 'administrador' ||
+        rol == 'administradora' ||
+        rol == 'admin' ||
+        rol == 'gerente' ||
+        rol == 'gerenta';
+  }
+
+  Future<void> _restablecerClave(Map<String, dynamic> u) async {
+    final nombre = '${u['nombre'] ?? ''} ${u['apellido'] ?? ''}'.trim();
+    final ok = await _confirmar(context, 'Restablecer contraseña',
+        'Las contraseñas están cifradas y nadie puede verlas. Lo que sí se puede es crear una '
+        'contraseña NUEVA para "$nombre". La actual dejará de servir. ¿Continuar?');
+    if (!ok) return;
+    try {
+      final r = await _dio.post('/usuarios/${u['id']}/restablecer-clave');
+      final b = _cuerpo(r);
+      final clave = b is Map ? (b['clave'] ?? '').toString() : '';
+      final usuario = b is Map ? (b['userName'] ?? '').toString() : '';
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Contraseña nueva'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Para $nombre${usuario.isEmpty ? '' : ' (usuario: $usuario)'}'),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green),
+                ),
+                child: SelectableText(
+                  clave,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      fontSize: 26, fontWeight: FontWeight.bold, letterSpacing: 2),
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Anótela o cópiela ahora: solo se muestra esta vez. '
+                'Pídale a la persona que la cambie cuando ingrese.',
+                style: TextStyle(fontSize: 12.5),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton.icon(
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: clave));
+                if (ctx.mounted) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(content: Text('Contraseña copiada')));
+                }
+              },
+              icon: const Icon(Icons.copy),
+              label: const Text('Copiar'),
+            ),
+            ElevatedButton(
+                onPressed: () => Navigator.pop(ctx), child: const Text('Listo')),
+          ],
+        ),
+      );
+    } catch (e) {
+      _aviso(context, _msg(e));
+    }
+  }
+
   Future<void> _borrar(Map<String, dynamic> u) async {
     final ok = await _confirmar(context, 'Eliminar usuario',
         'Se eliminará a "${u['nombre']} ${u['apellido']}". Si tiene movimientos registrados, el sistema puede no permitirlo. ¿Continuar?');
@@ -766,10 +881,21 @@ class _UsuariosTabState extends State<_UsuariosTab> {
                           label: Text('ADMIN', style: TextStyle(fontSize: 10)),
                           visualDensity: VisualDensity.compact),
                     PopupMenuButton<String>(
-                      onSelected: (v) => v == 'e' ? _formulario(u: u) : _borrar(u),
-                      itemBuilder: (_) => const [
-                        PopupMenuItem(value: 'e', child: Text('Editar')),
-                        PopupMenuItem(value: 'b', child: Text('Eliminar')),
+                      onSelected: (v) {
+                        if (v == 'e') {
+                          _formulario(u: u);
+                        } else if (v == 'k') {
+                          _restablecerClave(u);
+                        } else {
+                          _borrar(u);
+                        }
+                      },
+                      itemBuilder: (_) => [
+                        const PopupMenuItem(value: 'e', child: Text('Editar')),
+                        if (_puedeRestablecer)
+                          const PopupMenuItem(
+                              value: 'k', child: Text('Restablecer contraseña')),
+                        const PopupMenuItem(value: 'b', child: Text('Eliminar')),
                       ],
                     ),
                   ],
