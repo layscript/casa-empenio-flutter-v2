@@ -45,6 +45,8 @@ class _MovementsViewState extends State<MovementsView> {
   String? _alertaClave;
   String _busqueda = '';
   bool _nuevoPrimero = true;
+  DateTime? _desde; // filtro por fecha (día completo, hora de Perú)
+  DateTime? _hasta;
 
   final _oCcy = NumberFormat('#,##0.00', 'en_US');
   final _busquedaCtrl = TextEditingController();
@@ -95,6 +97,13 @@ class _MovementsViewState extends State<MovementsView> {
       if (_clase != null && claseDe(m) != _clase) return false;
       if (_medio != null && etiquetaMedio(m) != _medio) return false;
       if (idsAlerta != null && !idsAlerta.contains(m.id)) return false;
+      if (_desde != null || _hasta != null) {
+        final f = fechaPeru(m.createdAt);
+        if (f == null) return false;
+        final dia = DateTime(f.year, f.month, f.day);
+        if (_desde != null && dia.isBefore(_desde!)) return false;
+        if (_hasta != null && dia.isAfter(_hasta!)) return false;
+      }
       if (q.isNotEmpty) {
         final texto = [
           m.clienteNombre,
@@ -391,6 +400,95 @@ class _MovementsViewState extends State<MovementsView> {
   }
 
   // ---------------------------------------------------------------- filtros
+  // ------------------------------------------------------- filtro por fecha
+  Future<void> _elegirFecha({required bool desde}) async {
+    final fechas = [
+      for (final m in widget.movimientos) fechaPeru(m.createdAt),
+    ].whereType<DateTime>().toList()
+      ..sort();
+    final hoy = DateTime.now();
+    final primera = fechas.isEmpty ? DateTime(hoy.year - 2) : fechas.first;
+    final ultima = fechas.isEmpty ? hoy : fechas.last;
+    final inicial = (desde ? _desde : _hasta) ?? ultima;
+    final r = await showDatePicker(
+      context: context,
+      initialDate: inicial.isBefore(primera)
+          ? primera
+          : (inicial.isAfter(ultima) ? ultima : inicial),
+      firstDate: DateTime(primera.year, primera.month, primera.day),
+      lastDate: DateTime(ultima.year, ultima.month, ultima.day),
+      helpText: desde ? 'Desde qué día' : 'Hasta qué día',
+    );
+    if (r == null) return;
+    final dia = DateTime(r.year, r.month, r.day);
+    setState(() {
+      if (desde) {
+        _desde = dia;
+        if (_hasta != null && _hasta!.isBefore(dia)) _hasta = dia;
+      } else {
+        _hasta = dia;
+        if (_desde != null && _desde!.isAfter(dia)) _desde = dia;
+      }
+    });
+  }
+
+  Widget _filtroFechas(
+    Widget Function(String, bool, VoidCallback) chip,
+  ) {
+    final fmt = DateFormat('dd/MM/yyyy');
+    final ahora = fechaPeru(DateTime.now().toUtc().toIso8601String()) ?? DateTime.now();
+    final hoy = DateTime(ahora.year, ahora.month, ahora.day);
+    final ayer = hoy.subtract(const Duration(days: 1));
+    bool esDia(DateTime d) => _desde == d && _hasta == d;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _elegirFecha(desde: true),
+                icon: const Icon(Icons.event, size: 18),
+                label: Text(_desde == null ? 'Desde' : fmt.format(_desde!)),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _elegirFecha(desde: false),
+                icon: const Icon(Icons.event, size: 18),
+                label: Text(_hasta == null ? 'Hasta' : fmt.format(_hasta!)),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Wrap(
+          children: [
+            chip('Hoy', esDia(hoy), () => setState(() {
+                  _desde = hoy;
+                  _hasta = hoy;
+                })),
+            chip('Ayer', esDia(ayer), () => setState(() {
+                  _desde = ayer;
+                  _hasta = ayer;
+                })),
+            chip('Últimos 7 días', _desde == hoy.subtract(const Duration(days: 6)) && _hasta == hoy,
+                () => setState(() {
+                      _desde = hoy.subtract(const Duration(days: 6));
+                      _hasta = hoy;
+                    })),
+            chip('Todas las fechas', _desde == null && _hasta == null,
+                () => setState(() {
+                      _desde = null;
+                      _hasta = null;
+                    })),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _filtros(Set<ClaseMov> clases, Set<String> medios) {
     Widget chip(String label, bool sel, VoidCallback onTap) => Padding(
           padding: const EdgeInsets.only(right: 6, bottom: 6),
@@ -433,6 +531,8 @@ class _MovementsViewState extends State<MovementsView> {
           onChanged: (v) => setState(() => _busqueda = v),
         ),
         const SizedBox(height: 10),
+        _filtroFechas(chip),
+        const SizedBox(height: 4),
         Wrap(
           children: [
             chip('Todos', _sentido == 'todos',
@@ -464,7 +564,9 @@ class _MovementsViewState extends State<MovementsView> {
                 ),
             ],
           ),
-        if (_sentido != 'todos' ||
+        if (_desde != null ||
+            _hasta != null ||
+            _sentido != 'todos' ||
             _clase != null ||
             _medio != null ||
             _alertaClave != null ||
@@ -472,6 +574,8 @@ class _MovementsViewState extends State<MovementsView> {
           TextButton.icon(
             onPressed: () => setState(() {
               _sentido = 'todos';
+              _desde = null;
+              _hasta = null;
               _clase = null;
               _medio = null;
               _alertaClave = null;
@@ -497,7 +601,7 @@ class _MovementsViewState extends State<MovementsView> {
             ? Colors.blueGrey
             : (entra ? Colors.green[700]! : Colors.red[700]!));
     final f = fechaPeru(m.createdAt);
-    final hora = f == null ? '-' : DateFormat('hh:mm a').format(f);
+    final hora = f == null ? '-' : DateFormat('dd/MM/yyyy · hh:mm a').format(f);
     final titulo = (m.clienteNombre ?? '').isNotEmpty
         ? m.clienteNombre!
         : nombreClase(clase);
