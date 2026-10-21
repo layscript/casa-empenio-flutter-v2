@@ -2249,6 +2249,44 @@ class _PermisosTabState extends State<_PermisosTab> {
     }
   }
 
+  // Orden sugerido: Administrador, Gerente, Encargado de tienda y después los demás
+  // puestos (caja, etc.) tal como ya estaban.
+  int _rango(String nombre) {
+    final n = nombre
+        .toLowerCase()
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .trim();
+    if (n == 'administrador' || n == 'administradora' || n == 'admin') return 1;
+    if (n == 'gerente' || n == 'gerenta') return 2;
+    if (n.startsWith('encargad')) return 3;
+    return 4;
+  }
+
+  Future<void> _ordenSugerido() async {
+    final copia = List<Map<String, dynamic>>.from(_roles);
+    final pos = <Object?, int>{
+      for (var i = 0; i < copia.length; i++) copia[i]['id']: i,
+    };
+    copia.sort((a, b) {
+      final c = _rango((a['nombre'] ?? '').toString())
+          .compareTo(_rango((b['nombre'] ?? '').toString()));
+      return c != 0 ? c : pos[a['id']]!.compareTo(pos[b['id']]!);
+    });
+    setState(() => _roles = copia);
+    try {
+      await _dio.put('/acceso/roles/orden',
+          data: {'orden': copia.map((r) => r['id']).toList()});
+      _aviso(context, 'Escalera ordenada: Administrador, Gerente, Encargado y los demás');
+    } catch (e) {
+      _aviso(context, _msg(e));
+      await _cargar();
+    }
+  }
+
   Future<void> _mover(int i, int delta) async {
     final j = i + delta;
     if (j < 0 || j >= _roles.length) return;
@@ -2379,6 +2417,17 @@ class _PermisosTabState extends State<_PermisosTab> {
           // ------------------------------------------------ Paso 1
           const _Paso(1, 'Escalera de mando',
               'Arriba, mayor autoridad. Una persona puede autorizar las solicitudes de los puestos que están más abajo.'),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                onPressed: _ordenSugerido,
+                icon: const Icon(Icons.auto_awesome),
+                label: const Text('Ordenar: Administrador, Gerente, Encargado…'),
+              ),
+            ),
+          ),
           for (var i = 0; i < _roles.length; i++)
             Card(
               margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),

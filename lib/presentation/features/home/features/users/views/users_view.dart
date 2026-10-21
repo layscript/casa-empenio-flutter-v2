@@ -39,14 +39,15 @@ class UsersView extends StatelessWidget {
               case UserStatus.loaded:
                 return Container(
                   width: double.infinity,
+                  height: double.infinity,
                   padding: EdgeInsets.only(
                     bottom: MediaQuery.of(context).viewInsets.bottom,
                   ),
                   child: Stack(
                     children: [
-                      AnimatedContainer(
+                      Positioned.fill(
+                        child: AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
-                        height: MediaQuery.of(context).size.height * 0.9,
                         padding: const EdgeInsets.only(
                           bottom: 120,
                         ),
@@ -167,6 +168,7 @@ class UsersView extends StatelessWidget {
                               ]
                             ],
                           ),
+                        ),
                         ),
                       ),
                       Positioned.fill(
