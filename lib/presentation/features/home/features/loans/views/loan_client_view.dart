@@ -128,6 +128,7 @@ class _LoanClientViewState extends State<LoanClientView> {
                               ResumenPrestamo(
                                 prestamo: prestamo!,
                                 monto: montoFinal,
+                                cliente: state.searchCustomer?.customerFullName,
                                 fecha: prestamo.fecha != null
                                     ? state.formattedDate(prestamo.fecha!)
                                     : null,
