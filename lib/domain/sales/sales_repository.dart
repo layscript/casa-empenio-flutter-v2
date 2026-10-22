@@ -61,4 +61,11 @@ abstract class SalesRepository {
     String accion,
     Map<String, dynamic> body,
   );
+
+  /// Registra la compra de un producto (bien + salida de caja + contrato).
+  /// Devuelve {'data': {...}} si salió bien o {'error': 'mensaje'}.
+  Future<Map<String, dynamic>> registrarCompra(Map<String, dynamic> payload);
+
+  /// Qué envíos automáticos hay configurados: {'sms': bool, 'whatsapp': bool}.
+  Future<Map<String, dynamic>> canalesCobranza();
 }

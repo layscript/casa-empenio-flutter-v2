@@ -144,6 +144,9 @@ class _TareasCobranzaPageState extends State<TareasCobranzaPage> {
   void initState() {
     super.initState();
     _cargar();
+    _repo.canalesCobranza().then((c) {
+      if (mounted) setState(() => _canales = c);
+    });
   }
 
   Future<void> _cargar() async {
@@ -225,7 +228,47 @@ class _TareasCobranzaPageState extends State<TareasCobranzaPage> {
     await _accion(t, 'sms', {}, ok: 'SMS enviado y registrado');
   }
 
+  Map<String, dynamic> _canales = {'sms': false, 'whatsapp': false};
+
   Future<void> _whatsapp(Map<String, dynamic> t) async {
+    final c0 = _cel(t);
+    if (c0.isEmpty) {
+      _msg('El cliente no tiene celular', error: true);
+      return;
+    }
+    final auto = _canales['whatsapp'] == true;
+    final modo = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Padding(
+            padding: EdgeInsets.all(14),
+            child: Text('¿Cómo enviar el WhatsApp?',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          ),
+          ListTile(
+            leading: const Icon(Icons.smart_toy, color: Colors.green),
+            title: const Text('Automático (lo envía el sistema)'),
+            subtitle: Text(auto
+                ? 'Queda la constancia de envío en el sistema.'
+                : 'Aún no está activado: requiere contratar la API oficial de WhatsApp.'),
+            enabled: auto,
+            onTap: auto ? () => Navigator.pop(ctx, 'auto') : null,
+          ),
+          ListTile(
+            leading: const Icon(Icons.chat, color: Colors.green),
+            title: const Text('Normal (se abre tu WhatsApp)'),
+            subtitle: const Text('Tú lo envías y confirmas aquí.'),
+            onTap: () => Navigator.pop(ctx, 'normal'),
+          ),
+        ]),
+      ),
+    );
+    if (modo == null || !mounted) return;
+    if (modo == 'auto') {
+      await _accion(t, 'whatsapp', {}, ok: 'WhatsApp enviado y registrado');
+      return;
+    }
     final c = _cel(t);
     if (c.isEmpty) {
       _msg('El cliente no tiene celular', error: true);

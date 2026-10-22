@@ -31,4 +31,11 @@ abstract class ProductRepository {
   Future<Either<String, bool>> updateProduct({
     required Map<String, dynamic> payload,
   });
+
+  /// Sube hasta 2 fotos a un producto ya creado.
+  Future<bool> subirFotosProducto({
+    required int id,
+    String? imagenUno,
+    String? imagenDos,
+  });
 }

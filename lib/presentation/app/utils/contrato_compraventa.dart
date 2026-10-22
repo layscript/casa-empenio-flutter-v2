@@ -185,12 +185,10 @@ Future<Uint8List> crearContratoCompraVentaPdf(
       );
 
   pdf.addPage(
-    w.Page(
+    w.MultiPage(
       pageFormat: p.PdfPageFormat.a4,
       margin: const w.EdgeInsets.all(40),
-      build: (ctx) => w.Column(
-        crossAxisAlignment: w.CrossAxisAlignment.start,
-        children: [
+      build: (ctx) => [
           w.Center(
             child: w.Text(d.parcial ? '$titulo\n(CON ADELANTO Y PAGO PARCIAL)' : titulo,
                 textAlign: w.TextAlign.center,
@@ -267,6 +265,7 @@ Future<Uint8List> crearContratoCompraVentaPdf(
               textAlign: w.TextAlign.justify,
             ),
           ],
+          ..._clausulasFinales(d, base, d.parcial ? 5 : 4),
           w.SizedBox(height: 15),
           w.SizedBox(
             width: double.infinity,
@@ -288,11 +287,39 @@ Future<Uint8List> crearContratoCompraVentaPdf(
             w.SizedBox(height: 18),
             w.Text(selloDigital, style: const w.TextStyle(fontSize: 8)),
           ],
-        ],
-      ),
+      ],
     ),
   );
   return pdf.save();
+}
+
+const _ordinales = [
+  '', 'PRIMERO', 'SEGUNDO', 'TERCERO', 'CUARTO', 'QUINTO', 'SEXTO', 'SÉPTIMO',
+  'OCTAVO', 'NOVENO', 'DÉCIMO'
+];
+
+/// Cláusulas finales: sin devoluciones y bien de segundo uso (venta), o
+/// propiedad y estado del bien (compra). `desde` es el número de la primera.
+List<w.Widget> _clausulasFinales(DatosContrato d, w.TextStyle base, int desde) {
+  final textos = d.empresaCompra
+      ? <String>[
+          'EL VENDEDOR declara que el bien se encuentra libre de cargas, gravámenes, embargos y denuncias, y que no tiene reclamo de terceros; se obliga al saneamiento por evicción y asume toda responsabilidad civil y penal si lo declarado fuera falso.',
+          'EL VENDEDOR entrega el bien en el estado en que se encuentra, que declara conocer y haber informado a EL COMPRADOR, y que es de segundo uso. Concretada la compra y el pago, no hay lugar a devolución del bien ni a modificación del precio pactado.',
+        ]
+      : <String>[
+          'NO SE ADMITEN DEVOLUCIONES. Una vez concretada la venta y entregado el bien, EL COMPRADOR no tiene derecho a devolverlo ni a solicitar la devolución del dinero pagado, salvo acuerdo escrito y firmado por ambas partes.',
+          'EL COMPRADOR declara conocer que el bien es de SEGUNDO USO y que lo adquiere en el estado en que se encuentra, que ha revisado y verificado a su entera satisfacción antes de pagar. Por ello no existe derecho a reclamo posterior por desperfectos, desgaste, fallas ocultas o de funcionamiento, ni por la condición mecánica, técnica o estética del bien, y EL VENDEDOR no se hace responsable por el estado, uso o desempeño del bien después de su entrega.',
+        ];
+  final out = <w.Widget>[];
+  for (var i = 0; i < textos.length; i++) {
+    out.add(w.SizedBox(height: 15));
+    out.add(w.Text(
+      '- ${_ordinales[desde + i]}: ${textos[i]}',
+      style: base,
+      textAlign: w.TextAlign.justify,
+    ));
+  }
+  return out;
 }
 
 // ------------------------------------------------- CONSTANCIA DE CANCELACIÓN
