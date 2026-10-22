@@ -37,5 +37,15 @@ abstract class SalesRepository {
     required int ventaId,
     required int usuarioId,
     required int sucursalId,
+    double recargo = 0,
+  });
+
+  /// El cliente desiste y se le devuelve el adelanto. Null = bien; si no, el error.
+  Future<String?> desistirVenta({
+    required int ventaId,
+    required int usuarioId,
+    required int sucursalId,
+    double retener = 0,
+    String motivo = '',
   });
 }

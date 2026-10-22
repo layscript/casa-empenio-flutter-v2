@@ -33,6 +33,7 @@ class _VenderBienPageState extends State<VenderBienPage> {
   final _nombre = TextEditingController();
   final _domicilio = TextEditingController();
   final _adelanto = TextEditingController();
+  final _cochera = TextEditingController();
   bool _parcial = false;
   DateTime _fechaLimite = DateTime.now().add(const Duration(days: 15));
   late final TextEditingController _precio;
@@ -94,6 +95,7 @@ class _VenderBienPageState extends State<VenderBienPage> {
     _nombre.dispose();
     _domicilio.dispose();
     _adelanto.dispose();
+    _cochera.dispose();
     _precio.dispose();
     super.dispose();
   }
@@ -151,6 +153,7 @@ class _VenderBienPageState extends State<VenderBienPage> {
       fecha: DateTime.now(),
       adelanto: _adelantoValor(precio),
       fechaLimite: _adelantoValor(precio) != null ? _fechaLimite : null,
+      cocheraDia: _adelantoValor(precio) != null ? double.tryParse(_cochera.text.replaceAll(',', '.')) : null,
     );
   }
 
@@ -243,6 +246,7 @@ class _VenderBienPageState extends State<VenderBienPage> {
       'prestamoCodigo': widget.prestamo.codigo,
       if (datos.parcial) 'adelanto': datos.adelanto,
       if (datos.parcial) 'fechaLimite': DateFormat('yyyy-MM-dd').format(_fechaLimite),
+      if (datos.parcial && (datos.cocheraDia ?? 0) > 0) 'cocheraDia': datos.cocheraDia,
     };
 
     // Contrato privado: la venta se concreta con firma + huella del comprador.
@@ -517,6 +521,18 @@ class _VenderBienPageState extends State<VenderBienPage> {
                   },
                 ),
               ],
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _cochera,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                  labelText: 'Cochera y cuidado por día de retraso (opcional)',
+                  helperText: 'Si pasa la fecha límite, el comprador paga esto por cada día. Vacío = "el monto que acuerden".',
+                  helperMaxLines: 2,
+                  prefixText: 'S/. ',
+                  border: OutlineInputBorder(),
+                  isDense: true),
             ),
             const SizedBox(height: 6),
             Builder(builder: (_) {

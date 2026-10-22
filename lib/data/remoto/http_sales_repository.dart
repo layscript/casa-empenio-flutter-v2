@@ -183,11 +183,16 @@ class HttpSalesRepository implements SalesRepository {
     required int ventaId,
     required int usuarioId,
     required int sucursalId,
+    double recargo = 0,
   }) async {
     try {
       final r = await _dio.post<dynamic>(
         '/almacen/ventas/$ventaId/cancelar-saldo',
-        data: {'usuarioId': usuarioId, 'sucursalId': sucursalId},
+        data: {
+          'usuarioId': usuarioId,
+          'sucursalId': sucursalId,
+          if (recargo > 0) 'recargo': recargo,
+        },
       );
       if (r.statusCode == 201 || r.statusCode == 200) return null;
       return 'No se pudo cancelar el saldo';
@@ -201,6 +206,39 @@ class HttpSalesRepository implements SalesRepository {
       return 'No se pudo cancelar el saldo (revise que la caja esté abierta)';
     } catch (e) {
       return 'No se pudo cancelar el saldo';
+    }
+  }
+
+  @override
+  Future<String?> desistirVenta({
+    required int ventaId,
+    required int usuarioId,
+    required int sucursalId,
+    double retener = 0,
+    String motivo = '',
+  }) async {
+    try {
+      final r = await _dio.post<dynamic>(
+        '/almacen/ventas/$ventaId/desistir',
+        data: {
+          'usuarioId': usuarioId,
+          'sucursalId': sucursalId,
+          'retener': retener,
+          if (motivo.trim().isNotEmpty) 'motivo': motivo.trim(),
+        },
+      );
+      if (r.statusCode == 201 || r.statusCode == 200) return null;
+      return 'No se pudo registrar el desistimiento';
+    } on DioException catch (e) {
+      final d = e.response?.data;
+      try {
+        final m = d is String ? json.decode(d) : d;
+        final msg = m is Map ? m['message'] : null;
+        if (msg is String) return msg;
+      } catch (_) {}
+      return 'No se pudo registrar el desistimiento (revise que la caja esté abierta)';
+    } catch (e) {
+      return 'No se pudo registrar el desistimiento';
     }
   }
 
