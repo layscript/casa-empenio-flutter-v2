@@ -222,6 +222,18 @@ class HttpProductRepository implements ProductRepository {
     }
   }
 
+  @override
+  Future<bool> subirFotosProducto({
+    required int id,
+    String? imagenUno,
+    String? imagenDos,
+  }) =>
+      uploadWarrantyImageProductVehiculo(
+        idGarantia: id,
+        imagenUno: imagenUno,
+        imagenDos: imagenDos,
+      );
+
   Future<bool> uploadWarrantyImageProductVehiculo({
     required int idGarantia,
     required String? imagenUno,

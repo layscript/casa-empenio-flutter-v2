@@ -347,4 +347,44 @@ class HttpSalesRepository implements SalesRepository {
       return 'No se pudo completar';
     }
   }
+
+  @override
+  Future<Map<String, dynamic>> registrarCompra(
+      Map<String, dynamic> payload) async {
+    try {
+      final r = await _dio.post<dynamic>(
+        '/almacen/compras',
+        data: payload,
+        options: Options(
+          sendTimeout: const Duration(minutes: 2),
+          receiveTimeout: const Duration(minutes: 2),
+        ),
+      );
+      final d = r.data;
+      final m = d is String ? json.decode(d) : d;
+      return {'data': (m is Map ? m['body'] : null) ?? {}};
+    } on DioException catch (e) {
+      final d = e.response?.data;
+      try {
+        final m = d is String ? json.decode(d) : d;
+        final msg = m is Map ? m['message'] : null;
+        if (msg is String) return {'error': msg};
+        if (msg is List && msg.isNotEmpty) return {'error': msg.first.toString()};
+      } catch (_) {}
+      return {'error': 'No se pudo registrar la compra (revise la conexión)'};
+    } catch (e) {
+      return {'error': 'No se pudo registrar la compra'};
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> canalesCobranza() async {
+    try {
+      final r = await _dio.get<String>('/adjudicacion/canales');
+      final map = json.decode(r.data!) as Map<String, dynamic>;
+      return Map<String, dynamic>.from(map['body'] as Map);
+    } catch (e) {
+      return {'sms': false, 'whatsapp': false};
+    }
+  }
 }

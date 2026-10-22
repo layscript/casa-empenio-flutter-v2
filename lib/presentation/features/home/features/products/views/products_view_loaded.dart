@@ -306,7 +306,8 @@ class _BottomState extends State<Bottom> {
         boxShadow: defaultBoxShadow,
       ),
       child: Center(
-        child: PrimaryButton(
+        child: Row(children: [
+        Expanded(child: PrimaryButton(
           onPressed: () async {
             final result = await showDialog<StatusFormVehiculo?>(
               barrierDismissible: false,
@@ -332,7 +333,31 @@ class _BottomState extends State<Bottom> {
               Text('Agregar Producto'),
             ],
           ),
+        )),
+        const SizedBox(width: 10),
+        Expanded(
+          child: SizedBox(
+            height: 48,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                final ok = await Navigator.of(context).push<bool>(
+                  MaterialPageRoute<bool>(
+                    builder: (_) =>
+                        RegistrarCompraPage(categories: widget.categories),
+                  ),
+                );
+                if (ok == true && mounted) {
+                  context
+                      .read<ProductsBloc>()
+                      .add(const RefreshProducts(search: '', category: null));
+                }
+              },
+              icon: const Icon(Icons.shopping_cart_checkout),
+              label: const Text('Registrar compra'),
+            ),
+          ),
         ),
+        ]),
       ),
     );
   }
