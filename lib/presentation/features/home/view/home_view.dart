@@ -2,6 +2,7 @@ import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/loans/widgets/tareas_cobranza_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -89,6 +90,7 @@ class _HomeViewState extends State<HomeView> {
               ],
             ),
           ),
+          const AvisoCobranza(),
           const Padding(
             padding: EdgeInsets.fromLTRB(20, 14, 20, 0),
             child: Row(

@@ -15,3 +15,4 @@ export 'update_status_loan_dialog.dart';
 export 'vender_bien_page.dart';
 export 'contrato_venta_firma_page.dart';
 export 'ventas_de_prestamo_page.dart';
+export 'tareas_cobranza_page.dart';
