@@ -3,6 +3,7 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/contrato_compraventa.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/sales/bloc/sales_bloc.dart';
@@ -178,6 +179,22 @@ class _SalesViewState extends State<SalesView> {
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (_) => const ContratoCompraVentaPage(),
+                            ),
+                          ),
+                          icon: const FaIcon(FontAwesomeIcons.fileSignature,
+                              size: 18, color: Colors.blue),
+                          label: const Text(
+                              'Contrato de compra y venta (vehículo / artefacto)'),
+                        ),
                       ),
                       const SizedBox(height: 10),
                       Text(
