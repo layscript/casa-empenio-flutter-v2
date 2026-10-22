@@ -1,0 +1,16 @@
+name: Verificar
+on:
+  push:
+    branches: [verificar2]
+jobs:
+  v:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.5'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/presentation/app/utils/contrato_compraventa.dart lib/presentation/features/home/features/sales lib/presentation/features/home/features/products 2>&1 | tee /tmp/a.txt; ! grep -E "^\s*error" /tmp/a.txt
