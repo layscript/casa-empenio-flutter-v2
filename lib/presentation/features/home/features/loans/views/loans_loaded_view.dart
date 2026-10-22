@@ -556,6 +556,7 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                                       child: ResumenPrestamo(
                                         prestamo: prestamo,
                                         monto: montoFinal,
+                                        cliente: customer?.customerFullName,
                                         fecha: prestamo?.fecha != null
                                             ? widget.state.formattedDate(prestamo!.fecha!)
                                             : null,

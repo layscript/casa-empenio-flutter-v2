@@ -10,11 +10,15 @@ class ResumenPrestamo extends StatelessWidget {
     required this.prestamo,
     required this.monto,
     this.fecha,
+    this.cliente,
   });
 
   final LoansEntity prestamo;
   final String monto;
   final String? fecha;
+
+  /// Nombre del cliente cuando el préstamo no lo trae (búsqueda por DNI).
+  final String? cliente;
 
   static Color _colorEstado(String? e) {
     switch (e) {
@@ -48,8 +52,9 @@ class ResumenPrestamo extends StatelessWidget {
       bien = partes.join(' · ');
       if (bienes.length > 1) bien = '$bien  (+${bienes.length - 1} más)';
     }
-    final cliente =
+    final propio =
         '${p.cliente?.nombres ?? ''} ${p.cliente?.apellidos ?? ''}'.trim();
+    final cliente = propio.isNotEmpty ? propio : (this.cliente ?? '').trim();
     final color = _colorEstado(p.estado);
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
