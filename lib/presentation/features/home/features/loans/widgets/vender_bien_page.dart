@@ -3,6 +3,7 @@ import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/contrato_compraventa.dart';
 import 'package:casa_empenio_pe/presentation/features/auth/auth.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/blocs/loans_bloc/loans_bloc.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/loans/widgets/contrato_venta_firma_page.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/widgets/payment_loan_dialog_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -34,6 +35,37 @@ class _VenderBienPageState extends State<VenderBienPage> {
   late final TextEditingController _precio;
 
   List<WarrantyEntity> get _bienes => widget.prestamo.bienesGarantia ?? [];
+
+  bool get _yaVencio {
+    final f = DateTime.tryParse(widget.prestamo.fechaPago ?? '');
+    if (f == null) return true;
+    return !f.toLocal().isAfter(DateTime.now());
+  }
+
+  Future<void> _pedirVenta() async {
+    if (!_yaVencio || _diasVencido < 60) {
+      final texto = !_yaVencio
+          ? 'Aún no venció este préstamo.\n\n¿Está seguro que desea vender el bien?'
+          : 'Este préstamo lleva solo $_diasVencido días vencido (menos de 60).\n\n¿Está seguro que desea vender el bien?';
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('¿Vender antes de tiempo?'),
+          content: Text(texto),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('No, volver')),
+            ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Sí, vender')),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+    if (mounted) setState(() => _venta = true);
+  }
 
   int get _diasVencido {
     final f = DateTime.tryParse(widget.prestamo.fechaPago ?? '');
@@ -174,7 +206,7 @@ class _VenderBienPageState extends State<VenderBienPage> {
     final nombres = partes.first;
     final apellidos = partes.length > 1 ? partes.sublist(1).join(' ') : '-';
 
-    final ventaId = await repo.registrarVenta({
+    final payloadVenta = <String, dynamic>{
       'detalleVentaDto': detalles,
       'total': precio,
       'nombres': nombres,
@@ -185,7 +217,26 @@ class _VenderBienPageState extends State<VenderBienPage> {
       'sucursalId': prefs.token?.sucursal?.id ?? 1,
       'documento': _doc == _Doc.contrato ? 'CONTRATO_PRIVADO' : 'BOLETA',
       'prestamoCodigo': widget.prestamo.codigo,
-    });
+    };
+
+    // Contrato privado: la venta se concreta con firma + huella del comprador.
+    if (_doc == _Doc.contrato) {
+      setState(() => _guardando = false);
+      final ok = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute<bool>(
+          builder: (_) => ContratoVentaFirmaPage(
+            datos: datos,
+            payloadVenta: payloadVenta,
+            prestamoCodigo: widget.prestamo.codigo,
+          ),
+        ),
+      );
+      if (ok == true && mounted) Navigator.pop(context, 'VENDIDO');
+      return;
+    }
+
+    final ventaId = await repo.registrarVenta(payloadVenta);
 
     if (!mounted) return;
     if (ventaId == null) {
@@ -206,21 +257,11 @@ class _VenderBienPageState extends State<VenderBienPage> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(aviso)));
 
-    if (_doc == _Doc.contrato) {
-      // Sale el contrato listo, ya con los datos del comprador y del bien.
-      abrirVistaPdf(
-        context,
-        titulo: 'Contrato listo',
-        archivo: 'Contrato_${_nombre.text.trim().replaceAll(' ', '_')}.pdf',
-        build: () => crearContratoCompraVentaPdf(datos),
-      );
-      // Al volver del PDF se cierra esta pantalla (ver build).
-    }
     setState(() {
       _guardando = false;
       _vendido = true;
     });
-    if (_doc != _Doc.contrato) Navigator.pop(context, 'VENDIDO');
+    Navigator.pop(context, 'VENDIDO');
   }
 
   bool _vendido = false;
@@ -247,18 +288,20 @@ class _VenderBienPageState extends State<VenderBienPage> {
             Text(
               venc == null
                   ? 'Vencido'
-                  : 'Venció el ${DateFormat('dd/MM/yyyy').format(venc.toLocal())} · hace $_diasVencido días',
+                  : !_yaVencio
+                      ? 'Vence el ${DateFormat('dd/MM/yyyy').format(venc.toLocal())} (aún vigente)'
+                      : 'Venció el ${DateFormat('dd/MM/yyyy').format(venc.toLocal())} · hace $_diasVencido días',
               style: TextStyle(
-                color: _diasVencido >= 60 ? Colors.red[700] : Colors.orange[800],
+                color: !_yaVencio ? Colors.blue[800] : _diasVencido >= 60 ? Colors.red[700] : Colors.orange[800],
                 fontWeight: FontWeight.w600,
               ),
             ),
             Text('Deuda total: S/. ${deuda.toStringAsFixed(2)}'),
-            if (_diasVencido < 60)
+            if (_yaVencio && _diasVencido < 60)
               const Padding(
                 padding: EdgeInsets.only(top: 4),
                 child: Text(
-                  'Aún no pasan 60 días de vencido. Puede continuar si lo desea.',
+                  'Aún no pasan 60 días de vencido. Se le pedirá confirmar.',
                   style: TextStyle(fontSize: 12, color: Colors.black54),
                 ),
               ),
@@ -279,7 +322,7 @@ class _VenderBienPageState extends State<VenderBienPage> {
                 padding: const EdgeInsets.symmetric(vertical: 18),
                 backgroundColor: Colors.green[700],
                 foregroundColor: Colors.white),
-            onPressed: () => setState(() => _venta = true),
+            onPressed: _pedirVenta,
             icon: const Icon(Icons.sell),
             label: const Text('VENTA  (se lo vendemos a alguien)',
                 style: TextStyle(fontSize: 15)),
@@ -324,7 +367,7 @@ class _VenderBienPageState extends State<VenderBienPage> {
         const SizedBox(height: 4),
         Text(
           switch (_doc) {
-            _Doc.contrato => 'Sale el contrato de compra y venta listo, con los datos del bien y del comprador. Se registra la venta.',
+            _Doc.contrato => 'Contrato digital: el comprador firma y pone su huella, la empresa firma, y el contrato queda guardado en el expediente del préstamo. La venta se registra al concretar.',
             _Doc.proforma => 'Solo una cotización para el cliente. No registra la venta ni mueve la caja.',
             _Doc.boleta => 'Registra la venta y emite la boleta electrónica.',
           },
@@ -401,7 +444,7 @@ class _VenderBienPageState extends State<VenderBienPage> {
           onPressed: _guardando ? null : _vender,
           icon: Icon(guardaVenta ? Icons.check_circle : Icons.picture_as_pdf),
           label: Text(guardaVenta
-              ? 'Vender y generar ${docs[_doc]!.$1.toLowerCase()}'
+              ? (_doc == _Doc.contrato ? 'Continuar a firmar el contrato' : 'Vender y emitir boleta')
               : 'Ver proforma'),
         ),
         TextButton(
@@ -421,21 +464,13 @@ class _VenderBienPageState extends State<VenderBienPage> {
         return false;
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('Bien vencido')),
+        appBar: AppBar(title: const Text('Vender o recoger')),
         body: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 30),
           children: [
             _resumen(),
             const SizedBox(height: 16),
-            if (_vendido && _doc == _Doc.contrato) ...[
-              const Text('✅ Venta registrada. El contrato se puede volver a abrir desde aquí.',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context, 'VENDIDO'),
-                child: const Text('Terminar'),
-              ),
-            ] else if (_venta)
+            if (_venta)
               _formVenta()
             else
               _eleccion(),

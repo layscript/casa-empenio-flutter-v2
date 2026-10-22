@@ -951,7 +951,10 @@ class _HuellaResultado {
 }
 
 class _HuellaDialog extends StatefulWidget {
-  const _HuellaDialog({Key? key}) : super(key: key);
+  const _HuellaDialog({Key? key, this.titulo = 'Huella del cliente'})
+      : super(key: key);
+
+  final String titulo;
 
   @override
   State<_HuellaDialog> createState() => _HuellaDialogState();
@@ -1027,7 +1030,7 @@ class _HuellaDialogState extends State<_HuellaDialog> {
           SizedBox(height: 8),
           CircularProgressIndicator(),
           SizedBox(height: 16),
-          Text('Pida al cliente que coloque el dedo en el lector.',
+          Text('Pida a la persona que coloque el dedo en el lector.',
               textAlign: TextAlign.center),
         ],
       );
@@ -1061,9 +1064,107 @@ class _HuellaDialogState extends State<_HuellaDialog> {
       ];
     }
     return AlertDialog(
-      title: const Text('Huella del cliente'),
+      title: Text(widget.titulo),
       content: contenido,
       actions: acciones,
     );
   }
+}
+
+
+// ---------------------------------------------------------------------------
+// API pública para otros módulos (por ejemplo, el contrato de venta):
+// reutilizan la MISMA firma con el dedo y el MISMO lector de huellas.
+// ---------------------------------------------------------------------------
+
+class FirmaCapturada {
+  FirmaCapturada(this.png, this.nombre, this.dni);
+  final Uint8List png;
+  final String nombre;
+  final String dni;
+}
+
+class HuellaCapturada {
+  HuellaCapturada(this.template, this.templateType, this.quality, this.imagenPng);
+  final String template; // base64
+  final int templateType;
+  final int quality;
+  final Uint8List imagenPng;
+}
+
+Future<FirmaCapturada?> capturarFirmaDigital(
+  BuildContext context, {
+  required String titulo,
+  String? nombreInicial,
+  String? dniInicial,
+}) async {
+  final r = await showDialog<_FirmaResultado>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => _FirmaDialog(
+      titulo: titulo,
+      pedirDatos: true,
+      nombreInicial: nombreInicial,
+      dniInicial: dniInicial,
+    ),
+  );
+  if (r == null) return null;
+  return FirmaCapturada(r.png, r.nombre, r.dni);
+}
+
+Future<HuellaCapturada?> capturarHuellaDigital(
+  BuildContext context, {
+  String titulo = 'Huella del comprador',
+}) async {
+  final r = await showDialog<_HuellaResultado>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => _HuellaDialog(titulo: titulo),
+  );
+  if (r == null) return null;
+  Uint8List png;
+  try {
+    png = base64Decode(r.image);
+  } catch (_) {
+    return null;
+  }
+  return HuellaCapturada(r.template, r.templateType, r.quality, png);
+}
+
+/// Firma de la empresa (de quien atiende). Si ya la guardó antes, se reutiliza.
+Future<Uint8List?> obtenerFirmaEmpresa(BuildContext context) async {
+  final prefsApp = context.read<Preferences>();
+  final userId = prefsApp.token?.id ?? 0;
+  final nombre = prefsApp.token?.fullName ?? '';
+  final key = 'empresa_firma_base64_$userId';
+  try {
+    final sp = await SharedPreferences.getInstance();
+    final b64 = sp.getString(key);
+    if (b64 != null && b64.isNotEmpty) return base64Decode(b64);
+  } catch (_) {}
+  if (!context.mounted) return null;
+  final r = await showDialog<_FirmaResultado>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => _FirmaDialog(
+      titulo: 'Firma de la empresa (su firma)',
+      pedirDatos: false,
+      firmanteNombre: nombre,
+    ),
+  );
+  if (r == null) return null;
+  try {
+    final dio = Dio(BaseOptions(baseUrl: endPointPrincipal));
+    await dio.put<dynamic>(
+      '/usuarios/$userId/firma',
+      data: FormData.fromMap({
+        'firma': MultipartFile.fromBytes(r.png, filename: 'firma_empresa.png'),
+      }),
+    );
+  } catch (_) {}
+  try {
+    final sp = await SharedPreferences.getInstance();
+    await sp.setString(key, base64Encode(r.png));
+  } catch (_) {}
+  return r.png;
 }

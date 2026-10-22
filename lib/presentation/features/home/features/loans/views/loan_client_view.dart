@@ -546,7 +546,29 @@ class _LoanClientViewState extends State<LoanClientView> {
                                     ),
                                   ),
 
-                                if (prestamo?.estado == 'VENCIDO')
+                                if (prestamo?.estado == 'VENTA' && prestamo != null)
+                                  SizedBox(
+                                    height: 38,
+                                    width: 38,
+                                    child: IconButton(
+                                      padding: EdgeInsets.zero,
+                                      tooltip: '¿A quién se vendió?',
+                                      onPressed: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute<void>(
+                                          builder: (_) => VentasDePrestamoPage(
+                                              prestamo: prestamo),
+                                        ),
+                                      ),
+                                      icon: const Icon(
+                                        Icons.person_search,
+                                        color: Colors.teal,
+                                      ),
+                                    ),
+                                  ),
+                                if ((prestamo?.estado == 'VENCIDO' ||
+                                        prestamo?.estado == 'VIGENTE') &&
+                                    prestamo?.cerrado == false)
                                   SizedBox(
                                     height: 38,
                                     width: 38,
