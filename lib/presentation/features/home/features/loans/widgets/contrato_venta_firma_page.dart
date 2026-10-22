@@ -24,6 +24,10 @@ class ContratoVentaFirmaPage extends StatefulWidget {
     this.cancelacion = false,
     this.fechaContrato,
     this.saldoYaCobrado = false,
+    this.desistimiento = false,
+    this.recargo = 0,
+    this.retener = 0,
+    this.motivo = '',
   });
 
   final DatosContrato datos;
@@ -44,6 +48,16 @@ class ContratoVentaFirmaPage extends StatefulWidget {
 
   /// El saldo ya se cobró antes y solo falta firmar la constancia.
   final bool saldoYaCobrado;
+
+  /// El cliente se arrepintió: se devuelve su adelanto (menos lo retenido).
+  final bool desistimiento;
+
+  /// Cobro adicional por cochera al cancelar el saldo con retraso.
+  final double recargo;
+
+  /// Lo que la empresa retiene del adelanto al desistir.
+  final double retener;
+  final String motivo;
 
   @override
   State<ContratoVentaFirmaPage> createState() => _ContratoVentaFirmaPageState();
@@ -114,9 +128,31 @@ class _ContratoVentaFirmaPageState extends State<ContratoVentaFirmaPage> {
     });
 
     final cancel = widget.cancelacion;
+    final desist = widget.desistimiento;
 
     // 1) Registrar la venta, o cancelar el saldo (solo una vez, aunque se reintente)
-    if (cancel) {
+    if (desist) {
+      _ventaId = widget.ventaIdExistente;
+      if (!_saldoCancelado) {
+        final user = context.read<AuthBloc>().state as Authenticated;
+        final e = await repo.desistirVenta(
+          ventaId: _ventaId!,
+          usuarioId: user.user?.id ?? 1,
+          sucursalId: prefs.token?.sucursal?.id ?? 1,
+          retener: widget.retener,
+          motivo: widget.motivo,
+        );
+        if (!mounted) return;
+        if (e != null) {
+          setState(() {
+            _trabajando = false;
+            _error = e;
+          });
+          return;
+        }
+        _saldoCancelado = true;
+      }
+    } else if (cancel) {
       _ventaId = widget.ventaIdExistente;
       if (!_saldoCancelado) {
         final user = context.read<AuthBloc>().state as Authenticated;
@@ -124,6 +160,7 @@ class _ContratoVentaFirmaPageState extends State<ContratoVentaFirmaPage> {
           ventaId: _ventaId!,
           usuarioId: user.user?.id ?? 1,
           sucursalId: prefs.token?.sucursal?.id ?? 1,
+          recargo: widget.recargo,
         );
         if (!mounted) return;
         if (e != null) {
@@ -151,13 +188,25 @@ class _ContratoVentaFirmaPageState extends State<ContratoVentaFirmaPage> {
     // 2) PDF final con firmas, huella y sello de fecha
     final ahora = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
     final sello =
-        '${cancel ? 'Constancia firmada' : 'Contrato firmado'} digitalmente el $ahora · Venta N° $_ventaId'
+        '${(cancel || desist) ? 'Constancia firmada' : 'Contrato firmado'} digitalmente el $ahora · Venta N° $_ventaId'
         '${widget.prestamoCodigo != null ? ' · Préstamo N° ${widget.prestamoCodigo}' : ''}'
         ' · Firma y huella del comprador registradas.';
-    final pdf = cancel
+    final pdf = desist
+        ? await crearConstanciaDesistimientoPdf(
+            widget.datos,
+            fechaContrato: widget.fechaContrato ?? DateTime.now(),
+            retenido: widget.retener,
+            motivo: widget.motivo,
+            firmaPersona: _firmaComprador!.png,
+            firmaEmpresa: _firmaEmpresa,
+            huellaPersona: _huella!.imagenPng,
+            selloDigital: sello,
+          )
+        : cancel
         ? await crearConstanciaCancelacionPdf(
             widget.datos,
             fechaContrato: widget.fechaContrato ?? DateTime.now(),
+            recargo: widget.recargo,
             firmaPersona: _firmaComprador!.png,
             firmaEmpresa: _firmaEmpresa,
             huellaPersona: _huella!.imagenPng,
@@ -174,7 +223,7 @@ class _ContratoVentaFirmaPageState extends State<ContratoVentaFirmaPage> {
     // 3) Guardar el documento en el expediente
     final err = await repo.guardarContratoVenta({
       'ventaId': _ventaId,
-      'tipo': cancel ? 'CANCELACION' : 'VENTA',
+      'tipo': desist ? 'DESISTIMIENTO' : (cancel ? 'CANCELACION' : 'VENTA'),
       if (widget.prestamoCodigo != null) 'prestamoCodigo': widget.prestamoCodigo,
       'compradorNombre': widget.datos.nombre.trim(),
       'compradorDni': widget.datos.dni.trim(),
@@ -195,7 +244,7 @@ class _ContratoVentaFirmaPageState extends State<ContratoVentaFirmaPage> {
       setState(() {
         _trabajando = false;
         _error =
-            '$err\n${cancel ? 'El saldo ya quedó cobrado' : 'La venta ya quedó registrada (N° $_ventaId)'}. Toque "Concretar" otra vez para guardar el documento.';
+            '$err\n${desist ? 'La devolución ya quedó registrada en caja' : cancel ? 'El saldo ya quedó cobrado' : 'La venta ya quedó registrada (N° $_ventaId)'}. Toque "Concretar" otra vez para guardar el documento.';
       });
       return;
     }
@@ -212,7 +261,7 @@ class _ContratoVentaFirmaPageState extends State<ContratoVentaFirmaPage> {
     if (pdf == null) return;
     await imprimirPdf(
       pdf,
-      '${widget.cancelacion ? 'Constancia' : 'Contrato'}_${widget.datos.nombre.trim().replaceAll(' ', '_')}',
+      '${(widget.cancelacion || widget.desistimiento) ? 'Constancia' : 'Contrato'}_${widget.datos.nombre.trim().replaceAll(' ', '_')}',
     );
   }
 
@@ -263,7 +312,7 @@ class _ContratoVentaFirmaPageState extends State<ContratoVentaFirmaPage> {
           children: [
             const Icon(Icons.verified, color: Colors.green, size: 72),
             const SizedBox(height: 12),
-            Text(widget.cancelacion ? 'Saldo cancelado y bien entregado' : 'Venta concretada',
+            Text(widget.desistimiento ? 'Desistimiento registrado' : widget.cancelacion ? 'Saldo cancelado y bien entregado' : 'Venta concretada',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
@@ -311,7 +360,7 @@ class _ContratoVentaFirmaPageState extends State<ContratoVentaFirmaPage> {
         return !_trabajando;
       },
       child: Scaffold(
-        appBar: AppBar(title: Text(widget.cancelacion ? 'Cancelar saldo y entregar' : 'Firmar contrato de venta')),
+        appBar: AppBar(title: Text(widget.desistimiento ? 'Desistimiento del cliente' : widget.cancelacion ? 'Cancelar saldo y entregar' : 'Firmar contrato de venta')),
         body: _terminado ? _exito() : ListView(
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 30),
           children: [
@@ -332,11 +381,17 @@ class _ContratoVentaFirmaPageState extends State<ContratoVentaFirmaPage> {
                       Text('Adelanto hoy: S/. ${d.adelanto!.toStringAsFixed(2)}'),
                       Text('Saldo: S/. ${d.saldo.toStringAsFixed(2)} hasta el ${DateFormat('dd/MM/yyyy').format(d.fechaLimite!)}'),
                     ],
-                    if (widget.cancelacion)
+                    if (widget.desistimiento)
+                      Text(
+                        'Se devuelve S/. ${((d.adelanto ?? 0) - widget.retener).toStringAsFixed(2)} de S/. ${(d.adelanto ?? 0).toStringAsFixed(2)}'
+                        '${widget.retener > 0 ? ' (la empresa retiene S/. ${widget.retener.toStringAsFixed(2)})' : ''}',
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+                      ),
+                    if (widget.cancelacion && !widget.desistimiento)
                       Text(
                         widget.saldoYaCobrado
                             ? 'El saldo de S/. ${d.saldo.toStringAsFixed(2)} ya fue cobrado.'
-                            : 'Saldo a cobrar ahora: S/. ${d.saldo.toStringAsFixed(2)}',
+                            : 'Saldo a cobrar ahora: S/. ${(d.saldo + widget.recargo).toStringAsFixed(2)}${widget.recargo > 0 ? ' (incluye S/. ${widget.recargo.toStringAsFixed(2)} de cochera y cuidado)' : ''}',
                         style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
                       ),
                   ],
@@ -382,7 +437,9 @@ class _ContratoVentaFirmaPageState extends State<ContratoVentaFirmaPage> {
                   : const Icon(Icons.verified),
               label: Text(_trabajando
                   ? 'Guardando…'
-                  : widget.cancelacion
+                  : widget.desistimiento
+                      ? 'Devolver dinero y cerrar'
+                      : widget.cancelacion
                       ? 'Cobrar saldo y entregar'
                       : 'Concretar venta'),
             ),

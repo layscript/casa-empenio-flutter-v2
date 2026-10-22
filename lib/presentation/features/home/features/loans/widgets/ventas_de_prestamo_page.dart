@@ -115,11 +115,40 @@ class _VentasDePrestamoPageState extends State<VentasDePrestamoPage> {
           : (DateTime.tryParse('${venta['fecha']}')?.toLocal() ?? DateTime.now()),
       adelanto: adel,
       fechaLimite: lim,
+      cocheraDia: double.tryParse('${venta['cocheraDia']}'),
     );
   }
 
   /// El cliente vuelve a cancelar el saldo: cobra, firma la constancia y se entrega.
   Future<void> _cancelarSaldo(Map<String, dynamic> venta, {bool yaCobrado = false}) async {
+    double recargo = 0;
+    if (!yaCobrado) {
+      // Si pasó el plazo y se pactó cochera por día, se sugiere el cobro adicional.
+      final lim = DateTime.tryParse('${venta['fechaLimite']}');
+      final porDia = double.tryParse('${venta['cocheraDia']}') ?? 0;
+      var sugerido = 0.0;
+      var dias = 0;
+      if (lim != null) {
+        final hoy = DateTime.now();
+        dias = DateTime(hoy.year, hoy.month, hoy.day)
+            .difference(DateTime(lim.year, lim.month, lim.day))
+            .inDays;
+        if (dias > 0 && porDia > 0) sugerido = dias * porDia;
+      }
+      final r = await _pedirNumero(
+        titulo: 'Cobro por cochera y cuidado',
+        texto: dias > 0
+            ? 'El cliente se pasó $dias día(s) del plazo.'
+                '${porDia > 0 ? ' A S/. ${porDia.toStringAsFixed(2)} por día serían S/. ${sugerido.toStringAsFixed(2)}.' : ''}\n'
+                'Puede cobrar este monto adicional (déjelo en 0 si no cobra).'
+            : 'Cobro adicional por cochera y cuidado (déjelo en 0 si no corresponde).',
+        inicial: sugerido,
+        etiqueta: 'Cobro adicional S/.',
+      );
+      if (r == null) return;
+      recargo = r;
+    }
+    if (!mounted) return;
     final ok = await Navigator.push<bool>(
       context,
       MaterialPageRoute<bool>(
@@ -130,6 +159,126 @@ class _VentasDePrestamoPageState extends State<VentasDePrestamoPage> {
           ventaIdExistente: (venta['id'] as num).toInt(),
           cancelacion: true,
           saldoYaCobrado: yaCobrado,
+          recargo: recargo,
+          fechaContrato: DateTime.tryParse('${venta['fecha']}')?.toLocal(),
+        ),
+      ),
+    );
+    if (ok == true) {
+      setState(() => _cargando = true);
+      await _cargar();
+    }
+  }
+
+  Future<double?> _pedirNumero({
+    required String titulo,
+    required String texto,
+    required double inicial,
+    required String etiqueta,
+  }) {
+    final c = TextEditingController(text: inicial > 0 ? inicial.toStringAsFixed(2) : '0');
+    return showDialog<double>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(titulo),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(texto),
+            const SizedBox(height: 10),
+            TextField(
+              controller: c,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(labelText: etiqueta, prefixText: 'S/. '),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, double.tryParse(c.text.replaceAll(',', '.')) ?? 0),
+            child: const Text('Continuar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// El cliente se arrepintió: se le devuelve el adelanto (menos lo que se retenga).
+  Future<void> _desistir(Map<String, dynamic> venta) async {
+    final adel = double.tryParse('${venta['adelanto']}') ?? 0;
+    final retC = TextEditingController(text: '0');
+    final motC = TextEditingController();
+    final res = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setD) {
+          final ret = double.tryParse(retC.text.replaceAll(',', '.')) ?? 0;
+          final dev = adel - ret;
+          final mal = ret < 0 || ret > adel;
+          return AlertDialog(
+            title: const Text('El cliente desistió'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Adelanto recibido: S/. ${adel.toStringAsFixed(2)}',
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'No se borra nada de la caja: el adelanto queda registrado y la devolución sale como un egreso de hoy. El bien vuelve a quedar a la venta.',
+                    style: TextStyle(fontSize: 12, color: Colors.black54),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: retC,
+                    onChanged: (_) => setD(() {}),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Monto que la empresa retiene',
+                      helperText: 'Cochera, cuidado, etc. (0 = devolver todo)',
+                      prefixText: 'S/. ',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: motC,
+                    decoration: const InputDecoration(labelText: 'Motivo (opcional)'),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    mal ? 'El monto retenido no puede ser mayor al adelanto' : 'A devolver al cliente: S/. ${dev.toStringAsFixed(2)}',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: mal ? Colors.red : Colors.green[800]),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Volver')),
+              ElevatedButton(
+                onPressed: mal ? null : () => Navigator.pop(ctx, true),
+                child: const Text('Continuar a firmar'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    if (res != true || !mounted) return;
+    final retener = double.tryParse(retC.text.replaceAll(',', '.')) ?? 0;
+    final ok = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute<bool>(
+        builder: (_) => ContratoVentaFirmaPage(
+          datos: _datosDe(venta, cancelacion: true),
+          payloadVenta: const {},
+          prestamoCodigo: _codigo,
+          ventaIdExistente: (venta['id'] as num).toInt(),
+          desistimiento: true,
+          retener: retener,
+          motivo: motC.text,
           fechaContrato: DateTime.tryParse('${venta['fecha']}')?.toLocal(),
         ),
       ),
@@ -223,6 +372,8 @@ class _VentasDePrestamoPageState extends State<VentasDePrestamoPage> {
     final estadoPago = '${v['estadoPago'] ?? 'TOTAL'}';
     final parcial = estadoPago == 'PARCIAL';
     final cancelado = estadoPago == 'CANCELADO';
+    final desistido = estadoPago == 'DESISTIDO';
+    final desistimiento = _contratoDe(id, 'DESISTIMIENTO');
     final adel = double.tryParse('${v['adelanto']}');
     final saldo = double.tryParse('${v['saldo']}');
     final limite = DateTime.tryParse('${v['fechaLimite']}');
@@ -248,6 +399,56 @@ class _VentasDePrestamoPageState extends State<VentasDePrestamoPage> {
             if (fecha != null)
               Text('Fecha: ${DateFormat('dd/MM/yyyy · hh:mm a').format(fecha)}'),
             if (quien.isNotEmpty) Text('Atendió: $quien'),
+            if (desistido) ...[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(6)),
+                child: Text(
+                  'DESISTIDA · el cliente se arrepintió. Adelanto S/. ${(adel ?? 0).toStringAsFixed(2)} · '
+                  'devuelto S/. ${(double.tryParse('${v['montoDevuelto']}') ?? 0).toStringAsFixed(2)}'
+                  '${(double.tryParse('${v['montoRetenido']}') ?? 0) > 0 ? ' · retenido S/. ${(double.tryParse('${v['montoRetenido']}') ?? 0).toStringAsFixed(2)}' : ''}'
+                  '${'${v['motivoDesistimiento'] ?? ''}'.isNotEmpty && v['motivoDesistimiento'] != null ? '\nMotivo: ${v['motivoDesistimiento']}' : ''}',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              if (desistimiento != null) ...[
+                const SizedBox(height: 6),
+                _docBotones(desistimiento, 'Constancia de desistimiento', 'Desistimiento_venta_$id'),
+              ] else ...[
+                const SizedBox(height: 6),
+                const Text('La devolución está registrada en caja pero falta guardar la constancia firmada.',
+                    style: TextStyle(color: Colors.orange)),
+                const SizedBox(height: 6),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    final ok = await Navigator.push<bool>(
+                      context,
+                      MaterialPageRoute<bool>(
+                        builder: (_) => ContratoVentaFirmaPage(
+                          datos: _datosDe(v, cancelacion: true),
+                          payloadVenta: const {},
+                          prestamoCodigo: _codigo,
+                          ventaIdExistente: id,
+                          desistimiento: true,
+                          saldoYaCobrado: true,
+                          retener: double.tryParse('${v['montoRetenido']}') ?? 0,
+                          motivo: '${v['motivoDesistimiento'] ?? ''}',
+                          fechaContrato: DateTime.tryParse('${v['fecha']}')?.toLocal(),
+                        ),
+                      ),
+                    );
+                    if (ok == true) {
+                      setState(() => _cargando = true);
+                      await _cargar();
+                    }
+                  },
+                  icon: const Icon(Icons.draw),
+                  label: const Text('Firmar constancia de desistimiento'),
+                ),
+              ],
+            ],
             if (parcial || cancelado) ...[
               const SizedBox(height: 8),
               Container(
@@ -314,6 +515,13 @@ class _VentasDePrestamoPageState extends State<VentasDePrestamoPage> {
               ],
               if (parcial && contrato != null) ...[
                 const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(foregroundColor: Colors.red[700]),
+                  onPressed: () => _desistir(v),
+                  icon: const Icon(Icons.undo),
+                  label: const Text('El cliente desistió (devolver dinero)'),
+                ),
+                const SizedBox(height: 6),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green[700], foregroundColor: Colors.white),

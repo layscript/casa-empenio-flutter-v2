@@ -44,6 +44,7 @@ class DatosContrato {
     required this.fecha,
     this.adelanto,
     this.fechaLimite,
+    this.cocheraDia,
   });
 
   /// true: la empresa COMPRA (la persona es VENDEDOR). false: la empresa VENDE.
@@ -59,6 +60,9 @@ class DatosContrato {
   /// Pago parcial: adelanto recibido y fecha límite para cancelar el saldo.
   final double? adelanto;
   final DateTime? fechaLimite;
+
+  /// Cochera y cuidado por cada día de retraso en cancelar el saldo.
+  final double? cocheraDia;
 
   bool get parcial => adelanto != null && adelanto! > 0 && adelanto! < precio;
   double get saldo => parcial ? precio - adelanto! : 0;
@@ -253,6 +257,16 @@ Future<Uint8List> crearContratoCompraVentaPdf(
             style: base,
             textAlign: w.TextAlign.justify,
           ),
+          if (d.parcial) ...[
+            w.SizedBox(height: 15),
+            w.Text(
+              '- CUARTO: Vencido el plazo señalado en la cláusula segunda sin que EL COMPRADOR haya cancelado el saldo y recogido el bien, queda obligado a pagar por concepto de cochera y gastos de cuidado del bien '
+              '${(d.cocheraDia ?? 0) > 0 ? 'la suma de S/. ${NumberFormat('#,##0.00', 'en_US').format(d.cocheraDia)} (${precioEnLetras(d.cocheraDia!)}) por cada día de retraso' : 'el monto que ambas partes acuerden'}, '
+              'además del saldo del precio.',
+              style: base,
+              textAlign: w.TextAlign.justify,
+            ),
+          ],
           w.SizedBox(height: 15),
           w.SizedBox(
             width: double.infinity,
@@ -286,6 +300,7 @@ Future<Uint8List> crearContratoCompraVentaPdf(
 Future<Uint8List> crearConstanciaCancelacionPdf(
   DatosContrato d, {
   required DateTime fechaContrato,
+  double recargo = 0,
   Uint8List? firmaPersona,
   Uint8List? firmaEmpresa,
   Uint8List? huellaPersona,
@@ -359,7 +374,8 @@ Future<Uint8List> crearConstanciaCancelacionPdf(
           ),
           w.SizedBox(height: 14),
           w.Text(
-            'Con el adelanto de S/. ${m(d.adelanto ?? 0)} entregado al firmar el contrato y este último pago, el precio total de S/. ${m(d.precio)} (${precioEnLetras(d.precio)}) queda CANCELADO EN SU TOTALIDAD.',
+            'Con el adelanto de S/. ${m(d.adelanto ?? 0)} entregado al firmar el contrato y este último pago, el precio total de S/. ${m(d.precio)} (${precioEnLetras(d.precio)}) queda CANCELADO EN SU TOTALIDAD.'
+            '${recargo > 0 ? ' Además, EL COMPRADOR pagó S/. ${m(recargo)} (${precioEnLetras(recargo)}) por concepto de cochera y gastos de cuidado del bien por el retraso en la cancelación.' : ''}',
             style: base,
             textAlign: w.TextAlign.justify,
           ),
@@ -384,6 +400,124 @@ Future<Uint8List> crearConstanciaCancelacionPdf(
             children: [
               firma(d.nombre.trim().toUpperCase(), 'DNI N° ${d.dni.trim()}', persona, firmaPersona, huellaPersona),
               firma(_empresa, 'RUC $_ruc', empresaRol, firmaEmpresa, null),
+            ],
+          ),
+          if (selloDigital != null) ...[
+            w.SizedBox(height: 18),
+            w.Text(selloDigital, style: const w.TextStyle(fontSize: 8)),
+          ],
+        ],
+      ),
+    ),
+  );
+  return pdf.save();
+}
+
+// ------------------------------------------------ CONSTANCIA DE DESISTIMIENTO
+/// Se firma cuando el cliente se arrepiente y se le devuelve su adelanto.
+Future<Uint8List> crearConstanciaDesistimientoPdf(
+  DatosContrato d, {
+  required DateTime fechaContrato,
+  required double retenido,
+  String motivo = '',
+  Uint8List? firmaPersona,
+  Uint8List? firmaEmpresa,
+  Uint8List? huellaPersona,
+  String? selloDigital,
+}) async {
+  final pdf = w.Document();
+  String m(double v) => NumberFormat('#,##0.00', 'en_US').format(v);
+  const base = w.TextStyle(fontSize: 10);
+  final neg = w.TextStyle(fontWeight: w.FontWeight.bold, fontSize: 10);
+  final adel = d.adelanto ?? 0;
+  final devuelto = adel - retenido;
+  w.Widget firma(String n, String l2, String rol, Uint8List? f, Uint8List? h) => w.Column(children: [
+        if (f != null || h != null)
+          w.SizedBox(
+            height: 70,
+            child: w.Row(
+              mainAxisAlignment: w.MainAxisAlignment.center,
+              crossAxisAlignment: w.CrossAxisAlignment.end,
+              children: [
+                if (f != null) w.Image(w.MemoryImage(f), height: 60, width: 110, fit: w.BoxFit.contain),
+                if (h != null) ...[
+                  w.SizedBox(width: 6),
+                  w.Image(w.MemoryImage(h), height: 60, width: 50, fit: w.BoxFit.contain),
+                ],
+              ],
+            ),
+          )
+        else
+          w.SizedBox(height: 70),
+        w.Text('______________________', style: base),
+        w.Text(n, style: base),
+        w.Text(l2, style: base),
+        w.Text(rol, style: base),
+      ]);
+  pdf.addPage(
+    w.Page(
+      pageFormat: p.PdfPageFormat.a4,
+      margin: const w.EdgeInsets.all(40),
+      build: (ctx) => w.Column(
+        crossAxisAlignment: w.CrossAxisAlignment.start,
+        children: [
+          w.Center(
+            child: w.Text('CONSTANCIA DE DESISTIMIENTO Y DEVOLUCIÓN',
+                style: w.TextStyle(fontWeight: w.FontWeight.bold, fontSize: 13)),
+          ),
+          w.SizedBox(height: 22),
+          w.RichText(
+            textAlign: w.TextAlign.justify,
+            text: w.TextSpan(style: base, children: [
+              const w.TextSpan(text: 'Por el presente documento, el(la) Sr(a). '),
+              w.TextSpan(text: d.nombre.trim().toUpperCase(), style: neg),
+              const w.TextSpan(text: ', identificado(a) con DNI N° '),
+              w.TextSpan(text: d.dni.trim(), style: neg),
+              w.TextSpan(
+                  text:
+                      ', manifiesta de manera voluntaria que DESISTE de la compra del bien '),
+              w.TextSpan(text: d.descripcion.trim().toUpperCase(), style: neg),
+              w.TextSpan(
+                  text:
+                      '${d.serie.trim().isNotEmpty ? ' (serie ${d.serie.trim().toUpperCase()})' : ''}${d.placa.trim().isNotEmpty ? ' (placa ${d.placa.trim().toUpperCase()})' : ''}'
+                      ', pactada en el contrato privado de compra y venta de fecha ${fechaLarga(fechaContrato)} con la empresa '),
+              w.TextSpan(text: _empresa, style: neg),
+              w.TextSpan(text: ' (RUC $_ruc), por el precio de S/. ${m(d.precio)}.'),
+            ]),
+          ),
+          w.SizedBox(height: 14),
+          w.Text(
+            'El adelanto entregado fue de S/. ${m(adel)} (${precioEnLetras(adel)}). '
+            '${retenido > 0 ? 'La empresa retiene S/. ${m(retenido)} (${precioEnLetras(retenido)}) por concepto de gastos de cochera y cuidado del bien, y ' : ''}'
+            'devuelve a EL COMPRADOR la suma de S/. ${m(devuelto)} (${precioEnLetras(devuelto)}), que recibe en este acto a su entera conformidad.',
+            style: base,
+            textAlign: w.TextAlign.justify,
+          ),
+          if (motivo.trim().isNotEmpty) ...[
+            w.SizedBox(height: 10),
+            w.Text('Motivo: ${motivo.trim()}', style: base),
+          ],
+          w.SizedBox(height: 14),
+          w.Text(
+            'Con la firma de este documento el contrato de compra y venta queda SIN EFECTO, el bien queda a disposición de la empresa y ninguna de las partes tiene reclamo pendiente contra la otra.',
+            style: base,
+            textAlign: w.TextAlign.justify,
+          ),
+          w.SizedBox(height: 16),
+          w.SizedBox(
+            width: double.infinity,
+            child: w.Text(
+              '${d.ciudad.trim().isEmpty ? 'Atalaya' : d.ciudad.trim()}, ${fechaLarga(d.fecha)}',
+              textAlign: w.TextAlign.right,
+              style: base,
+            ),
+          ),
+          w.SizedBox(height: 15),
+          w.Row(
+            mainAxisAlignment: w.MainAxisAlignment.spaceAround,
+            children: [
+              firma(d.nombre.trim().toUpperCase(), 'DNI N° ${d.dni.trim()}', 'COMPRADOR', firmaPersona, huellaPersona),
+              firma(_empresa, 'RUC $_ruc', 'VENDEDOR', firmaEmpresa, null),
             ],
           ),
           if (selloDigital != null) ...[
