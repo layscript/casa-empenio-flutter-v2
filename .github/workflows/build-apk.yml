@@ -3,6 +3,8 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+permissions:
+  contents: write
 jobs:
   apk:
     runs-on: ubuntu-latest
@@ -23,3 +25,12 @@ jobs:
         with:
           name: casa-empenio-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+      - name: Publicar APK con enlace fijo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk casa-empenio.apk
+          gh release view apk-latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create apk-latest --repo "$GITHUB_REPOSITORY" --title "APK más reciente" --notes "APK de la app"
+          gh release upload apk-latest casa-empenio.apk --clobber --repo "$GITHUB_REPOSITORY"
+          gh release edit apk-latest --repo "$GITHUB_REPOSITORY" --notes "Compilado el $(date -u '+%d/%m/%Y %H:%M') UTC · versión ${GITHUB_SHA::7}"
