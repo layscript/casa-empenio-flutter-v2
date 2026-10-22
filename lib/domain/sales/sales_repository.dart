@@ -17,4 +17,13 @@ abstract class SalesRepository {
   });
 
   Future<bool> createSalesProduct(Map<String, dynamic> data);
+
+  /// Registra la venta SIN emitir boleta. Devuelve el id de la venta (o null si falló).
+  Future<int?> registrarVenta(Map<String, dynamic> data);
+
+  /// Emite la boleta electrónica de una venta ya registrada.
+  Future<bool> emitirBoleta(int ventaId);
+
+  /// A quién se vendió el bien de un préstamo.
+  Future<List<Map<String, dynamic>>> ventasDePrestamo(int codigoPrestamo);
 }

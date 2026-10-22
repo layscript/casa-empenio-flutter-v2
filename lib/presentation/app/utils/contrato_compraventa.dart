@@ -236,11 +236,114 @@ Future<Uint8List> crearContratoCompraVentaPdf(DatosContrato d) async {
   return pdf.save();
 }
 
+/// Abre una vista previa de PDF (imprimir / compartir).
+void abrirVistaPdf(
+  BuildContext context, {
+  required String titulo,
+  required String archivo,
+  required Future<Uint8List> Function() build,
+}) {
+  Navigator.push(
+    context,
+    MaterialPageRoute<void>(
+      builder: (_) => Scaffold(
+        appBar: AppBar(title: Text(titulo)),
+        body: PdfPreview(
+          pdfFileName: archivo,
+          initialPageFormat: p.PdfPageFormat.a4,
+          pageFormats: const <String, p.PdfPageFormat>{'A4': p.PdfPageFormat.a4},
+          canChangeOrientation: false,
+          canChangePageFormat: false,
+          canDebug: false,
+          build: (_) => build(),
+        ),
+      ),
+    ),
+  );
+}
+
+// ---------------------------------------------------------------- PROFORMA
+// Cotización de venta (no es comprobante de pago). Sin IGV: es un precio final.
+Future<Uint8List> crearProformaPdf(DatosContrato d) async {
+  final pdf = w.Document();
+  String v(String s) => s.trim().isEmpty ? '-' : s.trim().toUpperCase();
+  final precio = NumberFormat('#,##0.00', 'en_US').format(d.precio);
+  final f = '${d.fecha.day.toString().padLeft(2, '0')}/${d.fecha.month.toString().padLeft(2, '0')}/${d.fecha.year}';
+  final detalle = <String>[
+    d.descripcion.trim().toUpperCase(),
+    if (d.marca.trim().isNotEmpty) 'MARCA: ${d.marca.trim().toUpperCase()}',
+    if (d.modelo.trim().isNotEmpty) 'MODELO: ${d.modelo.trim().toUpperCase()}',
+    if (d.color.trim().isNotEmpty) 'COLOR: ${d.color.trim().toUpperCase()}',
+    if (d.serie.trim().isNotEmpty) 'SERIE: ${d.serie.trim().toUpperCase()}',
+    if (d.placa.trim().isNotEmpty) 'PLACA: ${d.placa.trim().toUpperCase()}',
+    if (d.motor.trim().isNotEmpty) 'MOTOR: ${d.motor.trim().toUpperCase()}',
+  ].join('\n');
+  const base = w.TextStyle(fontSize: 10);
+  final neg = w.TextStyle(fontWeight: w.FontWeight.bold, fontSize: 10);
+  pdf.addPage(
+    w.Page(
+      pageFormat: p.PdfPageFormat.a4,
+      margin: const w.EdgeInsets.all(40),
+      build: (ctx) => w.Column(
+        crossAxisAlignment: w.CrossAxisAlignment.start,
+        children: [
+          w.Text(_empresa, style: w.TextStyle(fontWeight: w.FontWeight.bold, fontSize: 14)),
+          w.Text('RUC $_ruc', style: base),
+          w.Text(_domicilioFiscal, style: base),
+          w.SizedBox(height: 22),
+          w.Center(
+            child: w.Text('PROFORMA DE VENTA',
+                style: w.TextStyle(fontWeight: w.FontWeight.bold, fontSize: 15)),
+          ),
+          w.SizedBox(height: 18),
+          w.Text('Fecha: $f', style: base),
+          w.Text('Cliente: ${v(d.nombre)}', style: neg),
+          w.Text('DNI / RUC: ${v(d.dni)}', style: base),
+          w.Text('Domicilio: ${v(d.domicilio)}', style: base),
+          w.SizedBox(height: 18),
+          w.TableHelper.fromTextArray(
+            context: ctx,
+            cellStyle: const w.TextStyle(fontSize: 10),
+            headerStyle: w.TextStyle(fontWeight: w.FontWeight.bold, fontSize: 10),
+            cellAlignment: w.Alignment.centerLeft,
+            data: <List<String>>[
+              ['Cant.', 'Descripción', 'Precio (S/.)'],
+              ['1', detalle, precio],
+            ],
+          ),
+          w.SizedBox(height: 12),
+          w.Align(
+            alignment: w.Alignment.centerRight,
+            child: w.Text('TOTAL: S/. $precio', style: w.TextStyle(fontWeight: w.FontWeight.bold, fontSize: 12)),
+          ),
+          w.Align(
+            alignment: w.Alignment.centerRight,
+            child: w.Text('(${precioEnLetras(d.precio)})', style: base),
+          ),
+          w.SizedBox(height: 22),
+          w.Text(
+            'Este documento es una cotización y no constituye comprobante de pago. '
+            'Precio sujeto a disponibilidad del bien. Validez: 3 días.',
+            style: const w.TextStyle(fontSize: 9),
+          ),
+        ],
+      ),
+    ),
+  );
+  return pdf.save();
+}
+
 // ------------------------------------------------------------------ pantalla
 class ContratoCompraVentaPage extends StatefulWidget {
-  const ContratoCompraVentaPage({super.key, this.prellenado, this.esVehiculoInicial = true});
+  const ContratoCompraVentaPage({
+    super.key,
+    this.prellenado,
+    this.esVehiculoInicial = true,
+    this.empresaCompraInicial = true,
+  });
 
   final bool esVehiculoInicial;
+  final bool empresaCompraInicial;
 
   /// Datos ya conocidos del bien (por ejemplo, de un producto del almacén).
   final Map<String, String>? prellenado;
@@ -250,7 +353,7 @@ class ContratoCompraVentaPage extends StatefulWidget {
 }
 
 class _ContratoCompraVentaPageState extends State<ContratoCompraVentaPage> {
-  bool _empresaCompra = true;
+  late bool _empresaCompra = widget.empresaCompraInicial;
   late bool _esVehiculo = widget.esVehiculoInicial;
   DateTime _fecha = DateTime.now();
   final _c = <String, TextEditingController>{};
@@ -336,22 +439,11 @@ class _ContratoCompraVentaPageState extends State<ContratoCompraVentaPage> {
       ciudad: c('ciudad').text,
       fecha: _fecha,
     );
-    Navigator.push(
+    abrirVistaPdf(
       context,
-      MaterialPageRoute<void>(
-        builder: (_) => Scaffold(
-          appBar: AppBar(title: const Text('Contrato listo')),
-          body: PdfPreview(
-            pdfFileName: 'Contrato_${c('nombre').text.trim().replaceAll(' ', '_')}.pdf',
-            initialPageFormat: p.PdfPageFormat.a4,
-            pageFormats: const <String, p.PdfPageFormat>{'A4': p.PdfPageFormat.a4},
-            canChangeOrientation: false,
-            canChangePageFormat: false,
-            canDebug: false,
-            build: (_) => crearContratoCompraVentaPdf(datos),
-          ),
-        ),
-      ),
+      titulo: 'Contrato listo',
+      archivo: 'Contrato_${c('nombre').text.trim().replaceAll(' ', '_')}.pdf',
+      build: () => crearContratoCompraVentaPdf(datos),
     );
   }
 

@@ -1155,18 +1155,13 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                                           child: IconButton(
                                             padding: EdgeInsets.zero,
                                             onPressed: () async {
-                                              await showDialog(
-                                                barrierDismissible: false,
-                                                context: context,
-                                                builder: (_) =>
-                                                    BlocProvider.value(
-                                                  value: widget.loansBloc,
-                                                  child: UpdateStatusLoanDialog(
-                                                    idLoan:
-                                                        prestamo?.codigo ?? 0,
-                                                  ),
-                                                ),
-                                              );
+                                              if (prestamo != null) {
+                                                await abrirVenderBien(
+                                                  context,
+                                                  prestamo,
+                                                  widget.loansBloc,
+                                                );
+                                              }
 
                                               if (typeSearch == true) {
                                                 _handleSearchByDni(
@@ -1180,7 +1175,7 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                                               }
                                             },
                                             icon: const Icon(
-                                              Icons.update,
+                                              Icons.sell,
                                               color: Colors.orange,
                                             ),
                                           ),

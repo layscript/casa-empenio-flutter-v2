@@ -553,18 +553,15 @@ class _LoanClientViewState extends State<LoanClientView> {
                                     child: IconButton(
                                       padding: EdgeInsets.zero,
                                       onPressed: () async {
-                                        final result = await showDialog(
-                                          barrierDismissible: false,
-                                          context: context,
-                                          builder: (_) => BlocProvider.value(
-                                            value: context.read<LoansBloc>(),
-                                            child: UpdateStatusLoanDialog(
-                                              idLoan: prestamo?.codigo ?? 0,
-                                            ),
-                                          ),
-                                        );
+                                        final result = prestamo == null
+                                            ? false
+                                            : await abrirVenderBien(
+                                                context,
+                                                prestamo,
+                                                context.read<LoansBloc>(),
+                                              );
 
-                                        if (result != null && mounted) {
+                                        if (result && mounted) {
                                           await Future.delayed(const Duration(
                                                   milliseconds: 300))
                                               .then((value) {
@@ -577,7 +574,7 @@ class _LoanClientViewState extends State<LoanClientView> {
                                         }
                                       },
                                       icon: const Icon(
-                                        Icons.update,
+                                        Icons.sell,
                                         color: Colors.orange,
                                       ),
                                     ),

@@ -94,6 +94,49 @@ class HttpSalesRepository implements SalesRepository {
   }
 
   @override
+  Future<int?> registrarVenta(Map<String, dynamic> payload) async {
+    try {
+      final response =
+          await _dio.post<String>('/almacen/ventas/', data: payload);
+      if (response.statusCode != 201 && response.statusCode != 200) {
+        return null;
+      }
+      final map = json.decode(response.data!) as Map<String, dynamic>;
+      return (map['body']['id'] as num?)?.toInt();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  @override
+  Future<bool> emitirBoleta(int ventaId) async {
+    try {
+      final r = await _dio.post<dynamic>(
+        '/facturacion/facturacion/venta',
+        data: {'ventaId': ventaId},
+      );
+      return r.statusCode == 201 || r.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> ventasDePrestamo(
+      int codigoPrestamo) async {
+    try {
+      final r = await _dio
+          .get<String>('/almacen/ventas/por-prestamo/$codigoPrestamo');
+      final map = json.decode(r.data!) as Map<String, dynamic>;
+      return (map['body'] as List? ?? [])
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  @override
   Future<Either<String, List<SalesEntity>>> getSalesByUserIdRangeDate({
     required DateTime inicio,
     required DateTime fin,
