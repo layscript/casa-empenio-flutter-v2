@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/features/auth/auth.dart';
@@ -16,20 +18,86 @@ class AvisoCobranza extends StatefulWidget {
 
 class _AvisoCobranzaState extends State<AvisoCobranza> {
   int _n = 0;
+  Timer? _timer;
+  bool _dialogoAbierto = false;
+
+  /// Desde cuándo hay tareas sin resolver (para endurecer el aviso pasada 1 hora).
+  static DateTime? _pendienteDesde;
 
   @override
   void initState() {
     super.initState();
-    _cargar();
+    _cargar(recordar: true);
+    _timer = Timer.periodic(
+      const Duration(minutes: 10),
+      (_) => _cargar(recordar: true),
+    );
   }
 
-  Future<void> _cargar() async {
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _cargar({bool recordar = false}) async {
     try {
       final sid = context.read<Preferences>().token?.sucursal?.id ?? 1;
       final t = await context.read<SalesRepository>().tareasCobranza(sid);
-      final n = t.where((e) => e['tarea'] != null).length;
-      if (mounted) setState(() => _n = n);
+      final n = t
+          .where((e) => e['tarea'] != null && e['tarea'] != 'ADJUDICAR_AHORA')
+          .length;
+      if (n == 0) _pendienteDesde = null;
+      if (n > 0) _pendienteDesde ??= DateTime.now();
+      if (!mounted) return;
+      setState(() => _n = n);
+      if (recordar && n > 0 && !_dialogoAbierto) await _recordar(n);
     } catch (_) {}
+  }
+
+  Future<void> _abrir() async {
+    await Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute<void>(builder: (_) => const TareasCobranzaPage()),
+    );
+    if (mounted) _cargar();
+  }
+
+  Future<void> _recordar(int n) async {
+    final fuerte = DateTime.now().difference(_pendienteDesde!).inMinutes >= 60;
+    _dialogoAbierto = true;
+    final ir = await showDialog<bool>(
+      context: context,
+      useRootNavigator: true,
+      barrierDismissible: !fuerte,
+      builder: (c) => PopScope(
+        canPop: !fuerte,
+        child: AlertDialog(
+          icon: Icon(Icons.notifications_active,
+              color: fuerte ? Colors.red : Colors.orange, size: 40),
+          title: Text(fuerte
+              ? 'URGENTE: avisos sin hacer'
+              : 'Tienes avisos por hacer hoy'),
+          content: Text(
+            'Hay $n cliente(s) con préstamo vencido que debes avisar o '
+            'consultar HOY. Es obligatorio: sin esto no podrás cerrar la caja '
+            'y el bien no se puede adjudicar.',
+          ),
+          actions: [
+            if (!fuerte)
+              TextButton(
+                onPressed: () => Navigator.pop(c, false),
+                child: const Text('Recordármelo en 10 min'),
+              ),
+            FilledButton(
+              onPressed: () => Navigator.pop(c, true),
+              child: const Text('Resolver ahora'),
+            ),
+          ],
+        ),
+      ),
+    );
+    _dialogoAbierto = false;
+    if (ir == true && mounted) await _abrir();
   }
 
   @override
@@ -46,14 +114,9 @@ class _AvisoCobranzaState extends State<AvisoCobranza> {
         leading: Icon(Icons.notifications_active, color: Colors.orange.shade800),
         title: Text('Tienes $_n tarea(s) de cobranza',
             style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: const Text('Avisos a clientes con préstamo vencido'),
+        subtitle: const Text('Obligatorio hoy: sin resolver no se cierra la caja'),
         trailing: const Icon(Icons.chevron_right),
-        onTap: () async {
-          await Navigator.of(context).push(
-            MaterialPageRoute<void>(builder: (_) => const TareasCobranzaPage()),
-          );
-          _cargar();
-        },
+        onTap: _abrir,
       ),
     );
   }
@@ -313,13 +376,14 @@ class _TareasCobranzaPageState extends State<TareasCobranzaPage> {
     if (tarea == 'ENVIAR_AVISO_1' || tarea == 'ENVIAR_AVISO_2') {
       botones.addAll([
         FilledButton.icon(
+            style: FilledButton.styleFrom(backgroundColor: Colors.green.shade700),
+            onPressed: () => _whatsapp(t),
+            icon: const Icon(Icons.chat),
+            label: const Text('Avisar por WhatsApp')),
+        OutlinedButton.icon(
             onPressed: () => _sms(t),
             icon: const Icon(Icons.sms),
-            label: const Text('SMS desde el sistema')),
-        OutlinedButton.icon(
-            onPressed: () => _whatsapp(t),
-            icon: const Icon(Icons.chat, color: Colors.green),
-            label: const Text('WhatsApp')),
+            label: const Text('No tiene WhatsApp: SMS')),
         OutlinedButton.icon(
             onPressed: () => _llamar(t),
             icon: const Icon(Icons.call, color: Colors.blue),
@@ -381,7 +445,8 @@ class _TareasCobranzaPageState extends State<TareasCobranzaPage> {
                 visualDensity: VisualDensity.compact,
               ),
             ]),
-            Text('Celular: ${cli['celular'] ?? '-'}  ·  Saldo S/.${(t['saldo'] as num).toStringAsFixed(2)}'),
+            Text('Celular: ${cli['celular'] ?? '-'}  ·  Saldo S/.${(t['saldo'] as num).toStringAsFixed(2)}\n'
+                'Se adjudica como máximo en ${t['diasParaLimite']} día(s)'),
             const SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.all(8),
