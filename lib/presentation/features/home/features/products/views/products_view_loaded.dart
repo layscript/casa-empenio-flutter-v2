@@ -5,6 +5,7 @@ import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/products/bloc/products_bloc.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/products/widgets/widgets.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/contrato_compraventa.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -228,18 +229,35 @@ class _ProductsViewLoadedState extends State<ProductsViewLoaded> {
         Text('${product.cantidad} Und.',
             style: const TextStyle(color: Colors.green)),
         const SizedBox(width: 5),
-        if (product.motor != null)
-          IconButton(
-            icon: const FaIcon(FontAwesomeIcons.fileInvoice,
-                size: 20, color: Colors.blue),
-            onPressed: () {
-              showDialog(
-                barrierDismissible: false,
-                context: context,
-                builder: (_) => ContractsDetailsAlert(product: product),
-              );
-            },
-          ),
+        IconButton(
+          tooltip: 'Contrato de compra y venta',
+          icon: const FaIcon(FontAwesomeIcons.fileInvoice,
+              size: 20, color: Colors.blue),
+          onPressed: () {
+            final esVehiculo = (product.motor ?? '').isNotEmpty ||
+                (product.placa ?? '').isNotEmpty;
+            Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => ContratoCompraVentaPage(
+                  prellenado: {
+                    'descripcion': product.descripcion ?? '',
+                    'marca': product.marca ?? '',
+                    'modelo': product.modelo ?? '',
+                    'color': product.color ?? '',
+                    'serie': product.serie ?? '',
+                    'placa': product.placa ?? '',
+                    'motor': product.motor ?? '',
+                    'carroceria': product.carroceria ?? '',
+                    'anio': product.anio?.toString() ?? '',
+                    'estado': product.estado ?? '',
+                  },
+                  esVehiculoInicial: esVehiculo,
+                ),
+              ),
+            );
+          },
+        ),
        /*  IconButton(
           icon: const FaIcon(FontAwesomeIcons.penToSquare,
               size: 20, color: Colors.blue),
