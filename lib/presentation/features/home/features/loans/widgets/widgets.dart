@@ -12,3 +12,4 @@ export 'show_dialog_clients.dart';
 export 'show_dialog_only_client.dart';
 export 'show_info_client_loans.dart';
 export 'update_status_loan_dialog.dart';
+export 'vender_bien_page.dart';
