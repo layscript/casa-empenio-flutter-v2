@@ -48,4 +48,17 @@ abstract class SalesRepository {
     double retener = 0,
     String motivo = '',
   });
+
+  /// Tareas de cobranza / adjudicación pendientes de la sucursal.
+  Future<List<Map<String, dynamic>>> tareasCobranza(int sucursalId);
+
+  /// Avisos registrados y procesos de un préstamo.
+  Future<Map<String, dynamic>> detalleCobranza(int codigoPrestamo);
+
+  /// POST a /adjudicacion/prestamo/{codigo}/{accion}. Null = bien; si no, el error.
+  Future<String?> accionCobranza(
+    int codigoPrestamo,
+    String accion,
+    Map<String, dynamic> body,
+  );
 }

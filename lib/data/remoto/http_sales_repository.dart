@@ -291,4 +291,60 @@ class HttpSalesRepository implements SalesRepository {
       return const Left('Ocurrió un error con el servidor');
     }
   }
+
+  @override
+  Future<List<Map<String, dynamic>>> tareasCobranza(int sucursalId) async {
+    try {
+      final r = await _dio.get<String>('/adjudicacion/tareas',
+          queryParameters: {'sucursalId': sucursalId});
+      final map = json.decode(r.data!) as Map<String, dynamic>;
+      return (map['body'] as List? ?? [])
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> detalleCobranza(int codigoPrestamo) async {
+    try {
+      final r =
+          await _dio.get<String>('/adjudicacion/prestamo/$codigoPrestamo');
+      final map = json.decode(r.data!) as Map<String, dynamic>;
+      return Map<String, dynamic>.from(map['body'] as Map);
+    } catch (e) {
+      return {};
+    }
+  }
+
+  @override
+  Future<String?> accionCobranza(
+    int codigoPrestamo,
+    String accion,
+    Map<String, dynamic> body,
+  ) async {
+    try {
+      final r = await _dio.post<dynamic>(
+        '/adjudicacion/prestamo/$codigoPrestamo/$accion',
+        data: body,
+      );
+      final code = r.statusCode ?? 0;
+      if (code >= 200 && code < 300) return null;
+      final d = r.data;
+      final m = d is String ? json.decode(d) : d;
+      return (m is Map ? m['message'] : null)?.toString() ??
+          'No se pudo completar';
+    } on DioException catch (e) {
+      final d = e.response?.data;
+      try {
+        final m = d is String ? json.decode(d) : d;
+        final msg = m is Map ? m['message'] : null;
+        if (msg != null) return msg is List ? msg.join(', ') : msg.toString();
+      } catch (_) {}
+      return 'No se pudo completar. Revisa tu conexión.';
+    } catch (e) {
+      return 'No se pudo completar';
+    }
+  }
 }

@@ -1,5 +1,6 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/loans/widgets/tareas_cobranza_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -116,6 +117,15 @@ class PanelPrestamosState extends State<PanelPrestamos> {
                   'Panel de control',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
                 ),
+              ),
+              IconButton(
+                tooltip: 'Cobranza y adjudicación',
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const TareasCobranzaPage(),
+                  ),
+                ),
+                icon: const Icon(Icons.gavel, color: Colors.orange),
               ),
               IconButton(
                 tooltip: 'Actualizar',
