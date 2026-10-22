@@ -68,4 +68,7 @@ abstract class SalesRepository {
 
   /// Qué envíos automáticos hay configurados: {'sms': bool, 'whatsapp': bool}.
   Future<Map<String, dynamic>> canalesCobranza();
+
+  /// Compras de productos registradas (con su contrato firmado).
+  Future<List<Map<String, dynamic>>> comprasRegistradas(int sucursalId);
 }
