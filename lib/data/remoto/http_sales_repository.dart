@@ -137,6 +137,48 @@ class HttpSalesRepository implements SalesRepository {
   }
 
   @override
+  Future<String?> guardarContratoVenta(Map<String, dynamic> payload) async {
+    try {
+      final r = await _dio.post<dynamic>(
+        '/expediente/venta-contrato',
+        data: payload,
+        options: Options(
+          sendTimeout: const Duration(minutes: 2),
+          receiveTimeout: const Duration(minutes: 2),
+        ),
+      );
+      if (r.statusCode == 201 || r.statusCode == 200) return null;
+      return 'No se pudo guardar el contrato';
+    } on DioException catch (e) {
+      final d = e.response?.data;
+      try {
+        final m = d is String ? json.decode(d) : d;
+        final msg = m is Map ? m['message'] : null;
+        if (msg is String) return msg;
+        if (msg is List && msg.isNotEmpty) return msg.first.toString();
+      } catch (_) {}
+      return 'No se pudo guardar el contrato (revise la conexión)';
+    } catch (e) {
+      return 'No se pudo guardar el contrato';
+    }
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> contratosDePrestamo(
+      int codigoPrestamo) async {
+    try {
+      final r = await _dio
+          .get<String>('/expediente/venta-contrato/prestamo/$codigoPrestamo');
+      final map = json.decode(r.data!) as Map<String, dynamic>;
+      return (map['body'] as List? ?? [])
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  @override
   Future<Either<String, List<SalesEntity>>> getSalesByUserIdRangeDate({
     required DateTime inicio,
     required DateTime fin,

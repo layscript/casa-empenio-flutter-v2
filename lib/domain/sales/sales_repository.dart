@@ -26,4 +26,9 @@ abstract class SalesRepository {
 
   /// A quién se vendió el bien de un préstamo.
   Future<List<Map<String, dynamic>>> ventasDePrestamo(int codigoPrestamo);
+
+  /// Guarda el contrato firmado. Devuelve null si salió bien, o el mensaje de error.
+  Future<String?> guardarContratoVenta(Map<String, dynamic> data);
+
+  Future<List<Map<String, dynamic>>> contratosDePrestamo(int codigoPrestamo);
 }

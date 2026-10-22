@@ -13,3 +13,5 @@ export 'show_dialog_only_client.dart';
 export 'show_info_client_loans.dart';
 export 'update_status_loan_dialog.dart';
 export 'vender_bien_page.dart';
+export 'contrato_venta_firma_page.dart';
+export 'ventas_de_prestamo_page.dart';

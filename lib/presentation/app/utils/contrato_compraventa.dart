@@ -113,7 +113,13 @@ String precioEnLetras(double precio) {
 }
 
 // ------------------------------------------------------------------------ PDF
-Future<Uint8List> crearContratoCompraVentaPdf(DatosContrato d) async {
+Future<Uint8List> crearContratoCompraVentaPdf(
+  DatosContrato d, {
+  Uint8List? firmaPersona,
+  Uint8List? firmaEmpresa,
+  Uint8List? huellaPersona,
+  String? selloDigital,
+}) async {
   final pdf = w.Document();
   String v(String s) => s.trim().isEmpty ? '-' : s.trim().toUpperCase();
   final bien = d.descripcion.trim().toUpperCase();
@@ -135,13 +141,31 @@ Future<Uint8List> crearContratoCompraVentaPdf(DatosContrato d) async {
       ? <String>[v(d.marca), v(d.modelo), v(d.carroceria), v(d.color), v(d.motor), v(d.serie), v(d.placa), v(d.anio)]
       : <String>[v(d.marca), v(d.modelo), v(d.color), v(d.serie), v(d.estado)];
 
-  final firma = (String nombre, String linea2, String rol) => w.Column(
+  final firma = (String nombre, String linea2, String rol, Uint8List? firmaImg, Uint8List? huellaImg) =>
+      w.Column(
         children: [
-          w.SizedBox(height: 70),
+          if (firmaImg != null || huellaImg != null)
+            w.SizedBox(
+              height: 70,
+              child: w.Row(
+                mainAxisAlignment: w.MainAxisAlignment.center,
+                crossAxisAlignment: w.CrossAxisAlignment.end,
+                children: [
+                  if (firmaImg != null) w.Image(w.MemoryImage(firmaImg), height: 60, width: 110, fit: w.BoxFit.contain),
+                  if (huellaImg != null) ...[
+                    w.SizedBox(width: 6),
+                    w.Image(w.MemoryImage(huellaImg), height: 60, width: 50, fit: w.BoxFit.contain),
+                  ],
+                ],
+              ),
+            )
+          else
+            w.SizedBox(height: 70),
           w.Text('______________________', style: base),
           w.Text(nombre, style: base),
           w.Text(linea2, style: base),
           w.Text(rol, style: base),
+          if (huellaImg != null) w.Text('(huella índice derecho)', style: const w.TextStyle(fontSize: 7)),
         ],
       );
 
@@ -225,10 +249,14 @@ Future<Uint8List> crearContratoCompraVentaPdf(DatosContrato d) async {
           w.Row(
             mainAxisAlignment: w.MainAxisAlignment.spaceAround,
             children: [
-              firma(d.nombre.trim().toUpperCase(), 'DNI N° ${d.dni.trim()}', persona),
-              firma(_empresa, 'RUC $_ruc', empresaRol),
+              firma(d.nombre.trim().toUpperCase(), 'DNI N° ${d.dni.trim()}', persona, firmaPersona, huellaPersona),
+              firma(_empresa, 'RUC $_ruc', empresaRol, firmaEmpresa, null),
             ],
           ),
+          if (selloDigital != null) ...[
+            w.SizedBox(height: 18),
+            w.Text(selloDigital, style: const w.TextStyle(fontSize: 8)),
+          ],
         ],
       ),
     ),
