@@ -221,10 +221,6 @@ class _TareasCobranzaPageState extends State<TareasCobranzaPage> {
       _msg('El cliente no tiene un celular válido', error: true);
       return;
     }
-    if (!await _confirmar('Enviar SMS',
-        'El sistema enviará el aviso por SMS al ${_cel(t)} y guardará la constancia.')) {
-      return;
-    }
     await _accion(t, 'sms', {}, ok: 'SMS enviado y registrado');
   }
 
@@ -328,6 +324,83 @@ class _TareasCobranzaPageState extends State<TareasCobranzaPage> {
     });
   }
 
+  Future<void> _sinWhatsapp(Map<String, dynamic> t) async {
+    if (!await _confirmar('Sin WhatsApp',
+        '¿El cliente no tiene WhatsApp? Quedará anotado y solo falta SMS y llamada.')) {
+      return;
+    }
+    await _accion(t, 'contacto', {
+      'canal': 'WHATSAPP',
+      'resultado': 'NUMERO_ERRONEO',
+      'nota': 'El cliente no tiene WhatsApp',
+    });
+  }
+
+  Widget _fila(String canal, String nombre, IconData icono, Color color,
+      List hechos, VoidCallback onTap, String boton,
+      {VoidCallback? alterno, String? textoAlterno}) {
+    final ok = hechos.contains(canal);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: ok ? Colors.green.shade50 : Colors.white,
+        border: Border.all(color: ok ? Colors.green : Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(children: [
+        Icon(ok ? Icons.check_circle : icono, color: ok ? Colors.green : color),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(nombre,
+              style: const TextStyle(fontWeight: FontWeight.w600)),
+        ),
+        if (!ok && alterno != null)
+          TextButton(
+              onPressed: alterno, child: Text(textoAlterno ?? '',
+                  style: const TextStyle(fontSize: 12))),
+        if (ok)
+          const Text('Listo', style: TextStyle(color: Colors.green))
+        else
+          FilledButton(
+            style: FilledButton.styleFrom(
+                backgroundColor: color,
+                visualDensity: VisualDensity.compact),
+            onPressed: onTap,
+            child: Text(boton),
+          ),
+      ]),
+    );
+  }
+
+  Widget _checklist(Map<String, dynamic> t) {
+    final hechos = (t['canalesHechos'] as List?) ?? [];
+    final n = hechos.length;
+    return SizedBox(
+      width: double.infinity,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Aviso ${t['nroAviso']}: usa los 3 medios ($n de 3)',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 6),
+          _fila('WHATSAPP', 'WhatsApp', Icons.chat, Colors.green.shade700,
+              hechos, () => _whatsapp(t), 'Enviar',
+              alterno: () => _sinWhatsapp(t), textoAlterno: 'No tiene'),
+          _fila('SMS', 'Mensaje de texto (SMS)', Icons.sms,
+              Colors.indigo, hechos, () => _sms(t), 'Enviar'),
+          _fila('LLAMADA', 'Llamada', Icons.call, Colors.blue, hechos,
+              () => _llamar(t), 'Llamar'),
+          TextButton(
+              onPressed: () => _otroMedio(t),
+              child: const Text('Agregar una nota (otro medio)')),
+        ],
+      ),
+    );
+  }
+
   Future<void> _otroMedio(Map<String, dynamic> t) async {
     final ctrl = TextEditingController();
     final ok = await showDialog<bool>(
@@ -353,7 +426,7 @@ class _TareasCobranzaPageState extends State<TareasCobranzaPage> {
     if (ok != true || ctrl.text.trim().isEmpty) return;
     await _accion(t, 'contacto', {
       'canal': 'OTRO',
-      'resultado': 'ENVIADO',
+      'resultado': 'NOTA',
       'nota': ctrl.text.trim(),
     });
   }
@@ -417,24 +490,7 @@ class _TareasCobranzaPageState extends State<TareasCobranzaPage> {
 
     final botones = <Widget>[];
     if (tarea == 'ENVIAR_AVISO_1' || tarea == 'ENVIAR_AVISO_2') {
-      botones.addAll([
-        FilledButton.icon(
-            style: FilledButton.styleFrom(backgroundColor: Colors.green.shade700),
-            onPressed: () => _whatsapp(t),
-            icon: const Icon(Icons.chat),
-            label: const Text('Avisar por WhatsApp')),
-        OutlinedButton.icon(
-            onPressed: () => _sms(t),
-            icon: const Icon(Icons.sms),
-            label: const Text('No tiene WhatsApp: SMS')),
-        OutlinedButton.icon(
-            onPressed: () => _llamar(t),
-            icon: const Icon(Icons.call, color: Colors.blue),
-            label: const Text('Llamar')),
-        TextButton(
-            onPressed: () => _otroMedio(t),
-            child: const Text('Ya avisé por otro medio')),
-      ]);
+      botones.add(_checklist(t));
     } else if (tarea == 'CONSULTAR_RESPUESTA') {
       botones.addAll([
         FilledButton.icon(

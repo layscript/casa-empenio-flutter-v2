@@ -306,7 +306,8 @@ class _BottomState extends State<Bottom> {
         boxShadow: defaultBoxShadow,
       ),
       child: Center(
-        child: Row(children: [
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Row(children: [
         Expanded(child: PrimaryButton(
           onPressed: () async {
             final result = await showDialog<StatusFormVehiculo?>(
@@ -356,6 +357,16 @@ class _BottomState extends State<Bottom> {
               label: const Text('Registrar compra'),
             ),
           ),
+        ),
+        ]),
+        TextButton.icon(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const ComprasRegistradasPage(),
+            ),
+          ),
+          icon: const Icon(Icons.receipt_long, size: 18),
+          label: const Text('Ver compras registradas y contratos'),
         ),
         ]),
       ),

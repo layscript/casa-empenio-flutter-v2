@@ -387,4 +387,18 @@ class HttpSalesRepository implements SalesRepository {
       return {'sms': false, 'whatsapp': false};
     }
   }
+
+  @override
+  Future<List<Map<String, dynamic>>> comprasRegistradas(int sucursalId) async {
+    try {
+      final r = await _dio.get<String>('/almacen/compras',
+          queryParameters: {'sucursalId': sucursalId});
+      final map = json.decode(r.data!) as Map<String, dynamic>;
+      return (map['body'] as List? ?? [])
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
 }
