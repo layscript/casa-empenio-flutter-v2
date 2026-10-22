@@ -47,11 +47,115 @@ class _VentasDePrestamoPageState extends State<VentasDePrestamoPage> {
     });
   }
 
-  Map<String, dynamic>? _contratoDe(int ventaId) {
+  Map<String, dynamic>? _contratoDe(int ventaId, [String tipo = 'VENTA']) {
     for (final c in _contratos) {
-      if ((c['ventaId'] as num?)?.toInt() == ventaId) return c;
+      if ((c['ventaId'] as num?)?.toInt() == ventaId &&
+          (c['tipo'] ?? 'VENTA') == tipo) {
+        return c;
+      }
     }
     return null;
+  }
+
+  Future<Uint8List?> _bajar(String ruta) async {
+    try {
+      final r = await Dio().get<List<int>>(
+        '$endPointPrincipal/$ruta',
+        options: Options(responseType: ResponseType.bytes),
+      );
+      final bytes = Uint8List.fromList(r.data ?? <int>[]);
+      return bytes.isEmpty ? null : bytes;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _imprimir(String ruta, String nombre) async {
+    setState(() => _abriendo = true);
+    final b = await _bajar(ruta);
+    if (mounted) setState(() => _abriendo = false);
+    if (b == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No se pudo abrir el documento')));
+      }
+      return;
+    }
+    await imprimirPdf(b, nombre);
+  }
+
+  DatosContrato _datosDe(Map<String, dynamic> venta, {bool cancelacion = false}) {
+    final cli = Map<String, dynamic>.from((venta['cliente'] as Map?) ?? {});
+    final bienes = widget.prestamo.bienesGarantia ?? [];
+    final b = bienes.isNotEmpty ? bienes.first : null;
+    final vehiculo = (b?.motor ?? '').isNotEmpty || (b?.placa ?? '').isNotEmpty;
+    final adel = double.tryParse('${venta['adelanto']}');
+    final lim = DateTime.tryParse('${venta['fechaLimite']}');
+    return DatosContrato(
+      empresaCompra: false,
+      esVehiculo: vehiculo,
+      nombre: '${cli['nombres'] ?? ''} ${cli['apellidos'] ?? ''}'.trim(),
+      dni: '${cli['dni'] ?? ''}',
+      domicilio: '${cli['domicilio'] ?? ''}',
+      descripcion: bienes.map((e) => e.description ?? '').where((e) => e.isNotEmpty).join(' + '),
+      marca: b?.marca ?? '',
+      modelo: b?.modelo ?? '',
+      color: b?.color ?? '',
+      serie: b?.serie ?? '',
+      placa: b?.placa ?? '',
+      motor: b?.motor ?? '',
+      carroceria: b?.carroceria ?? '',
+      anio: b?.anio?.toString() ?? '',
+      clase: 'Vehículo menor',
+      estado: b?.estado ?? '',
+      precio: double.tryParse('${venta['total']}') ?? 0,
+      ciudad: 'Atalaya',
+      fecha: cancelacion
+          ? DateTime.now()
+          : (DateTime.tryParse('${venta['fecha']}')?.toLocal() ?? DateTime.now()),
+      adelanto: adel,
+      fechaLimite: lim,
+    );
+  }
+
+  /// El cliente vuelve a cancelar el saldo: cobra, firma la constancia y se entrega.
+  Future<void> _cancelarSaldo(Map<String, dynamic> venta, {bool yaCobrado = false}) async {
+    final ok = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute<bool>(
+        builder: (_) => ContratoVentaFirmaPage(
+          datos: _datosDe(venta, cancelacion: true),
+          payloadVenta: const {},
+          prestamoCodigo: _codigo,
+          ventaIdExistente: (venta['id'] as num).toInt(),
+          cancelacion: true,
+          saldoYaCobrado: yaCobrado,
+          fechaContrato: DateTime.tryParse('${venta['fecha']}')?.toLocal(),
+        ),
+      ),
+    );
+    if (ok == true) {
+      setState(() => _cargando = true);
+      await _cargar();
+    }
+  }
+
+  Widget _docBotones(Map<String, dynamic> c, String titulo, String nombre) {
+    return Wrap(
+      spacing: 8,
+      children: [
+        ElevatedButton.icon(
+          onPressed: _abriendo ? null : () => _imprimir('${c['pdf']}', nombre),
+          icon: const Icon(Icons.print),
+          label: const Text('Imprimir'),
+        ),
+        OutlinedButton.icon(
+          onPressed: _abriendo ? null : () => _verPdf('${c['pdf']}', titulo),
+          icon: const Icon(Icons.picture_as_pdf),
+          label: const Text('Ver'),
+        ),
+      ],
+    );
   }
 
   Future<void> _verPdf(String ruta, String titulo) async {
@@ -77,36 +181,11 @@ class _VentasDePrestamoPageState extends State<VentasDePrestamoPage> {
 
   /// Venta con contrato privado que quedó sin firma/huella: se completa aquí.
   Future<void> _completarContrato(Map<String, dynamic> venta) async {
-    final cli = Map<String, dynamic>.from((venta['cliente'] as Map?) ?? {});
-    final bienes = widget.prestamo.bienesGarantia ?? [];
-    final b = bienes.isNotEmpty ? bienes.first : null;
-    final vehiculo = (b?.motor ?? '').isNotEmpty || (b?.placa ?? '').isNotEmpty;
-    final datos = DatosContrato(
-      empresaCompra: false,
-      esVehiculo: vehiculo,
-      nombre: '${cli['nombres'] ?? ''} ${cli['apellidos'] ?? ''}'.trim(),
-      dni: '${cli['dni'] ?? ''}',
-      domicilio: '${cli['domicilio'] ?? ''}',
-      descripcion: bienes.map((e) => e.description ?? '').where((e) => e.isNotEmpty).join(' + '),
-      marca: b?.marca ?? '',
-      modelo: b?.modelo ?? '',
-      color: b?.color ?? '',
-      serie: b?.serie ?? '',
-      placa: b?.placa ?? '',
-      motor: b?.motor ?? '',
-      carroceria: b?.carroceria ?? '',
-      anio: b?.anio?.toString() ?? '',
-      clase: 'Vehículo menor',
-      estado: b?.estado ?? '',
-      precio: double.tryParse('${venta['total']}') ?? 0,
-      ciudad: 'Atalaya',
-      fecha: DateTime.tryParse('${venta['fecha']}')?.toLocal() ?? DateTime.now(),
-    );
     final ok = await Navigator.push<bool>(
       context,
       MaterialPageRoute<bool>(
         builder: (_) => ContratoVentaFirmaPage(
-          datos: datos,
+          datos: _datosDe(venta),
           payloadVenta: const {},
           prestamoCodigo: _codigo,
           ventaIdExistente: (venta['id'] as num).toInt(),
@@ -139,7 +218,17 @@ class _VentasDePrestamoPageState extends State<VentasDePrestamoPage> {
     final total = double.tryParse('${v['total']}') ?? 0;
     final id = (v['id'] as num?)?.toInt() ?? 0;
     final contrato = _contratoDe(id);
+    final constancia = _contratoDe(id, 'CANCELACION');
     final esContrato = v['documento'] == 'CONTRATO_PRIVADO';
+    final estadoPago = '${v['estadoPago'] ?? 'TOTAL'}';
+    final parcial = estadoPago == 'PARCIAL';
+    final cancelado = estadoPago == 'CANCELADO';
+    final adel = double.tryParse('${v['adelanto']}');
+    final saldo = double.tryParse('${v['saldo']}');
+    final limite = DateTime.tryParse('${v['fechaLimite']}');
+    final vencidoLimite = parcial &&
+        limite != null &&
+        DateTime.now().isAfter(DateTime(limite.year, limite.month, limite.day, 23, 59));
     final quien = '${usu['nombres'] ?? usu['nombre'] ?? usu['usuario'] ?? ''}'.trim();
     return Card(
       child: Padding(
@@ -159,6 +248,28 @@ class _VentasDePrestamoPageState extends State<VentasDePrestamoPage> {
             if (fecha != null)
               Text('Fecha: ${DateFormat('dd/MM/yyyy · hh:mm a').format(fecha)}'),
             if (quien.isNotEmpty) Text('Atendió: $quien'),
+            if (parcial || cancelado) ...[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: cancelado ? Colors.green[50] : (vencidoLimite ? Colors.red[50] : Colors.orange[50]),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  cancelado
+                      ? 'PAGO COMPLETO · adelanto S/. ${(adel ?? 0).toStringAsFixed(2)} + saldo cancelado'
+                          '${v['fechaCancelacion'] != null ? ' el ${DateFormat('dd/MM/yyyy').format(DateTime.parse('${v['fechaCancelacion']}').toLocal())}' : ''}'
+                      : 'PAGO PARCIAL · adelanto S/. ${(adel ?? 0).toStringAsFixed(2)} · falta S/. ${(saldo ?? 0).toStringAsFixed(2)}'
+                          '${limite != null ? '\nCancela hasta el ${DateFormat('dd/MM/yyyy').format(limite)}${vencidoLimite ? ' (¡plazo vencido!)' : ''}' : ''}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: cancelado ? Colors.green[800] : (vencidoLimite ? Colors.red[800] : Colors.orange[900]),
+                  ),
+                ),
+              ),
+            ],
             if (esContrato) ...[
               const SizedBox(height: 8),
               if (contrato != null) ...[
@@ -171,11 +282,7 @@ class _VentasDePrestamoPageState extends State<VentasDePrestamoPage> {
                   ),
                 ]),
                 const SizedBox(height: 6),
-                ElevatedButton.icon(
-                  onPressed: _abriendo ? null : () => _verPdf('${contrato['pdf']}', 'Contrato firmado'),
-                  icon: const Icon(Icons.picture_as_pdf),
-                  label: const Text('Ver contrato firmado'),
-                ),
+                _docBotones(contrato, 'Contrato firmado', 'Contrato_venta_$id'),
               ] else ...[
                 Row(children: const [
                   Icon(Icons.warning_amber, color: Colors.orange, size: 18),
@@ -190,6 +297,37 @@ class _VentasDePrestamoPageState extends State<VentasDePrestamoPage> {
                   onPressed: () => _completarContrato(v),
                   icon: const Icon(Icons.draw),
                   label: const Text('Firmar contrato ahora'),
+                ),
+              ],
+              if (constancia != null) ...[
+                const SizedBox(height: 10),
+                Row(children: const [
+                  Icon(Icons.verified, color: Colors.green, size: 18),
+                  SizedBox(width: 6),
+                  Expanded(
+                    child: Text('Constancia de cancelación y entrega firmada',
+                        style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600)),
+                  ),
+                ]),
+                const SizedBox(height: 6),
+                _docBotones(constancia, 'Constancia de cancelación', 'Constancia_venta_$id'),
+              ],
+              if (parcial && contrato != null) ...[
+                const SizedBox(height: 10),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green[700], foregroundColor: Colors.white),
+                  onPressed: () => _cancelarSaldo(v),
+                  icon: const Icon(Icons.price_check),
+                  label: const Text('Cancelar saldo y entregar bien'),
+                ),
+              ],
+              if (cancelado && constancia == null) ...[
+                const SizedBox(height: 10),
+                ElevatedButton.icon(
+                  onPressed: () => _cancelarSaldo(v, yaCobrado: true),
+                  icon: const Icon(Icons.draw),
+                  label: const Text('Firmar constancia de entrega'),
                 ),
               ],
             ],
