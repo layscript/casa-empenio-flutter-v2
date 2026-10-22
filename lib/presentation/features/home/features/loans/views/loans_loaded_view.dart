@@ -532,72 +532,43 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                                       : Colors.white,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: ListTile(
-                                  dense: true,
-                                  title: Text(
-                                    'Cod:. ${prestamo?.codigo.toString().padLeft(6, '0')} - s/.$montoFinal',
-                                    maxLines: 1,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.normal,
-                                      overflow: TextOverflow.ellipsis,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    InkWell(
+                                      borderRadius: BorderRadius.circular(10),
+                                      onTap: () {
+                                        if (typeSearch == false) {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => BlocProvider.value(
+                                                value: widget.loansBloc,
+                                                child: LoanClientView(
+                                                  document:
+                                                      prestamo?.cliente?.dni ?? '',
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                      child: ResumenPrestamo(
+                                        prestamo: prestamo,
+                                        monto: montoFinal,
+                                        fecha: prestamo?.fecha != null
+                                            ? widget.state.formattedDate(prestamo!.fecha!)
+                                            : null,
+                                      ),
                                     ),
-                                  ),
-                                  subtitle: prestamo?.fecha != null
-                                      ? Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              widget.state.formattedDate(
-                                                prestamo!.fecha!,
-                                              ),
-                                              maxLines: 3,
-                                              style: const TextStyle(
-                                                color: AppColors.secondaryText,
-                                                fontWeight: FontWeight.normal,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                            Text(
-                                              '${prestamo?.estado}',
-                                              maxLines: 3,
-                                              style: const TextStyle(
-                                                color: AppColors.secondaryText,
-                                                fontWeight: FontWeight.normal,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                            if (prestamo.isRenewed != null &&
-                                                prestamo.isRenewed == true)
-                                              Text(
-                                                (prestamo.renewalCount ?? 0) > 0
-                                                    ? 'RENOVACIÓN N° ${prestamo.renewalCount}'
-                                                        '${prestamo.parentLoanId != null ? ' (de #${prestamo.parentLoanId.toString().padLeft(6, '0')})' : ''}'
-                                                    : 'RENOVADO',
-                                                style: const TextStyle(
-                                                  color: Colors.purple,
-                                                  fontWeight: FontWeight.w500,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            if (typeSearch == false)
-                                              Text(
-                                                '${prestamo.cliente?.nombres ?? ''} - ${prestamo.cliente?.apellidos ?? ''}',
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
-                                                  color:
-                                                      AppColors.secondaryText,
-                                                  fontWeight: FontWeight.normal,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                          ],
-                                        )
-                                      : null,
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
+                                    const Divider(height: 1),
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(6, 4, 6, 6),
+                                      child: Wrap(
+                                        alignment: WrapAlignment.start,
+                                        spacing: 2,
+                                        runSpacing: 2,
+                                        children: [
                                       //Expediente digital (firma)
                                       SizedBox(
                                         height: 38,
@@ -1202,8 +1173,10 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                                             ),
                                           ),
                                         ),
-                                    ],
-                                  ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),

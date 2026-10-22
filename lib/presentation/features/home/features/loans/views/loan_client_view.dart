@@ -122,58 +122,23 @@ class _LoanClientViewState extends State<LoanClientView> {
                                 : Colors.white,
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: ListTile(
-                            dense: true,
-                            title: Text(
-                              'Cod:. ${prestamo?.codigo.toString().padLeft(6, '0')} - s/.$montoFinal',
-                              maxLines: 1,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.normal,
-                                overflow: TextOverflow.ellipsis,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ResumenPrestamo(
+                                prestamo: prestamo!,
+                                monto: montoFinal,
+                                fecha: prestamo.fecha != null
+                                    ? state.formattedDate(prestamo.fecha!)
+                                    : null,
                               ),
-                            ),
-                            subtitle: prestamo?.fecha != null
-                                ? Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        state.formattedDate(
-                                          prestamo!.fecha!,
-                                        ),
-                                        maxLines: 3,
-                                        style: const TextStyle(
-                                          color: AppColors.secondaryText,
-                                          fontWeight: FontWeight.normal,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                      Text(
-                                        '${prestamo.estado}',
-                                        maxLines: 3,
-                                        style: const TextStyle(
-                                          color: AppColors.secondaryText,
-                                          fontWeight: FontWeight.normal,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                      if (state.typeSearch == false)
-                                        Text(
-                                          '${prestamo.cliente?.nombres ?? ''} ${prestamo.cliente?.apellidos ?? ''}',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            color: AppColors.secondaryText,
-                                            fontWeight: FontWeight.normal,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                    ],
-                                  )
-                                : null,
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
+                              const Divider(height: 1),
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(6, 4, 6, 6),
+                                child: Wrap(
+                                  spacing: 2,
+                                  runSpacing: 2,
+                                  children: [
                                 //Visualizar
                                 SizedBox(
                                   height: 38,
@@ -601,8 +566,10 @@ class _LoanClientViewState extends State<LoanClientView> {
                                       ),
                                     ),
                                   ),
-                              ],
-                            ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         );
                       },
