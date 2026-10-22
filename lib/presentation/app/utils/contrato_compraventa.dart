@@ -42,6 +42,8 @@ class DatosContrato {
     required this.precio,
     required this.ciudad,
     required this.fecha,
+    this.adelanto,
+    this.fechaLimite,
   });
 
   /// true: la empresa COMPRA (la persona es VENDEDOR). false: la empresa VENDE.
@@ -53,7 +55,16 @@ class DatosContrato {
   final double precio;
   final String ciudad;
   final DateTime fecha;
+
+  /// Pago parcial: adelanto recibido y fecha límite para cancelar el saldo.
+  final double? adelanto;
+  final DateTime? fechaLimite;
+
+  bool get parcial => adelanto != null && adelanto! > 0 && adelanto! < precio;
+  double get saldo => parcial ? precio - adelanto! : 0;
 }
+
+String fechaLarga(DateTime f) => '${f.day} de ${_meses[f.month - 1]} del ${f.year}';
 
 // ------------------------------------------------------------ número a letras
 String _centenas(int n) {
@@ -177,7 +188,7 @@ Future<Uint8List> crearContratoCompraVentaPdf(
         crossAxisAlignment: w.CrossAxisAlignment.start,
         children: [
           w.Center(
-            child: w.Text(titulo,
+            child: w.Text(d.parcial ? '$titulo\n(CON ADELANTO Y PAGO PARCIAL)' : titulo,
                 textAlign: w.TextAlign.center,
                 style: w.TextStyle(fontWeight: w.FontWeight.bold, fontSize: 13)),
           ),
@@ -224,15 +235,21 @@ Future<Uint8List> crearContratoCompraVentaPdf(
           ),
           w.SizedBox(height: 15),
           w.Text(
-            '- SEGUNDO: El precio pactado por la compra y venta del bien al que se refiere la cláusula anterior es de S/. $precioTxt (${precioEnLetras(d.precio)}), pagados al contado; EL VENDEDOR declara haber recibido el monto en soles a su entera satisfacción.',
+            d.parcial
+                ? '- SEGUNDO: El precio pactado por la compra y venta del bien al que se refiere la cláusula anterior es de S/. $precioTxt (${precioEnLetras(d.precio)}), que EL COMPRADOR cancela de la siguiente manera: a) S/. ${NumberFormat('#,##0.00', 'en_US').format(d.adelanto)} (${precioEnLetras(d.adelanto!)}) como ADELANTO, recibido en este acto a entera satisfacción; y b) el SALDO de S/. ${NumberFormat('#,##0.00', 'en_US').format(d.saldo)} (${precioEnLetras(d.saldo)}), que EL COMPRADOR se obliga a cancelar a más tardar el ${d.fechaLimite != null ? fechaLarga(d.fechaLimite!) : '__________'}, fecha en la que recogerá el bien.'
+                : '- SEGUNDO: El precio pactado por la compra y venta del bien al que se refiere la cláusula anterior es de S/. $precioTxt (${precioEnLetras(d.precio)}), pagados al contado; EL VENDEDOR declara haber recibido el monto en soles a su entera satisfacción.',
             style: base,
             textAlign: w.TextAlign.justify,
           ),
           w.SizedBox(height: 15),
           w.Text(
-            d.esVehiculo
-                ? '- TERCERO: Igualmente EL COMPRADOR declara haber recibido el vehículo materia de este contrato a su entera satisfacción y sin responsabilidades para EL VENDEDOR en la parte técnica mecánica, por ser un vehículo usado.'
-                : '- TERCERO: Igualmente EL COMPRADOR declara haber recibido el artefacto materia de este contrato a su entera satisfacción, en el estado en que se encuentra, y sin responsabilidades para EL VENDEDOR por su funcionamiento, por ser un bien usado.',
+            d.parcial
+                ? (d.esVehiculo
+                    ? '- TERCERO: El bien permanecerá en custodia de EL VENDEDOR hasta la cancelación total del precio. Una vez cancelado el saldo, EL COMPRADOR recibirá el vehículo a su entera satisfacción y sin responsabilidades para EL VENDEDOR en la parte técnica mecánica, por ser un vehículo usado. La cancelación se hará constar en una constancia firmada por ambas partes.'
+                    : '- TERCERO: El bien permanecerá en custodia de EL VENDEDOR hasta la cancelación total del precio. Una vez cancelado el saldo, EL COMPRADOR recibirá el artefacto a su entera satisfacción, en el estado en que se encuentra, y sin responsabilidades para EL VENDEDOR por su funcionamiento, por ser un bien usado. La cancelación se hará constar en una constancia firmada por ambas partes.')
+                : (d.esVehiculo
+                    ? '- TERCERO: Igualmente EL COMPRADOR declara haber recibido el vehículo materia de este contrato a su entera satisfacción y sin responsabilidades para EL VENDEDOR en la parte técnica mecánica, por ser un vehículo usado.'
+                    : '- TERCERO: Igualmente EL COMPRADOR declara haber recibido el artefacto materia de este contrato a su entera satisfacción, en el estado en que se encuentra, y sin responsabilidades para EL VENDEDOR por su funcionamiento, por ser un bien usado.'),
             style: base,
             textAlign: w.TextAlign.justify,
           ),
@@ -262,6 +279,131 @@ Future<Uint8List> crearContratoCompraVentaPdf(
     ),
   );
   return pdf.save();
+}
+
+// ------------------------------------------------- CONSTANCIA DE CANCELACIÓN
+/// Se firma cuando el cliente vuelve a cancelar el saldo y recoge el bien.
+Future<Uint8List> crearConstanciaCancelacionPdf(
+  DatosContrato d, {
+  required DateTime fechaContrato,
+  Uint8List? firmaPersona,
+  Uint8List? firmaEmpresa,
+  Uint8List? huellaPersona,
+  String? selloDigital,
+}) async {
+  final pdf = w.Document();
+  String m(double v) => NumberFormat('#,##0.00', 'en_US').format(v);
+  const base = w.TextStyle(fontSize: 10);
+  final neg = w.TextStyle(fontWeight: w.FontWeight.bold, fontSize: 10);
+  final persona = d.empresaCompra ? 'VENDEDOR' : 'COMPRADOR';
+  final empresaRol = d.empresaCompra ? 'COMPRADOR' : 'VENDEDOR';
+  final bien = d.descripcion.trim().toUpperCase();
+  final saldo = d.saldo;
+  w.Widget firma(String n, String l2, String rol, Uint8List? f, Uint8List? h) => w.Column(children: [
+        if (f != null || h != null)
+          w.SizedBox(
+            height: 70,
+            child: w.Row(
+              mainAxisAlignment: w.MainAxisAlignment.center,
+              crossAxisAlignment: w.CrossAxisAlignment.end,
+              children: [
+                if (f != null) w.Image(w.MemoryImage(f), height: 60, width: 110, fit: w.BoxFit.contain),
+                if (h != null) ...[
+                  w.SizedBox(width: 6),
+                  w.Image(w.MemoryImage(h), height: 60, width: 50, fit: w.BoxFit.contain),
+                ],
+              ],
+            ),
+          )
+        else
+          w.SizedBox(height: 70),
+        w.Text('______________________', style: base),
+        w.Text(n, style: base),
+        w.Text(l2, style: base),
+        w.Text(rol, style: base),
+      ]);
+  pdf.addPage(
+    w.Page(
+      pageFormat: p.PdfPageFormat.a4,
+      margin: const w.EdgeInsets.all(40),
+      build: (ctx) => w.Column(
+        crossAxisAlignment: w.CrossAxisAlignment.start,
+        children: [
+          w.Center(
+            child: w.Text('CONSTANCIA DE CANCELACIÓN Y ENTREGA',
+                style: w.TextStyle(fontWeight: w.FontWeight.bold, fontSize: 13)),
+          ),
+          w.SizedBox(height: 22),
+          w.RichText(
+            textAlign: w.TextAlign.justify,
+            text: w.TextSpan(style: base, children: [
+              const w.TextSpan(text: 'Por el presente documento, el(la) Sr(a). '),
+              w.TextSpan(text: d.nombre.trim().toUpperCase(), style: neg),
+              const w.TextSpan(text: ', identificado(a) con DNI N° '),
+              w.TextSpan(text: d.dni.trim(), style: neg),
+              w.TextSpan(
+                  text:
+                      ', en su calidad de EL $persona, deja constancia de que ha CANCELADO el saldo de S/. ${m(saldo)} (${precioEnLetras(saldo)}) '
+                      'del contrato privado de compra y venta de fecha ${fechaLarga(fechaContrato)}, celebrado con la empresa '),
+              w.TextSpan(text: _empresa, style: neg),
+              w.TextSpan(
+                  text:
+                      ' (RUC $_ruc), en su calidad de EL $empresaRol, respecto del bien: '),
+              w.TextSpan(text: bien, style: neg),
+              w.TextSpan(
+                  text:
+                      '${d.marca.trim().isNotEmpty ? ', marca ${d.marca.trim().toUpperCase()}' : ''}'
+                      '${d.serie.trim().isNotEmpty ? ', serie ${d.serie.trim().toUpperCase()}' : ''}'
+                      '${d.placa.trim().isNotEmpty ? ', placa ${d.placa.trim().toUpperCase()}' : ''}.'),
+            ]),
+          ),
+          w.SizedBox(height: 14),
+          w.Text(
+            'Con el adelanto de S/. ${m(d.adelanto ?? 0)} entregado al firmar el contrato y este último pago, el precio total de S/. ${m(d.precio)} (${precioEnLetras(d.precio)}) queda CANCELADO EN SU TOTALIDAD.',
+            style: base,
+            textAlign: w.TextAlign.justify,
+          ),
+          w.SizedBox(height: 14),
+          w.Text(
+            'EL COMPRADOR declara haber recibido el bien a su entera satisfacción, en el estado en que se encuentra, y sin responsabilidad alguna para EL VENDEDOR. Con esta constancia el contrato de compra y venta queda CONCLUIDO.',
+            style: base,
+            textAlign: w.TextAlign.justify,
+          ),
+          w.SizedBox(height: 16),
+          w.SizedBox(
+            width: double.infinity,
+            child: w.Text(
+              '${d.ciudad.trim().isEmpty ? 'Atalaya' : d.ciudad.trim()}, ${fechaLarga(d.fecha)}',
+              textAlign: w.TextAlign.right,
+              style: base,
+            ),
+          ),
+          w.SizedBox(height: 15),
+          w.Row(
+            mainAxisAlignment: w.MainAxisAlignment.spaceAround,
+            children: [
+              firma(d.nombre.trim().toUpperCase(), 'DNI N° ${d.dni.trim()}', persona, firmaPersona, huellaPersona),
+              firma(_empresa, 'RUC $_ruc', empresaRol, firmaEmpresa, null),
+            ],
+          ),
+          if (selloDigital != null) ...[
+            w.SizedBox(height: 18),
+            w.Text(selloDigital, style: const w.TextStyle(fontSize: 8)),
+          ],
+        ],
+      ),
+    ),
+  );
+  return pdf.save();
+}
+
+/// Manda el PDF directo a imprimir (abre el diálogo de impresión del teléfono).
+Future<void> imprimirPdf(Uint8List bytes, String nombre) async {
+  await Printing.layoutPdf(
+    name: nombre,
+    format: p.PdfPageFormat.a4,
+    onLayout: (_) async => bytes,
+  );
 }
 
 /// Abre una vista previa de PDF (imprimir / compartir).

@@ -179,6 +179,32 @@ class HttpSalesRepository implements SalesRepository {
   }
 
   @override
+  Future<String?> cancelarSaldoVenta({
+    required int ventaId,
+    required int usuarioId,
+    required int sucursalId,
+  }) async {
+    try {
+      final r = await _dio.post<dynamic>(
+        '/almacen/ventas/$ventaId/cancelar-saldo',
+        data: {'usuarioId': usuarioId, 'sucursalId': sucursalId},
+      );
+      if (r.statusCode == 201 || r.statusCode == 200) return null;
+      return 'No se pudo cancelar el saldo';
+    } on DioException catch (e) {
+      final d = e.response?.data;
+      try {
+        final m = d is String ? json.decode(d) : d;
+        final msg = m is Map ? m['message'] : null;
+        if (msg is String) return msg;
+      } catch (_) {}
+      return 'No se pudo cancelar el saldo (revise que la caja esté abierta)';
+    } catch (e) {
+      return 'No se pudo cancelar el saldo';
+    }
+  }
+
+  @override
   Future<Either<String, List<SalesEntity>>> getSalesByUserIdRangeDate({
     required DateTime inicio,
     required DateTime fin,

@@ -31,4 +31,11 @@ abstract class SalesRepository {
   Future<String?> guardarContratoVenta(Map<String, dynamic> data);
 
   Future<List<Map<String, dynamic>>> contratosDePrestamo(int codigoPrestamo);
+
+  /// El cliente cancela el saldo de una venta con adelanto. Null = bien; si no, el error.
+  Future<String?> cancelarSaldoVenta({
+    required int ventaId,
+    required int usuarioId,
+    required int sucursalId,
+  });
 }

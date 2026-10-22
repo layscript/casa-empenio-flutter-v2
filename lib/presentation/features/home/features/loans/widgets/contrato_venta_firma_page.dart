@@ -5,6 +5,7 @@ import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/contrato_compraventa.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/expediente_page.dart';
+import 'package:casa_empenio_pe/presentation/features/auth/auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -20,6 +21,9 @@ class ContratoVentaFirmaPage extends StatefulWidget {
     required this.payloadVenta,
     this.prestamoCodigo,
     this.ventaIdExistente,
+    this.cancelacion = false,
+    this.fechaContrato,
+    this.saldoYaCobrado = false,
   });
 
   final DatosContrato datos;
@@ -30,6 +34,16 @@ class ContratoVentaFirmaPage extends StatefulWidget {
 
   /// Si la venta ya estaba registrada y solo falta el contrato firmado.
   final int? ventaIdExistente;
+
+  /// true = el cliente vuelve a cancelar el saldo: se firma la constancia de
+  /// cancelación y entrega (con firma y huella nuevas).
+  final bool cancelacion;
+
+  /// Fecha del contrato original (para la constancia).
+  final DateTime? fechaContrato;
+
+  /// El saldo ya se cobró antes y solo falta firmar la constancia.
+  final bool saldoYaCobrado;
 
   @override
   State<ContratoVentaFirmaPage> createState() => _ContratoVentaFirmaPageState();
@@ -43,12 +57,14 @@ class _ContratoVentaFirmaPageState extends State<ContratoVentaFirmaPage> {
   String? _error;
   int? _ventaId;
   bool _terminado = false;
+  bool _saldoCancelado = false;
   Uint8List? _pdfFinal;
 
   @override
   void initState() {
     super.initState();
     _ventaId = widget.ventaIdExistente;
+    _saldoCancelado = widget.saldoYaCobrado;
   }
 
   bool get _listo =>
@@ -97,39 +113,74 @@ class _ContratoVentaFirmaPageState extends State<ContratoVentaFirmaPage> {
       _error = null;
     });
 
-    // 1) Registrar la venta (solo una vez, aunque se reintente)
-    _ventaId ??= await repo.registrarVenta(widget.payloadVenta);
-    if (_ventaId == null) {
-      if (!mounted) return;
-      setState(() {
-        _trabajando = false;
-        _error =
-            'No se pudo registrar la venta. Revise que la caja esté abierta e intente de nuevo.';
-      });
-      return;
+    final cancel = widget.cancelacion;
+
+    // 1) Registrar la venta, o cancelar el saldo (solo una vez, aunque se reintente)
+    if (cancel) {
+      _ventaId = widget.ventaIdExistente;
+      if (!_saldoCancelado) {
+        final user = context.read<AuthBloc>().state as Authenticated;
+        final e = await repo.cancelarSaldoVenta(
+          ventaId: _ventaId!,
+          usuarioId: user.user?.id ?? 1,
+          sucursalId: prefs.token?.sucursal?.id ?? 1,
+        );
+        if (!mounted) return;
+        if (e != null) {
+          setState(() {
+            _trabajando = false;
+            _error = e;
+          });
+          return;
+        }
+        _saldoCancelado = true;
+      }
+    } else {
+      _ventaId ??= await repo.registrarVenta(widget.payloadVenta);
+      if (_ventaId == null) {
+        if (!mounted) return;
+        setState(() {
+          _trabajando = false;
+          _error =
+              'No se pudo registrar la venta. Revise que la caja esté abierta e intente de nuevo.';
+        });
+        return;
+      }
     }
 
     // 2) PDF final con firmas, huella y sello de fecha
     final ahora = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
     final sello =
-        'Contrato firmado digitalmente el $ahora · Venta N° $_ventaId'
+        '${cancel ? 'Constancia firmada' : 'Contrato firmado'} digitalmente el $ahora · Venta N° $_ventaId'
         '${widget.prestamoCodigo != null ? ' · Préstamo N° ${widget.prestamoCodigo}' : ''}'
         ' · Firma y huella del comprador registradas.';
-    final pdf = await crearContratoCompraVentaPdf(
-      widget.datos,
-      firmaPersona: _firmaComprador!.png,
-      firmaEmpresa: _firmaEmpresa,
-      huellaPersona: _huella!.imagenPng,
-      selloDigital: sello,
-    );
+    final pdf = cancel
+        ? await crearConstanciaCancelacionPdf(
+            widget.datos,
+            fechaContrato: widget.fechaContrato ?? DateTime.now(),
+            firmaPersona: _firmaComprador!.png,
+            firmaEmpresa: _firmaEmpresa,
+            huellaPersona: _huella!.imagenPng,
+            selloDigital: sello,
+          )
+        : await crearContratoCompraVentaPdf(
+            widget.datos,
+            firmaPersona: _firmaComprador!.png,
+            firmaEmpresa: _firmaEmpresa,
+            huellaPersona: _huella!.imagenPng,
+            selloDigital: sello,
+          );
 
-    // 3) Guardar el contrato en el expediente
+    // 3) Guardar el documento en el expediente
     final err = await repo.guardarContratoVenta({
       'ventaId': _ventaId,
+      'tipo': cancel ? 'CANCELACION' : 'VENTA',
       if (widget.prestamoCodigo != null) 'prestamoCodigo': widget.prestamoCodigo,
       'compradorNombre': widget.datos.nombre.trim(),
       'compradorDni': widget.datos.dni.trim(),
       'precio': widget.datos.precio,
+      if (widget.datos.parcial) 'adelanto': widget.datos.adelanto,
+      if (widget.datos.parcial && cancel) 'saldo': widget.datos.saldo,
       'pdfBase64': base64Encode(pdf),
       'firmaCompradorBase64': base64Encode(_firmaComprador!.png),
       'firmaEmpresaBase64': base64Encode(_firmaEmpresa!),
@@ -144,7 +195,7 @@ class _ContratoVentaFirmaPageState extends State<ContratoVentaFirmaPage> {
       setState(() {
         _trabajando = false;
         _error =
-            '$err\nLa venta ya quedó registrada (N° $_ventaId). Toque "Concretar" otra vez para guardar el contrato.';
+            '$err\n${cancel ? 'El saldo ya quedó cobrado' : 'La venta ya quedó registrada (N° $_ventaId)'}. Toque "Concretar" otra vez para guardar el documento.';
       });
       return;
     }
@@ -154,6 +205,15 @@ class _ContratoVentaFirmaPageState extends State<ContratoVentaFirmaPage> {
       _terminado = true;
       _pdfFinal = pdf;
     });
+  }
+
+  Future<void> _imprimirCopia() async {
+    final pdf = _pdfFinal;
+    if (pdf == null) return;
+    await imprimirPdf(
+      pdf,
+      '${widget.cancelacion ? 'Constancia' : 'Contrato'}_${widget.datos.nombre.trim().replaceAll(' ', '_')}',
+    );
   }
 
   void _verFinal() {
@@ -203,21 +263,32 @@ class _ContratoVentaFirmaPageState extends State<ContratoVentaFirmaPage> {
           children: [
             const Icon(Icons.verified, color: Colors.green, size: 72),
             const SizedBox(height: 12),
-            const Text('Venta concretada',
+            Text(widget.cancelacion ? 'Saldo cancelado y bien entregado' : 'Venta concretada',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Text(
               'Venta N° $_ventaId a ${widget.datos.nombre.trim()}.\n'
-              'El contrato firmado quedó guardado en el expediente'
+              '${widget.datos.parcial && !widget.cancelacion ? 'Adelanto recibido: S/. ${widget.datos.adelanto!.toStringAsFixed(2)} · Saldo S/. ${widget.datos.saldo.toStringAsFixed(2)} hasta el ${DateFormat('dd/MM/yyyy').format(widget.datos.fechaLimite!)}.\n' : ''}'
+              'El documento firmado quedó guardado en el expediente'
               '${widget.prestamoCodigo != null ? ' del préstamo N° ${widget.prestamoCodigo}' : ''}.',
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 22),
             ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: Colors.blue[700],
+                  foregroundColor: Colors.white),
+              onPressed: _imprimirCopia,
+              icon: const Icon(Icons.print),
+              label: const Text('Imprimir copia para el cliente'),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
               onPressed: _verFinal,
               icon: const Icon(Icons.picture_as_pdf),
-              label: const Text('Ver / imprimir contrato firmado'),
+              label: const Text('Ver / compartir PDF'),
             ),
             const SizedBox(height: 10),
             OutlinedButton(
@@ -240,7 +311,7 @@ class _ContratoVentaFirmaPageState extends State<ContratoVentaFirmaPage> {
         return !_trabajando;
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('Firmar contrato de venta')),
+        appBar: AppBar(title: Text(widget.cancelacion ? 'Cancelar saldo y entregar' : 'Firmar contrato de venta')),
         body: _terminado ? _exito() : ListView(
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 30),
           children: [
@@ -257,6 +328,17 @@ class _ContratoVentaFirmaPageState extends State<ContratoVentaFirmaPage> {
                     Text('Bien: ${d.descripcion}'),
                     Text('Precio: S/. ${d.precio.toStringAsFixed(2)}',
                         style: const TextStyle(fontWeight: FontWeight.bold)),
+                    if (d.parcial && !widget.cancelacion) ...[
+                      Text('Adelanto hoy: S/. ${d.adelanto!.toStringAsFixed(2)}'),
+                      Text('Saldo: S/. ${d.saldo.toStringAsFixed(2)} hasta el ${DateFormat('dd/MM/yyyy').format(d.fechaLimite!)}'),
+                    ],
+                    if (widget.cancelacion)
+                      Text(
+                        widget.saldoYaCobrado
+                            ? 'El saldo de S/. ${d.saldo.toStringAsFixed(2)} ya fue cobrado.'
+                            : 'Saldo a cobrar ahora: S/. ${d.saldo.toStringAsFixed(2)}',
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+                      ),
                   ],
                 ),
               ),
@@ -298,7 +380,11 @@ class _ContratoVentaFirmaPageState extends State<ContratoVentaFirmaPage> {
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white))
                   : const Icon(Icons.verified),
-              label: Text(_trabajando ? 'Guardando…' : 'Concretar venta'),
+              label: Text(_trabajando
+                  ? 'Guardando…'
+                  : widget.cancelacion
+                      ? 'Cobrar saldo y entregar'
+                      : 'Concretar venta'),
             ),
           ],
         ),

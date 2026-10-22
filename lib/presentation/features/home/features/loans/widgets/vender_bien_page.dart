@@ -32,6 +32,9 @@ class _VenderBienPageState extends State<VenderBienPage> {
   final _dni = TextEditingController();
   final _nombre = TextEditingController();
   final _domicilio = TextEditingController();
+  final _adelanto = TextEditingController();
+  bool _parcial = false;
+  DateTime _fechaLimite = DateTime.now().add(const Duration(days: 15));
   late final TextEditingController _precio;
 
   List<WarrantyEntity> get _bienes => widget.prestamo.bienesGarantia ?? [];
@@ -90,6 +93,7 @@ class _VenderBienPageState extends State<VenderBienPage> {
     _dni.dispose();
     _nombre.dispose();
     _domicilio.dispose();
+    _adelanto.dispose();
     _precio.dispose();
     super.dispose();
   }
@@ -145,7 +149,16 @@ class _VenderBienPageState extends State<VenderBienPage> {
       precio: precio,
       ciudad: 'Atalaya',
       fecha: DateTime.now(),
+      adelanto: _adelantoValor(precio),
+      fechaLimite: _adelantoValor(precio) != null ? _fechaLimite : null,
     );
+  }
+
+  double? _adelantoValor(double precio) {
+    if (!(_parcial && _doc == _Doc.contrato)) return null;
+    final a = double.tryParse(_adelanto.text.replaceAll(',', '.'));
+    if (a == null || a <= 0 || a >= precio) return null;
+    return a;
   }
 
   Future<void> _vender() async {
@@ -157,6 +170,17 @@ class _VenderBienPageState extends State<VenderBienPage> {
     if (precio == null || precio <= 0) {
       setState(() => _error = 'Escriba el precio de venta');
       return;
+    }
+    if (_parcial && _doc == _Doc.contrato) {
+      final a = double.tryParse(_adelanto.text.replaceAll(',', '.'));
+      if (a == null || a <= 0 || a >= precio) {
+        setState(() => _error = 'El adelanto debe ser mayor a 0 y menor al precio (S/. ${precio.toStringAsFixed(2)})');
+        return;
+      }
+      if (!_fechaLimite.isAfter(DateTime.now().subtract(const Duration(days: 1)))) {
+        setState(() => _error = 'La fecha límite para cancelar el saldo debe ser de hoy en adelante');
+        return;
+      }
     }
     final datos = _datos(precio);
 
@@ -217,6 +241,8 @@ class _VenderBienPageState extends State<VenderBienPage> {
       'sucursalId': prefs.token?.sucursal?.id ?? 1,
       'documento': _doc == _Doc.contrato ? 'CONTRATO_PRIVADO' : 'BOLETA',
       'prestamoCodigo': widget.prestamo.codigo,
+      if (datos.parcial) 'adelanto': datos.adelanto,
+      if (datos.parcial) 'fechaLimite': DateFormat('yyyy-MM-dd').format(_fechaLimite),
     };
 
     // Contrato privado: la venta se concreta con firma + huella del comprador.
@@ -433,6 +459,79 @@ class _VenderBienPageState extends State<VenderBienPage> {
               border: OutlineInputBorder(),
               isDense: true),
         ),
+        if (_doc == _Doc.contrato) ...[
+          const SizedBox(height: 16),
+          const Text('4. ¿Cómo paga el cliente?',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: [
+              ChoiceChip(
+                label: const Text('Pago total'),
+                selected: !_parcial,
+                onSelected: (_) => setState(() => _parcial = false),
+              ),
+              ChoiceChip(
+                label: const Text('Deja adelanto (pago parcial)'),
+                selected: _parcial,
+                onSelected: (_) => setState(() => _parcial = true),
+              ),
+            ],
+          ),
+          if (_parcial) ...[
+            const SizedBox(height: 10),
+            TextField(
+              controller: _adelanto,
+              onChanged: (_) => setState(() {}),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                  labelText: 'Adelanto que deja ahora',
+                  prefixText: 'S/. ',
+                  border: OutlineInputBorder(),
+                  isDense: true),
+            ),
+            const SizedBox(height: 10),
+            const Text('¿En cuánto tiempo cancela el resto y recoge el bien?'),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final d in const [7, 15, 30])
+                  ActionChip(
+                    label: Text('$d días'),
+                    onPressed: () => setState(() =>
+                        _fechaLimite = DateTime.now().add(Duration(days: d))),
+                  ),
+                ActionChip(
+                  avatar: const Icon(Icons.event, size: 16),
+                  label: const Text('Elegir fecha'),
+                  onPressed: () async {
+                    final r = await showDatePicker(
+                      context: context,
+                      initialDate: _fechaLimite,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (r != null) setState(() => _fechaLimite = r);
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Builder(builder: (_) {
+              final precio = double.tryParse(_precio.text.replaceAll(',', '.')) ?? 0;
+              final a = double.tryParse(_adelanto.text.replaceAll(',', '.')) ?? 0;
+              final saldo = precio - a;
+              return Text(
+                'Cancela el saldo${saldo > 0 && a > 0 ? ' de S/. ${saldo.toStringAsFixed(2)}' : ''} '
+                'hasta el ${DateFormat('dd/MM/yyyy').format(_fechaLimite)}.\n'
+                'El bien queda reservado y sale del almacén. Al volver a cancelar se firma una constancia.',
+                style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.blue),
+              );
+            }),
+          ],
+        ],
         if (_error != null) ...[
           const SizedBox(height: 10),
           Text(_error!, style: const TextStyle(color: Colors.red)),
@@ -444,7 +543,7 @@ class _VenderBienPageState extends State<VenderBienPage> {
           onPressed: _guardando ? null : _vender,
           icon: Icon(guardaVenta ? Icons.check_circle : Icons.picture_as_pdf),
           label: Text(guardaVenta
-              ? (_doc == _Doc.contrato ? 'Continuar a firmar el contrato' : 'Vender y emitir boleta')
+              ? (_doc == _Doc.contrato ? (_parcial ? 'Continuar a firmar (con adelanto)' : 'Continuar a firmar el contrato') : 'Vender y emitir boleta')
               : 'Ver proforma'),
         ),
         TextButton(
