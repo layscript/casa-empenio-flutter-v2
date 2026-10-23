@@ -223,7 +223,7 @@ class _TareasCobranzaPageState extends State<TareasCobranzaPage> {
       return;
     }
     final auto = _canales['sms'] == true;
-    final modo = await showModalBottomSheet<String>(
+    final modo = !auto ? 'normal' : await showModalBottomSheet<String>(
       context: context,
       builder: (ctx) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -307,7 +307,7 @@ class _TareasCobranzaPageState extends State<TareasCobranzaPage> {
       return;
     }
     final auto = _canales['whatsapp'] == true;
-    final modo = await showModalBottomSheet<String>(
+    final modo = !auto ? 'normal' : await showModalBottomSheet<String>(
       context: context,
       builder: (ctx) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
