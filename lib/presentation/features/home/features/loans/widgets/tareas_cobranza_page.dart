@@ -217,11 +217,85 @@ class _TareasCobranzaPageState extends State<TareasCobranzaPage> {
   int _nroAviso(Map<String, dynamic> t) => t['estado'] == 'AVISO_2' ? 2 : 1;
 
   Future<void> _sms(Map<String, dynamic> t) async {
-    if (_cel(t).length != 9) {
+    final c = _cel(t);
+    if (c.length != 9) {
       _msg('El cliente no tiene un celular válido', error: true);
       return;
     }
-    await _accion(t, 'sms', {}, ok: 'SMS enviado y registrado');
+    final auto = _canales['sms'] == true;
+    final modo = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Padding(
+            padding: EdgeInsets.all(14),
+            child: Text('¿Cómo enviar el mensaje de texto?',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          ),
+          ListTile(
+            leading: const Icon(Icons.smart_toy, color: Colors.indigo),
+            title: const Text('Automático (lo envía el sistema)'),
+            subtitle: Text(auto
+                ? 'Queda la constancia del proveedor en el sistema.'
+                : 'No está configurado todavía.'),
+            enabled: auto,
+            onTap: auto ? () => Navigator.pop(ctx, 'auto') : null,
+          ),
+          ListTile(
+            leading: const Icon(Icons.sms, color: Colors.indigo),
+            title: const Text('Normal (desde mi celular)'),
+            subtitle: const Text('Se abre tu app de mensajes con el texto listo.'),
+            onTap: () => Navigator.pop(ctx, 'normal'),
+          ),
+        ]),
+      ),
+    );
+    if (modo == null || !mounted) return;
+    if (modo == 'auto') {
+      final err = await _repo.accionCobranza(
+        t['prestamoCodigo'] as int,
+        'sms',
+        {'usuarioId': _uid, 'usuarioNombre': _unombre},
+      );
+      if (!mounted) return;
+      if (err == null) {
+        _msg('SMS enviado y registrado');
+        _hist.remove(t['prestamoCodigo']);
+        await _cargar();
+        return;
+      }
+      final manual = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('No se pudo enviar el SMS automático'),
+          content: SingleChildScrollView(child: Text(err)),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cerrar')),
+            FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Enviarlo desde mi celular')),
+          ],
+        ),
+      );
+      if (manual != true || !mounted) return;
+    }
+    final texto =
+        (_nroAviso(t) == 1 ? t['mensajeAviso1'] : t['mensajeAviso2']).toString();
+    await launchUrl(
+      Uri.parse('sms:$c?body=${Uri.encodeComponent(texto)}'),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!mounted) return;
+    if (await _confirmar('Mensaje de texto', '¿Ya enviaste el mensaje de texto?')) {
+      await _accion(t, 'contacto', {
+        'canal': 'SMS',
+        'resultado': 'ENVIADO',
+        'telefono': '51$c',
+        'mensaje': texto,
+      });
+    }
   }
 
   Map<String, dynamic> _canales = {'sms': false, 'whatsapp': false};
