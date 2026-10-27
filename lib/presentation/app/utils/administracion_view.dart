@@ -4,6 +4,7 @@ import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/categorias_orden_view.dart';
 import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -2873,6 +2874,7 @@ class _RecuperarObservacionesPageState
   String? _resultado;
   String? _error;
   bool _cargando = false;
+  String? _progreso;
 
   @override
   void initState() {
@@ -2891,6 +2893,49 @@ class _RecuperarObservacionesPageState
       _vista = Map<String, dynamic>.from((d is Map ? d['body'] : null) ?? {});
     } catch (e) {
       _error = _msg(e);
+    }
+    if (mounted) setState(() => _cargando = false);
+  }
+
+
+  Future<void> _subirCopia() async {
+    final sel = await FilePicker.platform.pickFiles(type: FileType.any);
+    if (sel == null || sel.files.isEmpty || sel.files.first.path == null) return;
+    final f = sel.files.first;
+    setState(() {
+      _cargando = true;
+      _error = null;
+      _resultado = null;
+      _progreso = 'Subiendo… 0%';
+    });
+    try {
+      final form = FormData.fromMap({
+        'archivo': await MultipartFile.fromFile(f.path!, filename: f.name),
+      });
+      final r = await _dio.post(
+        '/recuperacion/copia/cargar',
+        data: form,
+        options: Options(
+          sendTimeout: const Duration(minutes: 40),
+          receiveTimeout: const Duration(minutes: 40),
+        ),
+        onSendProgress: (enviado, total) {
+          if (total > 0 && mounted) {
+            final p = (enviado * 100 / total).floor();
+            setState(() => _progreso = p >= 100
+                ? 'Subida completa. El servidor está leyendo la copia…'
+                : 'Subiendo… $p%');
+          }
+        },
+      );
+      final b = (r.data is Map ? r.data['body'] : null) ?? {};
+      _resultado =
+          'Copia leída: ${b['prendasEnLaCopia'] ?? 0} prendas, ${b['prendasConObservaciones'] ?? 0} con observaciones guardadas. Todavía no se cambió nada: revise la lista y toque "Recuperar ahora".';
+      _progreso = null;
+      await _ver();
+    } catch (e) {
+      _error = _msg(e);
+      _progreso = null;
     }
     if (mounted) setState(() => _cargando = false);
   }
@@ -2943,12 +2988,35 @@ class _RecuperarObservacionesPageState
     return Scaffold(
       appBar: AppBar(title: const Text('Recuperar observaciones')),
       body: _cargando
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(),
+                    if (_progreso != null) ...[
+                      const SizedBox(height: 16),
+                      Text(_progreso!, textAlign: TextAlign.center),
+                      const SizedBox(height: 8),
+                      const Text('No cierre la app ni apague la pantalla.',
+                          style: TextStyle(color: Colors.grey)),
+                    ],
+                  ],
+                ),
+              ),
+            )
           : ListView(
               padding: const EdgeInsets.all(12),
               children: [
                 if (_error != null)
                   Text(_error!, style: const TextStyle(color: Colors.red)),
+                OutlinedButton.icon(
+                  onPressed: _subirCopia,
+                  icon: const Icon(Icons.upload_file),
+                  label: const Text('Subir copia de seguridad (archivo)'),
+                ),
+                const SizedBox(height: 8),
                 if (_resultado != null)
                   Card(
                       color: Colors.green.shade50,
@@ -2957,7 +3025,9 @@ class _RecuperarObservacionesPageState
                           child: Text(_resultado!))),
                 if (v != null) ...[
                   Text('Prendas sin observaciones: ${v['totalSinObservaciones']}'),
-                  Text('Se pueden recuperar: ${v['recuperables']}',
+                  Text(
+                      'Se pueden recuperar: ${v['recuperables']}'
+                      '${(v['recuperablesDeCopia'] ?? 0) > 0 ? ' (${v['recuperablesDeCopia']} desde la copia)' : ''}',
                       style: const TextStyle(
                           fontWeight: FontWeight.bold, color: Colors.green)),
                   Text('Sin respaldo en el historial: ${v['sinRespaldo']}'),
