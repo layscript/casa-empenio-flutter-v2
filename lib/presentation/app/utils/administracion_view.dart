@@ -281,6 +281,22 @@ class _InicioTabState extends State<_InicioTab> {
               'Categorías de productos, tipos de movimiento e intereses.', 7),
           _opcion(Icons.tune, Colors.brown, 'Configuración del sistema',
               'Mora, tasas de interés, descuentos y rangos.', 8),
+          Card(
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            child: ListTile(
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const _RecuperarObservacionesPage())),
+              leading: CircleAvatar(
+                backgroundColor: Colors.red.withOpacity(0.15),
+                child: const Icon(Icons.restore, color: Colors.red),
+              ),
+              title: const Text('Recuperar observaciones perdidas',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: const Text(
+                  'Devuelve las contraseñas y datos extra de las prendas desde el historial.'),
+              trailing: const Icon(Icons.chevron_right),
+            ),
+          ),
           const Padding(
             padding: EdgeInsets.all(16),
             child: Text(
@@ -2833,6 +2849,151 @@ class _SolicitudesTabState extends State<_SolicitudesTab> {
             ),
         ],
       ),
+    );
+  }
+}
+
+
+// ===========================================================================
+// Recuperar observaciones (contraseñas, datos extra) de las prendas
+// ===========================================================================
+
+class _RecuperarObservacionesPage extends StatefulWidget {
+  const _RecuperarObservacionesPage({Key? key}) : super(key: key);
+
+  @override
+  State<_RecuperarObservacionesPage> createState() =>
+      _RecuperarObservacionesPageState();
+}
+
+class _RecuperarObservacionesPageState
+    extends State<_RecuperarObservacionesPage> {
+  late final Dio _dio = _dioUsuario(context);
+  Map<String, dynamic>? _vista;
+  String? _resultado;
+  String? _error;
+  bool _cargando = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ver();
+  }
+
+  Future<void> _ver() async {
+    setState(() {
+      _cargando = true;
+      _error = null;
+    });
+    try {
+      final r = await _dio.get('/recuperacion/observaciones/vista');
+      final d = r.data;
+      _vista = Map<String, dynamic>.from((d is Map ? d['body'] : null) ?? {});
+    } catch (e) {
+      _error = _msg(e);
+    }
+    if (mounted) setState(() => _cargando = false);
+  }
+
+  Future<void> _aplicar() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('¿Recuperar ahora?'),
+        content: const Text(
+            'Solo se llenan las prendas que hoy están vacías. Lo que ya tiene datos no se toca.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar')),
+          ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Recuperar')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    setState(() {
+      _cargando = true;
+      _error = null;
+    });
+    try {
+      final u = context.read<Preferences>().token;
+      final r = await _dio.post('/recuperacion/observaciones/aplicar',
+          data: {'usuarioId': u?.id ?? 0});
+      final b = (r.data is Map ? r.data['body'] : null) ?? {};
+      _resultado =
+          'Se recuperaron ${b['aplicados'] ?? 0} prendas. Quedan ${b['sinRespaldo'] ?? 0} sin respaldo en el historial.';
+      await _ver();
+    } catch (e) {
+      _error = _msg(e);
+    }
+    if (mounted) setState(() => _cargando = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final v = _vista;
+    final ejemplos = ((v?['ejemplos'] as List?) ?? const [])
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+    final pendientes = ((v?['pendientes'] as List?) ?? const [])
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+    return Scaffold(
+      appBar: AppBar(title: const Text('Recuperar observaciones')),
+      body: _cargando
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.all(12),
+              children: [
+                if (_error != null)
+                  Text(_error!, style: const TextStyle(color: Colors.red)),
+                if (_resultado != null)
+                  Card(
+                      color: Colors.green.shade50,
+                      child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Text(_resultado!))),
+                if (v != null) ...[
+                  Text('Prendas sin observaciones: ${v['totalSinObservaciones']}'),
+                  Text('Se pueden recuperar: ${v['recuperables']}',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, color: Colors.green)),
+                  Text('Sin respaldo en el historial: ${v['sinRespaldo']}'),
+                  const SizedBox(height: 10),
+                  ElevatedButton.icon(
+                    onPressed: (v['recuperables'] ?? 0) > 0 ? _aplicar : null,
+                    icon: const Icon(Icons.restore),
+                    label: const Text('Recuperar ahora'),
+                  ),
+                  const SizedBox(height: 12),
+                  if (ejemplos.isNotEmpty)
+                    const Text('Lo que se devolverá:',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                  for (final e in ejemplos)
+                    Card(
+                      child: ListTile(
+                        dense: true,
+                        title: Text(
+                            'Préstamo ${e['prestamoCodigo']} · ${e['descripcion']}'),
+                        subtitle: Text('${e['valor']}'),
+                      ),
+                    ),
+                  if (pendientes.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    const Text('Sin respaldo (hay que revisarlos a mano):',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    for (final e in pendientes)
+                      ListTile(
+                        dense: true,
+                        title: Text(
+                            'Préstamo ${e['prestamoCodigo']} · ${e['descripcion']}'),
+                      ),
+                  ],
+                ],
+              ],
+            ),
     );
   }
 }
