@@ -3052,13 +3052,31 @@ class _RecuperarObservacionesPageState
                     ),
                   if (pendientes.isNotEmpty) ...[
                     const SizedBox(height: 12),
-                    const Text('Sin respaldo (hay que revisarlos a mano):',
+                    const Text('Sin observaciones en ninguna copia:',
                         style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text(
+                        'Casi siempre es porque ese préstamo nunca tuvo observaciones. Primero van los préstamos que siguen abiertos. El número es el código del préstamo: búsquelo con ese número.',
+                        style: TextStyle(fontSize: 12, color: Colors.black54)),
+                    if ((v['sinRespaldoAbiertos'] ?? 0) > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(
+                            'Abiertos (vigentes o vencidos): ${v['sinRespaldoAbiertos']}',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, color: Colors.deepOrange)),
+                      ),
                     for (final e in pendientes)
                       ListTile(
                         dense: true,
+                        leading: Icon(
+                            e['activo'] == true ? Icons.lock_open : Icons.lock_outline,
+                            color: e['activo'] == true ? Colors.deepOrange : Colors.grey),
                         title: Text(
                             'Préstamo ${e['prestamoCodigo']} · ${e['descripcion']}'),
+                        subtitle: Text(
+                            '${e['cliente'] ?? ''}'
+                            '${(e['celular'] ?? '').toString().isNotEmpty ? ' · Cel. ${e['celular']}' : ''}'
+                            ' · ${e['prestamoEstado'] ?? ''}'),
                       ),
                   ],
                 ],
