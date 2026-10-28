@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/categorias_orden_view.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/modulo_pantalla.dart';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -448,6 +449,39 @@ class _RolesTabState extends State<_RolesTab> {
     await _cargar();
   }
 
+  bool _tienePantalla(Map<String, dynamic> m) =>
+      moduloTienePantalla(int.tryParse('${m['id']}') ?? -1, '${m['nombre'] ?? ''}');
+
+  Future<void> _limpiarVacios() async {
+    final vacios = _modulos.where((m) => !_tienePantalla(m)).toList();
+    if (vacios.isEmpty) {
+      _aviso(context, 'Todos los módulos tienen pantalla');
+      return;
+    }
+    final ok = await _confirmar(
+        context,
+        'Quitar módulos sin pantalla',
+        'Se quitarán ${vacios.length} módulo(s) que se ven en el menú pero no abren nada:\n\n'
+        '${vacios.map((m) => '• ${m['nombre']}').join('\n')}\n\n'
+        'Los puestos dejarán de verlos. No se pierde ningún préstamo, cliente ni dato del negocio. ¿Continuar?');
+    if (!ok) return;
+    var quitados = 0;
+    final fallos = <String>[];
+    for (final m in vacios) {
+      try {
+        await _dio.delete('/modulos/${m['id']}');
+        quitados++;
+      } catch (e) {
+        fallos.add('${m['nombre']}');
+      }
+    }
+    _aviso(
+        context,
+        'Se quitaron $quitados módulo(s)'
+        '${fallos.isEmpty ? '' : ' · No se pudo: ${fallos.join(', ')}'}');
+    await _cargar();
+  }
+
   Future<void> _borrarModulo(Map<String, dynamic> m) async {
     final ok = await _confirmar(context, 'Eliminar módulo',
         'Se quitará el módulo "${m['nombre']}" de la lista. Los roles que lo tenían dejarán de verlo. ¿Continuar?');
@@ -472,6 +506,34 @@ class _RolesTabState extends State<_RolesTab> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 30),
         children: [
+          if (_modulos.any((m) => !_tienePantalla(m)))
+            Card(
+              color: Colors.orange.shade50,
+              margin: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                        '${_modulos.where((m) => !_tienePantalla(m)).length} módulo(s) se ven en el menú pero no abren ninguna pantalla:',
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text(_modulos
+                        .where((m) => !_tienePantalla(m))
+                        .map((m) => '• ${m['nombre']}')
+                        .join('\n')),
+                    const SizedBox(height: 8),
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(backgroundColor: Colors.orange.shade800),
+                      onPressed: _limpiarVacios,
+                      icon: const Icon(Icons.cleaning_services),
+                      label: const Text('Quitar los módulos sin pantalla'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           const _Aviso(
               'Un rol es un puesto (administrador, cajero...). Los módulos que marque en cada rol son los que sus usuarios ven en el menú. '
               'Un módulo nuevo solo agrega la opción al menú: la pantalla debe existir en la app.'),
@@ -550,8 +612,13 @@ class _RolesTabState extends State<_RolesTab> {
           for (final m in _modulos)
             ListTile(
               dense: true,
-              leading: const Icon(Icons.apps),
+              leading: Icon(Icons.apps,
+                  color: _tienePantalla(m) ? null : Colors.orange.shade800),
               title: Text((m['nombre'] ?? '').toString()),
+              subtitle: _tienePantalla(m)
+                  ? null
+                  : Text('Sin pantalla: no abre nada',
+                      style: TextStyle(color: Colors.orange.shade800, fontSize: 12)),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
