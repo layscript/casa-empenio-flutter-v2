@@ -450,6 +450,45 @@ class _TareasCobranzaPageState extends State<TareasCobranzaPage> {
   Widget _checklist(Map<String, dynamic> t) {
     final hechos = (t['canalesHechos'] as List?) ?? [];
     final n = hechos.length;
+    if (_cel(t).length != 9) {
+      // Cliente sin celular: no se puede usar WhatsApp, SMS ni llamada
+      return SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                border: Border.all(color: Colors.orange),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(children: [
+                const Icon(Icons.phone_disabled, color: Colors.orange),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                      'Aviso ${t['nroAviso']}: este cliente no tiene celular registrado. '
+                      'Avísele por otro medio (visita, familiar, carta) y regístrelo aquí.',
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                ),
+              ]),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(backgroundColor: Colors.orange.shade800),
+                onPressed: () => _sinCelular(t),
+                icon: const Icon(Icons.assignment_turned_in),
+                label: const Text('Sin celular: ya se intentó por otro medio'),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     return SizedBox(
       width: double.infinity,
       child: Column(
@@ -472,6 +511,71 @@ class _TareasCobranzaPageState extends State<TareasCobranzaPage> {
               child: const Text('Agregar una nota (otro medio)')),
         ],
       ),
+    );
+  }
+
+  Future<void> _sinCelular(Map<String, dynamic> t) async {
+    const medios = <String, String>{
+      'Visita al domicilio': 'PRESENCIAL',
+      'Se avisó a un familiar o al aval': 'OTRO',
+      'Carta o aviso escrito': 'OTRO',
+      'Redes sociales (Facebook, etc.)': 'OTRO',
+      'Otro medio': 'OTRO',
+    };
+    String? medio;
+    final ctrl = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => StatefulBuilder(
+        builder: (c, setS) => AlertDialog(
+          title: const Text('Cliente sin celular'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('¿Por qué medio se intentó avisarle?',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
+                for (final m in medios.keys)
+                  RadioListTile<String>(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(m),
+                    value: m,
+                    groupValue: medio,
+                    onChanged: (v) => setS(() => medio = v),
+                  ),
+                TextField(
+                  controller: ctrl,
+                  maxLength: 200,
+                  decoration: const InputDecoration(
+                      hintText: 'Detalle (con quién habló, qué pasó)'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(c, false),
+                child: const Text('Cancelar')),
+            FilledButton(
+                onPressed: medio == null ? null : () => Navigator.pop(c, true),
+                child: const Text('Registrar')),
+          ],
+        ),
+      ),
+    );
+    if (ok != true || medio == null) return;
+    final detalle = ctrl.text.trim();
+    await _accion(
+      t,
+      'contacto',
+      {
+        'canal': medios[medio]!,
+        'resultado': 'SIN_CELULAR',
+        'nota': 'Cliente sin celular. $medio${detalle.isEmpty ? '' : ': $detalle'}',
+      },
+      ok: 'Aviso registrado',
     );
   }
 
