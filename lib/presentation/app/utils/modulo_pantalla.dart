@@ -11,7 +11,9 @@ bool moduloTienePantalla(int id, String nombre) {
       n.contains('bitacora') ||
       n.contains('bitácora') ||
       n.contains('administraci') ||
-      n.contains('adjudic')) {
+      n.contains('adjudic') ||
+      n.contains('recursos humanos') ||
+      n.trim().startsWith('personal')) {
     return true;
   }
   return id == 9004 || (id >= 1 && id <= 19);

@@ -2,6 +2,7 @@ import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/administracion_view.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/adjudicados_view.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/rrhh_view.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/auditoria_view.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/expedientes_view.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/sucursales_panel/sucursales_panel_view.dart';
@@ -107,6 +108,10 @@ class _MainViewState extends State<MainView> {
                   }
                   if (nombreModulo.contains('administraci')) {
                     return const AdministracionView();
+                  }
+                  if (nombreModulo.contains('recursos humanos') ||
+                      nombreModulo.trim().startsWith('personal')) {
+                    return const RrhhView();
                   }
                   if (nombreModulo.contains('adjudic')) {
                     return const AdjudicadosView();
