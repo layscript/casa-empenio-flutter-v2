@@ -531,6 +531,7 @@ class _HoyTab extends StatefulWidget {
 class _HoyTabState extends State<_HoyTab> with AutomaticKeepAliveClientMixin {
   Map<String, dynamic> _dia = {};
   Map<String, dynamic> _resumen = {};
+  Map<String, dynamic> _refri = {};
   String _fecha = _hoy();
   bool _cargando = true;
   String? _error;
@@ -555,9 +556,11 @@ class _HoyTabState extends State<_HoyTab> with AutomaticKeepAliveClientMixin {
       final r = await Future.wait([
         widget.api.get('/rrhh/asistencia/dia', {'fecha': _fecha, if (suc > 0) 'sucursalId': suc}),
         widget.api.get('/rrhh/resumen', {if (suc > 0) 'sucursalId': suc}),
+        widget.api.get('/rrhh/refrigerio', {'fecha': _fecha}),
       ]);
       _dia = _mapa(r[0]);
       _resumen = _mapa(r[1]);
+      _refri = _mapa(r[2]);
     } catch (e) {
       _error = e.toString();
     }
@@ -614,6 +617,79 @@ class _HoyTabState extends State<_HoyTab> with AutomaticKeepAliveClientMixin {
     } catch (e) {
       if (mounted) _aviso(context, e.toString(), error: true);
     }
+  }
+
+  Future<void> _entregarRefrigerio() async {
+    bool caja = true;
+    final n = _refri['cantidadPendiente'];
+    final total = _refri['totalPendiente'] as num?;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (c, set) => AlertDialog(
+          title: const Text('Entregar refrigerio'),
+          content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('$n persona(s) que asistieron hoy. Total ${_money(total)}.'),
+            const SizedBox(height: 6),
+            for (final i in _lista(_refri['items']).where((i) => i['pagado'] != true)) Text('• ${i['nombre']}  ${_money(i['monto'] as num?)}', style: const TextStyle(fontSize: 13)),
+            SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Sale de la caja de hoy'), value: caja, onChanged: (v) => set(() => caja = v)),
+          ]),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancelar')),
+            FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Entregar')),
+          ],
+        ),
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await widget.api.post('/rrhh/refrigerio/entregar', {
+        'fecha': _fecha, 'desdeCaja': caja, 'usuarioId': widget.api.usuarioId, 'usuarioNombre': widget.api.usuarioNombre,
+        'sucursalId': widget.api.sucursalId > 0 ? widget.api.sucursalId : null,
+      });
+      if (mounted) _aviso(context, 'Refrigerio registrado como gasto de caja');
+      _cargar();
+    } catch (e) {
+      if (mounted) _aviso(context, e.toString(), error: true);
+    }
+  }
+
+  Future<void> _paraTodos(String estado, String nombre) async {
+    if (!await _confirmar(context, '$nombre para todos', 'Se marca "$nombre" el $_fecha a todo el personal que aún no tiene asistencia ese día. ¿Seguro?')) return;
+    try {
+      final r = _mapa(await widget.api.post('/rrhh/asistencia/todos', {'fecha': _fecha, 'estado': estado, 'usuarioId': widget.api.usuarioId}));
+      if (mounted) _aviso(context, 'Listo: ${r['creados']} persona(s) marcadas');
+      _cargar();
+    } catch (e) {
+      if (mounted) _aviso(context, e.toString(), error: true);
+    }
+  }
+
+  Widget _tarjetaRefrigerio() {
+    final conf = (_refri['configurados'] as num?) ?? 0;
+    if (conf == 0) return const SizedBox.shrink();
+    final pend = (_refri['cantidadPendiente'] as num?) ?? 0;
+    final items = _lista(_refri['items']);
+    return Card(
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      color: Colors.orange.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(children: [
+          const Icon(Icons.restaurant, color: Colors.deepOrange),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              pend > 0
+                  ? 'Refrigerio de hoy: $pend persona(s) · ${_money(_refri['totalPendiente'] as num?)}'
+                  : items.isEmpty ? 'Refrigerio: nadie ha asistido aún' : 'Refrigerio de hoy ya entregado ✓',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          if (pend > 0) FilledButton(onPressed: _entregarRefrigerio, child: const Text('Entregar')),
+        ]),
+      ),
+    );
   }
 
   void _detalle(Map item) {
@@ -727,6 +803,15 @@ class _HoyTabState extends State<_HoyTab> with AutomaticKeepAliveClientMixin {
             ]),
           ),
           if (esHoy) _alertas(),
+          _tarjetaRefrigerio(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+            child: Wrap(spacing: 8, children: [
+              ActionChip(avatar: const Icon(Icons.celebration, size: 16), label: const Text('Feriado para todos'), onPressed: () => _paraTodos('FERIADO', 'Feriado')),
+              ActionChip(avatar: const Icon(Icons.weekend, size: 16), label: const Text('Descanso para todos'), onPressed: () => _paraTodos('DESCANSO', 'Descanso')),
+              if (((_resumen['saldoPorPagar'] as num?) ?? 0) > 0) Chip(avatar: const Icon(Icons.account_balance_wallet, size: 16), label: Text('Por pagar al personal: ${_money(_resumen['saldoPorPagar'] as num?)}')),
+            ]),
+          ),
           if (!esHoy)
             Container(
               margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
@@ -950,7 +1035,7 @@ class _PersonalTabState extends State<_PersonalTab> with AutomaticKeepAliveClien
 
   Widget _tarjeta(Map<String, dynamic> t) {
     final pend = (t['adelantosPendientes'] as num?) ?? 0;
-    final porDia = t['vinculo'] == 'POR_DIAS';
+    final porDia = t['vinculo'] == 'POR_DIAS' || t['modalidadPago'] == 'DIARIO';
     return Card(
       margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
       child: ListTile(
@@ -962,10 +1047,11 @@ class _PersonalTabState extends State<_PersonalTab> with AutomaticKeepAliveClien
           '${t['estado'] != 'ACTIVO' ? ' · ${t['estado']}' : ''}',
         ),
         isThreeLine: true,
-        trailing: pend > 0
+        trailing: t['saldo'] != null
             ? Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.end, children: [
-                const Text('Debe', style: TextStyle(fontSize: 11, color: Colors.red)),
-                Text(_money(pend), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+                const Text('Saldo hoy', style: TextStyle(fontSize: 11, color: Colors.black54)),
+                Text(_money(_mapa(t['saldo'])['saldo'] as num?), style: TextStyle(fontWeight: FontWeight.bold, color: (((_mapa(t['saldo'])['saldo'] as num?) ?? 0) >= 0) ? Colors.green.shade800 : Colors.red)),
+                if (pend > 0) Text('debe ${_money(pend)}', style: const TextStyle(fontSize: 10, color: Colors.red)),
               ])
             : const Icon(Icons.chevron_right),
         onTap: () async {
@@ -992,7 +1078,7 @@ class _TrabajadorFormState extends State<_TrabajadorForm> {
   final _f = GlobalKey<FormState>();
   late final Map<String, dynamic> _t = widget.t ?? {};
   late final Map<String, TextEditingController> _c = {
-    for (final k in ['dni', 'nombres', 'apellidos', 'celular', 'cargo', 'sueldoMensual', 'pagoDia', 'hijos', 'banco', 'cuentaBancaria', 'emergenciaNombre', 'emergenciaTelefono', 'domicilio', 'observaciones', 'cuspp'])
+    for (final k in ['dni', 'nombres', 'apellidos', 'celular', 'cargo', 'sueldoMensual', 'pagoDia', 'refrigerioDia', 'hijos', 'banco', 'cuentaBancaria', 'emergenciaNombre', 'emergenciaTelefono', 'domicilio', 'observaciones', 'cuspp'])
       k: TextEditingController(text: (_t[k] == null || (_t[k] is num && _t[k] == 0)) ? '' : _t[k].toString()),
   };
   late String _vinculo = (_t['vinculo'] ?? 'PLANILLA').toString();
@@ -1001,6 +1087,11 @@ class _TrabajadorFormState extends State<_TrabajadorForm> {
   late String _regimen = (_t['regimen'] ?? 'MYPE_PEQUENA').toString();
   late bool _asigFam = _t['asignacionFamiliar'] == true;
   late bool _essalud = _t['essalud'] != false;
+  late String _modalidad = (_t['modalidadPago'] ?? (_vinculo == 'POR_DIAS' ? 'DIARIO' : 'MENSUAL')).toString();
+  late int _diaInicio = (_t['diaInicioPago'] as num?)?.toInt() ?? 1;
+  late int? _diaDescanso = _edita ? (_t['diaDescanso'] as num?)?.toInt() : (_vinculo == 'POR_DIAS' ? null : 0);
+  late bool _pagaDesc = _edita ? _t['pagaDescanso'] != false : _vinculo != 'POR_DIAS';
+  bool get _diario => _vinculo == 'POR_DIAS' || _modalidad == 'DIARIO';
   late String _ingreso = (_t['fechaIngreso'] ?? _hoy()).toString().substring(0, 10);
   String? _nacimiento;
   String? _finContrato;
@@ -1064,8 +1155,13 @@ class _TrabajadorFormState extends State<_TrabajadorForm> {
         'fechaNacimiento': _nacimiento,
         'horaEntrada': _horaEnt,
         'horaSalida': _horaSal,
-        if (_vinculo == 'POR_DIAS') 'pagoDia': double.tryParse(_c['pagoDia']!.text.replaceAll(',', '.')) ?? 0,
-        if (_vinculo != 'POR_DIAS') 'sueldoMensual': double.tryParse(_c['sueldoMensual']!.text.replaceAll(',', '.')) ?? 0,
+        'modalidadPago': _diario ? 'DIARIO' : _modalidad,
+        'diaInicioPago': _diaInicio,
+        'diaDescanso': _diaDescanso ?? 'null',
+        'pagaDescanso': _pagaDesc,
+        'refrigerioDia': double.tryParse(_c['refrigerioDia']!.text.replaceAll(',', '.')) ?? 0,
+        if (_diario) 'pagoDia': double.tryParse(_c['pagoDia']!.text.replaceAll(',', '.')) ?? 0,
+        if (!_diario) 'sueldoMensual': double.tryParse(_c['sueldoMensual']!.text.replaceAll(',', '.')) ?? 0,
         if (_vinculo == 'PLANILLA') ...{
           'pension': _pension,
           'afp': _pension == 'AFP' ? _afp : null,
@@ -1085,6 +1181,77 @@ class _TrabajadorFormState extends State<_TrabajadorForm> {
       if (mounted) _aviso(context, e.toString(), error: true);
     }
     if (mounted) setState(() => _guardando = false);
+  }
+
+  static const _diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+  Widget _seccionPago() {
+    final ayuda = _diario
+        ? 'Cada día que asista se le suma su pago diario. Cuando le pagues, se le paga lo acumulado y se descuentan sus adelantos.'
+        : _modalidad == 'SEMANAL'
+            ? 'Cobra por semana. Se le va sumando sueldo ÷ 30 por cada día asistido.'
+            : _modalidad == 'QUINCENAL'
+                ? 'Cobra cada quincena. Se le va sumando sueldo ÷ 30 por cada día asistido.'
+                : 'Cobra una vez al mes. Se le va sumando sueldo ÷ 30 por cada día asistido (las faltas no suman).';
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(10)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('¿Cómo se le paga?', style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 6),
+        if (_vinculo == 'POR_DIAS')
+          const Text('Por días: se le paga lo que ganó según los días que vino.')
+        else
+          Wrap(spacing: 6, children: [
+            for (final m in const [['MENSUAL', 'Mensual'], ['QUINCENAL', 'Quincenal'], ['SEMANAL', 'Semanal'], ['DIARIO', 'Diario']])
+              ChoiceChip(label: Text(m[1]), selected: _modalidad == m[0], onSelected: (_) => setState(() {
+                    _modalidad = m[0];
+                    if (m[0] == 'SEMANAL') _diaInicio = 1;
+                    if (m[0] != 'SEMANAL' && _diaInicio > 28) _diaInicio = 1;
+                  })),
+          ]),
+        const SizedBox(height: 4),
+        Text(ayuda, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+        const SizedBox(height: 10),
+        if (_diario)
+          _campo('pagoDia', 'Pago por día (S/)', tipo: const TextInputType.numberWithOptions(decimal: true), obligatorio: true)
+        else
+          _campo('sueldoMensual', _vinculo == 'LOCACION' ? 'Pago mensual (S/)' : 'Sueldo mensual (S/)', tipo: const TextInputType.numberWithOptions(decimal: true), obligatorio: true),
+        if (!_diario && _modalidad == 'SEMANAL')
+          DropdownButtonFormField<int>(
+            value: _diaInicio.clamp(1, 7),
+            decoration: const InputDecoration(labelText: 'Su semana empieza el', border: OutlineInputBorder(), isDense: true),
+            items: [for (var i = 1; i <= 7; i++) DropdownMenuItem(value: i, child: Text(_diasSemana[i % 7]))],
+            onChanged: (v) => setState(() => _diaInicio = v ?? 1),
+          )
+        else if (!_diario)
+          DropdownButtonFormField<int>(
+            value: _diaInicio.clamp(1, 28),
+            decoration: const InputDecoration(labelText: 'Su periodo de pago empieza el día…', helperText: 'Ej: si entró el 15, su mes va del 15 al 14', border: OutlineInputBorder(), isDense: true),
+            items: [for (var i = 1; i <= 28; i++) DropdownMenuItem(value: i, child: Text('Día $i de cada mes'))],
+            onChanged: (v) => setState(() => _diaInicio = v ?? 1),
+          ),
+        const SizedBox(height: 10),
+        DropdownButtonFormField<int?>(
+          value: _diaDescanso,
+          decoration: const InputDecoration(labelText: 'Día de descanso semanal', border: OutlineInputBorder(), isDense: true),
+          items: [
+            const DropdownMenuItem<int?>(value: null, child: Text('Ninguno fijo')),
+            for (var i = 0; i < 7; i++) DropdownMenuItem<int?>(value: i, child: Text(_diasSemana[i])),
+          ],
+          onChanged: (v) => setState(() => _diaDescanso = v),
+        ),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Se le paga el día de descanso, feriado y permiso'),
+          subtitle: const Text('Sueldos: sí. Jornaleros: normalmente no.'),
+          value: _pagaDesc,
+          onChanged: (v) => setState(() => _pagaDesc = v),
+        ),
+        _campo('refrigerioDia', 'Refrigerio diario (S/) — déjalo vacío si no le das', tipo: const TextInputType.numberWithOptions(decimal: true)),
+      ]),
+    );
   }
 
   Widget _campo(String k, String label, {TextInputType? tipo, bool obligatorio = false, String? ayuda, int? max}) => Padding(
@@ -1122,7 +1289,12 @@ class _TrabajadorFormState extends State<_TrabajadorForm> {
           const SizedBox(height: 6),
           Wrap(spacing: 6, children: [
             for (final v in const [['PLANILLA', 'En planilla (tiene sueldo y beneficios)'], ['POR_DIAS', 'Por días (viene, trabaja y se va)'], ['LOCACION', 'Recibo por honorarios']])
-              ChoiceChip(label: Text(v[1]), selected: _vinculo == v[0], onSelected: _edita ? null : (_) => setState(() => _vinculo = v[0])),
+              ChoiceChip(label: Text(v[1]), selected: _vinculo == v[0], onSelected: _edita ? null : (_) => setState(() {
+                  _vinculo = v[0];
+                  _modalidad = v[0] == 'POR_DIAS' ? 'DIARIO' : 'MENSUAL';
+                  _pagaDesc = v[0] != 'POR_DIAS';
+                  _diaDescanso = v[0] == 'POR_DIAS' ? null : 0;
+                })),
           ]),
           const SizedBox(height: 14),
           _campo('dni', 'DNI', tipo: TextInputType.number, obligatorio: true, max: 12),
@@ -1130,10 +1302,7 @@ class _TrabajadorFormState extends State<_TrabajadorForm> {
           _campo('apellidos', 'Apellidos', obligatorio: true),
           _campo('celular', 'Celular', tipo: TextInputType.phone),
           _campo('cargo', 'Cargo o función', ayuda: 'Ej: Cajero, Tasador, Limpieza, Seguridad'),
-          if (_vinculo == 'POR_DIAS')
-            _campo('pagoDia', 'Pago por día (S/)', tipo: const TextInputType.numberWithOptions(decimal: true), obligatorio: true)
-          else
-            _campo('sueldoMensual', _vinculo == 'LOCACION' ? 'Pago mensual (S/)' : 'Sueldo mensual (S/)', tipo: const TextInputType.numberWithOptions(decimal: true), obligatorio: true),
+          _seccionPago(),
           _fechaBtn('Fecha de ingreso', _ingreso, (v) => _ingreso = v ?? _ingreso),
           _fechaBtn('Fecha de nacimiento', _nacimiento, (v) => _nacimiento = v),
           if (!_edita && _vinculo != 'POR_DIAS')
@@ -1224,6 +1393,7 @@ class _FichaPageState extends State<_FichaPage> {
   String? _error;
   String _mesAsis = _mesActual();
   Map<String, dynamic>? _asis;
+  Map<String, dynamic> _saldo = {};
 
   Map<String, dynamic> get _t => _mapa(_d['trabajador']);
 
@@ -1241,6 +1411,7 @@ class _FichaPageState extends State<_FichaPage> {
     try {
       _d = _mapa(await widget.api.get('/rrhh/trabajadores/${widget.id}'));
       _asis = _mapa(await widget.api.get('/rrhh/asistencia/trabajador/${widget.id}', {'periodo': _mesAsis}));
+      _saldo = _mapa(await widget.api.get('/rrhh/saldo/${widget.id}'));
     } catch (e) {
       _error = e.toString();
     }
@@ -1364,7 +1535,7 @@ class _FichaPageState extends State<_FichaPage> {
   Widget _cuerpo() {
     final t = _t;
     final cesado = t['estado'] == 'CESADO';
-    final porDia = t['vinculo'] == 'POR_DIAS';
+    final porDia = t['vinculo'] == 'POR_DIAS' || t['modalidadPago'] == 'DIARIO';
     final vac = _mapa(_d['vacaciones']);
     final contratos = _lista(_d['contratos']);
     final docs = _lista(_d['documentos']);
@@ -1416,7 +1587,9 @@ class _FichaPageState extends State<_FichaPage> {
             FilledButton.icon(onPressed: _reingresar, icon: const Icon(Icons.replay), label: const Text('Volver a contratar')),
         ]),
       ),
+      if (!cesado) _tarjetaSaldo(porDia),
       _seccion('Resumen', icono: Icons.summarize, children: [
+        _dato('Forma de pago', '${{'MENSUAL': 'Mensual', 'QUINCENAL': 'Quincenal', 'SEMANAL': 'Semanal', 'DIARIO': 'Diario'}[t['modalidadPago']] ?? ''}${((t['refrigerioDia'] as num?) ?? 0) > 0 ? ' · refrigerio ${_money(t['refrigerioDia'] as num?)}/día' : ''}'),
         _dato(porDia ? 'Pago por día' : 'Sueldo mensual', _money(porDia ? t['pagoDia'] : t['sueldoMensual'])),
         if (t['vinculo'] == 'PLANILLA') ...[
           _dato('Pensión', t['pension'] == 'AFP' ? 'AFP ${t['afp'] ?? ''}' : t['pension'] == 'ONP' ? 'ONP' : 'Sin registrar'),
@@ -1546,6 +1719,49 @@ class _FichaPageState extends State<_FichaPage> {
     ]);
   }
 
+  Widget _tarjetaSaldo(bool porDia) {
+    final s = _saldo;
+    if (s.isEmpty) return const SizedBox.shrink();
+    final saldo = (s['saldo'] as num?) ?? 0;
+    final modal = {'MENSUAL': 'del mes', 'QUINCENAL': 'de la quincena', 'SEMANAL': 'de la semana', 'DIARIO': 'por pagar'}[s['modalidad']] ?? '';
+    return Card(
+      margin: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+      color: saldo > 0 ? Colors.green.shade50 : Colors.amber.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('SALDO HOY $modal'.toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black54)),
+          Text(_money(saldo), style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: saldo >= 0 ? Colors.green.shade800 : Colors.red)),
+          if (s['modalidad'] != 'DIARIO') Text('Periodo: ${s['desde']} al ${s['hasta']}', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+          const Divider(height: 18),
+          _lineaMonto('${s['diasPagables']} día(s) asistidos/pagables × ${_money(s['tarifaDia'] as num?)}', s['ganado'] as num?),
+          if (((s['pagado'] as num?) ?? 0) > 0) _lineaMonto('Ya pagado en este periodo', -((s['pagado'] as num?) ?? 0)),
+          if (((s['adelantos'] as num?) ?? 0) > 0) _lineaMonto('Adelantos que debe', -((s['adelantos'] as num?) ?? 0), rojo: true),
+          if (((s['faltas'] as num?) ?? 0) > 0) Text('Faltas: ${s['faltas']} (no suman)', style: const TextStyle(fontSize: 12, color: Colors.red)),
+          if (((s['sinMarcar'] as num?) ?? 0) > 0) Text('Hay ${s['sinMarcar']} día(s) sin marcar asistencia: no se están sumando.', style: const TextStyle(fontSize: 12, color: Colors.deepOrange)),
+          if (((s['refrigerioMes'] as num?) ?? 0) > 0) Text('Refrigerio entregado este mes: ${_money(s['refrigerioMes'] as num?)}', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+          const SizedBox(height: 8),
+          if (saldo > 0)
+            FilledButton.icon(
+              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(46)),
+              onPressed: () async {
+                final ok = await showModalBottomSheet<bool>(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (_) => porDia
+                      ? _JornalSheet(api: widget.api, trabajador: _t)
+                      : _PagoSheet(api: widget.api, trabajador: _t, tipoInicial: 'SUELDO', montoInicial: saldo.toDouble(), conceptoInicial: 'Pago del periodo ${s['desde']} al ${s['hasta']}'),
+                );
+                if (ok == true) _cargar();
+              },
+              icon: const Icon(Icons.payments),
+              label: Text('Pagar ${_money(saldo)}'),
+            ),
+        ]),
+      ),
+    );
+  }
+
   Widget _dato(String k, String v, {bool rojo = false}) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 3),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1559,17 +1775,19 @@ class _FichaPageState extends State<_FichaPage> {
 // HOJA: registrar un pago / adelanto (con foto del recibo)
 // ===========================================================================
 class _PagoSheet extends StatefulWidget {
-  const _PagoSheet({required this.api, required this.trabajador, this.tipoInicial = 'ADELANTO'});
+  const _PagoSheet({required this.api, required this.trabajador, this.tipoInicial = 'ADELANTO', this.montoInicial, this.conceptoInicial});
   final _Api api;
   final Map<String, dynamic> trabajador;
   final String tipoInicial;
+  final double? montoInicial;
+  final String? conceptoInicial;
   @override
   State<_PagoSheet> createState() => _PagoSheetState();
 }
 
 class _PagoSheetState extends State<_PagoSheet> {
-  final _monto = TextEditingController();
-  final _concepto = TextEditingController();
+  late final _monto = TextEditingController(text: widget.montoInicial == null ? '' : widget.montoInicial!.toStringAsFixed(2));
+  late final _concepto = TextEditingController(text: widget.conceptoInicial ?? '');
   late String _tipo = widget.tipoInicial == 'JORNAL' ? 'ADELANTO' : widget.tipoInicial;
   bool _caja = true;
   String? _fotoPath;
@@ -1600,6 +1818,10 @@ class _PagoSheetState extends State<_PagoSheet> {
       return;
     }
     final concepto = _tipo == 'BONO' || _tipo == 'DESCUENTO';
+    if ((_tipo == 'ADELANTO' || _tipo == 'PRESTAMO') && _concepto.text.trim().length < 3) {
+      _aviso(context, 'Escribe para qué es el adelanto (así después te acuerdas)', error: true);
+      return;
+    }
     if (!concepto && _fotoPath == null) {
       _aviso(context, 'Toma una foto del recibo firmado o del trabajador recibiendo el dinero', error: true);
       return;
@@ -1642,7 +1864,7 @@ class _PagoSheetState extends State<_PagoSheet> {
   @override
   Widget build(BuildContext context) {
     final t = widget.trabajador;
-    final porDia = t['vinculo'] == 'POR_DIAS';
+    final porDia = t['vinculo'] == 'POR_DIAS' || t['modalidadPago'] == 'DIARIO';
     final tipos = porDia ? ['ADELANTO', 'BONO', 'DESCUENTO'] : ['ADELANTO', 'PRESTAMO', 'QUINCENA', 'SUELDO', 'VACACIONES', 'BONO', 'DESCUENTO'];
     final concepto = _tipo == 'BONO' || _tipo == 'DESCUENTO';
     return Padding(
@@ -1666,7 +1888,16 @@ class _PagoSheetState extends State<_PagoSheet> {
             decoration: const InputDecoration(prefixText: 'S/ ', labelText: 'Monto', border: OutlineInputBorder()),
           ),
           const SizedBox(height: 10),
-          TextField(controller: _concepto, decoration: const InputDecoration(labelText: 'Motivo o nota (opcional)', border: OutlineInputBorder(), isDense: true)),
+          TextField(
+            controller: _concepto,
+            maxLines: 2,
+            decoration: InputDecoration(
+              labelText: (_tipo == 'ADELANTO' || _tipo == 'PRESTAMO') ? '¿Para qué es? (obligatorio)' : 'Observación (opcional)',
+              hintText: 'Ej: para pagar el alquiler, para medicinas…',
+              border: const OutlineInputBorder(),
+              isDense: true,
+            ),
+          ),
           if (!concepto) ...[
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
@@ -2319,6 +2550,8 @@ class _PagosTab extends StatefulWidget {
 class _PagosTabState extends State<_PagosTab> with AutomaticKeepAliveClientMixin {
   String _mes = _mesActual();
   List<Map<String, dynamic>> _pagos = [];
+  Map<String, dynamic> _hist = {};
+  int? _filtroT;
   bool _cargando = true;
   String? _error;
 
@@ -2337,7 +2570,8 @@ class _PagosTabState extends State<_PagosTab> with AutomaticKeepAliveClientMixin
       _error = null;
     });
     try {
-      _pagos = _lista(await widget.api.get('/rrhh/pagos', {'periodo': _mes}));
+      _hist = _mapa(await widget.api.get('/rrhh/historial', {'periodo': _mes}));
+      _pagos = _lista(_hist['pagos']);
     } catch (e) {
       _error = e.toString();
     }
@@ -2370,8 +2604,10 @@ class _PagosTabState extends State<_PagosTab> with AutomaticKeepAliveClientMixin
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final validos = _pagos.where((p) => p['estado'] != 'ANULADO' && p['tipo'] != 'BONO' && p['tipo'] != 'DESCUENTO');
-    final total = validos.fold<num>(0, (a, p) => a + ((p['monto'] as num?) ?? 0));
+    final total = (_hist['total'] as num?) ?? 0;
+    final porTipo = _mapa(_hist['porTipo']);
+    final porT = _lista(_hist['porTrabajador']);
+    final lista = _filtroT == null ? _pagos : _pagos.where((p) => p['trabajadorId'] == _filtroT).toList();
     return RefreshIndicator(
       onRefresh: _cargar,
       child: ListView(padding: const EdgeInsets.only(bottom: 40), children: [
@@ -2391,11 +2627,35 @@ class _PagosTabState extends State<_PagosTab> with AutomaticKeepAliveClientMixin
             IconButton(icon: const Icon(Icons.chevron_right), onPressed: _mes == _mesActual() ? null : () { _mes = _mesMas(_mes, 1); _cargar(); }),
           ]),
         ),
-        Center(child: Text('Pagado en el mes: ${_money(total)}', style: const TextStyle(fontSize: 15, color: Colors.black54))),
-        if (_cargando) _esperaW() else if (_error != null) _errorBox(_error!, _cargar) else if (_pagos.isEmpty)
+        if (!_cargando && _error == null)
+          _seccion('Lo que salió en ${_mesTexto(_mes)}', icono: Icons.insights, children: [
+            Text(_money(total), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+            Text('De caja: ${_money(_hist['deCaja'] as num?)}   ·   Fuera de caja: ${_money(total - ((_hist['deCaja'] as num?) ?? 0))}', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+            const SizedBox(height: 6),
+            Wrap(spacing: 6, runSpacing: 0, children: [
+              for (final e in porTipo.entries) Chip(visualDensity: VisualDensity.compact, label: Text('${{'ADELANTO': 'Adelantos', 'PRESTAMO': 'Préstamos', 'QUINCENA': 'Quincenas', 'SUELDO': 'Sueldos', 'JORNAL': 'Jornales', 'REFRIGERIO': 'Refrigerio', 'GRATIFICACION': 'Gratificación', 'CTS': 'CTS', 'VACACIONES': 'Vacaciones', 'LIQUIDACION': 'Liquidaciones'}[e.key] ?? e.key}: ${_money(e.value as num?)}', style: const TextStyle(fontSize: 12))),
+            ]),
+            if (porT.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              const Text('Por trabajador (toca para filtrar)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              for (final f in porT)
+                InkWell(
+                  onTap: () => setState(() => _filtroT = _filtroT == f['id'] ? null : f['id'] as int),
+                  child: Container(
+                    color: _filtroT == f['id'] ? Colors.blue.shade50 : null,
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(children: [
+                      Expanded(child: Text('${f['nombre']}', style: const TextStyle(fontSize: 13))),
+                      Text('${_money(f['total'] as num?)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    ]),
+                  ),
+                ),
+            ],
+          ]),
+        if (_cargando) _esperaW() else if (_error != null) _errorBox(_error!, _cargar) else if (lista.isEmpty)
           const Padding(padding: EdgeInsets.all(30), child: Center(child: Text('No hay pagos en este mes')))
         else
-          for (final p in _pagos)
+          for (final p in lista)
             Card(
               margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
               child: ListTile(
@@ -2799,10 +3059,11 @@ class _AjustesTabState extends State<_AjustesTab> with AutomaticKeepAliveClientM
       _seccion('¿Cómo se usa? (guía rápida)', icono: Icons.help_outline, children: const [
         Text('1. PERSONAL: agrega a cada trabajador (DNI, sueldo, ONP/AFP). Guarda su contrato y documentos.\n'
             '2. HOY: cada día toma la foto de entrada y de salida. Si no vino, márcalo "Faltó". Para personal por días, igual: entrada y salida con foto.\n'
-            '3. PAGOS: para dar un adelanto toma la foto de la entrega y haz que el trabajador FIRME con el dedo en la pantalla; queda un recibo de entrega que se puede imprimir. Para el personal por días usa "Pagar días": suma los días y descuenta sus adelantos.\n'
+            '3. PAGOS: para dar un adelanto escribe para qué es, toma la foto de la entrega y haz que el trabajador FIRME con el dedo en la pantalla; queda un recibo de entrega que se puede imprimir. Para el personal por días usa "Pagar días": suma los días y descuenta sus adelantos.\n'
             '4. PLANILLA: a fin de mes toca "Calcular" → "Generar boleta" → "Pagar". Los adelantos y las faltas se descuentan solos.\n'
-            '5. Julio y diciembre: gratificación. Mayo y noviembre: CTS.\n'
-            '6. Si alguien se va: en su ficha "Renuncia / salida". Se calcula lo que se le debe.\n\n'
+            '5. SALDO: en la ficha de cada trabajador ves cuánto lleva ganado según su asistencia. Toca "Pagar" y el dinero sale de caja como gasto. El refrigerio diario se entrega desde la pestaña Hoy.\n'
+            '6. Julio y diciembre: gratificación. Mayo y noviembre: CTS.\n'
+            '7. Si alguien se va: en su ficha "Renuncia / salida". Se calcula lo que se le debe.\n\n'
             'Nada se borra: todo queda guardado con fecha y quién lo hizo.', style: TextStyle(fontSize: 13)),
       ]),
       _seccion('Horario general', icono: Icons.schedule, children: [
