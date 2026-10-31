@@ -314,21 +314,41 @@ Widget _errorBox(String msg, VoidCallback reintentar) => Center(
       ),
     );
 
-Widget _seccion(String titulo, {List<Widget> children = const [], Widget? accion, IconData? icono}) => Card(
+Widget _seccion(String titulo, {List<Widget> children = const [], Widget? accion, IconData? icono, bool plegable = false, bool abierta = true}) {
+  final tituloW = Row(children: [
+    if (icono != null) Padding(padding: const EdgeInsets.only(right: 8), child: Icon(icono, size: 20, color: Colors.blueGrey)),
+    Expanded(child: Text(titulo, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold))),
+  ]);
+  if (!plegable) {
+    return Card(
       margin: const EdgeInsets.fromLTRB(12, 6, 12, 6),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            if (icono != null) Padding(padding: const EdgeInsets.only(right: 8), child: Icon(icono, size: 20, color: Colors.blueGrey)),
-            Expanded(child: Text(titulo, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold))),
-            if (accion != null) accion,
-          ]),
+          Row(children: [Expanded(child: tituloW), if (accion != null) accion]),
           const SizedBox(height: 6),
           ...children,
         ]),
       ),
     );
+  }
+  return Card(
+    margin: const EdgeInsets.fromLTRB(12, 6, 12, 6),
+    child: Builder(
+      builder: (c) => Theme(
+        data: Theme.of(c).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: abierta,
+          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+          childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          expandedCrossAxisAlignment: CrossAxisAlignment.start,
+          title: tituloW,
+          children: [if (accion != null) Align(alignment: Alignment.centerRight, child: accion), ...children],
+        ),
+      ),
+    ),
+  );
+}
 
 Future<String?> _pickFecha(BuildContext c, {String? inicial, DateTime? min, DateTime? max}) async {
   final ini = DateTime.tryParse(inicial ?? '') ?? DateTime.now();
@@ -485,7 +505,7 @@ class _RrhhViewState extends State<RrhhView> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 5,
+      length: 6,
       child: Column(children: [
         Container(
           color: Colors.blueGrey.shade50,
@@ -497,6 +517,7 @@ class _RrhhViewState extends State<RrhhView> {
               Tab(icon: Icon(Icons.badge), text: 'Personal'),
               Tab(icon: Icon(Icons.payments), text: 'Pagos'),
               Tab(icon: Icon(Icons.receipt_long), text: 'Planilla'),
+              Tab(icon: Icon(Icons.person_search), text: 'Postulantes'),
               Tab(icon: Icon(Icons.settings), text: 'Ajustes'),
             ],
           ),
@@ -509,6 +530,7 @@ class _RrhhViewState extends State<RrhhView> {
               _PersonalTab(api: _api),
               _PagosTab(api: _api),
               _PlanillaTab(api: _api),
+              _PostulantesTab(api: _api),
               _AjustesTab(api: _api),
             ],
           ),
@@ -802,6 +824,17 @@ class _HoyTabState extends State<_HoyTab> with AutomaticKeepAliveClientMixin {
               if (esHoy) _chip('Sin salida', res['sinSalida'], Colors.purple),
             ]),
           ),
+          if (_dia['feriado'] != null)
+            Container(
+              margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: Colors.indigo.shade50, borderRadius: BorderRadius.circular(8)),
+              child: Row(children: [
+                const Icon(Icons.celebration, color: Colors.indigo),
+                const SizedBox(width: 8),
+                Expanded(child: Text('FERIADO: ${_dia['feriado']}. En planilla se paga el día completo; quien trabaje cobra extra.', style: const TextStyle(fontSize: 13))),
+              ]),
+            ),
           if (esHoy) _alertas(),
           _tarjetaRefrigerio(),
           Padding(
@@ -1067,18 +1100,19 @@ class _PersonalTabState extends State<_PersonalTab> with AutomaticKeepAliveClien
 // FORMULARIO: agregar / editar trabajador
 // ===========================================================================
 class _TrabajadorForm extends StatefulWidget {
-  const _TrabajadorForm({required this.api, this.t});
+  const _TrabajadorForm({required this.api, this.t, this.prefill});
   final _Api api;
   final Map<String, dynamic>? t;
+  final Map<String, dynamic>? prefill;
   @override
   State<_TrabajadorForm> createState() => _TrabajadorFormState();
 }
 
 class _TrabajadorFormState extends State<_TrabajadorForm> {
   final _f = GlobalKey<FormState>();
-  late final Map<String, dynamic> _t = widget.t ?? {};
+  late final Map<String, dynamic> _t = widget.t ?? widget.prefill ?? {};
   late final Map<String, TextEditingController> _c = {
-    for (final k in ['dni', 'nombres', 'apellidos', 'celular', 'cargo', 'sueldoMensual', 'pagoDia', 'refrigerioDia', 'hijos', 'banco', 'cuentaBancaria', 'emergenciaNombre', 'emergenciaTelefono', 'domicilio', 'observaciones', 'cuspp'])
+    for (final k in ['dni', 'nombres', 'apellidos', 'celular', 'cargo', 'sueldoMensual', 'pagoDia', 'refrigerioDia', 'vacacionesDiasAnio', 'valorHoraExtra', 'hijos', 'banco', 'cuentaBancaria', 'emergenciaNombre', 'emergenciaTelefono', 'domicilio', 'observaciones', 'cuspp'])
       k: TextEditingController(text: (_t[k] == null || (_t[k] is num && _t[k] == 0)) ? '' : _t[k].toString()),
   };
   late String _vinculo = (_t['vinculo'] ?? 'PLANILLA').toString();
@@ -1160,6 +1194,8 @@ class _TrabajadorFormState extends State<_TrabajadorForm> {
         'diaDescanso': _diaDescanso ?? 'null',
         'pagaDescanso': _pagaDesc,
         'refrigerioDia': double.tryParse(_c['refrigerioDia']!.text.replaceAll(',', '.')) ?? 0,
+        'valorHoraExtra': double.tryParse(_c['valorHoraExtra']!.text.replaceAll(',', '.')) ?? 'null',
+        'vacacionesDiasAnio': int.tryParse(_c['vacacionesDiasAnio']!.text) ?? 'null',
         if (_diario) 'pagoDia': double.tryParse(_c['pagoDia']!.text.replaceAll(',', '.')) ?? 0,
         if (!_diario) 'sueldoMensual': double.tryParse(_c['sueldoMensual']!.text.replaceAll(',', '.')) ?? 0,
         if (_vinculo == 'PLANILLA') ...{
@@ -1250,6 +1286,8 @@ class _TrabajadorFormState extends State<_TrabajadorForm> {
           onChanged: (v) => setState(() => _pagaDesc = v),
         ),
         _campo('refrigerioDia', 'Refrigerio diario (S/) — déjalo vacío si no le das', tipo: const TextInputType.numberWithOptions(decimal: true)),
+        _campo('valorHoraExtra', 'Pago por hora extra (S/) — vacío = automático', tipo: const TextInputType.numberWithOptions(decimal: true), ayuda: 'Automático: sube 25% las 2 primeras horas y 35% las demás. Si pones un monto, se paga ese monto por hora.'),
+        if (_vinculo == 'PLANILLA') _campo('vacacionesDiasAnio', 'Vacaciones al año (días) — vacío = según ley', tipo: TextInputType.number, ayuda: 'Ej: 30 si le das un mes completo. Se pueden tomar partidas (15 y 15).'),
       ]),
     );
   }
@@ -1303,7 +1341,7 @@ class _TrabajadorFormState extends State<_TrabajadorForm> {
           _campo('celular', 'Celular', tipo: TextInputType.phone),
           _campo('cargo', 'Cargo o función', ayuda: 'Ej: Cajero, Tasador, Limpieza, Seguridad'),
           _seccionPago(),
-          _fechaBtn('Fecha de ingreso', _ingreso, (v) => _ingreso = v ?? _ingreso),
+          _fechaBtn('Ingresó a trabajar el (desde aquí cuentan sus beneficios)', _ingreso, (v) => _ingreso = v ?? _ingreso),
           _fechaBtn('Fecha de nacimiento', _nacimiento, (v) => _nacimiento = v),
           if (!_edita && _vinculo != 'POR_DIAS')
             _fechaBtn('Contrato termina el (déjalo vacío si es indefinido)', _finContrato, (v) => _finContrato = v),
@@ -1394,6 +1432,7 @@ class _FichaPageState extends State<_FichaPage> {
   String _mesAsis = _mesActual();
   Map<String, dynamic>? _asis;
   Map<String, dynamic> _saldo = {};
+  List<Map<String, dynamic>> _heLista = [];
 
   Map<String, dynamic> get _t => _mapa(_d['trabajador']);
 
@@ -1412,6 +1451,7 @@ class _FichaPageState extends State<_FichaPage> {
       _d = _mapa(await widget.api.get('/rrhh/trabajadores/${widget.id}'));
       _asis = _mapa(await widget.api.get('/rrhh/asistencia/trabajador/${widget.id}', {'periodo': _mesAsis}));
       _saldo = _mapa(await widget.api.get('/rrhh/saldo/${widget.id}'));
+      _heLista = _lista(await widget.api.get('/rrhh/horas-extra', {'trabajadorId': widget.id, 'periodo': _mesActual()}));
     } catch (e) {
       _error = e.toString();
     }
@@ -1435,9 +1475,35 @@ class _FichaPageState extends State<_FichaPage> {
       isScrollControlled: true,
       builder: (_) => tipo == 'JORNAL'
           ? _JornalSheet(api: widget.api, trabajador: _t)
-          : _PagoSheet(api: widget.api, trabajador: _t, tipoInicial: tipo),
+          : _PagoSheet(api: widget.api, trabajador: _t, tipoInicial: tipo, valorHora: (_saldo['valorHora'] as num?)?.toDouble(), tarifaDia: (_saldo['tarifaDia'] as num?)?.toDouble()),
     );
     if (ok == true) _cargar();
+  }
+
+  Future<void> _horaExtra() async {
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _HoraExtraSheet(api: widget.api, trabajador: _t),
+    );
+    if (ok == true) _cargar();
+  }
+
+  Future<void> _registrarVacaciones(Map vac) async {
+    final desde = await _pickFecha(context, inicial: _hoy());
+    if (desde == null || !mounted) return;
+    final d = await _pedirTexto(context, '¿Cuántos días de vacaciones desde el $desde?', hint: 'Ej: 15', tipo: TextInputType.number);
+    final dias = int.tryParse(d ?? '');
+    if (dias == null || dias <= 0 || !mounted) return;
+    final saldo = (vac['saldo'] as num?) ?? 0;
+    if (dias > saldo && !await _confirmar(context, 'Más días que su saldo', 'Le quedan ${saldo} día(s) ganados y vas a registrar $dias. ¿Seguro? (por ejemplo, si le adelantas vacaciones)')) return;
+    try {
+      await widget.api.post('/rrhh/asistencia/manual', {'trabajadorId': widget.id, 'estado': 'VACACIONES', 'fecha': desde, 'dias': dias, 'nota': 'Vacaciones', 'usuarioId': widget.api.usuarioId});
+      if (mounted) _aviso(context, 'Vacaciones registradas: $dias día(s) desde el $desde. Se le siguen pagando.');
+      _cargar();
+    } catch (e) {
+      if (mounted) _aviso(context, e.toString(), error: true);
+    }
   }
 
   Future<void> _nuevoContrato() async {
@@ -1573,6 +1639,8 @@ class _FichaPageState extends State<_FichaPage> {
         child: Wrap(spacing: 8, runSpacing: 6, children: [
           if (!cesado) ...[
             FilledButton.icon(onPressed: () => _pago('ADELANTO'), icon: const Icon(Icons.price_change, size: 18), label: const Text('Dar adelanto')),
+            FilledButton.tonalIcon(onPressed: _horaExtra, icon: const Icon(Icons.more_time, size: 18), label: const Text('Horas extra')),
+            OutlinedButton.icon(onPressed: () => _pago('DESCUENTO'), icon: const Icon(Icons.remove_circle_outline, size: 18), label: const Text('Descuento / bono')),
             OutlinedButton.icon(onPressed: () => _pago(porDia ? 'JORNAL' : 'SUELDO'), icon: const Icon(Icons.payments, size: 18), label: Text(porDia ? 'Pagar días' : 'Otro pago')),
             OutlinedButton.icon(
               style: OutlinedButton.styleFrom(foregroundColor: Colors.red.shade700),
@@ -1588,7 +1656,7 @@ class _FichaPageState extends State<_FichaPage> {
         ]),
       ),
       if (!cesado) _tarjetaSaldo(porDia),
-      _seccion('Resumen', icono: Icons.summarize, children: [
+      _seccion('Resumen', icono: Icons.summarize, plegable: true, abierta: false, children: [
         _dato('Forma de pago', '${{'MENSUAL': 'Mensual', 'QUINCENAL': 'Quincenal', 'SEMANAL': 'Semanal', 'DIARIO': 'Diario'}[t['modalidadPago']] ?? ''}${((t['refrigerioDia'] as num?) ?? 0) > 0 ? ' · refrigerio ${_money(t['refrigerioDia'] as num?)}/día' : ''}'),
         _dato(porDia ? 'Pago por día' : 'Sueldo mensual', _money(porDia ? t['pagoDia'] : t['sueldoMensual'])),
         if (t['vinculo'] == 'PLANILLA') ...[
@@ -1614,7 +1682,7 @@ class _FichaPageState extends State<_FichaPage> {
             ),
           const Text('Se descuentan solos al generar la boleta o al pagar los días.', style: TextStyle(fontSize: 12, color: Colors.black54)),
         ]),
-      _seccion('Contratos', icono: Icons.description, accion: TextButton.icon(onPressed: cesado ? null : _nuevoContrato, icon: const Icon(Icons.add), label: const Text('Nuevo / renovar')), children: [
+      _seccion('Contratos', icono: Icons.description, plegable: true, abierta: false, accion: TextButton.icon(onPressed: cesado ? null : _nuevoContrato, icon: const Icon(Icons.add), label: const Text('Nuevo / renovar')), children: [
         if (contratos.isEmpty) const Text('Sin contratos'),
         for (final c in contratos)
           ListTile(
@@ -1637,7 +1705,19 @@ class _FichaPageState extends State<_FichaPage> {
             ]),
           ),
       ]),
-      _seccion('Archivo del trabajador', icono: Icons.folder_shared, accion: TextButton.icon(onPressed: _agregarDoc, icon: const Icon(Icons.add_a_photo), label: const Text('Guardar')), children: [
+      _seccion('Archivo del trabajador', icono: Icons.folder_shared, plegable: true, abierta: false, accion: TextButton.icon(onPressed: _agregarDoc, icon: const Icon(Icons.add_a_photo), label: const Text('Guardar')), children: [
+        Builder(builder: (_) {
+          const req = {'DNI': 'DNI', 'CONTRATO': 'Contrato firmado', 'ANTECEDENTES': 'Antecedentes', 'CV': 'Currículum'};
+          final tiene = docs.map((d) => d['tipo']).toSet();
+          final faltan = req.entries.where((e) => !tiene.contains(e.key)).map((e) => e.value).toList();
+          return Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: faltan.isEmpty ? Colors.green.shade50 : Colors.amber.shade50, borderRadius: BorderRadius.circular(8)),
+            child: Text(faltan.isEmpty ? 'Expediente completo ✓' : 'Faltan en su expediente: ${faltan.join(', ')}', style: const TextStyle(fontSize: 13)),
+          );
+        }),
         if (docs.isEmpty) const Text('Aquí guardas el DNI, contrato firmado, CV, renuncia, memos… Toca "Guardar" y toma la foto.'),
         for (final d in docs)
           ListTile(
@@ -1657,7 +1737,7 @@ class _FichaPageState extends State<_FichaPage> {
             ),
           ),
       ]),
-      _seccion('Asistencia de ${_mesTexto(_mesAsis)}', icono: Icons.event_available, accion: Row(mainAxisSize: MainAxisSize.min, children: [
+      _seccion('Asistencia de ${_mesTexto(_mesAsis)}', icono: Icons.event_available, plegable: true, abierta: false, accion: Row(mainAxisSize: MainAxisSize.min, children: [
         IconButton(visualDensity: VisualDensity.compact, icon: const Icon(Icons.chevron_left), onPressed: () { _mesAsis = _mesMas(_mesAsis, -1); _cargar(); }),
         IconButton(visualDensity: VisualDensity.compact, icon: const Icon(Icons.chevron_right), onPressed: _mesAsis == _mesActual() ? null : () { _mesAsis = _mesMas(_mesAsis, 1); _cargar(); }),
       ]), children: [
@@ -1677,7 +1757,44 @@ class _FichaPageState extends State<_FichaPage> {
             onTap: a['fotoEntrada'] != null ? () => _verArchivo(context, a['fotoEntrada'].toString(), titulo: 'Entrada ${a['fecha']}') : null,
           ),
       ]),
-      _seccion('Boletas y beneficios', icono: Icons.receipt_long, children: [
+      if (_heLista.where((h) => h['estado'] != 'ANULADA').isNotEmpty)
+        _seccion('Horas extra de este mes', icono: Icons.more_time, children: [
+          for (final h in _heLista.where((h) => h['estado'] != 'ANULADA'))
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              title: Text('${h['fecha']} · ${h['horas']} h · ${_money(h['monto'] as num?)}'),
+              subtitle: Text('${h['detalle'] ?? ''}${h['nota'] != null ? '\n${h['nota']}' : ''}${h['pagada'] == true ? '\n(ya pagadas)' : ''}'),
+              trailing: h['pagada'] == true
+                  ? const Icon(Icons.check_circle, color: Colors.green)
+                  : IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () async {
+                        if (!await _confirmar(context, 'Anular horas extra', '¿Anular estas horas extra?', si: 'Sí, anular', color: Colors.red)) return;
+                        try {
+                          await widget.api.post('/rrhh/horas-extra/${h['id']}/anular', {});
+                          _cargar();
+                        } catch (e) {
+                          if (mounted) _aviso(context, e.toString(), error: true);
+                        }
+                      },
+                    ),
+            ),
+        ]),
+      if (vac['aplica'] == true)
+        _seccion('Vacaciones', icono: Icons.beach_access, plegable: true, abierta: false, accion: TextButton.icon(onPressed: cesado ? null : () => _registrarVacaciones(vac), icon: const Icon(Icons.add), label: const Text('Registrar vacaciones')), children: [
+          _dato('Le corresponden', '${vac['diasPorAnio']} días al año ${vac['personalizado'] == true ? '(configurado por ti)' : '(según la ley)'}'),
+          _dato('Ganados hasta hoy', '${vac['ganados']} días'),
+          _dato('Ya tomados', '${vac['tomados']} días'),
+          _dato('Saldo', '${vac['saldo']} días', rojo: false),
+          _dato('Próximo aniversario', '${vac['proximoAniversario']}'),
+          const SizedBox(height: 4),
+          if (_lista(vac['periodos']).isEmpty) const Text('Aún no tomó vacaciones. Puedes registrarlas partidas (ej: 15 días ahora y 15 después).', style: TextStyle(fontSize: 12, color: Colors.black54)),
+          for (final p in _lista(vac['periodos'])) Text('• Del ${p['desde']} al ${p['hasta']} (${p['dias']} días)', style: const TextStyle(fontSize: 13)),
+          const SizedBox(height: 4),
+          const Text('Durante sus vacaciones se le sigue pagando su sueldo normal.', style: TextStyle(fontSize: 12, color: Colors.black54)),
+        ]),
+      _seccion('Boletas y beneficios', icono: Icons.receipt_long, plegable: true, abierta: false, children: [
         if (boletas.isEmpty) const Text('Todavía no hay boletas'),
         for (final b in boletas)
           ListTile(
@@ -1705,7 +1822,7 @@ class _FichaPageState extends State<_FichaPage> {
           ),
       ]),
       if (ceses.isNotEmpty)
-        _seccion('Salidas anteriores', icono: Icons.exit_to_app, children: [
+        _seccion('Salidas anteriores', icono: Icons.exit_to_app, plegable: true, abierta: false, children: [
           for (final c in ceses)
             ListTile(
               dense: true,
@@ -1735,6 +1852,11 @@ class _FichaPageState extends State<_FichaPage> {
           if (s['modalidad'] != 'DIARIO') Text('Periodo: ${s['desde']} al ${s['hasta']}', style: const TextStyle(fontSize: 12, color: Colors.black54)),
           const Divider(height: 18),
           _lineaMonto('${s['diasPagables']} día(s) asistidos/pagables × ${_money(s['tarifaDia'] as num?)}', s['ganado'] as num?),
+          if (((s['extraFeriados'] as num?) ?? 0) > 0) _lineaMonto('Feriados trabajados (${s['feriadosTrabajados']}) · pago extra', s['extraFeriados'] as num?),
+          if (((s['horasExtra'] as num?) ?? 0) > 0) _lineaMonto('Horas extra (${s['horasExtraN']} h)', s['horasExtra'] as num?),
+          if (((s['bonos'] as num?) ?? 0) > 0) _lineaMonto('Bonos', s['bonos'] as num?),
+          if (((s['descuentos'] as num?) ?? 0) > 0) _lineaMonto('Descuentos (faltas, horas, daños…)', -((s['descuentos'] as num?) ?? 0), rojo: true),
+          if (((s['feriadosPagados'] as num?) ?? 0) > 0) Text('Incluye ${s['feriadosPagados']} feriado(s) pagado(s) por ser planilla', style: const TextStyle(fontSize: 12, color: Colors.black54)),
           if (((s['pagado'] as num?) ?? 0) > 0) _lineaMonto('Ya pagado en este periodo', -((s['pagado'] as num?) ?? 0)),
           if (((s['adelantos'] as num?) ?? 0) > 0) _lineaMonto('Adelantos que debe', -((s['adelantos'] as num?) ?? 0), rojo: true),
           if (((s['faltas'] as num?) ?? 0) > 0) Text('Faltas: ${s['faltas']} (no suman)', style: const TextStyle(fontSize: 12, color: Colors.red)),
@@ -1775,12 +1897,14 @@ class _FichaPageState extends State<_FichaPage> {
 // HOJA: registrar un pago / adelanto (con foto del recibo)
 // ===========================================================================
 class _PagoSheet extends StatefulWidget {
-  const _PagoSheet({required this.api, required this.trabajador, this.tipoInicial = 'ADELANTO', this.montoInicial, this.conceptoInicial});
+  const _PagoSheet({required this.api, required this.trabajador, this.tipoInicial = 'ADELANTO', this.montoInicial, this.conceptoInicial, this.valorHora, this.tarifaDia});
   final _Api api;
   final Map<String, dynamic> trabajador;
   final String tipoInicial;
   final double? montoInicial;
   final String? conceptoInicial;
+  final double? valorHora;
+  final double? tarifaDia;
   @override
   State<_PagoSheet> createState() => _PagoSheetState();
 }
@@ -1792,6 +1916,8 @@ class _PagoSheetState extends State<_PagoSheet> {
   bool _caja = true;
   String? _fotoPath;
   String? _firma;
+  String? _motivo;
+  final _horasNo = TextEditingController();
   bool _enviando = false;
 
   static const _ayuda = {
@@ -1801,14 +1927,39 @@ class _PagoSheetState extends State<_PagoSheet> {
     'SUELDO': 'Pago libre de sueldo (para pagos fuera de la boleta).',
     'VACACIONES': 'Pago de sus vacaciones.',
     'BONO': 'Dinero extra que se suma a su boleta (no sale de caja ahora).',
-    'DESCUENTO': 'Multa o descuento que se resta de su boleta (no sale de caja).',
+    'DESCUENTO': 'Se resta de su saldo o boleta (falta, horas que no vino, daños…). No sale de caja.',
   };
 
   @override
   void dispose() {
     _monto.dispose();
     _concepto.dispose();
+    _horasNo.dispose();
     super.dispose();
+  }
+
+  void _elegirMotivo(String m) {
+    setState(() {
+      _motivo = m;
+      if (m == 'Falta (1 día)' && widget.tarifaDia != null) {
+        _monto.text = widget.tarifaDia!.toStringAsFixed(2);
+        _concepto.text = 'Falta';
+      } else if (m == 'Horas que no vino') {
+        _concepto.text = 'Horas no trabajadas';
+      } else {
+        _concepto.text = m;
+      }
+    });
+  }
+
+  void _calcHoras(String v) {
+    final h = double.tryParse(v.replaceAll(',', '.')) ?? 0;
+    if (widget.valorHora != null) {
+      setState(() {
+        _monto.text = (h * widget.valorHora!).toStringAsFixed(2);
+        _concepto.text = 'Horas no trabajadas ($h h)';
+      });
+    }
   }
 
   Future<void> _enviar({bool confirmado = false}) async {
@@ -1898,6 +2049,25 @@ class _PagoSheetState extends State<_PagoSheet> {
               isDense: true,
             ),
           ),
+          if (_tipo == 'DESCUENTO') ...[
+            const SizedBox(height: 4),
+            const Text('¿Por qué se descuenta?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            Wrap(spacing: 6, children: [
+              for (final m in const ['Falta (1 día)', 'Horas que no vino', 'Tardanza', 'Daño o rotura', 'Faltante / error', 'Otro'])
+                ChoiceChip(label: Text(m), selected: _motivo == m, onSelected: (_) => _elegirMotivo(m)),
+            ]),
+            if (_motivo == 'Horas que no vino')
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: TextField(
+                  controller: _horasNo,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  onChanged: _calcHoras,
+                  decoration: InputDecoration(labelText: '¿Cuántas horas no vino?', helperText: widget.valorHora == null ? null : 'Cada hora vale ${_money(widget.valorHora)}', border: const OutlineInputBorder(), isDense: true),
+                ),
+              ),
+            const Text('El monto lo puedes cambiar a mano. Se resta de su saldo / boleta.', style: TextStyle(fontSize: 12, color: Colors.black54)),
+          ],
           if (!concepto) ...[
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
@@ -2689,6 +2859,7 @@ class _PlanillaTabState extends State<_PlanillaTab> with AutomaticKeepAliveClien
   String _mes = _mesActual();
   List<Map<String, dynamic>> _trab = [];
   Map<int, Map<String, dynamic>> _bol = {};
+  Map<String, dynamic> _obl = {};
   bool _cargando = true;
   String? _error;
 
@@ -2710,7 +2881,9 @@ class _PlanillaTabState extends State<_PlanillaTab> with AutomaticKeepAliveClien
       final r = await Future.wait([
         widget.api.get('/rrhh/trabajadores'),
         widget.api.get('/rrhh/boletas', {'periodo': _mes}),
+        widget.api.get('/rrhh/obligaciones', {'periodo': _mes}),
       ]);
+      _obl = _mapa(r[2]);
       _trab = _lista(r[0]).where((t) => t['vinculo'] != 'POR_DIAS').toList();
       _bol = {};
       for (final b in _lista(r[1])) {
@@ -2760,6 +2933,26 @@ class _PlanillaTabState extends State<_PlanillaTab> with AutomaticKeepAliveClien
           ]),
         ),
         Center(child: Text('Total a pagar en boletas: ${_money(totalNeto)}', style: const TextStyle(color: Colors.black54))),
+        if (!_cargando && _error == null && _lista(_obl['items']).isNotEmpty)
+          _seccion('A pagar a AFP / ONP / EsSalud — ${_mesTexto(_mes)}', icono: Icons.account_balance, children: [
+            for (final o in _lista(_obl['items']))
+              ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: Text('${o['entidad']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text(((o['pendiente'] as num?) ?? 0) <= 0 ? 'Pagado ✓ ${_money(o['pagado'] as num?)}' : 'Total ${_money(o['monto'] as num?)}${((o['pagado'] as num?) ?? 0) > 0 ? ' · pagado ${_money(o['pagado'] as num?)}' : ''}'),
+                trailing: ((o['pendiente'] as num?) ?? 0) <= 0
+                    ? const Icon(Icons.check_circle, color: Colors.green)
+                    : FilledButton.tonal(
+                        onPressed: () async {
+                          final ok = await showModalBottomSheet<bool>(context: context, isScrollControlled: true, builder: (_) => _PagarObligacionSheet(api: widget.api, periodo: _mes, item: o));
+                          if (ok == true) _cargar();
+                        },
+                        child: Text('Pagar ${_money(o['pendiente'] as num?)}'),
+                      ),
+              ),
+            Text('${_obl['nota'] ?? ''}', style: const TextStyle(fontSize: 11, color: Colors.black54)),
+          ]),
         if (_cargando) _esperaW() else if (_error != null) _errorBox(_error!, _cargar) else if (_trab.isEmpty)
           const Padding(padding: EdgeInsets.all(30), child: Center(child: Text('No hay personal en planilla.\nEl personal por días se paga desde la pestaña "Pagos".', textAlign: TextAlign.center)))
         else
@@ -2982,6 +3175,11 @@ class _AjustesTabState extends State<_AjustesTab> with AutomaticKeepAliveClientM
     ['bonifExtraordinariaPct', 'Bonificación extraordinaria gratificación', '%'],
     ['uit', 'UIT', 'S/'],
     ['toleranciaMinutos', 'Minutos de tolerancia al llegar', 'min'],
+    ['jornadaHoras', 'Horas de la jornada diaria', 'h'],
+    ['heRecargo1', 'Recargo de las primeras horas extra', '%'],
+    ['heHorasRecargo1', 'Cuántas son esas primeras horas extra', 'h'],
+    ['heRecargo2', 'Recargo de las demás horas extra', '%'],
+    ['feriadoTrabajadoExtra', 'Si trabaja un feriado: días extra que cobra', 'días'],
   ];
 
   @override
@@ -3063,6 +3261,9 @@ class _AjustesTabState extends State<_AjustesTab> with AutomaticKeepAliveClientM
             '4. PLANILLA: a fin de mes toca "Calcular" → "Generar boleta" → "Pagar". Los adelantos y las faltas se descuentan solos.\n'
             '5. SALDO: en la ficha de cada trabajador ves cuánto lleva ganado según su asistencia. Toca "Pagar" y el dinero sale de caja como gasto. El refrigerio diario se entrega desde la pestaña Hoy.\n'
             '6. Julio y diciembre: gratificación. Mayo y noviembre: CTS.\n'
+            'Horas extra, descuentos y bonos: botones en la ficha del trabajador; se suman o restan solos del saldo.\n'
+            'Feriados del Perú: ya están cargados; en planilla se pagan completos.\n'
+            'Postulantes: pestaña "Postulantes" para guardar documentos de quien viene a presentarse.\n'
             '7. Si alguien se va: en su ficha "Renuncia / salida". Se calcula lo que se le debe.\n\n'
             'Nada se borra: todo queda guardado con fecha y quién lo hizo.', style: TextStyle(fontSize: 13)),
       ]),
@@ -3091,7 +3292,13 @@ class _AjustesTabState extends State<_AjustesTab> with AutomaticKeepAliveClientM
           onChanged: (v) => setState(() => _cfg['regimenEmpresa'] = v),
         ),
         const SizedBox(height: 8),
-        for (final f in _campos.where((f) => f[0] != 'toleranciaMinutos')) _num(f[0], f[1], f[2]),
+        for (final f in _campos.where((f) => !['toleranciaMinutos', 'jornadaHoras', 'heRecargo1', 'heHorasRecargo1', 'heRecargo2', 'feriadoTrabajadoExtra'].contains(f[0]))) _num(f[0], f[1], f[2]),
+      ]),
+      _seccion('Horas extra y feriados', icono: Icons.more_time, children: [
+        const Text('Hora extra = valor de su hora normal + recargo. En el Perú: 25% las 2 primeras horas y 35% las siguientes. Si a un trabajador le fijas un pago por hora, se usa ese.', style: TextStyle(fontSize: 12, color: Colors.black54)),
+        const SizedBox(height: 8),
+        for (final k in ['jornadaHoras', 'heRecargo1', 'heHorasRecargo1', 'heRecargo2', 'feriadoTrabajadoExtra']) _num(k, _campos.firstWhere((f) => f[0] == k)[1], _campos.firstWhere((f) => f[0] == k)[2]),
+        OutlinedButton.icon(onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => _FeriadosPage(api: widget.api))), icon: const Icon(Icons.celebration), label: const Text('Ver / editar los feriados del año')),
       ]),
       _seccion('Comisión por flujo de cada AFP', icono: Icons.account_balance, children: [
         for (final a in _mapa(_cfg['afpComisiones']).keys) _num('afp_$a', a, '%'),
@@ -3101,5 +3308,614 @@ class _AjustesTabState extends State<_AjustesTab> with AutomaticKeepAliveClientM
         child: FilledButton.icon(style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)), onPressed: _guardando ? null : _guardar, icon: const Icon(Icons.save), label: Text(_guardando ? 'Guardando…' : 'Guardar ajustes')),
       ),
     ]);
+  }
+}
+
+
+// ===========================================================================
+// HORAS EXTRA
+// ===========================================================================
+class _HoraExtraSheet extends StatefulWidget {
+  const _HoraExtraSheet({required this.api, required this.trabajador});
+  final _Api api;
+  final Map<String, dynamic> trabajador;
+  @override
+  State<_HoraExtraSheet> createState() => _HoraExtraSheetState();
+}
+
+class _HoraExtraSheetState extends State<_HoraExtraSheet> {
+  final _horas = TextEditingController();
+  final _monto = TextEditingController();
+  final _nota = TextEditingController();
+  final _valor = TextEditingController();
+  String _fecha = _hoy();
+  String _detalle = '';
+  bool _calc = false;
+  bool _enviando = false;
+
+  @override
+  void dispose() {
+    _horas.dispose();
+    _monto.dispose();
+    _nota.dispose();
+    _valor.dispose();
+    super.dispose();
+  }
+
+  Future<bool> _calcular() async {
+    final h = double.tryParse(_horas.text.replaceAll(',', '.')) ?? 0;
+    if (h <= 0) {
+      _aviso(context, 'Escribe cuántas horas extra hizo', error: true);
+      return false;
+    }
+    setState(() => _calc = true);
+    try {
+      final r = _mapa(await widget.api.get('/rrhh/horas-extra/calcular', {
+        'trabajadorId': widget.trabajador['id'], 'horas': h,
+        if (_valor.text.trim().isNotEmpty) 'valorHora': _valor.text.replaceAll(',', '.'),
+      }));
+      _monto.text = ((r['monto'] as num?) ?? 0).toStringAsFixed(2);
+      _detalle = r['detalle']?.toString() ?? '';
+      if (mounted) setState(() => _calc = false);
+      return true;
+    } catch (e) {
+      if (mounted) {
+        _aviso(context, e.toString(), error: true);
+        setState(() => _calc = false);
+      }
+      return false;
+    }
+  }
+
+  Future<void> _guardar() async {
+    if (_monto.text.isEmpty && !await _calcular()) return;
+    setState(() => _enviando = true);
+    try {
+      await widget.api.post('/rrhh/horas-extra', {
+        'trabajadorId': widget.trabajador['id'], 'fecha': _fecha, 'horas': _horas.text.replaceAll(',', '.'),
+        if (_valor.text.trim().isNotEmpty) 'valorHora': _valor.text.replaceAll(',', '.'),
+        'montoFinal': _monto.text.replaceAll(',', '.'), 'nota': _nota.text.trim(), 'usuarioId': widget.api.usuarioId,
+      });
+      if (mounted) {
+        Navigator.pop(context, true);
+        _aviso(context, 'Horas extra registradas: se suman a su saldo');
+      }
+    } catch (e) {
+      if (mounted) _aviso(context, e.toString(), error: true);
+    }
+    if (mounted) setState(() => _enviando = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Horas extra de ${_nombreDe(widget.trabajador)}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+          const Text('Las horas extra se suman a su saldo y a su boleta. Primero pon las horas y toca "Calcular".', style: TextStyle(fontSize: 12, color: Colors.black54)),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.event),
+            label: Text('Día: $_fecha'),
+            onPressed: () async {
+              final f = await _pickFecha(context, inicial: _fecha, max: DateTime.now());
+              if (f != null) setState(() => _fecha = f);
+            },
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _horas,
+            autofocus: true,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(labelText: '¿Cuántas horas extra hizo?', border: OutlineInputBorder()),
+            onChanged: (_) => setState(() => _monto.clear()),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _valor,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(labelText: 'Pago por hora (S/) — opcional', helperText: 'Vacío: se calcula con su sueldo y los recargos de ley (25% / 35%)', border: OutlineInputBorder(), isDense: true),
+            onChanged: (_) => setState(() => _monto.clear()),
+          ),
+          const SizedBox(height: 8),
+          FilledButton.tonalIcon(onPressed: _calc ? null : _calcular, icon: const Icon(Icons.calculate), label: Text(_calc ? 'Calculando…' : 'Calcular')),
+          if (_monto.text.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(_detalle, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _monto,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              decoration: const InputDecoration(prefixText: 'S/ ', labelText: 'Monto a pagar (puedes cambiarlo)', border: OutlineInputBorder()),
+            ),
+          ],
+          const SizedBox(height: 8),
+          TextField(controller: _nota, decoration: const InputDecoration(labelText: 'Observación (opcional)', border: OutlineInputBorder(), isDense: true)),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+            onPressed: (_enviando || _monto.text.isEmpty) ? null : _guardar,
+            icon: const Icon(Icons.check),
+            label: Text(_enviando ? 'Guardando…' : 'Registrar horas extra'),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+// ===========================================================================
+// POSTULANTES (casting): documentos antes de contratar
+// ===========================================================================
+const _estadoPostTxt = {'NUEVO': 'Nuevo', 'EN_REVISION': 'En revisión', 'APROBADO': 'Aprobado', 'DESCARTADO': 'Descartado', 'CONTRATADO': 'Contratado'};
+Color _colorPost(String e) {
+  switch (e) {
+    case 'APROBADO':
+      return Colors.green.shade700;
+    case 'CONTRATADO':
+      return Colors.blue.shade700;
+    case 'DESCARTADO':
+      return Colors.red.shade400;
+    case 'EN_REVISION':
+      return Colors.orange.shade800;
+    default:
+      return Colors.blueGrey;
+  }
+}
+
+class _PostulantesTab extends StatefulWidget {
+  const _PostulantesTab({required this.api});
+  final _Api api;
+  @override
+  State<_PostulantesTab> createState() => _PostulantesTabState();
+}
+
+class _PostulantesTabState extends State<_PostulantesTab> with AutomaticKeepAliveClientMixin {
+  List<Map<String, dynamic>> _lista_ = [];
+  String _filtro = 'ACTIVOS';
+  bool _cargando = true;
+  String? _error;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargar();
+  }
+
+  Future<void> _cargar() async {
+    setState(() {
+      _cargando = true;
+      _error = null;
+    });
+    try {
+      _lista_ = _lista(await widget.api.get('/rrhh/postulantes', {if (_filtro != 'ACTIVOS') 'estado': _filtro}));
+    } catch (e) {
+      _error = e.toString();
+    }
+    if (mounted) setState(() => _cargando = false);
+  }
+
+  Future<void> _nuevo() async {
+    final id = await showModalBottomSheet<int>(context: context, isScrollControlled: true, builder: (_) => _PostulanteSheet(api: widget.api));
+    if (id != null && mounted) {
+      await Navigator.of(context).push(MaterialPageRoute(builder: (_) => _PostulantePage(api: widget.api, id: id)));
+      _cargar();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return Column(children: [
+      Container(
+        margin: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(10)),
+        child: const Text('Aquí van las personas que vienen a presentarse para trabajar. Guarda sus documentos (DNI, CV, antecedentes…). Si los contratas, todo pasa a su expediente.', style: TextStyle(fontSize: 12)),
+      ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+        child: Row(children: [
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(children: [
+                for (final f in const [['ACTIVOS', 'Pendientes'], ['APROBADO', 'Aprobados'], ['CONTRATADO', 'Contratados'], ['DESCARTADO', 'Descartados']])
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: ChoiceChip(label: Text(f[1]), selected: _filtro == f[0], onSelected: (_) { _filtro = f[0]; _cargar(); }),
+                  ),
+              ]),
+            ),
+          ),
+          FilledButton.icon(onPressed: _nuevo, icon: const Icon(Icons.person_add_alt), label: const Text('Nuevo')),
+        ]),
+      ),
+      Expanded(
+        child: _cargando
+            ? _esperaW()
+            : _error != null
+                ? _errorBox(_error!, _cargar)
+                : RefreshIndicator(
+                    onRefresh: _cargar,
+                    child: _lista_.isEmpty
+                        ? ListView(children: const [Padding(padding: EdgeInsets.all(40), child: Center(child: Text('No hay postulantes en esta lista.', textAlign: TextAlign.center)))])
+                        : ListView.builder(
+                            padding: const EdgeInsets.only(bottom: 30),
+                            itemCount: _lista_.length,
+                            itemBuilder: (_, i) {
+                              final p = _lista_[i];
+                              final pr = _mapa(p['progreso']);
+                              return Card(
+                                margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+                                child: ListTile(
+                                  leading: CircleAvatar(backgroundColor: _colorPost(p['estado'].toString()).withOpacity(0.15), child: Icon(Icons.person_search, color: _colorPost(p['estado'].toString()))),
+                                  title: Text('${p['nombres']} ${p['apellidos'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  subtitle: Text('${p['puesto'] ?? 'Sin puesto'} · ${_estadoPostTxt[p['estado']] ?? p['estado']}\nDocumentos: ${pr['entregados']} de ${pr['total']}'),
+                                  isThreeLine: true,
+                                  trailing: SizedBox(
+                                    width: 38,
+                                    height: 38,
+                                    child: CircularProgressIndicator(value: ((pr['total'] as num?) ?? 1) == 0 ? 0 : ((pr['entregados'] as num?) ?? 0) / ((pr['total'] as num?) ?? 1), backgroundColor: Colors.grey.shade200),
+                                  ),
+                                  onTap: () async {
+                                    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => _PostulantePage(api: widget.api, id: p['id'] as int)));
+                                    _cargar();
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+      ),
+    ]);
+  }
+}
+
+class _PostulanteSheet extends StatefulWidget {
+  const _PostulanteSheet({required this.api});
+  final _Api api;
+  @override
+  State<_PostulanteSheet> createState() => _PostulanteSheetState();
+}
+
+class _PostulanteSheetState extends State<_PostulanteSheet> {
+  final Map<String, TextEditingController> _c = {for (final k in ['nombres', 'apellidos', 'dni', 'celular', 'puesto', 'nota']) k: TextEditingController()};
+  bool _enviando = false;
+
+  Future<void> _guardar() async {
+    setState(() => _enviando = true);
+    try {
+      final r = _mapa(await widget.api.post('/rrhh/postulantes', {for (final e in _c.entries) e.key: e.value.text.trim(), 'usuarioId': widget.api.usuarioId}));
+      if (mounted) Navigator.pop(context, r['id'] as int?);
+    } catch (e) {
+      if (mounted) {
+        _aviso(context, e.toString(), error: true);
+        setState(() => _enviando = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Widget f(String k, String l, {TextInputType? t}) => Padding(padding: const EdgeInsets.only(bottom: 8), child: TextField(controller: _c[k], keyboardType: t, textCapitalization: TextCapitalization.words, decoration: InputDecoration(labelText: l, border: const OutlineInputBorder(), isDense: true)));
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Nuevo postulante', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          f('nombres', 'Nombres'),
+          f('apellidos', 'Apellidos'),
+          f('dni', 'DNI', t: TextInputType.number),
+          f('celular', 'Celular', t: TextInputType.phone),
+          f('puesto', 'Puesto al que postula'),
+          f('nota', 'Observación'),
+          FilledButton(style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)), onPressed: _enviando ? null : _guardar, child: const Text('Guardar y subir documentos')),
+        ]),
+      ),
+    );
+  }
+}
+
+class _PostulantePage extends StatefulWidget {
+  const _PostulantePage({required this.api, required this.id});
+  final _Api api;
+  final int id;
+  @override
+  State<_PostulantePage> createState() => _PostulantePageState();
+}
+
+class _PostulantePageState extends State<_PostulantePage> {
+  Map<String, dynamic> _d = {};
+  bool _cargando = true;
+  String? _error;
+
+  Map<String, dynamic> get _p => _mapa(_d['postulante']);
+
+  @override
+  void initState() {
+    super.initState();
+    _cargar();
+  }
+
+  Future<void> _cargar() async {
+    setState(() => _cargando = true);
+    try {
+      _d = _mapa(await widget.api.get('/rrhh/postulantes/${widget.id}'));
+      _error = null;
+    } catch (e) {
+      _error = e.toString();
+    }
+    if (mounted) setState(() => _cargando = false);
+  }
+
+  Future<void> _subir(String tipo, String nombre) async {
+    final path = await _archivo(context);
+    if (path == null) return;
+    try {
+      await widget.api.post('/rrhh/postulantes/${widget.id}/documentos', {'tipo': tipo, 'nombre': nombre}, archivo: path);
+      _cargar();
+    } catch (e) {
+      if (mounted) _aviso(context, e.toString(), error: true);
+    }
+  }
+
+  Future<void> _estado(String e) async {
+    try {
+      await widget.api.post('/rrhh/postulantes/${widget.id}/estado', {'estado': e});
+      _cargar();
+    } catch (x) {
+      if (mounted) _aviso(context, x.toString(), error: true);
+    }
+  }
+
+  Future<void> _contratar() async {
+    final p = _p;
+    final id = await Navigator.of(context).push<int>(MaterialPageRoute(
+      builder: (_) => _TrabajadorForm(api: widget.api, prefill: {'nombres': p['nombres'], 'apellidos': p['apellidos'], 'dni': p['dni'], 'celular': p['celular'], 'cargo': p['puesto']}),
+    ));
+    if (id == null) return;
+    try {
+      final r = _mapa(await widget.api.post('/rrhh/postulantes/${widget.id}/contratado', {'trabajadorId': id}));
+      if (mounted) _aviso(context, 'Contratado. ${r['copiados']} documento(s) pasaron a su expediente.');
+      _cargar();
+    } catch (e) {
+      if (mounted) _aviso(context, e.toString(), error: true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = _p;
+    final pr = _mapa(_d['progreso']);
+    final docs = _lista(_d['documentos']);
+    final estado = p['estado']?.toString() ?? '';
+    return Scaffold(
+      appBar: AppBar(title: Text(_cargando ? 'Postulante' : '${p['nombres']} ${p['apellidos'] ?? ''}')),
+      body: _cargando
+          ? _esperaW()
+          : _error != null
+              ? _errorBox(_error!, _cargar)
+              : ListView(padding: const EdgeInsets.only(bottom: 40), children: [
+                  _seccion('Datos', icono: Icons.person, children: [
+                    Text('${p['puesto'] ?? 'Sin puesto'} · ${_estadoPostTxt[estado] ?? estado}', style: TextStyle(fontWeight: FontWeight.bold, color: _colorPost(estado))),
+                    if (p['dni'] != null) Text('DNI ${p['dni']}'),
+                    if (p['celular'] != null) Text('Cel. ${p['celular']}'),
+                    if (p['nota'] != null) Text('${p['nota']}'),
+                  ]),
+                  _seccion('Documentos (${pr['entregados']} de ${pr['total']} obligatorios)', icono: Icons.folder_open, children: [
+                    for (final c in _lista(pr['checklist']))
+                      ListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(c['entregado'] == true ? Icons.check_circle : Icons.radio_button_unchecked, color: c['entregado'] == true ? Colors.green : Colors.grey),
+                        title: Text('${c['nombre']}${c['obligatorio'] == true ? '' : ' (opcional)'}'),
+                        trailing: estado == 'CONTRATADO' ? null : IconButton(icon: const Icon(Icons.add_a_photo, color: Colors.blue), onPressed: () => _subir(c['tipo'].toString(), c['nombre'].toString())),
+                        onTap: () {
+                          final d = docs.where((x) => x['tipo'] == c['tipo']);
+                          if (d.isNotEmpty) _verArchivo(context, d.first['url']?.toString(), titulo: c['nombre'].toString());
+                        },
+                      ),
+                    for (final d in docs.where((d) => !DOCS_POST.contains(d['tipo'])))
+                      ListTile(dense: true, contentPadding: EdgeInsets.zero, leading: const Icon(Icons.attach_file), title: Text('${d['nombre']}'), onTap: () => _verArchivo(context, d['url']?.toString())),
+                    if (estado != 'CONTRATADO') TextButton.icon(onPressed: () => _subir('OTRO', 'Otro documento'), icon: const Icon(Icons.add), label: const Text('Agregar otro documento')),
+                  ]),
+                  if (estado != 'CONTRATADO')
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Wrap(spacing: 8, runSpacing: 6, children: [
+                        if (estado == 'NUEVO') OutlinedButton(onPressed: () => _estado('EN_REVISION'), child: const Text('Pasar a revisión')),
+                        if (estado != 'APROBADO') OutlinedButton(onPressed: () => _estado('APROBADO'), child: const Text('Aprobar')),
+                        if (estado != 'DESCARTADO') OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Colors.red), onPressed: () => _estado('DESCARTADO'), child: const Text('Descartar')),
+                        FilledButton.icon(onPressed: _contratar, icon: const Icon(Icons.how_to_reg), label: const Text('Contratar')),
+                      ]),
+                    ),
+                  if (estado == 'CONTRATADO')
+                    const Padding(padding: EdgeInsets.all(14), child: Text('Ya fue contratado. Sus documentos están en su expediente de trabajador.', style: TextStyle(color: Colors.black54))),
+                ]),
+    );
+  }
+}
+
+const DOCS_POST = ['DNI', 'CV', 'ANTECEDENTES', 'FOTO', 'RECIBO', 'MEDICO', 'REFERENCIAS'];
+
+// ===========================================================================
+// FERIADOS (lista del año, con opción de agregar o quitar)
+// ===========================================================================
+class _FeriadosPage extends StatefulWidget {
+  const _FeriadosPage({required this.api});
+  final _Api api;
+  @override
+  State<_FeriadosPage> createState() => _FeriadosPageState();
+}
+
+class _FeriadosPageState extends State<_FeriadosPage> {
+  int _anio = DateTime.now().year;
+  List<Map<String, dynamic>> _items = [];
+  Map<String, dynamic> _cfg = {};
+  bool _cargando = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargar();
+  }
+
+  Future<void> _cargar() async {
+    setState(() => _cargando = true);
+    try {
+      _cfg = _mapa(await widget.api.get('/rrhh/config'));
+      _items = _lista(_mapa(await widget.api.get('/rrhh/feriados', {'anio': _anio}))['items']);
+      _error = null;
+    } catch (e) {
+      _error = e.toString();
+    }
+    if (mounted) setState(() => _cargando = false);
+  }
+
+  Future<void> _guardar(List extra, List quitados) async {
+    try {
+      await widget.api.put('/rrhh/config', {'feriadosExtra': extra, 'feriadosQuitados': quitados});
+      _cargar();
+    } catch (e) {
+      if (mounted) _aviso(context, e.toString(), error: true);
+    }
+  }
+
+  Future<void> _agregar() async {
+    final f = await _pickFecha(context, inicial: '$_anio-01-01');
+    if (f == null || !mounted) return;
+    final nombre = await _pedirTexto(context, 'Nombre del día no laborable', hint: 'Ej: Aniversario de Atalaya');
+    if (nombre == null || nombre.isEmpty) return;
+    final extra = List.from(_cfg['feriadosExtra'] as List? ?? const [])..add({'fecha': f, 'nombre': nombre});
+    await _guardar(extra, List.from(_cfg['feriadosQuitados'] as List? ?? const []));
+  }
+
+  Future<void> _quitar(Map<String, dynamic> it) async {
+    if (!await _confirmar(context, 'Quitar feriado', '¿Quitar "${it['nombre']}" (${it['fecha']}) de la lista? Dejará de contarse como feriado.', si: 'Sí, quitar')) return;
+    final extra = List.from(_cfg['feriadosExtra'] as List? ?? const []);
+    final quitados = List.from(_cfg['feriadosQuitados'] as List? ?? const []);
+    if (it['oficial'] == true) {
+      quitados.add(it['fecha']);
+    } else {
+      extra.removeWhere((x) => x['fecha'] == it['fecha']);
+    }
+    await _guardar(extra, quitados);
+  }
+
+  Future<void> _restaurar(String fecha) async {
+    final quitados = List.from(_cfg['feriadosQuitados'] as List? ?? const [])..remove(fecha);
+    await _guardar(List.from(_cfg['feriadosExtra'] as List? ?? const []), quitados);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final quitados = (_cfg['feriadosQuitados'] as List? ?? const []).where((f) => f.toString().startsWith('$_anio')).toList();
+    return Scaffold(
+      appBar: AppBar(title: const Text('Feriados')),
+      floatingActionButton: FloatingActionButton.extended(onPressed: _agregar, icon: const Icon(Icons.add), label: const Text('Agregar día')),
+      body: _cargando
+          ? _esperaW()
+          : _error != null
+              ? _errorBox(_error!, _cargar)
+              : ListView(padding: const EdgeInsets.only(bottom: 90), children: [
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Text('Son los feriados no laborables del Perú. Semana Santa se calcula sola cada año. En planilla estos días se pagan completos, y si alguien trabaja un feriado cobra extra.', style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+                  ),
+                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    IconButton(icon: const Icon(Icons.chevron_left), onPressed: () { _anio--; _cargar(); }),
+                    Text('$_anio', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    IconButton(icon: const Icon(Icons.chevron_right), onPressed: () { _anio++; _cargar(); }),
+                  ]),
+                  for (final it in _items)
+                    ListTile(
+                      leading: Icon(it['oficial'] == true ? Icons.flag : Icons.star, color: it['oficial'] == true ? Colors.indigo : Colors.orange),
+                      title: Text('${it['nombre']}'),
+                      subtitle: Text(DateFormat("EEEE d 'de' MMMM", 'es').format(DateTime.parse(it['fecha'].toString())) + (it['oficial'] == true ? '' : ' · agregado por ti')),
+                      trailing: IconButton(icon: const Icon(Icons.close), onPressed: () => _quitar(it)),
+                    ),
+                  if (quitados.isNotEmpty) ...[
+                    const Padding(padding: EdgeInsets.fromLTRB(16, 16, 16, 4), child: Text('Feriados que quitaste', style: TextStyle(fontWeight: FontWeight.bold))),
+                    for (final q in quitados) ListTile(dense: true, title: Text('$q'), trailing: TextButton(onPressed: () => _restaurar(q.toString()), child: const Text('Volver a poner'))),
+                  ],
+                ]),
+    );
+  }
+}
+
+// ===========================================================================
+// Pago de AFP / ONP / EsSalud
+// ===========================================================================
+class _PagarObligacionSheet extends StatefulWidget {
+  const _PagarObligacionSheet({required this.api, required this.periodo, required this.item});
+  final _Api api;
+  final String periodo;
+  final Map<String, dynamic> item;
+  @override
+  State<_PagarObligacionSheet> createState() => _PagarObligacionSheetState();
+}
+
+class _PagarObligacionSheetState extends State<_PagarObligacionSheet> {
+  bool _caja = false;
+  String? _foto_;
+  bool _enviando = false;
+
+  Future<void> _pagar() async {
+    setState(() => _enviando = true);
+    try {
+      await widget.api.post('/rrhh/obligaciones/pagar', {
+        'periodo': widget.periodo, 'entidad': widget.item['entidad'], 'monto': widget.item['pendiente'], 'desdeCaja': _caja,
+        'usuarioId': widget.api.usuarioId, 'sucursalId': widget.api.sucursalId > 0 ? widget.api.sucursalId : null,
+      }, archivo: _foto_);
+      if (mounted) {
+        Navigator.pop(context, true);
+        _aviso(context, 'Pago registrado');
+      }
+    } catch (e) {
+      if (mounted) {
+        _aviso(context, e.toString(), error: true);
+        setState(() => _enviando = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Pagar ${widget.item['entidad']}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(_money(widget.item['pendiente'] as num?), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('El dinero sale de la caja de hoy'),
+            subtitle: Text(_caja ? 'Se registra la salida en caja.' : 'Pago por banco, Yape o la plataforma: no toca la caja.'),
+            value: _caja,
+            onChanged: (v) => setState(() => _caja = v),
+          ),
+          OutlinedButton.icon(
+            onPressed: () async {
+              final f = await _foto(context);
+              if (f != null) setState(() => _foto_ = f);
+            },
+            icon: Icon(_foto_ == null ? Icons.photo_camera : Icons.check_circle, color: _foto_ == null ? null : Colors.green),
+            label: Text(_foto_ == null ? 'Foto del comprobante / constancia (recomendado)' : 'Foto lista · tocar para cambiar'),
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)), onPressed: _enviando ? null : _pagar, icon: const Icon(Icons.check), label: Text(_enviando ? 'Guardando…' : 'Registrar pago')),
+        ]),
+      ),
+    );
   }
 }
