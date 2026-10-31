@@ -49,13 +49,15 @@ w.Widget _parrafo(String t) => w.Padding(
           style: const w.TextStyle(fontSize: 10.5, lineSpacing: 2)),
     );
 
-w.Widget _firmas(String izq, String der) => w.Padding(
+w.Widget _firmas(String izq, String der, {Uint8List? firmaDer}) => w.Padding(
       padding: const w.EdgeInsets.only(top: 60),
       child: w.Row(
         mainAxisAlignment: w.MainAxisAlignment.spaceAround,
         children: [
           for (final t in [izq, der])
             w.Column(children: [
+              if (t == der && firmaDer != null)
+                w.Image(w.MemoryImage(firmaDer), width: 150, height: 55, fit: w.BoxFit.contain),
               w.Container(width: 180, height: 1, color: p.PdfColors.black),
               w.SizedBox(height: 4),
               w.Text(t, style: const w.TextStyle(fontSize: 10)),
@@ -69,7 +71,7 @@ String _nombre(Map t) => '${t['nombres'] ?? ''} ${t['apellidos'] ?? ''}'.trim().
 // ===========================================================================
 // Contrato de trabajo
 // ===========================================================================
-Future<Uint8List> pdfContrato(Map<String, dynamic> t, Map<String, dynamic> c) async {
+Future<Uint8List> pdfContrato(Map<String, dynamic> t, Map<String, dynamic> c, {Uint8List? firma}) async {
   final doc = w.Document();
   final tipo = (c['tipo'] ?? 'INDEFINIDO').toString();
   final cargo = (c['cargo'] ?? t['cargo'] ?? 'trabajador').toString();
@@ -152,7 +154,8 @@ Future<Uint8List> pdfContrato(Map<String, dynamic> t, Map<String, dynamic> c) as
         _parrafo(c[1]),
       ],
       _parrafo('En señal de conformidad, las partes firman en dos ejemplares en la ciudad de Atalaya, a los ${_fechaLarga(c['fechaInicio']?.toString())}.'),
-      _firmas(tipo == 'LOCACION' ? 'EL COMITENTE\n$_empresa' : 'EL EMPLEADOR\n$_empresa', '${tipo == 'LOCACION' ? 'EL LOCADOR' : 'EL TRABAJADOR'}\n${_nombre(t)}\nDNI ${t['dni'] ?? ''}'),
+      _firmas(tipo == 'LOCACION' ? 'EL COMITENTE\n$_empresa' : 'EL EMPLEADOR\n$_empresa', '${tipo == 'LOCACION' ? 'EL LOCADOR' : 'EL TRABAJADOR'}\n${_nombre(t)}\nDNI ${t['dni'] ?? ''}', firmaDer: firma),
+      if (firma != null) w.Text('Firmado digitalmente el ${_fechaLarga(c['firmadoAt']?.toString())}', style: const w.TextStyle(fontSize: 8)),
     ],
   ));
   return doc.save();
@@ -258,6 +261,45 @@ Future<Uint8List> pdfBoleta(Map<String, dynamic> b, {String? nombre, String? dni
       ],
       _firmas('EMPLEADOR', 'TRABAJADOR\nRecibí conforme'),
     ],
+  ));
+  return doc.save();
+}
+
+
+// ===========================================================================
+// Recibo de entrega (adelanto, pago de jornal, sueldo, etc.)
+// ===========================================================================
+Future<Uint8List> pdfRecibo(Map<String, dynamic> pago, Map<String, dynamic> t, {Uint8List? foto, Uint8List? firma}) async {
+  final doc = w.Document();
+  final tipos = {
+    'ADELANTO': 'ADELANTO DE SUELDO', 'PRESTAMO': 'PRÉSTAMO', 'QUINCENA': 'PAGO DE QUINCENA', 'SUELDO': 'PAGO DE SUELDO', 'JORNAL': 'PAGO DE JORNAL (DÍAS TRABAJADOS)',
+    'GRATIFICACION': 'GRATIFICACIÓN', 'CTS': 'CTS', 'VACACIONES': 'VACACIONES', 'LIQUIDACION': 'LIQUIDACIÓN DE BENEFICIOS SOCIALES',
+  };
+  final monto = (pago['monto'] as num?) ?? 0;
+  final f = DateTime.tryParse(pago['fecha']?.toString() ?? '')?.toLocal();
+  final fecha = f == null ? '' : DateFormat('dd/MM/yyyy HH:mm').format(f);
+  doc.addPage(w.Page(
+    pageFormat: p.PdfPageFormat.a5,
+    margin: const w.EdgeInsets.all(30),
+    build: (ctx) => w.Column(crossAxisAlignment: w.CrossAxisAlignment.start, children: [
+      w.Text(_empresa, style: w.TextStyle(fontSize: 12, fontWeight: w.FontWeight.bold)),
+      w.Text('RUC $_ruc', style: const w.TextStyle(fontSize: 9)),
+      _titulo('RECIBO DE ENTREGA N° ${pago['id']}'),
+      _parrafo('Yo, ${_nombre(t)}, identificado(a) con DNI N° ${t['dni'] ?? ''}, declaro haber recibido de $_empresa la suma de ${_s(monto)} por concepto de ${tipos[pago['tipo']] ?? pago['tipo']}${pago['concepto'] != null ? ' (${pago['concepto']})' : ''}, en la fecha $fecha.'),
+      if (pago['tipo'] == 'ADELANTO' || pago['tipo'] == 'PRESTAMO' || pago['tipo'] == 'QUINCENA')
+        _parrafo('Autorizo que este monto sea descontado de mi remuneración o beneficios.'),
+      w.SizedBox(height: 6),
+      w.Row(crossAxisAlignment: w.CrossAxisAlignment.end, mainAxisAlignment: w.MainAxisAlignment.spaceBetween, children: [
+        w.Column(children: [
+          if (firma != null) w.Image(w.MemoryImage(firma), width: 150, height: 60, fit: w.BoxFit.contain) else w.SizedBox(height: 50),
+          w.Container(width: 160, height: 1, color: p.PdfColors.black),
+          w.Text('${_nombre(t)}\nDNI ${t['dni'] ?? ''}\n${firma != null ? 'Firma digital' : 'Firma'}', textAlign: w.TextAlign.center, style: const w.TextStyle(fontSize: 8)),
+        ]),
+        if (foto != null) w.Image(w.MemoryImage(foto), width: 110, height: 110, fit: w.BoxFit.cover),
+      ]),
+      w.SizedBox(height: 8),
+      w.Text('Entregado por: ${pago['usuarioNombre'] ?? ''}', style: const w.TextStyle(fontSize: 8)),
+    ]),
   ));
   return doc.save();
 }

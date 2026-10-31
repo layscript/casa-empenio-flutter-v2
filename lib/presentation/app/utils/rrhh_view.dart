@@ -1,9 +1,14 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/rrhh_pdf.dart';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -73,14 +78,15 @@ class _Api {
     }
   }
 
-  Future<dynamic> send(String metodo, String path, Map<String, dynamic> datos, {String? archivo}) async {
+  Future<dynamic> send(String metodo, String path, Map<String, dynamic> datos, {String? archivo, String? firma}) async {
     try {
       final limpio = <String, dynamic>{...datos}..removeWhere((k, v) => v == null);
       Response r;
-      if (archivo != null) {
+      if (archivo != null || firma != null) {
         final form = FormData.fromMap({
           ...limpio.map((k, v) => MapEntry(k, v.toString())),
-          'archivo': await MultipartFile.fromFile(archivo, filename: archivo.split('/').last),
+          if (archivo != null) 'archivo': await MultipartFile.fromFile(archivo, filename: archivo.split('/').last),
+          if (firma != null) 'firma': await MultipartFile.fromFile(firma, filename: 'firma.png'),
         });
         r = await dio.request(path, data: form, options: Options(method: metodo));
       } else {
@@ -92,7 +98,17 @@ class _Api {
     }
   }
 
-  Future<dynamic> post(String p, Map<String, dynamic> d, {String? archivo}) => send('POST', p, d, archivo: archivo);
+  Future<dynamic> post(String p, Map<String, dynamic> d, {String? archivo, String? firma}) => send('POST', p, d, archivo: archivo, firma: firma);
+
+  Future<Uint8List?> bytes(String? url) async {
+    if (url == null || url.isEmpty) return null;
+    try {
+      final r = await dio.get<List<int>>('/$url', options: Options(responseType: ResponseType.bytes));
+      return r.data == null ? null : Uint8List.fromList(r.data!);
+    } catch (_) {
+      return null;
+    }
+  }
   Future<dynamic> put(String p, Map<String, dynamic> d) => send('PUT', p, d);
   Future<dynamic> borrar(String p) => send('DELETE', p, {});
 }
@@ -324,6 +340,133 @@ Future<String?> _pickFecha(BuildContext c, {String? inicial, DateTime? min, Date
     helpText: 'Elige la fecha',
   );
   return d == null ? null : DateFormat('yyyy-MM-dd').format(d);
+}
+
+// ---------------------------------------------------------------------------
+// FIRMA DIGITAL: el trabajador firma con el dedo en la pantalla
+// ---------------------------------------------------------------------------
+Future<String?> _pedirFirma(BuildContext c, {required String titulo, String detalle = ''}) {
+  return Navigator.of(c).push<String>(MaterialPageRoute(fullscreenDialog: true, builder: (_) => _FirmaPage(titulo: titulo, detalle: detalle)));
+}
+
+class _FirmaPage extends StatefulWidget {
+  const _FirmaPage({required this.titulo, required this.detalle});
+  final String titulo;
+  final String detalle;
+  @override
+  State<_FirmaPage> createState() => _FirmaPageState();
+}
+
+class _FirmaPageState extends State<_FirmaPage> {
+  final GlobalKey _clave = GlobalKey();
+  final List<List<Offset>> _trazos = [];
+  bool _guardando = false;
+
+  Future<void> _aceptar() async {
+    if (_trazos.isEmpty || _trazos.fold<int>(0, (a, t) => a + t.length) < 8) {
+      _aviso(context, 'Pide al trabajador que firme en el recuadro', error: true);
+      return;
+    }
+    setState(() => _guardando = true);
+    try {
+      final b = _clave.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      final img = await b.toImage(pixelRatio: 2.5);
+      final data = await img.toByteData(format: ui.ImageByteFormat.png);
+      final f = File('${Directory.systemTemp.path}/firma-${DateTime.now().millisecondsSinceEpoch}.png');
+      await f.writeAsBytes(data!.buffer.asUint8List());
+      if (mounted) Navigator.pop(context, f.path);
+    } catch (e) {
+      if (mounted) {
+        _aviso(context, 'No se pudo guardar la firma: $e', error: true);
+        setState(() => _guardando = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(widget.titulo)),
+      body: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(children: [
+          if (widget.detalle.isNotEmpty) Padding(padding: const EdgeInsets.only(bottom: 10), child: Text(widget.detalle, textAlign: TextAlign.center, style: const TextStyle(fontSize: 15))),
+          const Text('Firme dentro del recuadro con el dedo', style: TextStyle(color: Colors.black54)),
+          const SizedBox(height: 8),
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(border: Border.all(color: Colors.blueGrey, width: 2), borderRadius: BorderRadius.circular(8)),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: RepaintBoundary(
+                  key: _clave,
+                  child: GestureDetector(
+                    onPanStart: (d) => setState(() => _trazos.add([d.localPosition])),
+                    onPanUpdate: (d) => setState(() => _trazos.last.add(d.localPosition)),
+                    child: CustomPaint(painter: _FirmaPainter(_trazos), child: const SizedBox.expand()),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(child: OutlinedButton.icon(onPressed: () => setState(_trazos.clear), icon: const Icon(Icons.delete_outline), label: const Text('Borrar'))),
+            const SizedBox(width: 10),
+            Expanded(flex: 2, child: FilledButton.icon(style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)), onPressed: _guardando ? null : _aceptar, icon: const Icon(Icons.check), label: const Text('Aceptar firma'))),
+          ]),
+        ]),
+      ),
+    );
+  }
+}
+
+class _FirmaPainter extends CustomPainter {
+  _FirmaPainter(this.trazos);
+  final List<List<Offset>> trazos;
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRect(Offset.zero & size, Paint()..color = Colors.white);
+    final p = Paint()
+      ..color = Colors.black
+      ..strokeWidth = 2.6
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+    for (final t in trazos) {
+      if (t.length == 1) {
+        canvas.drawCircle(t.first, 1.3, p..style = PaintingStyle.fill);
+        p.style = PaintingStyle.stroke;
+        continue;
+      }
+      final path = Path()..moveTo(t.first.dx, t.first.dy);
+      for (final o in t.skip(1)) {
+        path.lineTo(o.dx, o.dy);
+      }
+      canvas.drawPath(path, p);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _FirmaPainter old) => true;
+}
+
+/// Botón reutilizable "Firma del trabajador"
+Widget _botonFirma(String? firma, VoidCallback onTap, {bool obligatoria = true}) => OutlinedButton.icon(
+      onPressed: onTap,
+      icon: Icon(firma == null ? Icons.draw : Icons.check_circle, color: firma == null ? null : Colors.green),
+      label: Text(firma == null ? 'Firma del trabajador${obligatoria ? ' (obligatoria)' : ''}' : 'Firma lista · tocar para cambiar'),
+    );
+
+/// Recibo de entrega en PDF (con foto y firma si existen)
+Future<void> _reciboPago(BuildContext c, _Api api, Map<String, dynamic> pago, [Map<String, dynamic>? trab]) async {
+  try {
+    final t = trab ?? _mapa(_mapa(await api.get('/rrhh/trabajadores/${pago['trabajadorId']}'))['trabajador']);
+    final foto = await api.bytes(pago['fotoUrl']?.toString());
+    final firma = await api.bytes(pago['firmaUrl']?.toString());
+    await mostrarPdf(await pdfRecibo(pago, t, foto: foto, firma: firma), 'Recibo ${_nombreDe(t)}');
+  } catch (e) {
+    if (c.mounted) _aviso(c, 'No se pudo abrir el recibo: $e', error: true);
+  }
 }
 
 // ===========================================================================
@@ -1135,6 +1278,18 @@ class _FichaPageState extends State<_FichaPage> {
     if (ok == true) _cargar();
   }
 
+  Future<void> _firmarContrato(Map<String, dynamic> c) async {
+    final f = await _pedirFirma(context, titulo: 'Firma del contrato', detalle: '${_nombreDe(_t)} firma su contrato (${c['tipo']}) con inicio ${_fechaCorta(c['fechaInicio'])}.');
+    if (f == null) return;
+    try {
+      await widget.api.post('/rrhh/contratos/${c['id']}/firma', {}, archivo: f);
+      if (mounted) _aviso(context, 'Contrato firmado y guardado en su expediente');
+      _cargar();
+    } catch (e) {
+      if (mounted) _aviso(context, e.toString(), error: true);
+    }
+  }
+
   Future<void> _agregarDoc() async {
     final tipos = {
       'DNI': 'DNI (copia)',
@@ -1294,12 +1449,19 @@ class _FichaPageState extends State<_FichaPage> {
             contentPadding: EdgeInsets.zero,
             leading: Icon(c['estado'] == 'VIGENTE' ? Icons.verified : Icons.history, color: c['estado'] == 'VIGENTE' ? Colors.green : Colors.grey),
             title: Text('${{'INDEFINIDO': 'Indefinido', 'PLAZO_FIJO': 'Plazo fijo', 'POR_DIAS': 'Por días', 'LOCACION': 'Honorarios'}[c['tipo']] ?? c['tipo']} · ${_money(c['remuneracion'])}'),
-            subtitle: Text('Desde ${_fechaCorta(c['fechaInicio'])}${c['fechaFin'] != null ? ' hasta ${_fechaCorta(c['fechaFin'])}' : ''} · ${c['estado']}'),
-            trailing: IconButton(
-              tooltip: 'Imprimir contrato',
-              icon: const Icon(Icons.print),
-              onPressed: () async => mostrarPdf(await pdfContrato(t, c), 'Contrato ${_nombreDe(t)}'),
-            ),
+            subtitle: Text('Desde ${_fechaCorta(c['fechaInicio'])}${c['fechaFin'] != null ? ' hasta ${_fechaCorta(c['fechaFin'])}' : ''} · ${c['estado']}${c['firmaUrl'] != null ? ' · FIRMADO ✓' : ' · sin firma'}'),
+            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+              IconButton(
+                tooltip: c['firmaUrl'] == null ? 'Firmar contrato' : 'Firmar de nuevo',
+                icon: Icon(Icons.draw, color: c['firmaUrl'] == null ? Colors.orange : Colors.green),
+                onPressed: () => _firmarContrato(c),
+              ),
+              IconButton(
+                tooltip: 'Imprimir contrato',
+                icon: const Icon(Icons.print),
+                onPressed: () async => mostrarPdf(await pdfContrato(t, c, firma: await widget.api.bytes(c['firmaUrl']?.toString())), 'Contrato ${_nombreDe(t)}'),
+              ),
+            ]),
           ),
       ]),
       _seccion('Archivo del trabajador', icono: Icons.folder_shared, accion: TextButton.icon(onPressed: _agregarDoc, icon: const Icon(Icons.add_a_photo), label: const Text('Guardar')), children: [
@@ -1365,8 +1527,8 @@ class _FichaPageState extends State<_FichaPage> {
             contentPadding: EdgeInsets.zero,
             title: Text('${p['tipo']} · ${_money(p['monto'])}', style: TextStyle(decoration: p['estado'] == 'ANULADO' ? TextDecoration.lineThrough : null)),
             subtitle: Text('${_fechaCorta(p['fecha'])} · ${p['usuarioNombre'] ?? ''}${p['concepto'] != null ? '\n${p['concepto']}' : ''}'),
-            trailing: p['fotoUrl'] != null ? const Icon(Icons.photo, color: Colors.blue) : null,
-            onTap: () => _verArchivo(context, p['fotoUrl']?.toString(), titulo: 'Recibo'),
+            trailing: IconButton(tooltip: 'Recibo de entrega', icon: const Icon(Icons.receipt, color: Colors.blue), onPressed: () => _reciboPago(context, widget.api, p, t)),
+            onTap: () => _verArchivo(context, p['fotoUrl']?.toString(), titulo: 'Foto de la entrega'),
           ),
       ]),
       if (ceses.isNotEmpty)
@@ -1411,6 +1573,7 @@ class _PagoSheetState extends State<_PagoSheet> {
   late String _tipo = widget.tipoInicial == 'JORNAL' ? 'ADELANTO' : widget.tipoInicial;
   bool _caja = true;
   String? _fotoPath;
+  String? _firma;
   bool _enviando = false;
 
   static const _ayuda = {
@@ -1441,6 +1604,10 @@ class _PagoSheetState extends State<_PagoSheet> {
       _aviso(context, 'Toma una foto del recibo firmado o del trabajador recibiendo el dinero', error: true);
       return;
     }
+    if (!concepto && _firma == null) {
+      _aviso(context, 'El trabajador debe firmar el recibo', error: true);
+      return;
+    }
     setState(() => _enviando = true);
     try {
       await widget.api.post('/rrhh/pagos', {
@@ -1453,7 +1620,7 @@ class _PagoSheetState extends State<_PagoSheet> {
         'usuarioNombre': widget.api.usuarioNombre,
         'sucursalId': widget.api.sucursalId > 0 ? widget.api.sucursalId : null,
         if (confirmado) 'confirmarExceso': true,
-      }, archivo: _fotoPath);
+      }, archivo: _fotoPath, firma: _firma);
       if (mounted) {
         Navigator.pop(context, true);
         _aviso(context, '$_tipo de ${_money(monto)} registrado');
@@ -1516,6 +1683,10 @@ class _PagoSheetState extends State<_PagoSheet> {
               icon: Icon(_fotoPath == null ? Icons.photo_camera : Icons.check_circle, color: _fotoPath == null ? null : Colors.green),
               label: Text(_fotoPath == null ? 'Tomar foto del recibo / entrega (obligatorio)' : 'Foto lista · tocar para cambiar'),
             ),
+            _botonFirma(_firma, () async {
+              final f = await _pedirFirma(context, titulo: 'Firma de recepción', detalle: 'Yo, ${_nombreDe(widget.trabajador)}, recibí ${_money(double.tryParse(_monto.text.replaceAll(',', '.')) ?? 0)} por concepto de $_tipo.');
+              if (f != null) setState(() => _firma = f);
+            }),
           ],
           const SizedBox(height: 14),
           FilledButton.icon(
@@ -1547,6 +1718,7 @@ class _JornalSheetState extends State<_JornalSheet> {
   bool _enviando = false;
   bool _caja = true;
   String? _foto_;
+  String? _firma;
   String? _error;
 
   @override
@@ -1564,12 +1736,16 @@ class _JornalSheetState extends State<_JornalSheet> {
       _aviso(context, 'Toma la foto del trabajador recibiendo su pago', error: true);
       return;
     }
+    if (_firma == null) {
+      _aviso(context, 'El trabajador debe firmar el recibo', error: true);
+      return;
+    }
     setState(() => _enviando = true);
     try {
       await widget.api.post('/rrhh/jornal/pagar', {
         'trabajadorId': widget.trabajador['id'], 'desdeCaja': _caja, 'usuarioId': widget.api.usuarioId,
         'usuarioNombre': widget.api.usuarioNombre, 'sucursalId': widget.api.sucursalId > 0 ? widget.api.sucursalId : null,
-      }, archivo: _foto_);
+      }, archivo: _foto_, firma: _firma);
       if (mounted) {
         Navigator.pop(context, true);
         _aviso(context, 'Pago registrado: ${_money(_j['neto'] as num?)}');
@@ -1611,6 +1787,10 @@ class _JornalSheetState extends State<_JornalSheet> {
                         icon: Icon(_foto_ == null ? Icons.photo_camera : Icons.check_circle, color: _foto_ == null ? null : Colors.green),
                         label: Text(_foto_ == null ? 'Tomar foto de la entrega (obligatorio)' : 'Foto lista · tocar para cambiar'),
                       ),
+                      _botonFirma(_firma, () async {
+                        final f = await _pedirFirma(context, titulo: 'Firma de recepción', detalle: 'Yo, ${_nombreDe(t)}, recibí ${_money(_j['neto'] as num?)} por ${_j['cantidad']} día(s) trabajado(s).');
+                        if (f != null) setState(() => _firma = f);
+                      }),
                       const SizedBox(height: 12),
                       FilledButton.icon(
                         style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
@@ -1733,6 +1913,7 @@ class _CesePageState extends State<_CesePage> {
   String _fecha = _hoy();
   final _nota = TextEditingController();
   String? _carta;
+  String? _firma;
   Map<String, dynamic>? _liq;
   bool _calc = false;
   bool _ok = false;
@@ -1768,7 +1949,7 @@ class _CesePageState extends State<_CesePage> {
     try {
       final r = _mapa(await widget.api.post('/rrhh/ceses', {
         'trabajadorId': widget.t['id'], 'motivo': _motivo, 'fecha': _fecha, 'nota': _nota.text.trim(), 'usuarioId': widget.api.usuarioId,
-      }, archivo: _carta));
+      }, archivo: _carta, firma: _firma));
       if (!mounted) return;
       final boletaId = r['boletaId'] as int?;
       Navigator.pop(context, true);
@@ -1817,6 +1998,10 @@ class _CesePageState extends State<_CesePage> {
             if (f != null) setState(() => _carta = f);
           },
         ),
+        _botonFirma(_firma, () async {
+          final f = await _pedirFirma(context, titulo: 'Firma de conformidad', detalle: '${_nombreDe(t)} firma la conformidad de su salida.');
+          if (f != null) setState(() => _firma = f);
+        }, obligatoria: false),
         const SizedBox(height: 10),
         TextField(controller: _nota, maxLines: 2, decoration: const InputDecoration(labelText: 'Nota (opcional)', border: OutlineInputBorder())),
         const SizedBox(height: 14),
@@ -1999,6 +2184,7 @@ class _PagarBoletaSheet extends StatefulWidget {
 class _PagarBoletaSheetState extends State<_PagarBoletaSheet> {
   late bool _caja = widget.boleta['tipo'] != 'CTS';
   String? _foto_;
+  String? _firma;
   bool _enviando = false;
 
   Future<void> _enviar() async {
@@ -2007,12 +2193,16 @@ class _PagarBoletaSheetState extends State<_PagarBoletaSheet> {
       _aviso(context, 'Toma la foto del recibo o del voucher de depósito', error: true);
       return;
     }
+    if (neto > 0 && _firma == null) {
+      _aviso(context, 'El trabajador debe firmar el recibo', error: true);
+      return;
+    }
     setState(() => _enviando = true);
     try {
       await widget.api.post('/rrhh/boletas/${widget.boleta['id']}/pagar', {
         'desdeCaja': _caja, 'usuarioId': widget.api.usuarioId, 'usuarioNombre': widget.api.usuarioNombre,
         'sucursalId': widget.api.sucursalId > 0 ? widget.api.sucursalId : null,
-      }, archivo: _foto_);
+      }, archivo: _foto_, firma: _firma);
       if (mounted) {
         Navigator.pop(context, true);
         _aviso(context, 'Pago registrado');
@@ -2045,6 +2235,10 @@ class _PagarBoletaSheetState extends State<_PagarBoletaSheet> {
             icon: Icon(_foto_ == null ? Icons.photo_camera : Icons.check_circle, color: _foto_ == null ? null : Colors.green),
             label: Text(_foto_ == null ? 'Foto del recibo firmado / voucher (obligatorio)' : 'Foto lista · tocar para cambiar'),
           ),
+          _botonFirma(_firma, () async {
+            final f = await _pedirFirma(context, titulo: 'Firma de recepción', detalle: 'Recibí ${_money(widget.boleta['neto'] as num?)} por ${widget.boleta['tipo']} ${widget.boleta['periodo']}.');
+            if (f != null) setState(() => _firma = f);
+          }),
           const SizedBox(height: 12),
           FilledButton.icon(style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)), onPressed: _enviando ? null : _enviar, icon: const Icon(Icons.check), label: Text(_enviando ? 'Guardando…' : 'Confirmar pago')),
         ]),
@@ -2211,6 +2405,7 @@ class _PagosTabState extends State<_PagosTab> with AutomaticKeepAliveClientMixin
                 leading: p['fotoUrl'] != null ? InkWell(onTap: () => _verArchivo(context, p['fotoUrl'].toString(), titulo: 'Recibo'), child: const Icon(Icons.photo, color: Colors.blue)) : const Icon(Icons.receipt, color: Colors.grey),
                 trailing: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                   Text(_money(p['monto'] as num?), style: const TextStyle(fontWeight: FontWeight.bold)),
+                  if (p['estado'] != 'ANULADO' && p['tipo'] != 'BONO' && p['tipo'] != 'DESCUENTO') InkWell(onTap: () => _reciboPago(context, widget.api, p), child: const Text('Recibo', style: TextStyle(fontSize: 12, color: Colors.blue))),
                   if (p['estado'] != 'ANULADO' && p['descontado'] != true) InkWell(onTap: () => _anular(p), child: const Text('Anular', style: TextStyle(fontSize: 12, color: Colors.red))),
                 ]),
               ),
@@ -2604,7 +2799,7 @@ class _AjustesTabState extends State<_AjustesTab> with AutomaticKeepAliveClientM
       _seccion('¿Cómo se usa? (guía rápida)', icono: Icons.help_outline, children: const [
         Text('1. PERSONAL: agrega a cada trabajador (DNI, sueldo, ONP/AFP). Guarda su contrato y documentos.\n'
             '2. HOY: cada día toma la foto de entrada y de salida. Si no vino, márcalo "Faltó". Para personal por días, igual: entrada y salida con foto.\n'
-            '3. PAGOS: para dar un adelanto toma la foto del recibo firmado. Para el personal por días usa "Pagar días": suma los días y descuenta sus adelantos.\n'
+            '3. PAGOS: para dar un adelanto toma la foto de la entrega y haz que el trabajador FIRME con el dedo en la pantalla; queda un recibo de entrega que se puede imprimir. Para el personal por días usa "Pagar días": suma los días y descuenta sus adelantos.\n'
             '4. PLANILLA: a fin de mes toca "Calcular" → "Generar boleta" → "Pagar". Los adelantos y las faltas se descuentan solos.\n'
             '5. Julio y diciembre: gratificación. Mayo y noviembre: CTS.\n'
             '6. Si alguien se va: en su ficha "Renuncia / salida". Se calcula lo que se le debe.\n\n'
