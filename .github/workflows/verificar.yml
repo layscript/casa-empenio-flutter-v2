@@ -16,4 +16,5 @@ jobs:
       - run: |
           flutter analyze --no-fatal-infos --no-fatal-warnings lib/presentation/app/utils/rrhh_view.dart lib/presentation/app/utils/rrhh_pdf.dart lib/presentation/features/home/features/main/views/main.dart lib/presentation/app/utils/modulo_pantalla.dart > out.txt 2>&1 || true
           grep -E " error | warning " out.txt | head -c 4000 | while IFS= read -r l; do echo "::error::$l"; done
+          echo "::warning::RESUMEN $(tail -n 2 out.txt | tr "\n" " ") LINEAS=$(wc -l < out.txt)"
           ! grep -q " error " out.txt
