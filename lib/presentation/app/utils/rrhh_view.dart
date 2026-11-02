@@ -1137,6 +1137,7 @@ class _TrabajadorFormState extends State<_TrabajadorForm> {
   String? _horaEnt;
   String? _horaSal;
   bool _guardando = false;
+  bool _marcarAsistidos = true;
   late int? _sucursal = (_t['sucursalId'] as num?)?.toInt() ?? (widget.api.sucursalId > 0 ? widget.api.sucursalId : null);
   List<Map<String, dynamic>> _sucursales = [];
 
@@ -1190,6 +1191,7 @@ class _TrabajadorFormState extends State<_TrabajadorForm> {
         'celular': _c['celular']!.text.trim(),
         'cargo': _c['cargo']!.text.trim(),
         'sucursalId': _sucursal,
+        if (!_edita) 'marcarAsistidos': _marcarAsistidos,
         'domicilio': _c['domicilio']!.text.trim(),
         'banco': _c['banco']!.text.trim(),
         'cuentaBancaria': _c['cuentaBancaria']!.text.trim(),
@@ -1362,7 +1364,15 @@ class _TrabajadorFormState extends State<_TrabajadorForm> {
               ),
             ),
           _seccionPago(),
-          _fechaBtn('Ingresó a trabajar el (desde aquí cuentan sus beneficios)', _ingreso, (v) => _ingreso = v ?? _ingreso),
+          _fechaBtn('Empezó a trabajar el (desde este día se le paga)', _ingreso, (v) => _ingreso = v ?? _ingreso),
+          if (!_edita && _ingreso.compareTo(_hoy()) < 0)
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Ya viene trabajando: dar por asistidos esos días'),
+              subtitle: const Text('Se marcan como asistidos desde ese día hasta ayer, para que el mes se le pague completo. Los descansos y feriados quedan como tales; las faltas las corriges en su Hoja del mes.'),
+              value: _marcarAsistidos,
+              onChanged: (v) => setState(() => _marcarAsistidos = v),
+            ),
           _fechaBtn('Fecha de nacimiento', _nacimiento, (v) => _nacimiento = v),
           if (!_edita && _vinculo != 'POR_DIAS')
             _fechaBtn('Contrato termina el (déjalo vacío si es indefinido)', _finContrato, (v) => _finContrato = v),
@@ -4200,6 +4210,21 @@ class _HojaMesPageState extends State<_HojaMesPage> {
     }
   }
 
+  Future<void> _rellenar() async {
+    final primero = DateTime.parse('$_mes-01');
+    final ultimo = DateTime(primero.year, primero.month + 1, 0);
+    final ayer = DateTime.now().subtract(const Duration(days: 1));
+    final hasta = ultimo.isBefore(ayer) ? ultimo : ayer;
+    if (!await _confirmar(context, 'Dar por asistidos', 'Se marcarán como asistidos todos los días sin marcar de este mes (hasta ${DateFormat('dd/MM').format(hasta)}). Descansos y feriados quedan como tales. Después puedes tocar un día para corregir una falta.', si: 'Sí, marcar')) return;
+    try {
+      final r = _mapa(await widget.api.post('/rrhh/asistencia/rellenar', {'trabajadorId': _id, 'desde': DateFormat('yyyy-MM-dd').format(primero), 'hasta': DateFormat('yyyy-MM-dd').format(hasta), 'usuarioId': widget.api.usuarioId}));
+      if (mounted) _aviso(context, '${r['marcados']} día(s) marcados');
+      _cargar();
+    } catch (e) {
+      if (mounted) _aviso(context, e.toString(), error: true);
+    }
+  }
+
   Future<void> _tocar(DateTime d) async {
     final est = _estadoDe(d);
     if (est == 'ANTES') {
@@ -4337,7 +4362,14 @@ class _HojaMesPageState extends State<_HojaMesPage> {
                       if (medios > 0) _lineaMonto('Medios días', null, texto: '$medios'),
                       _lineaMonto('Faltas', null, texto: '$faltas', rojo: faltas > 0),
                       if (ferTrab > 0) _lineaMonto('Feriados trabajados', null, texto: '$ferTrab'),
-                      if (sinMarcar > 0) Text('Hay $sinMarcar día(s) sin marcar: tócalos en el calendario.', style: const TextStyle(fontSize: 12, color: Colors.deepOrange)),
+                      if (sinMarcar > 0) ...[
+                        Text('Hay $sinMarcar día(s) sin marcar: no se le están sumando.', style: const TextStyle(fontSize: 12, color: Colors.deepOrange)),
+                        FilledButton.tonalIcon(
+                          onPressed: _rellenar,
+                          icon: const Icon(Icons.done_all, size: 18),
+                          label: const Text('Dar por asistidos los días sin marcar'),
+                        ),
+                      ],
                     ]),
                     _seccion('Adelantos de $_mes', icono: Icons.price_change, children: [
                       if (adel.isEmpty) const Text('No tiene adelantos este mes.'),
@@ -4506,9 +4538,10 @@ class _PeriodoAnteriorSheetState extends State<_PeriodoAnteriorSheet> {
         'usuarioId': widget.api.usuarioId, 'usuarioNombre': widget.api.usuarioNombre, 'sucursalId': widget.api.sucursalId > 0 ? widget.api.sucursalId : null,
       }, archivo: _foto_, firma: _firma));
       if (mounted) {
-        Navigator.pop(context, true);
         _aviso(context, 'Pago registrado: ${_money(r['neto'] as num?)}');
+        await _reciboPago(context, widget.api, r, widget.trabajador);
       }
+      if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) _aviso(context, e.toString(), error: true);
     }
