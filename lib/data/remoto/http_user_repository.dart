@@ -32,8 +32,25 @@ class HttpUserRepository implements UserRepository {
         final data = map['body'];
         return Right(UserEntity.userFromMap(data));
       }
-    } catch (e, stackTrace) {
-      return const Left('Ocurrió un error con el servidor');
+    } on DioException catch (e) {
+      final code = e.response?.statusCode;
+      final data = e.response?.data;
+      String? msg;
+      try {
+        final m = data is String ? json.decode(data) : data;
+        if (m is Map && m['message'] != null) {
+          msg = m['message'] is List ? (m['message'] as List).join(', ') : m['message'].toString();
+        }
+      } catch (_) {}
+      if (code == 401 || code == 404) {
+        return Left(msg ?? 'Usuario o contraseña incorrectos');
+      }
+      if (code == null) {
+        return const Left('No hay conexión con el servidor. Revisa tu internet o que el servidor esté encendido.');
+      }
+      return Left('El servidor tuvo un problema (código $code)${msg != null ? ': $msg' : ''}. Avisa al administrador del sistema.');
+    } catch (e) {
+      return Left('La app no pudo leer los datos del usuario: $e');
     }
   }
 
