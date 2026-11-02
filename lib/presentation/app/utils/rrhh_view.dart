@@ -887,7 +887,7 @@ class _HoyTabState extends State<_HoyTab> with AutomaticKeepAliveClientMixin {
     Widget accion;
     if (ocupado) {
       accion = const SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 2));
-    } else if (esHoy && a == null) {
+    } else if (esHoy && (a == null || (a['auto'] == true && estado == 'FERIADO'))) {
       accion = FilledButton.icon(
         style: FilledButton.styleFrom(backgroundColor: Colors.green.shade700),
         onPressed: () => _marcar(it, 'ENTRADA'),
@@ -907,7 +907,7 @@ class _HoyTabState extends State<_HoyTab> with AutomaticKeepAliveClientMixin {
     return Card(
       margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
       child: InkWell(
-        onTap: () => _detalle(it),
+        onTap: a?['auto'] == true ? null : () => _detalle(it),
         child: Padding(
           padding: const EdgeInsets.all(10),
           child: Row(children: [
@@ -922,12 +922,13 @@ class _HoyTabState extends State<_HoyTab> with AutomaticKeepAliveClientMixin {
                   Text('Sin marcar · entra ${t['horaEntrada']}', style: const TextStyle(fontSize: 12, color: Colors.black54))
                 else
                   Text(
-                    '${_estadoAsisTxt[estado] ?? estado}${tieneEntrada ? ' · ${_hora(a!['horaEntrada'])}' : ''}${tieneSalida ? ' → ${_hora(a!['horaSalida'])}' : ''}',
+                    '${a?['auto'] == true ? '${_estadoAsisTxt[estado] ?? estado} (automático)' : (_estadoAsisTxt[estado] ?? estado)}${tieneEntrada ? ' · ${_hora(a!['horaEntrada'])}' : ''}${tieneSalida ? ' → ${_hora(a!['horaSalida'])}' : ''}',
                     style: TextStyle(fontSize: 13, color: _colorAsis(estado), fontWeight: FontWeight.w600),
                   ),
               ]),
             ),
             accion,
+            if (!(a?['auto'] == true && estado == 'DESCANSO'))
             PopupMenuButton<String>(
               tooltip: 'Más',
               onSelected: (v) => _manual(it, v),
@@ -4234,8 +4235,7 @@ class _HojaMesPageState extends State<_HojaMesPage> {
                       final f = await _pickFecha(ctx, inicial: desde);
                       if (f != null) setS(() => desde = f);
                     },
-                    child: Text('Desde
-${_fechaCorta(desde)}', textAlign: TextAlign.center),
+                    child: Text('Desde\n${_fechaCorta(desde)}', textAlign: TextAlign.center),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -4245,8 +4245,7 @@ ${_fechaCorta(desde)}', textAlign: TextAlign.center),
                       final f = await _pickFecha(ctx, inicial: hasta);
                       if (f != null) setS(() => hasta = f);
                     },
-                    child: Text('Hasta
-${_fechaCorta(hasta)}', textAlign: TextAlign.center),
+                    child: Text('Hasta\n${_fechaCorta(hasta)}', textAlign: TextAlign.center),
                   ),
                 ),
               ]),
@@ -4303,6 +4302,10 @@ ${_fechaCorta(hasta)}', textAlign: TextAlign.center),
     final est = _estadoDe(d);
     if (est == 'ANTES') {
       _aviso(context, 'Ese día es antes de que empiece a trabajar', error: true);
+      return;
+    }
+    if (est == 'DESCANSO_AUTO') {
+      _aviso(context, 'Es su día de descanso: se paga solo, no hay que marcarlo');
       return;
     }
     final f = DateFormat('yyyy-MM-dd').format(d);
