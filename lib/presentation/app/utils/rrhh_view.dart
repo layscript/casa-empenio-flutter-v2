@@ -1697,6 +1697,14 @@ class _FichaPageState extends State<_FichaPage> {
           if (!cesado) ...[
             FilledButton.icon(onPressed: () => _pago('ADELANTO'), icon: const Icon(Icons.price_change, size: 18), label: const Text('Dar adelanto')),
             FilledButton.tonalIcon(onPressed: _horaExtra, icon: const Icon(Icons.more_time, size: 18), label: const Text('Horas extra')),
+            OutlinedButton.icon(
+              onPressed: () async {
+                final ok = await showModalBottomSheet<bool>(context: context, isScrollControlled: true, builder: (_) => _PeriodoAnteriorSheet(api: widget.api, trabajador: t));
+                if (ok == true) _cargar();
+              },
+              icon: const Icon(Icons.history, size: 18),
+              label: const Text('Pagar mes anterior'),
+            ),
             OutlinedButton.icon(onPressed: () => _pago('DESCUENTO'), icon: const Icon(Icons.remove_circle_outline, size: 18), label: const Text('Descuento / bono')),
             OutlinedButton.icon(onPressed: () => _pago(porDia ? 'JORNAL' : 'SUELDO'), icon: const Icon(Icons.payments, size: 18), label: Text(porDia ? 'Pagar días' : 'Otro pago')),
             OutlinedButton.icon(
@@ -4411,6 +4419,217 @@ class _HojaMesPageState extends State<_HojaMesPage> {
           Text('${d.day}', style: TextStyle(fontWeight: FontWeight.bold, color: (antes || sin || e == 'FUTURO') ? Colors.black45 : Colors.white)),
           if (_marca(e).isNotEmpty) Positioned(right: 3, top: 0, child: Text(_marca(e), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
         ]),
+      ),
+    );
+  }
+}
+
+
+// ===========================================================================
+// PAGAR UN PERIODO ANTERIOR / NO REGISTRADO (ej. todo octubre)
+// ===========================================================================
+class _PeriodoAnteriorSheet extends StatefulWidget {
+  const _PeriodoAnteriorSheet({required this.api, required this.trabajador});
+  final _Api api;
+  final Map<String, dynamic> trabajador;
+  @override
+  State<_PeriodoAnteriorSheet> createState() => _PeriodoAnteriorSheetState();
+}
+
+class _PeriodoAnteriorSheetState extends State<_PeriodoAnteriorSheet> {
+  late String _desde;
+  late String _hasta;
+  final _dias = TextEditingController();
+  final _tarifa = TextEditingController();
+  final _extra = TextEditingController();
+  final _desc = TextEditingController();
+  final _nota = TextEditingController();
+  bool _descontarAdel = true;
+  bool _marcar = true;
+  bool _caja = true;
+  String? _foto_;
+  String? _firma;
+  bool _cargando = true;
+  bool _enviando = false;
+  double _adelantos = 0;
+
+  bool get _diario => widget.trabajador['vinculo'] == 'POR_DIAS' || widget.trabajador['modalidadPago'] == 'DIARIO';
+
+  @override
+  void initState() {
+    super.initState();
+    final hoy = DateTime.now();
+    final ini = DateTime(hoy.year, hoy.month - 1, 1);
+    final fin = DateTime(hoy.year, hoy.month, 0);
+    _desde = DateFormat('yyyy-MM-dd').format(ini);
+    _hasta = DateFormat('yyyy-MM-dd').format(fin);
+    widget.api.get('/rrhh/saldo/${widget.trabajador['id']}').then((v) {
+      final s = _mapa(v);
+      _tarifa.text = ((s['tarifaDia'] as num?) ?? 0).toStringAsFixed(2);
+      _adelantos = ((s['adelantos'] as num?) ?? 0).toDouble();
+      _sugerirDias();
+      if (mounted) setState(() => _cargando = false);
+    }).catchError((_) {
+      if (mounted) setState(() => _cargando = false);
+    });
+  }
+
+  void _sugerirDias() {
+    final a = DateTime.parse(_desde), b = DateTime.parse(_hasta);
+    var n = b.difference(a).inDays + 1;
+    if (n < 0) n = 0;
+    if (!_diario) n = n > 30 ? 30 : n;
+    _dias.text = '$n';
+  }
+
+  double _num(TextEditingController c) => double.tryParse(c.text.replaceAll(',', '.')) ?? 0;
+
+  double get _bruto => _num(_dias) * _num(_tarifa) + _num(_extra) - _num(_desc);
+  double get _adelDesc => (_descontarAdel && _adelantos <= _bruto) ? _adelantos : 0;
+  double get _neto => _bruto - _adelDesc;
+
+  Future<void> _pagar() async {
+    if (_foto_ == null) {
+      _aviso(context, 'Toma la foto del trabajador recibiendo su pago', error: true);
+      return;
+    }
+    if (_firma == null) {
+      _aviso(context, 'El trabajador debe firmar el recibo', error: true);
+      return;
+    }
+    setState(() => _enviando = true);
+    try {
+      final r = _mapa(await widget.api.post('/rrhh/pagos/periodo-anterior', {
+        'trabajadorId': widget.trabajador['id'], 'desde': _desde, 'hasta': _hasta, 'dias': _dias.text.replaceAll(',', '.'),
+        'tarifaDia': _tarifa.text.replaceAll(',', '.'), 'extra': _num(_extra), 'descuento': _num(_desc), 'nota': _nota.text.trim(),
+        'descontarAdelantos': _descontarAdel, 'marcarAsistencia': _marcar, 'desdeCaja': _caja,
+        'usuarioId': widget.api.usuarioId, 'usuarioNombre': widget.api.usuarioNombre, 'sucursalId': widget.api.sucursalId > 0 ? widget.api.sucursalId : null,
+      }, archivo: _foto_, firma: _firma));
+      if (mounted) {
+        Navigator.pop(context, true);
+        _aviso(context, 'Pago registrado: ${_money(r['neto'] as num?)}');
+      }
+    } catch (e) {
+      if (mounted) _aviso(context, e.toString(), error: true);
+    }
+    if (mounted) setState(() => _enviando = false);
+  }
+
+  Widget _campoNum(String l, TextEditingController c, {String? ayuda, String? prefijo}) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: TextField(
+          controller: c,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          onChanged: (_) => setState(() {}),
+          decoration: InputDecoration(labelText: l, helperText: ayuda, prefixText: prefijo, border: const OutlineInputBorder(), isDense: true),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.trabajador;
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: _cargando
+              ? _esperaW()
+              : Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Pagar mes anterior a ${t['nombres']}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                  const Text('Úsalo para pagar días que ya trabajó y que no estaban registrados en el sistema (por ejemplo, todo octubre).', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                  const SizedBox(height: 10),
+                  Row(children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.event, size: 18),
+                        label: Text('Desde\n${_fechaCorta(_desde)}', textAlign: TextAlign.center),
+                        onPressed: () async {
+                          final f = await _pickFecha(context, inicial: _desde, max: DateTime.now());
+                          if (f != null) setState(() { _desde = f; _sugerirDias(); });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.event_available, size: 18),
+                        label: Text('Hasta\n${_fechaCorta(_hasta)}', textAlign: TextAlign.center),
+                        onPressed: () async {
+                          final f = await _pickFecha(context, inicial: _hasta, max: DateTime.now());
+                          if (f != null) setState(() { _hasta = f; _sugerirDias(); });
+                        },
+                      ),
+                    ),
+                  ]),
+                  const SizedBox(height: 10),
+                  _campoNum('¿Cuántos días trabajó?', _dias, ayuda: _diario ? 'Cuenta solo los días que vino' : 'Mes completo = 30 días. Si faltó, réstalos.'),
+                  _campoNum(_diario ? 'Pago por día' : 'Valor de cada día (sueldo ÷ 30)', _tarifa, prefijo: 'S/ '),
+                  Row(children: [
+                    Expanded(child: _campoNum('Más: horas extra / feriado', _extra, prefijo: 'S/ ')),
+                    const SizedBox(width: 8),
+                    Expanded(child: _campoNum('Menos: faltas / daños', _desc, prefijo: 'S/ ')),
+                  ]),
+                  if (_adelantos > 0)
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('Descontar sus adelantos (${_money(_adelantos)})'),
+                      value: _descontarAdel,
+                      onChanged: (v) => setState(() => _descontarAdel = v),
+                    ),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(10)),
+                    child: Column(children: [
+                      _lineaMonto('${_dias.text} día(s) × ${_money(_num(_tarifa))}', _num(_dias) * _num(_tarifa)),
+                      if (_num(_extra) > 0) _lineaMonto('+ Extra', _num(_extra)),
+                      if (_num(_desc) > 0) _lineaMonto('− Descuentos', -_num(_desc), rojo: true),
+                      if (_adelDesc > 0) _lineaMonto('− Adelantos', -_adelDesc, rojo: true),
+                      const Divider(),
+                      _lineaMonto('TOTAL A PAGAR', _neto, fuerte: true),
+                    ]),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(controller: _nota, decoration: const InputDecoration(labelText: 'Observación (opcional)', border: OutlineInputBorder(), isDense: true)),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Marcar esos días como asistidos'),
+                    subtitle: const Text('Quedan en su hoja del mes como ya pagados.'),
+                    value: _marcar,
+                    onChanged: (v) => setState(() => _marcar = v),
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('El dinero sale de la caja de hoy'),
+                    subtitle: Text(_caja ? 'Se registra como gasto en la caja abierta.' : 'No toca la caja (ya se pagó por otro medio).'),
+                    value: _caja,
+                    onChanged: (v) => setState(() => _caja = v),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final f = await _foto(context);
+                      if (f != null) setState(() => _foto_ = f);
+                    },
+                    icon: Icon(_foto_ == null ? Icons.photo_camera : Icons.check_circle, color: _foto_ == null ? null : Colors.green),
+                    label: Text(_foto_ == null ? 'Foto del trabajador recibiendo el pago' : 'Foto lista · tocar para cambiar'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final f = await _pedirFirma(context, titulo: 'Firma de recibo', detalle: '${_nombreDe(t)} recibe ${_money(_neto)} por el pago del ${_fechaCorta(_desde)} al ${_fechaCorta(_hasta)}.');
+                      if (f != null) setState(() => _firma = f);
+                    },
+                    icon: Icon(_firma == null ? Icons.draw : Icons.check_circle, color: _firma == null ? null : Colors.green),
+                    label: Text(_firma == null ? 'Firma del trabajador' : 'Firmado · tocar para cambiar'),
+                  ),
+                  const SizedBox(height: 10),
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+                    onPressed: (_enviando || _neto <= 0) ? null : _pagar,
+                    icon: const Icon(Icons.payments),
+                    label: Text(_enviando ? 'Guardando…' : 'Pagar ${_money(_neto)}'),
+                  ),
+                ]),
+        ),
       ),
     );
   }
