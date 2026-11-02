@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/sucursal_vista.dart';
 import 'dart:async';
 import 'dart:developer';
 
@@ -121,19 +122,19 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
       _reportsRepository.getClosedByRangeDate(
         inicio: event.start ?? state.startTimePayments,
         fin: event.end ?? state.endTimePayments,
-        sucursalId: _preferences.token?.sucursal?.id ?? 1,
+        sucursalId: SucursalVista.actual(_preferences.token?.sucursal?.id),
         usuarioId: _preferences.token?.id ?? 1,
       ),
       _reportsRepository.getPaymentsByRangeDate(
         inicio: event.start ?? state.startTimePayments,
         fin: event.end ?? state.endTimePayments,
-        sucursalId: _preferences.token?.sucursal?.id ?? 1,
+        sucursalId: SucursalVista.actual(_preferences.token?.sucursal?.id),
         usuarioId: _preferences.token?.id ?? 1,
       ),
       _reportsRepository.getLoansByRangeDate(
         inicio: event.start ?? state.startTimePayments,
         fin: event.end ?? state.endTimePayments,
-        sucursalId: _preferences.token?.sucursal?.id ?? 1,
+        sucursalId: SucursalVista.actual(_preferences.token?.sucursal?.id),
         usuarioId: _preferences.token?.id ?? 1,
       ),
     ]);
@@ -361,13 +362,13 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
       _reportsRepository.getLoansByRangeDate(
         inicio: event.start ?? state.startTimeContracts,
         fin: event.end ?? state.endTimeContracts,
-        sucursalId: _preferences.token?.sucursal?.id ?? 1,
+        sucursalId: SucursalVista.actual(_preferences.token?.sucursal?.id),
         usuarioId: _preferences.token?.id ?? 1,
       ),
       _reportsRepository.getIncreasesByRangeDate(
         inicio: event.start ?? state.startTimeContracts,
         fin: event.end ?? state.endTimeContracts,
-        sucursal: _preferences.token?.sucursal?.id ?? 1,
+        sucursal: SucursalVista.actual(_preferences.token?.sucursal?.id),
       ),
     ]);
 
@@ -526,7 +527,7 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
 
     try {
       final getCajaOfTheDay = await _cajaRepository.getCajaOfTheDay(
-        sucursalId: _preferences.token?.sucursal?.id ?? 1,
+        sucursalId: SucursalVista.actual(_preferences.token?.sucursal?.id),
       );
       await getCajaOfTheDay.fold(
         (error) async {
@@ -721,7 +722,7 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
       final result = await _reportsRepository.getDeudasByDays(
         diasInicio: event.diasInicio,
         diasFin: event.diasFin,
-        sucursalId: _preferences.token?.sucursal?.id ?? 1,
+        sucursalId: SucursalVista.actual(_preferences.token?.sucursal?.id),
       );
 
       result.fold(

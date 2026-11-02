@@ -4,6 +4,8 @@ import 'package:casa_empenio_pe/presentation/features/home/features/reports/view
 import 'package:casa_empenio_pe/presentation/features/home/features/reports/views/payment/payments_reports_view.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/reports/views/resumen_reports_view.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/reports/widgets/widgets.dart';
+import 'package:casa_empenio_pe/domain/domain.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/sucursal_vista.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -26,8 +28,19 @@ class _ReportsViewState extends State<ReportsView> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    SucursalVista.id = null; // al entrar se empieza en la sucursal propia
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final user = context.read<Preferences>().token;
+    final esAdmin = user?.isAdmin == true ||
+        (user?.role?.nombre ?? '').toLowerCase().contains('admin');
+    final propia = int.tryParse('${user?.sucursal?.id ?? 1}') ?? 1;
     return BlocProvider(
+      key: ValueKey('rep-${SucursalVista.id}'),
       create: (context) => ReportsBloc(
         reportsRepository: context.read(),
         loansRepository: context.read(),
@@ -44,6 +57,8 @@ class _ReportsViewState extends State<ReportsView> {
           ),
           child: Column(
             children: [
+              if (esAdmin)
+                SelectorSucursal(propia: propia, onCambio: () => setState(() {})),
               SizedBox(
                 height: 38,
                 child: ListView(

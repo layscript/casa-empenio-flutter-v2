@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/sucursal_vista.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -381,6 +382,16 @@ class _FirmaPageState extends State<_FirmaPage> {
   final GlobalKey _clave = GlobalKey();
   final List<List<Offset>> _trazos = [];
   bool _guardando = false;
+  late int? _sucursal = (_t['sucursalId'] as num?)?.toInt() ?? (widget.api.sucursalId > 0 ? widget.api.sucursalId : null);
+  List<Map<String, dynamic>> _sucursales = [];
+
+  @override
+  void initState() {
+    super.initState();
+    cargarSucursales().then((l) {
+      if (mounted) setState(() => _sucursales = l);
+    }).catchError((_) {});
+  }
 
   Future<void> _aceptar() async {
     if (_trazos.isEmpty || _trazos.fold<int>(0, (a, t) => a + t.length) < 8) {
@@ -1179,6 +1190,7 @@ class _TrabajadorFormState extends State<_TrabajadorForm> {
         'apellidos': _c['apellidos']!.text.trim(),
         'celular': _c['celular']!.text.trim(),
         'cargo': _c['cargo']!.text.trim(),
+        'sucursalId': _sucursal,
         'domicilio': _c['domicilio']!.text.trim(),
         'banco': _c['banco']!.text.trim(),
         'cuentaBancaria': _c['cuentaBancaria']!.text.trim(),
@@ -1340,6 +1352,16 @@ class _TrabajadorFormState extends State<_TrabajadorForm> {
           _campo('apellidos', 'Apellidos', obligatorio: true),
           _campo('celular', 'Celular', tipo: TextInputType.phone),
           _campo('cargo', 'Cargo o función', ayuda: 'Ej: Cajero, Tasador, Limpieza, Seguridad'),
+          if (_sucursales.length > 1)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: DropdownButtonFormField<int?>(
+                value: _sucursales.any((x) => (x['id'] as num).toInt() == _sucursal) ? _sucursal : null,
+                decoration: const InputDecoration(labelText: 'Sucursal donde trabaja', helperText: 'Sus pagos salen de la caja de su sucursal', border: OutlineInputBorder(), isDense: true),
+                items: [for (final x in _sucursales) DropdownMenuItem<int?>(value: (x['id'] as num).toInt(), child: Text('${x['nombre']}'))],
+                onChanged: (v) => setState(() => _sucursal = v),
+              ),
+            ),
           _seccionPago(),
           _fechaBtn('Ingresó a trabajar el (desde aquí cuentan sus beneficios)', _ingreso, (v) => _ingreso = v ?? _ingreso),
           _fechaBtn('Fecha de nacimiento', _nacimiento, (v) => _nacimiento = v),
