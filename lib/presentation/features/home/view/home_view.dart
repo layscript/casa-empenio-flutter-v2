@@ -2,6 +2,7 @@ import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
+import 'package:casa_empenio_pe/presentation/features/home/bloc/home_bloc.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/widgets/tareas_cobranza_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -119,10 +120,8 @@ class _HomeViewState extends State<HomeView> {
               mainAxisSpacing: 12,
               crossAxisCount: 2,
               childAspectRatio: 0.95,
-              children: auth?.role?.modulos?.map((e) {
-                    if (e.id == 19 || e.id == 18 || e.id == 17 || e.id == 16) {
-                      return const SizedBox();
-                    } else {
+              children: modulosVisibles(auth).map((e) {
+                    {
                       return _ItemGrid(
                         onTap: () {
                           preferences.setRefresh(true);
@@ -136,8 +135,7 @@ class _HomeViewState extends State<HomeView> {
                         icon: getIcon(e.id),
                       );
                     }
-                  }).toList() ??
-                  [],
+                  }).toList(),
             ),
           const SizedBox(height: 10),
         ],
@@ -154,6 +152,8 @@ String descripcionModulo(String nombre) {
     'auditor': 'Quién hizo qué en la app',
     'bitacora': 'Quién hizo qué en la app',
     'administraci': 'Usuarios, sucursales y ajustes',
+    'recursos humanos': 'Personal, asistencia, pagos y planilla',
+    'panel de sucursal': 'Mira la caja de todas tus sucursales',
     'perdon': 'Intereses o deudas perdonadas',
     'proforma': 'Cotizaciones y notas de venta',
     'caja': 'Abrir, cerrar y ver el dinero del día',

@@ -120,6 +120,9 @@ class _MainViewState extends State<MainView> {
                     case 9004:
                       return const SucursalesPanelView();
 
+                    case 9005:
+                      return const RrhhView();
+
                     case 1:
                       return const LoansView();
 

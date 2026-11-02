@@ -60,8 +60,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
         final modulos = [
           ...moduloInicio!,
-          ...otrosModulos!,
-          ..._extrasAdministrador(user, otrosModulos!),
+          ...modulosVisibles(user),
         ];
         emit(
           state.copyWith(
@@ -70,29 +69,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         );
       },
     );
-  }
-
-  /// Los administradores siempre ven Administración, Auditoría y Expedientes,
-  /// aunque no estén creados ni asignados como módulos en el rol.
-  List<ModulosEntity> _extrasAdministrador(
-    UserEntity user,
-    List<ModulosEntity> actuales,
-  ) {
-    final esAdmin = user.isAdmin == true ||
-        (user.role?.nombre ?? '').toLowerCase().contains('admin');
-    if (!esAdmin) return const <ModulosEntity>[];
-    bool yaEsta(String clave) =>
-        actuales.any((m) => m.nombre.toLowerCase().contains(clave));
-    return <ModulosEntity>[
-      if (!yaEsta('administraci'))
-        const ModulosEntity(id: 9001, nombre: 'Administración'),
-      if (!yaEsta('auditor'))
-        const ModulosEntity(id: 9002, nombre: 'Auditoría'),
-      if (!yaEsta('expediente'))
-        const ModulosEntity(id: 9003, nombre: 'Expedientes'),
-      if (!yaEsta('panel de sucursal'))
-        const ModulosEntity(id: 9004, nombre: 'Panel de Sucursales'),
-    ];
   }
 
   void _onGoToPage(GoToPage event, Emitter<HomeState> emit) {
@@ -106,4 +82,43 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     );
     emit(state.copyWith(selected: caja));
   }
+}
+
+/// Módulos que de verdad abren una pantalla en la app.
+bool moduloFunciona(ModulosEntity m) {
+  final n = m.nombre.toLowerCase();
+  const claves = [
+    'expediente', 'auditor', 'bitacora', 'bitácora', 'administraci',
+    'recursos humanos', 'personal', 'adjudic', 'panel de sucursal',
+  ];
+  if (claves.any(n.contains)) return true;
+  return (m.id >= 1 && m.id <= 15) || (m.id >= 9001 && m.id <= 9005);
+}
+
+/// Lista final de módulos para la pantalla de inicio y el menú:
+/// quita los que no abren nada y agrega los del administrador.
+List<ModulosEntity> modulosVisibles(UserEntity? user) {
+  final base = (user?.role?.modulos ?? <ModulosEntity>[])
+      .where((m) =>
+          m.id != 19 && m.id != 16 && m.id != 17 && m.id != 18 && moduloFunciona(m))
+      .toList();
+  final esAdmin = user?.isAdmin == true ||
+      (user?.role?.nombre ?? '').toLowerCase().contains('admin');
+  if (esAdmin) {
+    bool yaEsta(String clave) =>
+        base.any((m) => m.nombre.toLowerCase().contains(clave));
+    base.addAll(<ModulosEntity>[
+      if (!yaEsta('recursos humanos') && !yaEsta('personal'))
+        const ModulosEntity(id: 9005, nombre: 'Recursos Humanos'),
+      if (!yaEsta('administraci'))
+        const ModulosEntity(id: 9001, nombre: 'Administración'),
+      if (!yaEsta('auditor') && !yaEsta('bitacora'))
+        const ModulosEntity(id: 9002, nombre: 'Auditoría'),
+      if (!yaEsta('expediente'))
+        const ModulosEntity(id: 9003, nombre: 'Expedientes'),
+      if (!yaEsta('panel de sucursal'))
+        const ModulosEntity(id: 9004, nombre: 'Panel de Sucursales'),
+    ]);
+  }
+  return base;
 }
