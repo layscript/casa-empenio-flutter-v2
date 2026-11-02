@@ -1528,12 +1528,38 @@ class _FichaPageState extends State<_FichaPage> {
   }
 
   Future<void> _nuevoContrato() async {
-    final ok = await showModalBottomSheet<bool>(
+    final c = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
       builder: (_) => _ContratoSheet(api: widget.api, trabajador: _t),
     );
-    if (ok == true) _cargar();
+    if (c == null) return;
+    await _cargar();
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dc) => AlertDialog(
+        title: const Text('Contrato listo ✓'),
+        content: const Text('Ya está guardado. Ahora puedes verlo o imprimirlo, y luego hacer que el trabajador lo firme con el dedo.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dc), child: const Text('Después')),
+          OutlinedButton(
+            onPressed: () async {
+              Navigator.pop(dc);
+              mostrarPdf(await pdfContrato(_t, c), 'Contrato ${_nombreDe(_t)}');
+            },
+            child: const Text('Ver / imprimir'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(dc);
+              _firmarContrato(c);
+            },
+            child: const Text('Firmar ahora'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _firmarContrato(Map<String, dynamic> c) async {
@@ -1655,6 +1681,7 @@ class _FichaPageState extends State<_FichaPage> {
           ),
         ]),
       ),
+      _tarjetaExpediente(contratos, docs, cesado),
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12),
         child: Wrap(spacing: 8, runSpacing: 6, children: [
@@ -1712,8 +1739,8 @@ class _FichaPageState extends State<_FichaPage> {
             ),
           const Text('Se descuentan solos al generar la boleta o al pagar los días.', style: TextStyle(fontSize: 12, color: Colors.black54)),
         ]),
-      _seccion('Contratos', icono: Icons.description, plegable: true, abierta: false, accion: TextButton.icon(onPressed: cesado ? null : _nuevoContrato, icon: const Icon(Icons.add), label: const Text('Nuevo / renovar')), children: [
-        if (contratos.isEmpty) const Text('Sin contratos'),
+      _seccion('Contratos', icono: Icons.description, plegable: true, abierta: true, accion: TextButton.icon(onPressed: cesado ? null : _nuevoContrato, icon: const Icon(Icons.add), label: const Text('Nuevo / renovar')), children: [
+        if (contratos.isEmpty) FilledButton.icon(onPressed: cesado ? null : _nuevoContrato, icon: const Icon(Icons.note_add), label: const Text('Este trabajador no tiene contrato: generarlo ahora')),
         for (final c in contratos)
           ListTile(
             dense: true,
@@ -1735,19 +1762,7 @@ class _FichaPageState extends State<_FichaPage> {
             ]),
           ),
       ]),
-      _seccion('Archivo del trabajador', icono: Icons.folder_shared, plegable: true, abierta: false, accion: TextButton.icon(onPressed: _agregarDoc, icon: const Icon(Icons.add_a_photo), label: const Text('Guardar')), children: [
-        Builder(builder: (_) {
-          const req = {'DNI': 'DNI', 'CONTRATO': 'Contrato firmado', 'ANTECEDENTES': 'Antecedentes', 'CV': 'Currículum'};
-          final tiene = docs.map((d) => d['tipo']).toSet();
-          final faltan = req.entries.where((e) => !tiene.contains(e.key)).map((e) => e.value).toList();
-          return Container(
-            width: double.infinity,
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: faltan.isEmpty ? Colors.green.shade50 : Colors.amber.shade50, borderRadius: BorderRadius.circular(8)),
-            child: Text(faltan.isEmpty ? 'Expediente completo ✓' : 'Faltan en su expediente: ${faltan.join(', ')}', style: const TextStyle(fontSize: 13)),
-          );
-        }),
+      _seccion('Archivo del trabajador', icono: Icons.folder_shared, plegable: true, abierta: true, accion: TextButton.icon(onPressed: _agregarDoc, icon: const Icon(Icons.add_a_photo), label: const Text('Guardar')), children: [
         if (docs.isEmpty) const Text('Aquí guardas el DNI, contrato firmado, CV, renuncia, memos… Toca "Guardar" y toma la foto.'),
         for (final d in docs)
           ListTile(
@@ -1864,6 +1879,79 @@ class _FichaPageState extends State<_FichaPage> {
             ),
         ]),
     ]);
+  }
+
+  static const _docsExp = [
+    ['DNI', 'DNI (parte de adelante)', '1'],
+    ['DNIREV', 'DNI (parte de atrás)', '1'],
+    ['CV', 'Hoja de vida / CV', '1'],
+    ['ANTECEDENTES', 'Antecedentes policiales / penales', '1'],
+    ['FOTO', 'Foto del trabajador', '0'],
+    ['RECIBO', 'Recibo de luz o agua (domicilio)', '0'],
+    ['MEDICO', 'Certificado médico', '0'],
+  ];
+
+  Future<void> _subirDoc(String tipo, String nombre) async {
+    final path = await _archivo(context);
+    if (path == null) return;
+    try {
+      await widget.api.post('/rrhh/trabajadores/${widget.id}/documentos', {'tipo': tipo, 'nombre': nombre, 'usuarioId': widget.api.usuarioId}, archivo: path);
+      if (mounted) _aviso(context, '$nombre guardado');
+      await _cargar();
+    } catch (e) {
+      if (mounted) _aviso(context, e.toString(), error: true);
+    }
+  }
+
+  Widget _tarjetaExpediente(List<Map<String, dynamic>> contratos, List<Map<String, dynamic>> docs, bool cesado) {
+    final tiene = docs.map((d) => d['tipo']).toSet();
+    final oblig = _docsExp.where((d) => d[2] == '1').toList();
+    final hechos = oblig.where((d) => tiene.contains(d[0])).length;
+    final vig = contratos.where((c) => c['estado'] == 'VIGENTE').toList();
+    final firmado = vig.isNotEmpty && vig.first['firmaUrl'] != null;
+    final listo = hechos == oblig.length && firmado;
+    return Card(
+      margin: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+      color: listo ? Colors.green.shade50 : Colors.amber.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Icon(listo ? Icons.verified_user : Icons.folder_shared, color: listo ? Colors.green : Colors.orange.shade800),
+            const SizedBox(width: 8),
+            Expanded(child: Text(listo ? 'Expediente completo' : 'Expediente por completar', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15))),
+          ]),
+          const SizedBox(height: 6),
+          LinearProgressIndicator(value: oblig.isEmpty ? 1 : hechos / oblig.length, minHeight: 6, borderRadius: BorderRadius.circular(4)),
+          const SizedBox(height: 6),
+          Text('Documentos: $hechos de ${oblig.length} · Contrato: ${vig.isEmpty ? 'falta generarlo' : firmado ? 'firmado ✓' : 'falta la firma'}', style: const TextStyle(fontSize: 12)),
+          const SizedBox(height: 6),
+          for (final d in _docsExp)
+            Builder(builder: (_) {
+              final ya = docs.where((x) => x['tipo'] == d[0]).toList();
+              return ListTile(
+                dense: true,
+                visualDensity: VisualDensity.compact,
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(ya.isNotEmpty ? Icons.check_circle : Icons.radio_button_unchecked, color: ya.isNotEmpty ? Colors.green : Colors.grey),
+                title: Text('${d[1]}${d[2] == '0' ? ' (opcional)' : ''}'),
+                onTap: ya.isEmpty ? null : () => _verArchivo(context, ya.first['url']?.toString(), titulo: d[1]),
+                trailing: cesado ? null : TextButton.icon(onPressed: () => _subirDoc(d[0], d[1]), icon: Icon(ya.isEmpty ? Icons.add_a_photo : Icons.autorenew, size: 18), label: Text(ya.isEmpty ? 'Subir' : 'Cambiar')),
+              );
+            }),
+          const Text('Puedes tomar foto, elegir de la galería o subir un PDF.', style: TextStyle(fontSize: 11, color: Colors.black54)),
+          if (!cesado)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Wrap(spacing: 8, children: [
+                if (vig.isEmpty) FilledButton.icon(onPressed: _nuevoContrato, icon: const Icon(Icons.note_add, size: 18), label: const Text('Generar contrato')),
+                if (vig.isNotEmpty) OutlinedButton.icon(onPressed: () async => mostrarPdf(await pdfContrato(_t, vig.first, firma: await widget.api.bytes(vig.first['firmaUrl']?.toString())), 'Contrato ${_nombreDe(_t)}'), icon: const Icon(Icons.print, size: 18), label: const Text('Ver contrato')),
+                if (vig.isNotEmpty && !firmado) FilledButton.icon(onPressed: () => _firmarContrato(vig.first), icon: const Icon(Icons.draw, size: 18), label: const Text('Hacer firmar')),
+              ]),
+            ),
+        ]),
+      ),
+    );
   }
 
   Widget _tarjetaSaldo(bool porDia) {
@@ -2264,6 +2352,18 @@ class _ContratoSheetState extends State<_ContratoSheet> {
   late final TextEditingController _cargo = TextEditingController(text: widget.trabajador['cargo']?.toString() ?? '');
   bool _actualizar = true;
   bool _enviando = false;
+  final _funciones = TextEditingController();
+  final _jornada = TextEditingController(text: 'de lunes a sábado, de 8:00 a.m. a 6:00 p.m., con una hora de refrigerio; descanso semanal obligatorio el domingo');
+  final _lugar = TextEditingController(text: 'Atalaya, Ucayali (local de la empresa)');
+
+  static const _sugerencias = {
+    'Cajero(a)': 'Atención al público; registro de préstamos, renovaciones y pagos; cobro de intereses; manejo, arqueo y cuadre diario de la caja; custodia de prendas y documentos.',
+    'Tasador(a)': 'Evaluación y tasación de bienes en garantía; atención al cliente; registro y custodia de las prendas; apoyo en la venta de bienes adjudicados.',
+    'Vendedor(a)': 'Atención y venta de bienes en tienda; registro de ventas y cobros; orden y limpieza de la mercadería; reposición y control de stock.',
+    'Seguridad': 'Vigilancia y control de ingreso y salida de personas y bienes; resguardo del local y de las prendas; reporte de incidencias.',
+    'Limpieza': 'Limpieza y mantenimiento del local y sus ambientes; apoyo en el orden de almacén.',
+    'Cobranza': 'Visita y contacto con clientes con pagos pendientes; recordatorios de pago; entrega de avisos; reporte diario de gestiones.',
+  };
 
   Future<void> _guardar() async {
     if (_tipo == 'PLAZO_FIJO' && _fin == null) {
@@ -2272,12 +2372,13 @@ class _ContratoSheetState extends State<_ContratoSheet> {
     }
     setState(() => _enviando = true);
     try {
-      await widget.api.post('/rrhh/trabajadores/${widget.trabajador['id']}/contratos', {
+      final r = await widget.api.post('/rrhh/trabajadores/${widget.trabajador['id']}/contratos', {
         'tipo': _tipo, 'fechaInicio': _inicio, 'fechaFin': _tipo == 'PLAZO_FIJO' || _tipo == 'LOCACION' ? _fin : null,
         'remuneracion': double.tryParse(_rem.text.replaceAll(',', '.')) ?? 0, 'cargo': _cargo.text.trim(),
+        'funciones': _funciones.text.trim(), 'jornada': _tipo == 'LOCACION' ? null : _jornada.text.trim(), 'lugar': _lugar.text.trim(),
         'actualizarSueldo': _actualizar, 'usuarioId': widget.api.usuarioId,
       });
-      if (mounted) Navigator.pop(context, true);
+      if (mounted) Navigator.pop(context, _mapa(r));
     } catch (e) {
       if (mounted) _aviso(context, e.toString(), error: true);
     }
@@ -2291,8 +2392,8 @@ class _ContratoSheetState extends State<_ContratoSheet> {
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Nuevo contrato', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
-          const Text('El contrato anterior pasa a "renovado" y se conserva.', style: TextStyle(fontSize: 12, color: Colors.black54)),
+          const Text('Generar contrato', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+          const Text('Llena solo lo de abajo: el contrato se arma solo con la ley peruana. El anterior se conserva como "renovado".', style: TextStyle(fontSize: 12, color: Colors.black54)),
           const SizedBox(height: 10),
           Wrap(spacing: 6, children: [
             for (final v in const [['INDEFINIDO', 'Indefinido'], ['PLAZO_FIJO', 'Plazo fijo'], ['POR_DIAS', 'Por días'], ['LOCACION', 'Honorarios']])
@@ -2320,8 +2421,26 @@ class _ContratoSheetState extends State<_ContratoSheet> {
           TextField(controller: _rem, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(prefixText: 'S/ ', labelText: _tipo == 'POR_DIAS' ? 'Pago por día' : 'Remuneración mensual', border: const OutlineInputBorder(), isDense: true)),
           const SizedBox(height: 10),
           TextField(controller: _cargo, decoration: const InputDecoration(labelText: 'Cargo', border: OutlineInputBorder(), isDense: true)),
+          const SizedBox(height: 10),
+          const Text('Servicios o funciones que realizará', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          Wrap(spacing: 6, children: [
+            for (final e in _sugerencias.entries)
+              ActionChip(label: Text(e.key), onPressed: () => setState(() {
+                    _funciones.text = e.value;
+                    if (_cargo.text.trim().isEmpty) _cargo.text = e.key.replaceAll('(a)', '');
+                  })),
+          ]),
+          const SizedBox(height: 6),
+          TextField(controller: _funciones, minLines: 3, maxLines: 6, decoration: const InputDecoration(hintText: 'Toca un cargo de arriba y se llena solo; luego lo puedes cambiar', border: OutlineInputBorder(), isDense: true)),
+          if (_tipo != 'LOCACION') ...[
+            const SizedBox(height: 10),
+            TextField(controller: _jornada, minLines: 2, maxLines: 4, decoration: const InputDecoration(labelText: 'Horario de trabajo', border: OutlineInputBorder(), isDense: true)),
+          ],
+          const SizedBox(height: 10),
+          TextField(controller: _lugar, decoration: const InputDecoration(labelText: 'Lugar de trabajo', border: OutlineInputBorder(), isDense: true)),
           CheckboxListTile(contentPadding: EdgeInsets.zero, value: _actualizar, onChanged: (v) => setState(() => _actualizar = v ?? true), title: const Text('Actualizar también el sueldo/cargo en su ficha')),
-          FilledButton(style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)), onPressed: _enviando ? null : _guardar, child: const Text('Guardar contrato')),
+          FilledButton(style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)), onPressed: _enviando ? null : _guardar, child: const Text('Generar contrato')),
+          const Padding(padding: EdgeInsets.only(top: 6), child: Text('Es un formato base. Revísalo con tu abogado o contador antes de usarlo con todo el personal.', style: TextStyle(fontSize: 11, color: Colors.black45))),
         ]),
       ),
     );

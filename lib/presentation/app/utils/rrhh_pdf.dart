@@ -78,8 +78,16 @@ Future<Uint8List> pdfContrato(Map<String, dynamic> t, Map<String, dynamic> c, {U
   final rem = (c['remuneracion'] as num?) ?? 0;
   final inicio = _fechaLarga(c['fechaInicio']?.toString());
   final fin = c['fechaFin'] == null ? null : _fechaLarga(c['fechaFin'].toString());
-  final jornada = (c['jornada'] ?? 'la jornada máxima legal, con el horario que fije el EMPLEADOR dentro de ella').toString();
-  final mype = (t['regimen'] ?? '') != 'GENERAL' && tipo != 'LOCACION' && tipo != 'POR_DIAS';
+  final jornada = ((c['jornada'] ?? '').toString().trim().isEmpty)
+      ? 'de lunes a sábado, dentro de la jornada máxima legal de 8 horas diarias o 48 horas semanales, en el horario que fije EL EMPLEADOR'
+      : c['jornada'].toString().trim();
+  final funciones = ((c['funciones'] ?? '').toString().trim().isEmpty)
+      ? 'las funciones propias del puesto y las que se le encomienden razonablemente'
+      : c['funciones'].toString().trim();
+  final lugar = ((c['lugar'] ?? '').toString().trim().isEmpty) ? _domicilio : c['lugar'].toString().trim();
+  final mype = (t['regimen'] ?? '') != 'GENERAL';
+  final locacion = tipo == 'LOCACION';
+  final pension = t['pension'] == 'AFP' ? 'al Sistema Privado de Pensiones (AFP ${t['afp'] ?? ''})' : t['pension'] == 'ONP' ? 'al Sistema Nacional de Pensiones (ONP)' : 'a un sistema de pensiones (ONP o AFP) a su elección';
 
   String titulo;
   switch (tipo) {
@@ -90,56 +98,61 @@ Future<Uint8List> pdfContrato(Map<String, dynamic> t, Map<String, dynamic> c, {U
       titulo = 'CONTRATO DE TRABAJO POR DÍAS (EVENTUAL)';
       break;
     case 'LOCACION':
-      titulo = 'CONTRATO DE LOCACIÓN DE SERVICIOS';
+      titulo = 'CONTRATO DE LOCACIÓN DE SERVICIOS (RECIBO POR HONORARIOS)';
       break;
     default:
       titulo = 'CONTRATO DE TRABAJO A PLAZO INDETERMINADO';
   }
-  final sueldoTxt = tipo == 'POR_DIAS'
+  final pagoTxt = tipo == 'POR_DIAS'
       ? 'un pago de ${_s(rem)} por cada día efectivamente trabajado, que se cancela al término de cada jornada o en la fecha que acuerden las partes'
-      : tipo == 'LOCACION'
-          ? 'una retribución mensual de ${_s(rem)}, contra la entrega del recibo por honorarios correspondiente'
-          : 'una remuneración mensual de ${_s(rem)}, sujeta a los descuentos y aportes de ley';
+      : locacion
+          ? 'una retribución mensual de ${_s(rem)}, que se pagará contra la entrega del recibo por honorarios electrónico correspondiente'
+          : 'una remuneración mensual de ${_s(rem)}, que se pagará por periodos vencidos, sujeta a los descuentos y aportes de ley';
 
-  final partes = 'Conste por el presente documento el ${tipo == 'LOCACION' ? 'contrato de locación de servicios' : 'contrato de trabajo'} que celebran, de una parte, $_empresa, con RUC N° $_ruc y domicilio en $_domicilio, a quien en adelante se le denominará ${tipo == 'LOCACION' ? 'EL COMITENTE' : 'EL EMPLEADOR'}; y de la otra parte, don(ña) ${_nombre(t)}, identificado(a) con DNI N° ${t['dni'] ?? '__________'}${t['domicilio'] != null ? ', con domicilio en ${t['domicilio']}' : ''}, a quien en adelante se le denominará ${tipo == 'LOCACION' ? 'EL LOCADOR' : 'EL TRABAJADOR'}, en los términos y condiciones siguientes:';
+  final partes = 'Conste por el presente documento el ${locacion ? 'contrato de locación de servicios' : 'contrato de trabajo'} que celebran, de una parte, $_empresa, con RUC N° $_ruc y domicilio en $_domicilio, a quien en adelante se le denominará ${locacion ? 'EL COMITENTE' : 'EL EMPLEADOR'}; y de la otra parte, don(ña) ${_nombre(t)}, identificado(a) con DNI N° ${t['dni'] ?? '__________'}${(t['domicilio'] ?? '').toString().isNotEmpty ? ', con domicilio en ${t['domicilio']}' : ''}, a quien en adelante se le denominará ${locacion ? 'EL LOCADOR' : 'EL TRABAJADOR'}, en los términos y condiciones siguientes:';
 
-  final clausulas = <List<String>>[];
-  if (tipo == 'LOCACION') {
-    clausulas.addAll([
-      ['PRIMERA: OBJETO', 'EL LOCADOR se obliga a prestar de manera independiente, y sin subordinación, el servicio de $cargo a favor de EL COMITENTE, con sus propios medios y organización, y a entregar los resultados acordados.'],
-      ['SEGUNDA: PLAZO', 'El servicio se prestará desde el $inicio${fin != null ? ' hasta el $fin' : ' por tiempo indefinido, pudiendo cualquiera de las partes ponerle término con aviso previo de 7 días'}.'],
-      ['TERCERA: RETRIBUCIÓN', 'EL COMITENTE pagará a EL LOCADOR $sueldoTxt.'],
-      ['CUARTA: INDEPENDENCIA', 'Las partes declaran que este contrato es de naturaleza civil y no genera vínculo laboral, por lo que EL LOCADOR no tiene derecho a beneficios laborales.'],
-      ['QUINTA: CONFIDENCIALIDAD', 'EL LOCADOR se obliga a guardar reserva sobre la información de clientes, prendas, caja y operaciones de la empresa, durante y después del contrato.'],
+  final cl = <List<String>>[];
+  if (locacion) {
+    cl.addAll([
+      ['PRIMERA: ANTECEDENTES', '$_empresa es una empresa dedicada a las actividades de préstamos con garantía prendaria, compra y venta de bienes, y servicios afines, y requiere contar con servicios independientes en el área de $cargo.'],
+      ['SEGUNDA: OBJETO', 'EL LOCADOR se obliga a prestar de manera independiente y sin subordinación el siguiente servicio: $funciones. Lo ejecutará con sus propios medios y organización, y entregará los resultados acordados.'],
+      ['TERCERA: PLAZO', 'El servicio se prestará desde el $inicio${fin != null ? ' hasta el $fin' : ' por tiempo indeterminado, pudiendo cualquiera de las partes ponerle término con aviso previo escrito de siete (7) días'}.'],
+      ['CUARTA: RETRIBUCIÓN', 'EL COMITENTE pagará a EL LOCADOR $pagoTxt. EL LOCADOR declara contar con RUC activo y se obliga a emitir su recibo por honorarios; si correspondiera retención de impuesto a la renta de cuarta categoría, EL COMITENTE la efectuará conforme a ley.'],
+      ['QUINTA: INDEPENDENCIA', 'Las partes declaran que este contrato es de naturaleza civil y no genera vínculo laboral. EL LOCADOR no está sujeto a horario ni a subordinación, no recibe beneficios laborales y es responsable de sus propios aportes y de su seguro de salud.'],
+      ['SEXTA: CONFIDENCIALIDAD', 'EL LOCADOR se obliga a guardar reserva sobre la información de clientes, prendas en garantía, caja y operaciones de la empresa, durante y después del contrato.'],
+      ['SÉPTIMA: RESOLUCIÓN', 'Cualquiera de las partes puede resolver el contrato por incumplimiento de la otra, previa comunicación escrita, sin perjuicio de pagar los servicios ya prestados.'],
     ]);
   } else {
-    clausulas.addAll([
-      ['PRIMERA: OBJETO', 'EL EMPLEADOR contrata los servicios personales de EL TRABAJADOR para desempeñar el cargo de $cargo, comprometiéndose este a cumplir con diligencia las funciones inherentes al puesto y las que se le encomienden razonablemente.'],
+    cl.addAll([
+      ['PRIMERA: ANTECEDENTES', '$_empresa es una empresa dedicada a las actividades de préstamos con garantía prendaria, compra y venta de bienes, y servicios afines, y requiere contratar personal para el cargo de $cargo.'],
+      ['SEGUNDA: OBJETO Y FUNCIONES', 'EL EMPLEADOR contrata los servicios personales de EL TRABAJADOR para desempeñar el cargo de $cargo, con las siguientes funciones: $funciones, además de las que se le encomienden razonablemente en relación a su puesto.'],
       [
-        'SEGUNDA: PLAZO',
+        'TERCERA: PLAZO',
         tipo == 'PLAZO_FIJO'
-            ? 'El presente contrato rige desde el $inicio hasta el ${fin ?? '__________'}, por necesidad del mercado / incremento de actividad, pudiendo renovarse por acuerdo escrito de las partes dentro de los límites de ley.'
+            ? 'El presente contrato es sujeto a modalidad, por necesidad de mercado o incremento de actividad, y rige desde el $inicio hasta el ${fin ?? '__________'}. Podrá renovarse por acuerdo escrito de las partes dentro de los límites de ley. Vencido el plazo, el contrato termina sin necesidad de aviso.'
             : tipo == 'POR_DIAS'
-                ? 'La prestación es eventual y por días. EL TRABAJADOR irá cuando sea convocado y se pagará solo por los días efectivamente laborados, a partir del $inicio. No genera obligación de continuidad para ninguna de las partes.'
-                : 'El presente contrato es a plazo indeterminado y rige desde el $inicio.'
+                ? 'La prestación es eventual y por días. EL TRABAJADOR acudirá cuando sea convocado y se pagará solo por los días efectivamente laborados, a partir del $inicio. No genera obligación de continuidad para ninguna de las partes.'
+                : 'El presente contrato es a plazo indeterminado y rige desde el $inicio. Las partes acuerdan un periodo de prueba de tres (3) meses, conforme a ley.'
       ],
-      ['TERCERA: REMUNERACIÓN', 'EL EMPLEADOR pagará a EL TRABAJADOR $sueldoTxt.'],
-      ['CUARTA: JORNADA Y HORARIO', 'EL TRABAJADOR cumplirá $jornada. Debe registrar su asistencia (entrada y salida) con el sistema que la empresa disponga, incluida la fotografía de control.'],
+      ['CUARTA: REMUNERACIÓN', 'EL EMPLEADOR pagará a EL TRABAJADOR $pagoTxt.'],
+      ['QUINTA: JORNADA Y HORARIO', 'EL TRABAJADOR prestará servicios $jornada. Debe registrar su asistencia (entrada y salida) con el sistema que la empresa disponga, incluida la fotografía de control. El tiempo de refrigerio no forma parte de la jornada. El trabajo en sobretiempo es voluntario, debe ser autorizado y se paga con los recargos de ley.'],
+      ['SEXTA: DESCANSOS', tipo == 'POR_DIAS' ? 'Por la naturaleza eventual del servicio, se pagan los días trabajados.' : 'EL TRABAJADOR gozará de un descanso semanal obligatorio, de los feriados no laborables y de las vacaciones que correspondan por ley. Si labora en feriado o en su día de descanso sin descanso sustitutorio, se le pagará la sobretasa de ley.'],
       [
-        'QUINTA: BENEFICIOS',
+        'SÉPTIMA: BENEFICIOS Y SEGURIDAD SOCIAL',
         tipo == 'POR_DIAS'
-            ? 'Por la naturaleza eventual del servicio, se pagan los días trabajados. Los beneficios que correspondan por ley se otorgarán según el régimen aplicable.'
+            ? 'Los beneficios que correspondan por ley se otorgarán según el régimen aplicable. EL TRABAJADOR queda afiliado $pension.'
             : mype
-                ? 'EL TRABAJADOR se encuentra bajo el régimen laboral de la micro y pequeña empresa (Ley MYPE) y gozará de los derechos y beneficios que ese régimen establece, además de la afiliación a un sistema de pensiones (ONP o AFP) y a la seguridad social en salud.'
-                : 'EL TRABAJADOR gozará de los beneficios del régimen laboral general: gratificaciones de julio y diciembre, CTS, vacaciones, asignación familiar cuando corresponda, y la afiliación a un sistema de pensiones y a EsSalud.'
+                ? 'EL TRABAJADOR se encuentra bajo el régimen laboral especial de la micro y pequeña empresa y gozará de los derechos y beneficios que ese régimen establece. Será afiliado $pension y registrado en planilla electrónica y en EsSalud, según corresponda.'
+                : 'EL TRABAJADOR gozará de los beneficios del régimen laboral general: gratificaciones de julio y diciembre, CTS, vacaciones, asignación familiar cuando corresponda. Será afiliado $pension y registrado en planilla electrónica y en EsSalud.'
       ],
-      ['SEXTA: OBLIGACIONES', 'EL TRABAJADOR se obliga a guardar absoluta reserva sobre la información de clientes, prendas en garantía, caja y operaciones de la empresa; a cuidar los bienes que se le confíen, y a respetar el reglamento y las normas de seguridad. El incumplimiento grave será causal de término del contrato conforme a ley.'],
-      ['SÉPTIMA: DESCUENTOS', 'EL TRABAJADOR autoriza que se descuenten de su remuneración los aportes de ley y los adelantos o préstamos que haya recibido de EL EMPLEADOR, los que constarán por escrito o con registro fotográfico del recibo.'],
+      ['OCTAVA: OBLIGACIONES', 'EL TRABAJADOR se obliga a guardar absoluta reserva sobre la información de clientes, prendas en garantía, caja y operaciones de la empresa; a cuidar los bienes y el dinero que se le confíen; a rendir cuentas del dinero que maneje; a cumplir las normas de seguridad y salud en el trabajo y el reglamento de la empresa.'],
+      ['NOVENA: DESCUENTOS', 'EL TRABAJADOR autoriza que se descuenten de su remuneración los aportes de ley, los adelantos o préstamos recibidos de EL EMPLEADOR (que constarán por escrito, firma o registro fotográfico del recibo) y, previa comprobación, los faltantes o daños que le sean imputables, dentro de los límites legales.'],
+      ['DÉCIMA: TERMINACIÓN', 'El contrato termina por las causas previstas en la ley (mutuo acuerdo, renuncia, vencimiento del plazo, falta grave u otras). Si EL TRABAJADOR decide renunciar, comunicará su decisión por escrito con treinta (30) días de anticipación, salvo exoneración del empleador.'],
     ]);
   }
-  clausulas.add([
-    tipo == 'LOCACION' ? 'SEXTA: JURISDICCIÓN' : 'OCTAVA: JURISDICCIÓN',
-    'Para todo lo no previsto se aplican las normas legales vigentes. Las partes se someten a los jueces y tribunales de la jurisdicción de Atalaya, Ucayali.',
+  cl.add([
+    locacion ? 'OCTAVA: DOMICILIO Y JURISDICCIÓN' : 'UNDÉCIMA: DOMICILIO Y JURISDICCIÓN',
+    'El lugar de prestación del servicio es: $lugar. Las partes fijan como domicilios los indicados en este documento. Para todo lo no previsto se aplican las normas legales vigentes y las partes se someten a los jueces y tribunales de la jurisdicción de Atalaya, Ucayali.',
   ]);
 
   doc.addPage(w.MultiPage(
@@ -148,13 +161,13 @@ Future<Uint8List> pdfContrato(Map<String, dynamic> t, Map<String, dynamic> c, {U
     build: (ctx) => [
       _titulo(titulo),
       _parrafo(partes),
-      for (final c in clausulas) ...[
-        w.Text(c[0], style: w.TextStyle(fontSize: 10.5, fontWeight: w.FontWeight.bold)),
+      for (final k in cl) ...[
+        w.Text(k[0], style: w.TextStyle(fontSize: 10.5, fontWeight: w.FontWeight.bold)),
         w.SizedBox(height: 3),
-        _parrafo(c[1]),
+        _parrafo(k[1]),
       ],
       _parrafo('En señal de conformidad, las partes firman en dos ejemplares en la ciudad de Atalaya, a los ${_fechaLarga(c['fechaInicio']?.toString())}.'),
-      _firmas(tipo == 'LOCACION' ? 'EL COMITENTE\n$_empresa' : 'EL EMPLEADOR\n$_empresa', '${tipo == 'LOCACION' ? 'EL LOCADOR' : 'EL TRABAJADOR'}\n${_nombre(t)}\nDNI ${t['dni'] ?? ''}', firmaDer: firma),
+      _firmas(locacion ? 'EL COMITENTE\n$_empresa' : 'EL EMPLEADOR\n$_empresa', '${locacion ? 'EL LOCADOR' : 'EL TRABAJADOR'}\n${_nombre(t)}\nDNI ${t['dni'] ?? ''}', firmaDer: firma),
       if (firma != null) w.Text('Firmado digitalmente el ${_fechaLarga(c['firmadoAt']?.toString())}', style: const w.TextStyle(fontSize: 8)),
     ],
   ));
