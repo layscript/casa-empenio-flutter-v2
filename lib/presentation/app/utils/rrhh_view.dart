@@ -1136,14 +1136,6 @@ class _TrabajadorFormState extends State<_TrabajadorForm> {
   late int? _sucursal = (_t['sucursalId'] as num?)?.toInt() ?? (widget.api.sucursalId > 0 ? widget.api.sucursalId : null);
   List<Map<String, dynamic>> _sucursales = [];
 
-  @override
-  void initState() {
-    super.initState();
-    cargarSucursales().then((l) {
-      if (mounted) setState(() => _sucursales = l);
-    }).catchError((_) {});
-  }
-
   bool get _edita => widget.t != null;
 
   @override
@@ -1152,6 +1144,9 @@ class _TrabajadorFormState extends State<_TrabajadorForm> {
     _nacimiento = _t['fechaNacimiento']?.toString().substring(0, 10);
     _horaEnt = _t['horaEntrada']?.toString();
     _horaSal = _t['horaSalida']?.toString();
+    cargarSucursales().then((l) {
+      if (mounted) setState(() => _sucursales = l);
+    }).catchError((_) {});
     if (!_edita) {
       widget.api.get('/rrhh/config').then((v) {
         final r = _mapa(v)['regimenEmpresa']?.toString();
