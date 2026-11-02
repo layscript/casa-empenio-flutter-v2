@@ -4210,6 +4210,80 @@ class _HojaMesPageState extends State<_HojaMesPage> {
     }
   }
 
+  Future<void> _varios() async {
+    final primero = DateTime.parse('$_mes-01');
+    var desde = DateFormat('yyyy-MM-dd').format(primero);
+    var hasta = DateFormat('yyyy-MM-dd').format(DateTime(primero.year, primero.month + 1, 0));
+    if (hasta.compareTo(_hoy()) > 0) hasta = _hoy();
+    var estado = 'PRESENTE';
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setS) => SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('Marcar varios días de una vez', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+              const Text('Ejemplo: todo octubre como asistido. Los domingos y feriados quedan como descanso o feriado. Los días que ya tenías marcados no se tocan.', style: TextStyle(fontSize: 12, color: Colors.black54)),
+              const SizedBox(height: 10),
+              Row(children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () async {
+                      final f = await _pickFecha(ctx, inicial: desde);
+                      if (f != null) setS(() => desde = f);
+                    },
+                    child: Text('Desde
+${_fechaCorta(desde)}', textAlign: TextAlign.center),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () async {
+                      final f = await _pickFecha(ctx, inicial: hasta);
+                      if (f != null) setS(() => hasta = f);
+                    },
+                    child: Text('Hasta
+${_fechaCorta(hasta)}', textAlign: TextAlign.center),
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 10),
+              Wrap(spacing: 8, children: [
+                for (final e in const [['PRESENTE', 'Asistió ✔'], ['FALTA', 'Faltó ✕'], ['VACACIONES', 'Vacaciones'], ['PERMISO', 'Permiso'], ['DESCANSO_MEDICO', 'Descanso médico']])
+                  ChoiceChip(label: Text(e[1]), selected: estado == e[0], onSelected: (_) => setS(() => estado = e[0])),
+              ]),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                onPressed: () => Navigator.pop(ctx, true),
+                icon: const Icon(Icons.done_all),
+                label: const Text('Marcar esos días'),
+              ),
+            ]),
+          ),
+        ),
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final ing = widget.t['fechaIngreso']?.toString().substring(0, 10) ?? '0000-00-00';
+    var ajustar = false;
+    if (desde.compareTo(ing) < 0) {
+      if (!await _confirmar(context, 'Fecha de ingreso', 'Empezó a trabajar el ${_fechaCorta(ing)}, pero marcas desde el ${_fechaCorta(desde)}. ¿Cambiar su fecha de ingreso al ${_fechaCorta(desde)}?', si: 'Sí, cambiar')) return;
+      ajustar = true;
+    }
+    try {
+      final r = _mapa(await widget.api.post('/rrhh/asistencia/rellenar', {'trabajadorId': _id, 'desde': desde, 'hasta': hasta, 'estado': estado, 'ajustarIngreso': ajustar, 'usuarioId': widget.api.usuarioId}));
+      if (mounted) _aviso(context, '${r['marcados']} día(s) marcados');
+      if (ajustar) widget.t['fechaIngreso'] = desde;
+      _cargar();
+    } catch (e) {
+      if (mounted) _aviso(context, e.toString(), error: true);
+    }
+  }
+
   Future<void> _rellenar() async {
     final primero = DateTime.parse('$_mes-01');
     final ultimo = DateTime(primero.year, primero.month + 1, 0);
@@ -4355,7 +4429,14 @@ class _HojaMesPageState extends State<_HojaMesPage> {
                       for (final l in const [['PRESENTE', 'Asistió'], ['TARDANZA', 'Tarde'], ['MEDIO_DIA', 'Medio día'], ['FALTA', 'Faltó'], ['FERIADO', 'Feriado'], ['DESCANSO', 'Descanso']])
                         Row(mainAxisSize: MainAxisSize.min, children: [CircleAvatar(radius: 6, backgroundColor: _color(l[0])), const SizedBox(width: 4), Text(l[1], style: const TextStyle(fontSize: 12))]),
                     ]),
-                    const Text('Toca un día para marcarlo.', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                    const Text('Toca un día para marcarlo. Los días que aún no llegan solo permiten permiso, descanso o feriado.', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                    const SizedBox(height: 6),
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(backgroundColor: Colors.green.shade700, minimumSize: const Size.fromHeight(46)),
+                      onPressed: _varios,
+                      icon: const Icon(Icons.date_range),
+                      label: const Text('Marcar varios días (ej. todo octubre)'),
+                    ),
                     _seccion('Resumen de $_mes', icono: Icons.fact_check, children: [
                       _lineaMonto('Días asistidos', null, texto: '$asistio'),
                       if (tardes > 0) _lineaMonto('Llegó tarde', null, texto: '$tardes vez/veces'),
