@@ -382,16 +382,6 @@ class _FirmaPageState extends State<_FirmaPage> {
   final GlobalKey _clave = GlobalKey();
   final List<List<Offset>> _trazos = [];
   bool _guardando = false;
-  late int? _sucursal = (_t['sucursalId'] as num?)?.toInt() ?? (widget.api.sucursalId > 0 ? widget.api.sucursalId : null);
-  List<Map<String, dynamic>> _sucursales = [];
-
-  @override
-  void initState() {
-    super.initState();
-    cargarSucursales().then((l) {
-      if (mounted) setState(() => _sucursales = l);
-    }).catchError((_) {});
-  }
 
   Future<void> _aceptar() async {
     if (_trazos.isEmpty || _trazos.fold<int>(0, (a, t) => a + t.length) < 8) {
@@ -1143,6 +1133,16 @@ class _TrabajadorFormState extends State<_TrabajadorForm> {
   String? _horaEnt;
   String? _horaSal;
   bool _guardando = false;
+  late int? _sucursal = (_t['sucursalId'] as num?)?.toInt() ?? (widget.api.sucursalId > 0 ? widget.api.sucursalId : null);
+  List<Map<String, dynamic>> _sucursales = [];
+
+  @override
+  void initState() {
+    super.initState();
+    cargarSucursales().then((l) {
+      if (mounted) setState(() => _sucursales = l);
+    }).catchError((_) {});
+  }
 
   bool get _edita => widget.t != null;
 
