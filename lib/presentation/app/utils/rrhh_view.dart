@@ -1703,7 +1703,7 @@ class _FichaPageState extends State<_FichaPage> {
                 if (ok == true) _cargar();
               },
               icon: const Icon(Icons.history, size: 18),
-              label: const Text('Pagar mes anterior'),
+              label: const Text('Pagar días pendientes'),
             ),
             OutlinedButton.icon(onPressed: () => _pago('DESCUENTO'), icon: const Icon(Icons.remove_circle_outline, size: 18), label: const Text('Descuento / bono')),
             OutlinedButton.icon(onPressed: () => _pago(porDia ? 'JORNAL' : 'SUELDO'), icon: const Icon(Icons.payments, size: 18), label: Text(porDia ? 'Pagar días' : 'Otro pago')),
@@ -4536,8 +4536,8 @@ class _PeriodoAnteriorSheetState extends State<_PeriodoAnteriorSheet> {
           child: _cargando
               ? _esperaW()
               : Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Pagar mes anterior a ${t['nombres']}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
-                  const Text('Úsalo para pagar días que ya trabajó y que no estaban registrados en el sistema (por ejemplo, todo octubre).', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                  Text('Pagar días pendientes a ${t['nombres']}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                  const Text('Sirve para pagar un mes entero, una semana o unos pocos días que ya trabajó y no estaban registrados (por ejemplo, todo octubre o los últimos 5 días). Vale para planilla, personal por días y recibo por honorarios.', style: TextStyle(fontSize: 12, color: Colors.black54)),
                   const SizedBox(height: 10),
                   Row(children: [
                     Expanded(
@@ -4563,7 +4563,7 @@ class _PeriodoAnteriorSheetState extends State<_PeriodoAnteriorSheet> {
                     ),
                   ]),
                   const SizedBox(height: 10),
-                  _campoNum('¿Cuántos días trabajó?', _dias, ayuda: _diario ? 'Cuenta solo los días que vino' : 'Mes completo = 30 días. Si faltó, réstalos.'),
+                  _campoNum('¿Cuántos días trabajó?', _dias, ayuda: _diario ? 'Cuenta solo los días que vino' : 'Mes completo = 30 días. Si trabajó una semana o 5 días, pon solo esos. Si faltó, réstalos.'),
                   _campoNum(_diario ? 'Pago por día' : 'Valor de cada día (sueldo ÷ 30)', _tarifa, prefijo: 'S/ '),
                   Row(children: [
                     Expanded(child: _campoNum('Más: horas extra / feriado', _extra, prefijo: 'S/ ')),
