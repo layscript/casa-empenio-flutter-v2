@@ -286,6 +286,7 @@ const _estadoAsisTxt = {
   'DESCANSO_MEDICO': 'Descanso médico',
   'FERIADO': 'Feriado',
   'DESCANSO': 'Descanso',
+  'MEDIO_DIA': 'Medio día',
 };
 Color _colorAsis(String e) {
   switch (e) {
@@ -295,6 +296,8 @@ Color _colorAsis(String e) {
       return Colors.orange.shade800;
     case 'FALTA':
       return Colors.red.shade700;
+    case 'MEDIO_DIA':
+      return Colors.amber.shade800;
     default:
       return Colors.blueGrey.shade600;
   }
@@ -931,6 +934,7 @@ class _HoyTabState extends State<_HoyTab> with AutomaticKeepAliveClientMixin {
               itemBuilder: (_) => const [
                 PopupMenuItem(value: 'PRESENTE', child: Text('Presente (sin foto)')),
                 PopupMenuItem(value: 'FALTA', child: Text('Faltó')),
+                PopupMenuItem(value: 'MEDIO_DIA', child: Text('Medio día')),
                 PopupMenuItem(value: 'FALTA_JUSTIFICADA', child: Text('Falta justificada')),
                 PopupMenuItem(value: 'PERMISO', child: Text('Permiso')),
                 PopupMenuItem(value: 'VACACIONES', child: Text('Vacaciones')),
@@ -1654,6 +1658,15 @@ class _FichaPageState extends State<_FichaPage> {
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12),
         child: Wrap(spacing: 8, runSpacing: 6, children: [
+          FilledButton.icon(
+            style: FilledButton.styleFrom(backgroundColor: Colors.indigo),
+            onPressed: () async {
+              await Navigator.of(context).push(MaterialPageRoute(builder: (_) => _HojaMesPage(api: widget.api, t: t)));
+              _cargar();
+            },
+            icon: const Icon(Icons.menu_book, size: 18),
+            label: const Text('Hoja del mes'),
+          ),
           if (!cesado) ...[
             FilledButton.icon(onPressed: () => _pago('ADELANTO'), icon: const Icon(Icons.price_change, size: 18), label: const Text('Dar adelanto')),
             FilledButton.tonalIcon(onPressed: _horaExtra, icon: const Icon(Icons.more_time, size: 18), label: const Text('Horas extra')),
@@ -2459,13 +2472,15 @@ class _CesePageState extends State<_CesePage> {
   }
 }
 
-Widget _lineaMonto(String a, num? m, {bool fuerte = false, bool rojo = false}) => Padding(
+Widget _lineaMonto(String a, num? m, {bool fuerte = false, bool rojo = false, String? texto}) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Expanded(child: Text(a, style: TextStyle(fontWeight: fuerte ? FontWeight.bold : null, fontSize: 13))),
-        Text(_money(m), style: TextStyle(fontWeight: fuerte ? FontWeight.bold : null, color: rojo ? Colors.red : null)),
+        Text(texto ?? _money(m), style: TextStyle(fontWeight: fuerte ? FontWeight.bold : null, color: rojo ? Colors.red : null)),
       ]),
     );
+
+const _nomDias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
 // ===========================================================================
 // BOLETA (ver, pagar, anular, imprimir)
@@ -3931,6 +3946,351 @@ class _PagarObligacionSheetState extends State<_PagarObligacionSheet> {
           ),
           const SizedBox(height: 12),
           FilledButton.icon(style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)), onPressed: _enviando ? null : _pagar, icon: const Icon(Icons.check), label: Text(_enviando ? 'Guardando…' : 'Registrar pago')),
+        ]),
+      ),
+    );
+  }
+}
+
+
+// ===========================================================================
+// HOJA DEL MES: como la hoja del cuaderno (calendario + adelantos + cuenta)
+// ===========================================================================
+const _tipoPagoTxt = {
+  'ADELANTO': 'Adelanto', 'PRESTAMO': 'Préstamo', 'QUINCENA': 'Quincena', 'SUELDO': 'Sueldo', 'JORNAL': 'Pago de días',
+  'REFRIGERIO': 'Refrigerio', 'BONO': 'Bono', 'DESCUENTO': 'Descuento', 'GRATIFICACION': 'Gratificación', 'CTS': 'CTS',
+  'LIQUIDACION': 'Liquidación', 'VACACIONES': 'Vacaciones',
+};
+
+class _HojaMesPage extends StatefulWidget {
+  const _HojaMesPage({required this.api, required this.t});
+  final _Api api;
+  final Map<String, dynamic> t;
+  @override
+  State<_HojaMesPage> createState() => _HojaMesPageState();
+}
+
+class _HojaMesPageState extends State<_HojaMesPage> {
+  String _mes = _mesActual();
+  Map<String, Map<String, dynamic>> _dias = {};
+  Map<String, String> _feriados = {};
+  List<Map<String, dynamic>> _pagos = [];
+  Map<String, dynamic> _saldo = {};
+  bool _cargando = true;
+  String? _error;
+
+  int get _id => (widget.t['id'] as num).toInt();
+
+  @override
+  void initState() {
+    super.initState();
+    _cargar();
+  }
+
+  void _mover(int d) {
+    final f = DateTime.parse('$_mes-01');
+    _mes = DateFormat('yyyy-MM').format(DateTime(f.year, f.month + d, 1));
+    _cargar();
+  }
+
+  Future<void> _cargar() async {
+    setState(() {
+      _cargando = true;
+      _error = null;
+    });
+    try {
+      final anio = int.parse(_mes.substring(0, 4));
+      final r = await Future.wait([
+        widget.api.get('/rrhh/asistencia/trabajador/$_id', {'periodo': _mes}),
+        widget.api.get('/rrhh/feriados', {'anio': anio}),
+        widget.api.get('/rrhh/historial', {'trabajadorId': _id, 'periodo': _mes}),
+        widget.api.get('/rrhh/saldo/$_id'),
+      ]);
+      _dias = {for (final d in _lista(_mapa(r[0])['dias'])) d['fecha'].toString().substring(0, 10): d};
+      _feriados = {for (final f in _lista(_mapa(r[1])['items'])) f['fecha'].toString().substring(0, 10): f['nombre'].toString()};
+      _pagos = _lista(_mapa(r[2])['pagos']);
+      _saldo = _mapa(r[3]);
+    } catch (e) {
+      _error = e.toString();
+    }
+    if (mounted) setState(() => _cargando = false);
+  }
+
+  /// Estado que se muestra para un día (lo marcado, o lo que corresponde por defecto)
+  String _estadoDe(DateTime d) {
+    final f = DateFormat('yyyy-MM-dd').format(d);
+    final ing = widget.t['fechaIngreso']?.toString().substring(0, 10) ?? '0000-00-00';
+    final cese = widget.t['fechaCese']?.toString().substring(0, 10);
+    if (f.compareTo(ing) < 0) return 'ANTES';
+    if (cese != null && f.compareTo(cese) > 0) return 'ANTES';
+    final m = _dias[f];
+    if (m != null) return m['estado'].toString();
+    if (_feriados.containsKey(f)) return 'FERIADO_AUTO';
+    final desc = widget.t['diaDescanso'] as num?;
+    if (desc != null && d.weekday % 7 == desc.toInt()) return 'DESCANSO_AUTO';
+    if (f.compareTo(_hoy()) > 0) return 'FUTURO';
+    return 'SIN_MARCAR';
+  }
+
+  Color _color(String e) {
+    switch (e) {
+      case 'PRESENTE':
+        return Colors.green.shade600;
+      case 'TARDANZA':
+        return Colors.orange.shade700;
+      case 'MEDIO_DIA':
+        return Colors.amber.shade600;
+      case 'FALTA':
+        return Colors.red.shade600;
+      case 'FALTA_JUSTIFICADA':
+      case 'PERMISO':
+        return Colors.red.shade200;
+      case 'VACACIONES':
+        return Colors.teal.shade400;
+      case 'DESCANSO_MEDICO':
+        return Colors.pink.shade300;
+      case 'FERIADO':
+      case 'FERIADO_AUTO':
+        return Colors.purple.shade400;
+      case 'DESCANSO':
+      case 'DESCANSO_AUTO':
+        return Colors.blueGrey.shade300;
+      default:
+        return Colors.transparent;
+    }
+  }
+
+  String _marca(String e) {
+    switch (e) {
+      case 'FALTA':
+        return '✕';
+      case 'MEDIO_DIA':
+        return '½';
+      case 'TARDANZA':
+        return 'T';
+      default:
+        return '';
+    }
+  }
+
+  Future<void> _tocar(DateTime d) async {
+    final est = _estadoDe(d);
+    if (est == 'ANTES') {
+      _aviso(context, 'Ese día es antes de que empiece a trabajar', error: true);
+      return;
+    }
+    final f = DateFormat('yyyy-MM-dd').format(d);
+    if (_dias[f]?['pagadoJornal'] == true) {
+      _aviso(context, 'Ese día ya fue pagado: no se puede cambiar', error: true);
+      return;
+    }
+    final futuro = f.compareTo(_hoy()) > 0;
+    final opciones = <List<String>>[
+      if (!futuro) ['PRESENTE', 'Asistió ✔'],
+      if (!futuro) ['TARDANZA', 'Llegó tarde'],
+      if (!futuro) ['MEDIO_DIA', 'Medio día (½)'],
+      if (!futuro) ['FALTA', 'Faltó ✕'],
+      ['FALTA_JUSTIFICADA', 'Falta justificada'],
+      ['PERMISO', 'Permiso'],
+      ['DESCANSO', 'Descanso'],
+      ['FERIADO', 'Feriado'],
+    ];
+    final elegido = await showModalBottomSheet<String>(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('${_nomDias[d.weekday % 7]} ${d.day} de ${_nombreMes(d.month)}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+            if (_feriados[f] != null) Text('Feriado: ${_feriados[f]}', style: TextStyle(color: Colors.purple.shade700)),
+            const SizedBox(height: 4),
+            const Text('¿Qué pasó este día?', style: TextStyle(color: Colors.black54)),
+            const SizedBox(height: 8),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              for (final o in opciones)
+                ActionChip(
+                  avatar: CircleAvatar(backgroundColor: _color(o[0]), radius: 7),
+                  label: Text(o[1]),
+                  onPressed: () => Navigator.pop(context, o[0]),
+                ),
+            ]),
+          ]),
+        ),
+      ),
+    );
+    if (elegido == null || !mounted) return;
+    String? nota;
+    if (['FALTA', 'FALTA_JUSTIFICADA', 'PERMISO', 'MEDIO_DIA'].contains(elegido)) {
+      nota = await _pedirTexto(context, 'Motivo (opcional)', hint: 'Ej: enfermedad, salió a las 2 pm…');
+      if (nota == null) return;
+    }
+    try {
+      await widget.api.post('/rrhh/asistencia/manual', {'trabajadorId': _id, 'estado': elegido, 'fecha': f, 'dias': 1, 'nota': nota, 'usuarioId': widget.api.usuarioId});
+      _cargar();
+    } catch (e) {
+      if (mounted) _aviso(context, e.toString(), error: true);
+    }
+  }
+
+  static const _meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'setiembre', 'octubre', 'noviembre', 'diciembre'];
+  String _nombreMes(int m) => _meses[m - 1];
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.t;
+    final primero = DateTime.parse('$_mes-01');
+    final diasMes = DateTime(primero.year, primero.month + 1, 0).day;
+    final huecos = primero.weekday - 1; // semana empieza en lunes
+    final celdas = <Widget>[
+      for (var i = 0; i < huecos; i++) const SizedBox(),
+      for (var n = 1; n <= diasMes; n++) _celda(DateTime(primero.year, primero.month, n)),
+    ];
+    // conteos
+    var asistio = 0, tardes = 0, medios = 0, faltas = 0, ferTrab = 0, sinMarcar = 0;
+    for (var n = 1; n <= diasMes; n++) {
+      final d = DateTime(primero.year, primero.month, n);
+      final e = _estadoDe(d);
+      final f = DateFormat('yyyy-MM-dd').format(d);
+      if (e == 'PRESENTE') asistio++;
+      if (e == 'TARDANZA') {
+        asistio++;
+        tardes++;
+      }
+      if (e == 'MEDIO_DIA') medios++;
+      if (e == 'FALTA') faltas++;
+      if ((e == 'PRESENTE' || e == 'TARDANZA') && _feriados.containsKey(f)) ferTrab++;
+      if (e == 'SIN_MARCAR') sinMarcar++;
+    }
+    final adel = _pagos.where((p) => ['ADELANTO', 'PRESTAMO', 'QUINCENA'].contains(p['tipo'])).toList();
+    final totalAdel = adel.fold<double>(0, (a, p) => a + ((p['monto'] as num?) ?? 0).toDouble());
+    final otros = _pagos.where((p) => !['ADELANTO', 'PRESTAMO', 'QUINCENA'].contains(p['tipo'])).toList();
+    final saldo = (_saldo['saldo'] as num?) ?? 0;
+    final porDia = t['vinculo'] == 'POR_DIAS' || t['modalidadPago'] == 'DIARIO';
+
+    return Scaffold(
+      appBar: AppBar(title: Text('Hoja de ${t['nombres']}')),
+      body: _cargando
+          ? _esperaW()
+          : _error != null
+              ? _errorBox(_error!, _cargar)
+              : RefreshIndicator(
+                  onRefresh: _cargar,
+                  child: ListView(padding: const EdgeInsets.fromLTRB(12, 8, 12, 40), children: [
+                    Card(
+                      color: Colors.indigo.shade50,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(_nombreDe(t), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          Text('Entró el ${_fechaCorta(t['fechaIngreso'])} · ${porDia ? 'Paga ${_money(t['pagoDia'] as num?)} por día' : 'Sueldo ${_money(t['sueldoMensual'] as num?)} al mes'}'),
+                          if (t['diaDescanso'] != null) Text('Descansa los ${_nomDias[(t['diaDescanso'] as num).toInt()]}', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                        ]),
+                      ),
+                    ),
+                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      IconButton(icon: const Icon(Icons.chevron_left), onPressed: () => _mover(-1)),
+                      Text('${_nombreMes(primero.month).toUpperCase()} ${primero.year}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                      IconButton(icon: const Icon(Icons.chevron_right), onPressed: () => _mover(1)),
+                    ]),
+                    Row(children: [
+                      for (final d in const ['L', 'M', 'M', 'J', 'V', 'S', 'D'])
+                        Expanded(child: Center(child: Text(d, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54)))),
+                    ]),
+                    const SizedBox(height: 4),
+                    GridView.count(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), crossAxisCount: 7, mainAxisSpacing: 4, crossAxisSpacing: 4, children: celdas),
+                    const SizedBox(height: 8),
+                    Wrap(spacing: 10, runSpacing: 4, children: [
+                      for (final l in const [['PRESENTE', 'Asistió'], ['TARDANZA', 'Tarde'], ['MEDIO_DIA', 'Medio día'], ['FALTA', 'Faltó'], ['FERIADO', 'Feriado'], ['DESCANSO', 'Descanso']])
+                        Row(mainAxisSize: MainAxisSize.min, children: [CircleAvatar(radius: 6, backgroundColor: _color(l[0])), const SizedBox(width: 4), Text(l[1], style: const TextStyle(fontSize: 12))]),
+                    ]),
+                    const Text('Toca un día para marcarlo.', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                    _seccion('Resumen de $_mes', icono: Icons.fact_check, children: [
+                      _lineaMonto('Días asistidos', null, texto: '$asistio'),
+                      if (tardes > 0) _lineaMonto('Llegó tarde', null, texto: '$tardes vez/veces'),
+                      if (medios > 0) _lineaMonto('Medios días', null, texto: '$medios'),
+                      _lineaMonto('Faltas', null, texto: '$faltas', rojo: faltas > 0),
+                      if (ferTrab > 0) _lineaMonto('Feriados trabajados', null, texto: '$ferTrab'),
+                      if (sinMarcar > 0) Text('Hay $sinMarcar día(s) sin marcar: tócalos en el calendario.', style: const TextStyle(fontSize: 12, color: Colors.deepOrange)),
+                    ]),
+                    _seccion('Adelantos de $_mes', icono: Icons.price_change, children: [
+                      if (adel.isEmpty) const Text('No tiene adelantos este mes.'),
+                      for (final p in adel)
+                        ListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          leading: Text(DateFormat('dd/MM').format(DateTime.tryParse(p['fecha'].toString())?.toLocal() ?? DateTime.now()), style: const TextStyle(fontWeight: FontWeight.bold)),
+                          title: Text('${_money(p['monto'] as num?)} · ${_tipoPagoTxt[p['tipo']] ?? p['tipo']}${p['desdeCaja'] == true ? '' : ' (no salió de caja)'}'),
+                          subtitle: (p['concepto'] ?? '').toString().isEmpty ? null : Text('${p['concepto']}'),
+                          trailing: p['descontado'] == true ? const Icon(Icons.check_circle, color: Colors.green, size: 18) : null,
+                        ),
+                      if (adel.isNotEmpty) ...[const Divider(), _lineaMonto('Total adelantos', totalAdel, fuerte: true)],
+                      FilledButton.tonalIcon(
+                        onPressed: () async {
+                          final ok = await showModalBottomSheet<bool>(context: context, isScrollControlled: true, builder: (_) => _PagoSheet(api: widget.api, trabajador: widget.t, tipoInicial: 'ADELANTO', valorHora: (_saldo['valorHora'] as num?)?.toDouble(), tarifaDia: (_saldo['tarifaDia'] as num?)?.toDouble()));
+                          if (ok == true) _cargar();
+                        },
+                        icon: const Icon(Icons.add),
+                        label: const Text('Anotar un adelanto'),
+                      ),
+                    ]),
+                    if (otros.isNotEmpty)
+                      _seccion('Otros pagos y descuentos', icono: Icons.receipt_long, plegable: true, abierta: false, children: [
+                        for (final p in otros)
+                          ListTile(
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            title: Text('${_money(p['monto'] as num?)} · ${_tipoPagoTxt[p['tipo']] ?? p['tipo']}'),
+                            subtitle: Text('${_fechaCorta(p['fecha'])}${(p['concepto'] ?? '').toString().isEmpty ? '' : ' · ${p['concepto']}'}'),
+                          ),
+                      ]),
+                    if (_saldo.isNotEmpty)
+                      Card(
+                        color: saldo > 0 ? Colors.green.shade50 : Colors.amber.shade50,
+                        child: Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text('CUENTA (${_saldo['desde'] ?? ''} al ${_saldo['hasta'] ?? ''})', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black54)),
+                            const SizedBox(height: 6),
+                            _lineaMonto('${_saldo['diasPagables']} día(s) × ${_money(_saldo['tarifaDia'] as num?)}', (_saldo['ganado'] as num?)),
+                            if (((_saldo['extraFeriados'] as num?) ?? 0) > 0) _lineaMonto('+ Feriados trabajados (${_saldo['feriadosTrabajados']})', _saldo['extraFeriados'] as num?),
+                            if (((_saldo['horasExtra'] as num?) ?? 0) > 0) _lineaMonto('+ Horas extra', _saldo['horasExtra'] as num?),
+                            if (((_saldo['bonos'] as num?) ?? 0) > 0) _lineaMonto('+ Bonos', _saldo['bonos'] as num?),
+                            if (((_saldo['descuentos'] as num?) ?? 0) > 0) _lineaMonto('− Descuentos', -((_saldo['descuentos'] as num?) ?? 0), rojo: true),
+                            if (((_saldo['pagado'] as num?) ?? 0) > 0) _lineaMonto('− Ya pagado', -((_saldo['pagado'] as num?) ?? 0)),
+                            if (((_saldo['adelantos'] as num?) ?? 0) > 0) _lineaMonto('− Adelantos', -((_saldo['adelantos'] as num?) ?? 0), rojo: true),
+                            const Divider(),
+                            Row(children: [
+                              const Expanded(child: Text('SALDO A PAGAR', style: TextStyle(fontWeight: FontWeight.bold))),
+                              Text(_money(saldo), style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: saldo >= 0 ? Colors.green.shade800 : Colors.red)),
+                            ]),
+                            const Text('Es lo que se le debe pagar hoy, ya restados los adelantos.', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                          ]),
+                        ),
+                      ),
+                  ]),
+                ),
+    );
+  }
+
+  Widget _celda(DateTime d) {
+    final e = _estadoDe(d);
+    final color = _color(e);
+    final antes = e == 'ANTES';
+    final sin = e == 'SIN_MARCAR';
+    final f = DateFormat('yyyy-MM-dd').format(d);
+    final esHoy = f == _hoy();
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () => _tocar(d),
+      child: Container(
+        decoration: BoxDecoration(
+          color: antes ? Colors.grey.shade200 : (e == 'FUTURO' ? Colors.grey.shade50 : color.withOpacity(color == Colors.transparent ? 0 : 0.9)),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: sin ? Colors.red.shade200 : (esHoy ? Colors.indigo : Colors.grey.shade300), width: esHoy ? 2 : 1),
+        ),
+        child: Stack(alignment: Alignment.center, children: [
+          Text('${d.day}', style: TextStyle(fontWeight: FontWeight.bold, color: (antes || sin || e == 'FUTURO') ? Colors.black45 : Colors.white)),
+          if (_marca(e).isNotEmpty) Positioned(right: 3, top: 0, child: Text(_marca(e), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
         ]),
       ),
     );
