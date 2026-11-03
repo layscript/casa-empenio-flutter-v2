@@ -3516,6 +3516,7 @@ class _HoraExtraSheetState extends State<_HoraExtraSheet> {
   bool _calc = false;
   bool _enviando = false;
   String _error = '';
+  bool _mesCompleto = false;
 
   @override
   void dispose() {
@@ -3537,6 +3538,7 @@ class _HoraExtraSheetState extends State<_HoraExtraSheet> {
       final r = _mapa(await widget.api.get('/rrhh/horas-extra/calcular', {
         'trabajadorId': widget.trabajador['id'], 'horas': h,
         if (_valor.text.trim().isNotEmpty) 'valorHora': _valor.text.replaceAll(',', '.'),
+        if (_mesCompleto) 'mes': '1',
       }));
       _monto.text = ((r['monto'] as num?) ?? 0).toStringAsFixed(2);
       _detalle = r['detalle']?.toString() ?? '';
@@ -3558,6 +3560,7 @@ class _HoraExtraSheetState extends State<_HoraExtraSheet> {
       await widget.api.post('/rrhh/horas-extra', {
         'trabajadorId': widget.trabajador['id'], 'fecha': _fecha, 'horas': hh > 0 ? _horas.text.replaceAll(',', '.') : '0',
         if (_valor.text.trim().isNotEmpty) 'valorHora': _valor.text.replaceAll(',', '.'),
+        if (_mesCompleto) 'mes': true,
         'montoFinal': _monto.text.replaceAll(',', '.'), 'nota': _nota.text.trim(), 'usuarioId': widget.api.usuarioId,
       });
       if (mounted) {
@@ -3587,6 +3590,13 @@ class _HoraExtraSheetState extends State<_HoraExtraSheet> {
               final f = await _pickFecha(context, inicial: _fecha, max: DateTime.now());
               if (f != null) setState(() => _fecha = f);
             },
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Son las horas de TODO el mes', style: TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: Text(_mesCompleto ? 'Ej. 40 horas del mes. Arriba elige un día de ese mes (ej. el último).' : 'Apagado: son las horas de un solo día.', style: const TextStyle(fontSize: 12)),
+            value: _mesCompleto,
+            onChanged: (v) => setState(() { _mesCompleto = v; _monto.clear(); }),
           ),
           const SizedBox(height: 8),
           TextField(
