@@ -3515,6 +3515,7 @@ class _HoraExtraSheetState extends State<_HoraExtraSheet> {
   String _detalle = '';
   bool _calc = false;
   bool _enviando = false;
+  String _error = '';
 
   @override
   void dispose() {
@@ -3528,10 +3529,10 @@ class _HoraExtraSheetState extends State<_HoraExtraSheet> {
   Future<bool> _calcular() async {
     final h = double.tryParse(_horas.text.replaceAll(',', '.')) ?? 0;
     if (h <= 0) {
-      _aviso(context, 'Escribe cuántas horas extra hizo', error: true);
+      setState(() => _error = 'Escribe cuántas horas extra hizo, o escribe el monto directo abajo.');
       return false;
     }
-    setState(() => _calc = true);
+    setState(() { _calc = true; _error = ''; });
     try {
       final r = _mapa(await widget.api.get('/rrhh/horas-extra/calcular', {
         'trabajadorId': widget.trabajador['id'], 'horas': h,
@@ -3542,20 +3543,20 @@ class _HoraExtraSheetState extends State<_HoraExtraSheet> {
       if (mounted) setState(() => _calc = false);
       return true;
     } catch (e) {
-      if (mounted) {
-        _aviso(context, e.toString(), error: true);
-        setState(() => _calc = false);
-      }
+      if (mounted) setState(() { _calc = false; _error = e.toString(); });
       return false;
     }
   }
 
   Future<void> _guardar() async {
-    if (_monto.text.isEmpty && !await _calcular()) return;
-    setState(() => _enviando = true);
+    final hh = double.tryParse(_horas.text.replaceAll(',', '.')) ?? 0;
+    final mm = double.tryParse(_monto.text.replaceAll(',', '.')) ?? 0;
+    if (mm <= 0 && !await _calcular()) return;
+    if (hh <= 0 && mm <= 0) return;
+    setState(() { _enviando = true; _error = ''; });
     try {
       await widget.api.post('/rrhh/horas-extra', {
-        'trabajadorId': widget.trabajador['id'], 'fecha': _fecha, 'horas': _horas.text.replaceAll(',', '.'),
+        'trabajadorId': widget.trabajador['id'], 'fecha': _fecha, 'horas': hh > 0 ? _horas.text.replaceAll(',', '.') : '0',
         if (_valor.text.trim().isNotEmpty) 'valorHora': _valor.text.replaceAll(',', '.'),
         'montoFinal': _monto.text.replaceAll(',', '.'), 'nota': _nota.text.trim(), 'usuarioId': widget.api.usuarioId,
       });
@@ -3564,7 +3565,7 @@ class _HoraExtraSheetState extends State<_HoraExtraSheet> {
         _aviso(context, 'Horas extra registradas: se suman a su saldo');
       }
     } catch (e) {
-      if (mounted) _aviso(context, e.toString(), error: true);
+      if (mounted) _error = e.toString();
     }
     if (mounted) setState(() => _enviando = false);
   }
@@ -3577,7 +3578,7 @@ class _HoraExtraSheetState extends State<_HoraExtraSheet> {
         padding: const EdgeInsets.all(16),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Horas extra de ${_nombreDe(widget.trabajador)}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
-          const Text('Las horas extra se suman a su saldo y a su boleta. Primero pon las horas y toca "Calcular".', style: TextStyle(fontSize: 12, color: Colors.black54)),
+          const Text('Las horas extra se suman a su saldo y a su boleta. Pon las horas y toca "Calcular", o escribe directo el monto total (ej. 200).', style: TextStyle(fontSize: 12, color: Colors.black54)),
           const SizedBox(height: 10),
           OutlinedButton.icon(
             icon: const Icon(Icons.event),
@@ -3604,23 +3605,23 @@ class _HoraExtraSheetState extends State<_HoraExtraSheet> {
           ),
           const SizedBox(height: 8),
           FilledButton.tonalIcon(onPressed: _calc ? null : _calcular, icon: const Icon(Icons.calculate), label: Text(_calc ? 'Calculando…' : 'Calcular')),
-          if (_monto.text.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(_detalle, style: const TextStyle(fontSize: 12, color: Colors.black54)),
-            const SizedBox(height: 6),
-            TextField(
-              controller: _monto,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              decoration: const InputDecoration(prefixText: 'S/ ', labelText: 'Monto a pagar (puedes cambiarlo)', border: OutlineInputBorder()),
-            ),
-          ],
+          const SizedBox(height: 8),
+          if (_monto.text.isNotEmpty && _detalle.isNotEmpty) Text(_detalle, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _monto,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            onChanged: (_) => setState(() {}),
+            decoration: const InputDecoration(prefixText: 'S/ ', labelText: 'Monto total a pagar (puedes escribirlo directo)', border: OutlineInputBorder()),
+          ),
+          if (_error.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_error, style: const TextStyle(color: Colors.red, fontSize: 13, fontWeight: FontWeight.w600))),
           const SizedBox(height: 8),
           TextField(controller: _nota, decoration: const InputDecoration(labelText: 'Observación (opcional)', border: OutlineInputBorder(), isDense: true)),
           const SizedBox(height: 12),
           FilledButton.icon(
             style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
-            onPressed: (_enviando || _monto.text.isEmpty) ? null : _guardar,
+            onPressed: (_enviando || (_monto.text.isEmpty && _horas.text.isEmpty)) ? null : _guardar,
             icon: const Icon(Icons.check),
             label: Text(_enviando ? 'Guardando…' : 'Registrar horas extra'),
           ),
