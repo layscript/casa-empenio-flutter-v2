@@ -1708,6 +1708,16 @@ class _FichaPageState extends State<_FichaPage> {
           if (!cesado) ...[
             FilledButton.icon(onPressed: () => _pago('ADELANTO'), icon: const Icon(Icons.price_change, size: 18), label: const Text('Dar adelanto')),
             FilledButton.tonalIcon(onPressed: _horaExtra, icon: const Icon(Icons.more_time, size: 18), label: const Text('Horas extra')),
+            if (t['vinculo'] == 'PLANILLA')
+              FilledButton.icon(
+                style: FilledButton.styleFrom(backgroundColor: Colors.teal.shade700),
+                onPressed: () async {
+                  await Navigator.of(context).push(MaterialPageRoute(builder: (_) => _LiquidarMesPage(api: widget.api, t: t)));
+                  _cargar();
+                },
+                icon: const Icon(Icons.calendar_month, size: 18),
+                label: const Text('Pagar el mes (paso a paso)'),
+              ),
             OutlinedButton.icon(
               onPressed: () async {
                 final ok = await showModalBottomSheet<bool>(context: context, isScrollControlled: true, builder: (_) => _PeriodoAnteriorSheet(api: widget.api, trabajador: t));
@@ -2034,7 +2044,8 @@ class _FichaPageState extends State<_FichaPage> {
 // HOJA: registrar un pago / adelanto (con foto del recibo)
 // ===========================================================================
 class _PagoSheet extends StatefulWidget {
-  const _PagoSheet({required this.api, required this.trabajador, this.tipoInicial = 'ADELANTO', this.montoInicial, this.conceptoInicial, this.valorHora, this.tarifaDia});
+  const _PagoSheet({required this.api, required this.trabajador, this.tipoInicial = 'ADELANTO', this.montoInicial, this.conceptoInicial, this.valorHora, this.tarifaDia, this.periodo});
+  final String? periodo;
   final _Api api;
   final Map<String, dynamic> trabajador;
   final String tipoInicial;
@@ -2124,6 +2135,7 @@ class _PagoSheetState extends State<_PagoSheet> {
         'trabajadorId': widget.trabajador['id'],
         'tipo': _tipo,
         'monto': monto,
+        if (widget.periodo != null) 'periodo': widget.periodo,
         'concepto': _concepto.text.trim(),
         'desdeCaja': concepto ? false : _caja,
         'usuarioId': widget.api.usuarioId,
@@ -3486,7 +3498,8 @@ class _AjustesTabState extends State<_AjustesTab> with AutomaticKeepAliveClientM
 // HORAS EXTRA
 // ===========================================================================
 class _HoraExtraSheet extends StatefulWidget {
-  const _HoraExtraSheet({required this.api, required this.trabajador});
+  const _HoraExtraSheet({required this.api, required this.trabajador, this.fechaInicial});
+  final String? fechaInicial;
   final _Api api;
   final Map<String, dynamic> trabajador;
   @override
@@ -3498,7 +3511,7 @@ class _HoraExtraSheetState extends State<_HoraExtraSheet> {
   final _monto = TextEditingController();
   final _nota = TextEditingController();
   final _valor = TextEditingController();
-  String _fecha = _hoy();
+  late String _fecha = widget.fechaInicial ?? _hoy();
   String _detalle = '';
   bool _calc = false;
   bool _enviando = false;
@@ -4748,6 +4761,226 @@ class _PeriodoAnteriorSheetState extends State<_PeriodoAnteriorSheet> {
                 ]),
         ),
       ),
+    );
+  }
+}
+
+
+// ===========================================================================
+// PAGAR EL MES PASO A PASO (planilla): ingreso, feriados, horas extra,
+// bonos/descuentos y boleta con AFP/ONP y EsSalud
+// ===========================================================================
+class _LiquidarMesPage extends StatefulWidget {
+  const _LiquidarMesPage({required this.api, required this.t});
+  final _Api api;
+  final Map<String, dynamic> t;
+  @override
+  State<_LiquidarMesPage> createState() => _LiquidarMesPageState();
+}
+
+class _LiquidarMesPageState extends State<_LiquidarMesPage> {
+  late String _mes;
+  late Map<String, dynamic> _t = Map<String, dynamic>.from(widget.t);
+  Map<String, Map<String, dynamic>> _dias = {};
+  List<Map<String, dynamic>> _feriados = [];
+  List<Map<String, dynamic>> _he = [];
+  List<Map<String, dynamic>> _conceptos = [];
+  Map<String, dynamic> _resumen = {};
+  Map<String, dynamic>? _boleta;
+  bool _cargando = true;
+  String? _error;
+
+  int get _id => (_t['id'] as num).toInt();
+
+  @override
+  void initState() {
+    super.initState();
+    final h = DateTime.now();
+    _mes = DateFormat('yyyy-MM').format(DateTime(h.year, h.month - 1, 1));
+    _cargar();
+  }
+
+  void _mover(int d) {
+    final f = DateTime.parse('$_mes-01');
+    _mes = DateFormat('yyyy-MM').format(DateTime(f.year, f.month + d, 1));
+    _cargar();
+  }
+
+  String get _ultimoDia {
+    final f = DateTime.parse('$_mes-01');
+    return DateFormat('yyyy-MM-dd').format(DateTime(f.year, f.month + 1, 0));
+  }
+
+  Future<void> _cargar() async {
+    setState(() {
+      _cargando = true;
+      _error = null;
+    });
+    try {
+      final anio = int.parse(_mes.substring(0, 4));
+      final r = await Future.wait([
+        widget.api.get('/rrhh/asistencia/trabajador/$_id', {'periodo': _mes}),
+        widget.api.get('/rrhh/feriados', {'anio': anio}),
+        widget.api.get('/rrhh/horas-extra', {'trabajadorId': _id, 'periodo': _mes}),
+        widget.api.get('/rrhh/historial', {'trabajadorId': _id, 'periodo': _mes}),
+        widget.api.get('/rrhh/trabajadores/$_id'),
+        widget.api.get('/rrhh/boletas', {'periodo': _mes}),
+      ]);
+      final a = _mapa(r[0]);
+      _dias = {for (final d in _lista(a['dias'])) d['fecha'].toString().substring(0, 10): d};
+      _resumen = _mapa(a['resumen']);
+      _feriados = _lista(_mapa(r[1])['items']).where((f) => f['fecha'].toString().startsWith(_mes)).toList();
+      _he = _lista(r[2]).where((h) => h['estado'] != 'ANULADA').toList();
+      _conceptos = _lista(_mapa(r[3])['pagos']).where((p) => (p['tipo'] == 'BONO' || p['tipo'] == 'DESCUENTO') && p['estado'] != 'ANULADO').toList();
+      _t = _mapa(_mapa(r[4])['trabajador']);
+      _boleta = _lista(r[5]).where((b) => b['trabajadorId'] == _id && b['estado'] != 'ANULADA' && b['tipo'] == 'SUELDO').cast<Map<String, dynamic>?>().firstWhere((_) => true, orElse: () => null);
+    } catch (e) {
+      _error = e.toString();
+    }
+    if (mounted) setState(() => _cargando = false);
+  }
+
+  Future<void> _corregirIngreso() async {
+    final f = await _pickFecha(context, inicial: '$_mes-01');
+    if (f == null) return;
+    try {
+      await widget.api.put('/rrhh/trabajadores/$_id', {'fechaIngreso': f});
+      _aviso(context, 'Fecha de ingreso corregida');
+      _cargar();
+    } catch (e) {
+      if (mounted) _aviso(context, e.toString(), error: true);
+    }
+  }
+
+  Future<void> _trabajoFeriado(String fecha, bool trabajo) async {
+    try {
+      await widget.api.post('/rrhh/asistencia/manual', {'trabajadorId': _id, 'estado': trabajo ? 'PRESENTE' : 'FERIADO', 'fecha': fecha, 'dias': 1, 'usuarioId': widget.api.usuarioId});
+      _cargar();
+    } catch (e) {
+      if (mounted) _aviso(context, e.toString(), error: true);
+    }
+  }
+
+  Future<void> _agregarHE() async {
+    final ok = await showModalBottomSheet<bool>(context: context, isScrollControlled: true, builder: (_) => _HoraExtraSheet(api: widget.api, trabajador: _t, fechaInicial: _ultimoDia));
+    if (ok == true) _cargar();
+  }
+
+  Future<void> _concepto(String tipo) async {
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _PagoSheet(api: widget.api, trabajador: _t, tipoInicial: tipo, periodo: _mes),
+    );
+    if (ok == true) _cargar();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mesNombre = _mesTexto(_mes);
+    final ing = _t['fechaIngreso']?.toString().substring(0, 10) ?? '';
+    final ingresoTarde = ing.compareTo('$_mes-01') > 0;
+    final faltas = (_resumen['faltas'] as num?) ?? 0;
+    final totalHE = _he.fold<double>(0, (a, h) => a + ((h['monto'] as num?) ?? 0).toDouble());
+    return Scaffold(
+      appBar: AppBar(title: Text('Pagar ${_t['nombres']}')),
+      body: _cargando
+          ? _esperaW()
+          : _error != null
+              ? _errorBox(_error!, _cargar)
+              : ListView(padding: const EdgeInsets.fromLTRB(12, 8, 12, 40), children: [
+                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    IconButton(icon: const Icon(Icons.chevron_left), onPressed: () => _mover(-1)),
+                    Text(mesNombre.toUpperCase(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    IconButton(icon: const Icon(Icons.chevron_right), onPressed: () => _mover(1)),
+                  ]),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(color: Colors.teal.shade50, borderRadius: BorderRadius.circular(10)),
+                    child: Text('Sueldo ${_money(_t['sueldoMensual'] as num?)} al mes. Sigue los pasos de arriba hacia abajo y al final toca "Calcular y pagar". El sistema suma el sueldo, el feriado trabajado y las horas extra, y resta AFP/ONP y los adelantos. EsSalud lo paga la empresa.', style: const TextStyle(fontSize: 12)),
+                  ),
+                  _seccion('1. ¿Desde cuándo trabaja?', icono: Icons.event, children: [
+                    Text('Fecha de ingreso en el sistema: ${_fechaCorta(ing)}'),
+                    if (ingresoTarde)
+                      Container(
+                        margin: const EdgeInsets.only(top: 6),
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(color: Colors.amber.shade50, borderRadius: BorderRadius.circular(8)),
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text('Figura que empezó después de que empieza $mesNombre, por eso se le contarían pocos días. Si ya trabajaba desde antes, corrígelo.', style: const TextStyle(fontSize: 12)),
+                          TextButton.icon(onPressed: _corregirIngreso, icon: const Icon(Icons.edit_calendar), label: const Text('Corregir la fecha de ingreso')),
+                        ]),
+                      )
+                    else
+                      const Text('Correcto: se le paga el mes completo.', style: TextStyle(fontSize: 12, color: Colors.green)),
+                  ]),
+                  _seccion('2. Faltas del mes', icono: Icons.event_busy, children: [
+                    Text(faltas == 0 ? 'Sin faltas: cobra los 30 días completos.' : '$faltas falta(s): se descuentan de su sueldo.', style: TextStyle(color: faltas == 0 ? Colors.green : Colors.red)),
+                    const Text('Si faltó algún día, márcalo en su "Hoja del mes".', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                  ]),
+                  _seccion('3. Feriados trabajados', icono: Icons.celebration, children: [
+                    if (_feriados.isEmpty) const Text('Este mes no tiene feriados.'),
+                    for (final f in _feriados)
+                      Builder(builder: (_) {
+                        final fe = f['fecha'].toString().substring(0, 10);
+                        final est = _dias[fe]?['estado'];
+                        final trabajo = est == 'PRESENTE' || est == 'TARDANZA';
+                        return SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text('${f['nombre']} (${_fechaCorta(fe)})'),
+                          subtitle: Text(trabajo ? 'Trabajó ese día: se le paga un extra' : 'No trabajó: el feriado igual se paga'),
+                          value: trabajo,
+                          onChanged: (v) => _trabajoFeriado(fe, v),
+                        );
+                      }),
+                    const Text('Prende el interruptor solo si trabajó ese feriado.', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                  ]),
+                  _seccion('4. Horas extra', icono: Icons.more_time, children: [
+                    if (_he.isEmpty) const Text('No hay horas extra anotadas en este mes.'),
+                    for (final h in _he)
+                      ListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        title: Text('${_fechaCorta(h['fecha'])} · ${h['horas']} h · ${_money(h['monto'] as num?)}'),
+                        trailing: h['pagada'] == true ? const Icon(Icons.check_circle, color: Colors.green, size: 18) : IconButton(
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () async {
+                            if (!await _confirmar(context, 'Quitar horas extra', '¿Quitar estas horas extra?')) return;
+                            await widget.api.post('/rrhh/horas-extra/${h['id']}/anular', {});
+                            _cargar();
+                          },
+                        ),
+                      ),
+                    if (_he.isNotEmpty) Text('Total horas extra: ${_money(totalHE)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    FilledButton.tonalIcon(onPressed: _agregarHE, icon: const Icon(Icons.add), label: const Text('Agregar horas extra')),
+                    const Text('Pon cuántas horas y el sistema calcula el pago; puedes cambiar el monto. Si ya sabes el total (ej. S/ 200), escribe las horas y cambia el monto final.', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                  ]),
+                  _seccion('5. Bonos o descuentos (opcional)', icono: Icons.tune, children: [
+                    for (final c in _conceptos)
+                      ListTile(dense: true, contentPadding: EdgeInsets.zero, title: Text('${c['tipo'] == 'BONO' ? '+' : '−'} ${_money(c['monto'] as num?)}'), subtitle: Text('${c['concepto'] ?? ''}')),
+                    Wrap(spacing: 8, children: [
+                      OutlinedButton.icon(onPressed: () => _concepto('BONO'), icon: const Icon(Icons.add_circle_outline, size: 18), label: const Text('Agregar bono')),
+                      OutlinedButton.icon(onPressed: () => _concepto('DESCUENTO'), icon: const Icon(Icons.remove_circle_outline, size: 18), label: const Text('Agregar descuento')),
+                    ]),
+                  ]),
+                  const SizedBox(height: 12),
+                  if (_boleta != null)
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      margin: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(10)),
+                      child: Text('Ya existe una boleta de $mesNombre por ${_money(_boleta!['neto'] as num?)} (${_boleta!['pagoId'] != null ? 'pagada' : 'sin pagar'}). Si quieres cambiarla, anúlala primero en Planilla.', style: const TextStyle(fontSize: 12)),
+                    ),
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54), backgroundColor: Colors.teal.shade700),
+                    onPressed: () async {
+                      await Navigator.of(context).push(MaterialPageRoute(builder: (_) => _CalculoBoletaPage(api: widget.api, t: _t, periodo: _mes)));
+                      _cargar();
+                    },
+                    icon: const Icon(Icons.calculate),
+                    label: Text('Calcular y pagar $mesNombre'),
+                  ),
+                ]),
     );
   }
 }
