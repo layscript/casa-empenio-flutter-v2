@@ -3225,6 +3225,29 @@ class _PlanillaTabState extends State<_PlanillaTab> with AutomaticKeepAliveClien
                       ),
               ),
             for (final o in _lista(_obl['items']))
+              for (final pg in _lista(o['pagos']))
+                ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(pg['sinComprobante'] == true ? Icons.warning_amber : Icons.check_circle, size: 18, color: pg['sinComprobante'] == true ? Colors.orange : Colors.green),
+                  title: Text('${o['entidad']} · ${_money(pg['monto'] as num?)}${pg['codigoPago'] != null && '${pg['codigoPago']}'.isNotEmpty ? ' · cód. ${pg['codigoPago']}' : ''}', style: const TextStyle(fontSize: 12)),
+                  subtitle: Text(pg['sinComprobante'] == true ? 'Sin voucher' : 'Con voucher', style: const TextStyle(fontSize: 11)),
+                  trailing: TextButton(
+                    onPressed: () async {
+                      final motivo = await _pedirTexto(context, 'Motivo para anular este pago', hint: 'Ej: me equivoqué de monto');
+                      if (motivo == null || motivo.trim().length < 3) return;
+                      try {
+                        final r = _mapa(await widget.api.post('/rrhh/obligaciones/${pg['id']}/anular', {'motivo': motivo}));
+                        if (mounted) _aviso(context, r['aviso']?.toString() ?? 'Pago anulado');
+                        _cargar();
+                      } catch (e) {
+                        if (mounted) _aviso(context, e.toString(), error: true);
+                      }
+                    },
+                    child: const Text('Anular', style: TextStyle(color: Colors.red, fontSize: 12)),
+                  ),
+                ),
+            for (final o in _lista(_obl['items']))
               for (final pg in _lista(o['pagos']).where((x) => x['sinComprobante'] == true && x['desdeCaja'] == true))
                 Container(
                   margin: const EdgeInsets.only(top: 6),
@@ -4178,7 +4201,12 @@ class _PagarObligacionSheet extends StatefulWidget {
 
 class _PagarObligacionSheetState extends State<_PagarObligacionSheet> {
   final _codigo = TextEditingController();
+  late final TextEditingController _monto = TextEditingController(text: ((widget.item['pendiente'] as num?) ?? 0).toStringAsFixed(2));
+  bool _parcial = false;
   bool _caja = true;
+  double get _calculado => ((widget.item['pendiente'] as num?) ?? 0).toDouble();
+  double get _aPagar => double.tryParse(_monto.text.replaceAll(',', '.')) ?? 0;
+  void _sumar(double d) => setState(() => _monto.text = (_aPagar + d).clamp(0, 999999).toStringAsFixed(2));
   String? _foto_;
   bool _enviando = false;
 
@@ -4186,7 +4214,7 @@ class _PagarObligacionSheetState extends State<_PagarObligacionSheet> {
     setState(() => _enviando = true);
     try {
       await widget.api.post('/rrhh/obligaciones/pagar', {
-        'periodo': widget.periodo, 'entidad': widget.item['entidad'], 'monto': widget.item['pendiente'], 'desdeCaja': _caja, 'codigo': _codigo.text.trim(),
+        'periodo': widget.periodo, 'entidad': widget.item['entidad'], 'monto': _aPagar, 'parcial': _parcial, 'desdeCaja': _caja, 'codigo': _codigo.text.trim(),
         'usuarioId': widget.api.usuarioId, 'sucursalId': widget.api.sucursalId > 0 ? widget.api.sucursalId : null,
       }, archivo: _foto_);
       if (mounted) {
@@ -4208,7 +4236,35 @@ class _PagarObligacionSheetState extends State<_PagarObligacionSheet> {
         padding: const EdgeInsets.all(16),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Pagar ${widget.item['entidad']}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          Text(_money(widget.item['pendiente'] as num?), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+          Text('Calculado por el sistema: ${_money(_calculado)}', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _monto,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+            onChanged: (_) => setState(() {}),
+            decoration: const InputDecoration(prefixText: 'S/ ', labelText: 'Monto que se paga (puedes cambiarlo)', border: OutlineInputBorder()),
+          ),
+          Wrap(spacing: 6, children: [
+            for (final d in const [-15.0, -10.0, -5.0, 5.0, 10.0, 15.0])
+              ActionChip(label: Text('${d > 0 ? '+' : '−'}${d.abs().toStringAsFixed(0)}'), onPressed: () => _sumar(d)),
+          ]),
+          if ((_aPagar - _calculado).abs() >= 0.01)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                _aPagar > _calculado ? 'Pagas ${_money(_aPagar - _calculado)} MÁS de lo calculado (la entidad cambió el monto).' : 'Pagas ${_money(_calculado - _aPagar)} MENOS de lo calculado.',
+                style: TextStyle(fontSize: 12, color: Colors.orange.shade800, fontWeight: FontWeight.w600),
+              ),
+            ),
+          if (_aPagar < _calculado - 0.01)
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Es un pago parcial'),
+              subtitle: Text(_parcial ? 'Queda el saldo pendiente por pagar.' : 'Se da por pagado completo con este monto.', style: const TextStyle(fontSize: 12)),
+              value: _parcial,
+              onChanged: (v) => setState(() => _parcial = v),
+            ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('El dinero sale de la caja de hoy'),
