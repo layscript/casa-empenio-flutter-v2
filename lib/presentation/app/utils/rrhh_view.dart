@@ -2681,6 +2681,38 @@ class _DetalleBoleta extends StatelessWidget {
   }
 }
 
+class _TotalEntregar extends StatelessWidget {
+  const _TotalEntregar({required this.e});
+  final Map<String, dynamic> e;
+  @override
+  Widget build(BuildContext context) {
+    final afp = (e['afp'] as num?) ?? 0, onp = (e['onp'] as num?) ?? 0, ess = (e['essalud'] as num?) ?? 0;
+    Widget fila(String t, num m, {bool fuerte = false}) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            Flexible(child: Text(t, style: TextStyle(fontSize: fuerte ? 16 : 13, fontWeight: fuerte ? FontWeight.bold : FontWeight.normal))),
+            Text(_money(m), style: TextStyle(fontSize: fuerte ? 18 : 13, fontWeight: fuerte ? FontWeight.bold : FontWeight.w600)),
+          ]),
+        );
+    return Container(
+      margin: const EdgeInsets.only(top: 14),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: Colors.indigo.shade50, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.indigo.shade200)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('💵 DINERO A ENTREGAR A LA CAJERA', style: TextStyle(fontWeight: FontWeight.bold)),
+        const Text('Todo lo que sale por esta trabajadora este mes. La cajera paga cada parte y luego sube los vouchers (plazo 10 días).', style: TextStyle(fontSize: 11, color: Colors.black54)),
+        const SizedBox(height: 6),
+        fila('1) Sueldo neto para la trabajadora', (e['neto'] as num?) ?? 0),
+        if (afp > 0) fila('2) AFP ${e['afpNombre'] ?? ''} (aporte + seguro)', afp),
+        if (onp > 0) fila('2) ONP', onp),
+        if (ess > 0) fila('3) EsSalud (lo paga la empresa)', ess),
+        const Divider(),
+        fila('TOTAL', (e['total'] as num?) ?? 0, fuerte: true),
+      ]),
+    );
+  }
+}
+
 class _BoletaPage extends StatefulWidget {
   const _BoletaPage({required this.api, required this.id});
   final _Api api;
@@ -2750,6 +2782,7 @@ class _BoletaPageState extends State<_BoletaPage> {
                     child: Text(anulada ? 'ANULADA' : pagada ? 'PAGADA' : 'Pendiente de pago', style: TextStyle(fontWeight: FontWeight.bold, color: anulada ? Colors.red : pagada ? Colors.green.shade800 : Colors.orange.shade900)),
                   ),
                   _DetalleBoleta(b: _b),
+                  if (!anulada && _mapa(_b['entregar']).isNotEmpty) _TotalEntregar(e: _mapa(_b['entregar'])),
                   const SizedBox(height: 16),
                   OutlinedButton.icon(
                     onPressed: () async => mostrarPdf(await pdfBoleta(_b, nombre: _b['trabajadorNombre']?.toString()), 'Boleta ${_b['trabajadorNombre']} ${_b['periodo']}'),
@@ -3154,6 +3187,32 @@ class _PlanillaTabState extends State<_PlanillaTab> with AutomaticKeepAliveClien
                         child: Text('Pagar ${_money(o['pendiente'] as num?)}'),
                       ),
               ),
+            for (final o in _lista(_obl['items']))
+              for (final pg in _lista(o['pagos']).where((x) => x['sinComprobante'] == true && x['desdeCaja'] == true))
+                Container(
+                  margin: const EdgeInsets.only(top: 6),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(color: Colors.amber.shade50, borderRadius: BorderRadius.circular(8)),
+                  child: Row(children: [
+                    const Icon(Icons.receipt_long, color: Colors.orange),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text('Falta el voucher de ${o['entidad']} (${_money(pg['monto'] as num?)})${pg['fechaLimite'] != null ? '\nPlazo hasta el ${_fechaCorta(pg['fechaLimite'])}' : ''}', style: const TextStyle(fontSize: 12))),
+                    FilledButton.tonal(
+                      onPressed: () async {
+                        final f = await _foto(context);
+                        if (f == null) return;
+                        try {
+                          await widget.api.post('/rrhh/obligaciones/${pg['id']}/comprobante', {}, archivo: f);
+                          if (mounted) _aviso(context, 'Voucher guardado');
+                          _cargar();
+                        } catch (e) {
+                          if (mounted) _aviso(context, e.toString(), error: true);
+                        }
+                      },
+                      child: const Text('Subir voucher'),
+                    ),
+                  ]),
+                ),
             Text('${_obl['nota'] ?? ''}', style: const TextStyle(fontSize: 11, color: Colors.black54)),
           ]),
         if (_cargando) _esperaW() else if (_error != null) _errorBox(_error!, _cargar) else if (_trab.isEmpty)
@@ -4081,7 +4140,7 @@ class _PagarObligacionSheet extends StatefulWidget {
 }
 
 class _PagarObligacionSheetState extends State<_PagarObligacionSheet> {
-  bool _caja = false;
+  bool _caja = true;
   String? _foto_;
   bool _enviando = false;
 
@@ -4115,7 +4174,7 @@ class _PagarObligacionSheetState extends State<_PagarObligacionSheet> {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('El dinero sale de la caja de hoy'),
-            subtitle: Text(_caja ? 'Se registra la salida en caja.' : 'Pago por banco, Yape o la plataforma: no toca la caja.'),
+            subtitle: Text(_caja ? 'Se registra la salida en caja y se la entregas a la cajera para que pague. El voucher lo puede subir después (10 días).' : 'Pago por banco, Yape o la plataforma: no toca la caja.'),
             value: _caja,
             onChanged: (v) => setState(() => _caja = v),
           ),
@@ -4125,7 +4184,7 @@ class _PagarObligacionSheetState extends State<_PagarObligacionSheet> {
               if (f != null) setState(() => _foto_ = f);
             },
             icon: Icon(_foto_ == null ? Icons.photo_camera : Icons.check_circle, color: _foto_ == null ? null : Colors.green),
-            label: Text(_foto_ == null ? 'Foto del comprobante / constancia (recomendado)' : 'Foto lista · tocar para cambiar'),
+            label: Text(_foto_ == null ? 'Foto del voucher (o súbelo después)' : 'Foto lista · tocar para cambiar'),
           ),
           const SizedBox(height: 12),
           FilledButton.icon(style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)), onPressed: _enviando ? null : _pagar, icon: const Icon(Icons.check), label: Text(_enviando ? 'Guardando…' : 'Registrar pago')),
