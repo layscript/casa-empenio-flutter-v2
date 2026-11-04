@@ -2681,38 +2681,6 @@ class _DetalleBoleta extends StatelessWidget {
   }
 }
 
-class _TotalEntregar extends StatelessWidget {
-  const _TotalEntregar({required this.e});
-  final Map<String, dynamic> e;
-  @override
-  Widget build(BuildContext context) {
-    final afp = (e['afp'] as num?) ?? 0, onp = (e['onp'] as num?) ?? 0, ess = (e['essalud'] as num?) ?? 0;
-    Widget fila(String t, num m, {bool fuerte = false}) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
-          child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Flexible(child: Text(t, style: TextStyle(fontSize: fuerte ? 16 : 13, fontWeight: fuerte ? FontWeight.bold : FontWeight.normal))),
-            Text(_money(m), style: TextStyle(fontSize: fuerte ? 18 : 13, fontWeight: fuerte ? FontWeight.bold : FontWeight.w600)),
-          ]),
-        );
-    return Container(
-      margin: const EdgeInsets.only(top: 14),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Colors.indigo.shade50, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.indigo.shade200)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('💵 DINERO A ENTREGAR A LA CAJERA', style: TextStyle(fontWeight: FontWeight.bold)),
-        const Text('Todo lo que sale por esta trabajadora este mes. La cajera paga cada parte y luego sube los vouchers (plazo 10 días).', style: TextStyle(fontSize: 11, color: Colors.black54)),
-        const SizedBox(height: 6),
-        fila('1) Sueldo neto para la trabajadora', (e['neto'] as num?) ?? 0),
-        if (afp > 0) fila('2) AFP ${e['afpNombre'] ?? ''} (aporte + seguro)', afp),
-        if (onp > 0) fila('2) ONP', onp),
-        if (ess > 0) fila('3) EsSalud (lo paga la empresa)', ess),
-        const Divider(),
-        fila('TOTAL', (e['total'] as num?) ?? 0, fuerte: true),
-      ]),
-    );
-  }
-}
-
 class _BoletaPage extends StatefulWidget {
   const _BoletaPage({required this.api, required this.id});
   final _Api api;
@@ -2723,6 +2691,7 @@ class _BoletaPage extends StatefulWidget {
 
 class _BoletaPageState extends State<_BoletaPage> {
   Map<String, dynamic> _b = {};
+  Map<String, dynamic> _obl = {};
   bool _cargando = true;
   String? _error;
 
@@ -2736,11 +2705,77 @@ class _BoletaPageState extends State<_BoletaPage> {
     setState(() => _cargando = true);
     try {
       _b = _mapa(await widget.api.get('/rrhh/boletas/${widget.id}'));
+      try {
+        _obl = _mapa(await widget.api.get('/rrhh/obligaciones', {'periodo': _b['periodo']}));
+      } catch (_) {
+        _obl = {};
+      }
       _error = null;
     } catch (e) {
       _error = e.toString();
     }
     if (mounted) setState(() => _cargando = false);
+  }
+
+  Widget _pagosEntidades() {
+    final e = _mapa(_b['entregar']);
+    final items = _lista(_obl['items']);
+    Map<String, dynamic>? item(bool Function(String) f) {
+      for (final i in items) {
+        if (f(i['entidad'].toString())) return i;
+      }
+      return null;
+    }
+    final afp = item((n) => n.startsWith('AFP')), onp = item((n) => n == 'ONP'), ess = item((n) => n == 'ESSALUD');
+    final partes = <Map<String, dynamic>>[
+      if (afp != null) {'it': afp, 'titulo': 'Pagar ${afp['entidad']}', 'mio': (e['afp'] as num?) ?? 0},
+      if (onp != null) {'it': onp, 'titulo': 'Pagar ONP', 'mio': (e['onp'] as num?) ?? 0},
+      if (ess != null) {'it': ess, 'titulo': 'Pagar EsSalud', 'mio': (e['essalud'] as num?) ?? 0},
+    ];
+    if (partes.isEmpty) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.only(top: 14),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: Colors.indigo.shade50, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.indigo.shade200)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('🏦 PAGOS A LAS ENTIDADES', style: TextStyle(fontWeight: FontWeight.bold)),
+        const Text('Son pagos aparte, cada uno con su código que te da el contador. Al tocar "Pagar" sale el dinero de la caja en ese momento. Sube el voucher: tienes 10 días.', style: TextStyle(fontSize: 11, color: Colors.black54)),
+        for (final p in partes) ...[
+          const Divider(),
+          Builder(builder: (_) {
+            final it = _mapa(p['it']);
+            final pend = (it['pendiente'] as num?) ?? 0;
+            final pagado = pend <= 0;
+            final sinVoucher = _lista(it['pagos']).where((x) => x['sinComprobante'] == true).toList();
+            return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Expanded(child: Text('${it['entidad']}', style: const TextStyle(fontWeight: FontWeight.bold))),
+                Text(_money(it['monto'] as num?), style: const TextStyle(fontWeight: FontWeight.bold)),
+              ]),
+              Text('Total del mes de todo el personal. De esta trabajadora: ${_money(p['mio'] as num?)}', style: const TextStyle(fontSize: 11, color: Colors.black54)),
+              if (pagado)
+                const Text('Pagado ✓', style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600))
+              else
+                Text('Pendiente ${_money(pend)} · plazo hasta el ${_fechaCorta(it['plazo'])}', style: TextStyle(fontSize: 12, color: Colors.orange.shade800)),
+              for (final sv in sinVoucher)
+                Text('⚠ Falta el voucher de un pago de ${_money(sv['monto'] as num?)}. Súbelo en la pestaña Planilla.', style: const TextStyle(fontSize: 11, color: Colors.red)),
+              if (!pagado)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: FilledButton.tonalIcon(
+                    onPressed: () async {
+                      final ok = await showModalBottomSheet<bool>(context: context, isScrollControlled: true, builder: (_) => _PagarObligacionSheet(api: widget.api, periodo: _b['periodo'].toString(), item: it));
+                      if (ok == true) _cargar();
+                    },
+                    icon: const Icon(Icons.account_balance, size: 18),
+                    label: Text('${p['titulo']} · ${_money(pend)}'),
+                  ),
+                ),
+            ]);
+          }),
+        ],
+      ]),
+    );
   }
 
   Future<void> _pagar() async {
@@ -2782,7 +2817,7 @@ class _BoletaPageState extends State<_BoletaPage> {
                     child: Text(anulada ? 'ANULADA' : pagada ? 'PAGADA' : 'Pendiente de pago', style: TextStyle(fontWeight: FontWeight.bold, color: anulada ? Colors.red : pagada ? Colors.green.shade800 : Colors.orange.shade900)),
                   ),
                   _DetalleBoleta(b: _b),
-                  if (!anulada && _mapa(_b['entregar']).isNotEmpty) _TotalEntregar(e: _mapa(_b['entregar'])),
+                  if (!anulada) _pagosEntidades(),
                   const SizedBox(height: 16),
                   OutlinedButton.icon(
                     onPressed: () async => mostrarPdf(await pdfBoleta(_b, nombre: _b['trabajadorNombre']?.toString()), 'Boleta ${_b['trabajadorNombre']} ${_b['periodo']}'),
@@ -2857,6 +2892,8 @@ class _PagarBoletaSheetState extends State<_PagarBoletaSheet> {
         padding: const EdgeInsets.all(16),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Pagar ${_money(widget.boleta['neto'] as num?)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          TextField(controller: _codigo, decoration: const InputDecoration(labelText: 'Código de pago (el que te pasa el contador)', helperText: 'Ej: N° de ticket AFPnet o N° de pago SUNAT', border: OutlineInputBorder(), isDense: true)),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('El dinero sale de la caja de hoy'),
@@ -3176,7 +3213,7 @@ class _PlanillaTabState extends State<_PlanillaTab> with AutomaticKeepAliveClien
                 dense: true,
                 contentPadding: EdgeInsets.zero,
                 title: Text('${o['entidad']}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text(((o['pendiente'] as num?) ?? 0) <= 0 ? 'Pagado ✓ ${_money(o['pagado'] as num?)}' : 'Total ${_money(o['monto'] as num?)}${((o['pagado'] as num?) ?? 0) > 0 ? ' · pagado ${_money(o['pagado'] as num?)}' : ''}'),
+                subtitle: Text(((o['pendiente'] as num?) ?? 0) <= 0 ? 'Pagado ✓ ${_money(o['pagado'] as num?)}' : 'Total ${_money(o['monto'] as num?)}${((o['pagado'] as num?) ?? 0) > 0 ? ' · pagado ${_money(o['pagado'] as num?)}' : ''} · plazo hasta el ${_fechaCorta(o['plazo'])}'),
                 trailing: ((o['pendiente'] as num?) ?? 0) <= 0
                     ? const Icon(Icons.check_circle, color: Colors.green)
                     : FilledButton.tonal(
@@ -4140,6 +4177,7 @@ class _PagarObligacionSheet extends StatefulWidget {
 }
 
 class _PagarObligacionSheetState extends State<_PagarObligacionSheet> {
+  final _codigo = TextEditingController();
   bool _caja = true;
   String? _foto_;
   bool _enviando = false;
@@ -4148,7 +4186,7 @@ class _PagarObligacionSheetState extends State<_PagarObligacionSheet> {
     setState(() => _enviando = true);
     try {
       await widget.api.post('/rrhh/obligaciones/pagar', {
-        'periodo': widget.periodo, 'entidad': widget.item['entidad'], 'monto': widget.item['pendiente'], 'desdeCaja': _caja,
+        'periodo': widget.periodo, 'entidad': widget.item['entidad'], 'monto': widget.item['pendiente'], 'desdeCaja': _caja, 'codigo': _codigo.text.trim(),
         'usuarioId': widget.api.usuarioId, 'sucursalId': widget.api.sucursalId > 0 ? widget.api.sucursalId : null,
       }, archivo: _foto_);
       if (mounted) {
@@ -4174,7 +4212,7 @@ class _PagarObligacionSheetState extends State<_PagarObligacionSheet> {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('El dinero sale de la caja de hoy'),
-            subtitle: Text(_caja ? 'Se registra la salida en caja y se la entregas a la cajera para que pague. El voucher lo puede subir después (10 días).' : 'Pago por banco, Yape o la plataforma: no toca la caja.'),
+            subtitle: Text(_caja ? 'Se descuenta de la caja ahora. El voucher lo puedes subir después (máximo 10 días).' : 'Pago por banco, Yape o la plataforma: no toca la caja.'),
             value: _caja,
             onChanged: (v) => setState(() => _caja = v),
           ),
