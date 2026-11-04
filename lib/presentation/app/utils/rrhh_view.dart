@@ -888,12 +888,20 @@ class _HoyTabState extends State<_HoyTab> with AutomaticKeepAliveClientMixin {
     if (ocupado) {
       accion = const SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 2));
     } else if (esHoy && (a == null || (a['auto'] == true && estado == 'FERIADO'))) {
-      accion = FilledButton.icon(
-        style: FilledButton.styleFrom(backgroundColor: Colors.green.shade700),
-        onPressed: () => _marcar(it, 'ENTRADA'),
-        icon: const Icon(Icons.login, size: 18),
-        label: const Text('ENTRADA'),
-      );
+      accion = Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.end, children: [
+        FilledButton.icon(
+          style: FilledButton.styleFrom(backgroundColor: Colors.green.shade700),
+          onPressed: () => _marcar(it, 'ENTRADA'),
+          icon: const Icon(Icons.login, size: 18),
+          label: const Text('ENTRADA'),
+        ),
+        TextButton.icon(
+          style: TextButton.styleFrom(visualDensity: VisualDensity.compact, padding: EdgeInsets.zero),
+          onPressed: () => _manual(it, 'PRESENTE'),
+          icon: const Icon(Icons.check_circle_outline, size: 16),
+          label: const Text('Trabajó hoy (sin foto)', style: TextStyle(fontSize: 12)),
+        ),
+      ]);
     } else if (esHoy && tieneEntrada && !tieneSalida) {
       accion = FilledButton.icon(
         style: FilledButton.styleFrom(backgroundColor: Colors.indigo),
@@ -901,6 +909,8 @@ class _HoyTabState extends State<_HoyTab> with AutomaticKeepAliveClientMixin {
         icon: const Icon(Icons.logout, size: 18),
         label: const Text('SALIDA'),
       );
+    } else if (!esHoy && a == null) {
+      accion = FilledButton.tonalIcon(onPressed: () => _manual(it, 'PRESENTE'), icon: const Icon(Icons.check, size: 18), label: const Text('Asistió'));
     } else {
       accion = const SizedBox.shrink();
     }
@@ -2748,7 +2758,18 @@ class _BoletaPageState extends State<_BoletaPage> {
                   ),
                   if (!anulada && !pagada) ...[
                     const SizedBox(height: 8),
-                    FilledButton.icon(style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)), onPressed: _pagar, icon: const Icon(Icons.payments), label: Text('Pagar ${_money(_b['neto'] as num?)}')),
+                    if (_b['puedePagar'] == false)
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.orange.shade300)),
+                        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          const Icon(Icons.lock_clock, color: Colors.orange),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text('${_b['motivoNoPago']}', style: const TextStyle(fontSize: 13))),
+                        ]),
+                      )
+                    else
+                      FilledButton.icon(style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)), onPressed: _pagar, icon: const Icon(Icons.payments), label: Text('Pagar ${_money(_b['neto'] as num?)}')),
                     TextButton(onPressed: _anular, child: const Text('Anular esta boleta', style: TextStyle(color: Colors.red))),
                   ],
                 ]),
@@ -4893,6 +4914,7 @@ class _LiquidarMesPageState extends State<_LiquidarMesPage> {
     final ingresoTarde = ing.compareTo('$_mes-01') > 0;
     final faltas = (_resumen['faltas'] as num?) ?? 0;
     final totalHE = _he.fold<double>(0, (a, h) => a + ((h['monto'] as num?) ?? 0).toDouble());
+    final mesNoTermino = _t['estado'] != 'CESADO' && _mes.compareTo(DateFormat('yyyy-MM').format(DateTime.now())) >= 0;
     return Scaffold(
       appBar: AppBar(title: Text('Pagar ${_t['nombres']}')),
       body: _cargando
@@ -4982,9 +5004,16 @@ class _LiquidarMesPageState extends State<_LiquidarMesPage> {
                       decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(10)),
                       child: Text('Ya existe una boleta de $mesNombre por ${_money(_boleta!['neto'] as num?)} (${_boleta!['pagoId'] != null ? 'pagada' : 'sin pagar'}). Si quieres cambiarla, anúlala primero en Planilla.', style: const TextStyle(fontSize: 12)),
                     ),
+                  if (mesNoTermino)
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      margin: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.orange.shade300)),
+                      child: Text('⏳ $mesNombre todavía no termina. En planilla el sueldo se paga cuando el mes ya cumplió. Usa las flechas de arriba para ir al mes anterior (por ejemplo octubre). Para dar plata antes, usa "Dar adelanto".', style: const TextStyle(fontSize: 13)),
+                    ),
                   FilledButton.icon(
                     style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54), backgroundColor: Colors.teal.shade700),
-                    onPressed: () async {
+                    onPressed: mesNoTermino ? null : () async {
                       await Navigator.of(context).push(MaterialPageRoute(builder: (_) => _CalculoBoletaPage(api: widget.api, t: _t, periodo: _mes)));
                       _cargar();
                     },
