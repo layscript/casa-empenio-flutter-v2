@@ -2657,7 +2657,28 @@ class _DetalleBoleta extends StatelessWidget {
         : (((det['descuento'] as num?) ?? 0) > 0 ? [<String, dynamic>{'concepto': 'Adelantos descontados', 'monto': det['descuento']}] : <Map<String, dynamic>>[]);
     final aportes = _lista(det['aportes']);
     final adv = (det['advertencias'] as List? ?? const []);
+    final rep = _mapa(det['reparto']);
+    num rn(String k) => (rep[k] as num?) ?? 0;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      if (rep.isNotEmpty)
+        Container(
+          margin: const EdgeInsets.only(bottom: 14),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: Colors.indigo.shade50, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.indigo.shade200)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              const Text('TOTAL DE LA PLANILLA', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(_money(det['costoTotal'] as num?), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            ]),
+            const Text('Del total salen estos pagos, cada uno aparte:', style: TextStyle(fontSize: 11, color: Colors.black54)),
+            const SizedBox(height: 4),
+            if (rn('afp') > 0) _lineaMonto('AFP ${_mapa(det['trabajador'])['afp'] ?? ''}', rep['afp'] as num?),
+            if (rn('onp') > 0) _lineaMonto('ONP', rep['onp'] as num?),
+            if (rn('essalud') > 0) _lineaMonto('EsSalud', rep['essalud'] as num?),
+            if (rn('otrosDescuentos') > 0) _lineaMonto('Adelantos / otros descuentos', rep['otrosDescuentos'] as num?),
+            _lineaMonto('Para la trabajadora', rep['trabajadora'] as num?, fuerte: true),
+          ]),
+        ),
       const Text('INGRESOS', style: TextStyle(fontWeight: FontWeight.bold)),
       for (final i in ingresos) _lineaMonto(i['concepto'].toString(), i['monto'] as num?),
       _lineaMonto('Total ingresos', b['bruto'] as num?, fuerte: true),
@@ -2675,27 +2696,6 @@ class _DetalleBoleta extends StatelessWidget {
         const SizedBox(height: 10),
         const Text('Aportes que paga la empresa (no se le descuentan)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
         for (final a in aportes) _lineaMonto(a['concepto'].toString(), a['monto'] as num?),
-      ],
-      if (det['reparto'] != null) ...[
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: Colors.indigo.shade50, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.indigo.shade200)),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('🧮 TOTAL DE ESTA PLANILLA', style: TextStyle(fontWeight: FontWeight.bold)),
-            const Text('Sueldo y extras + lo que paga la empresa (EsSalud y seguro de AFP). Es todo lo que sale de la caja por esta trabajadora.', style: TextStyle(fontSize: 11, color: Colors.black54)),
-            const SizedBox(height: 4),
-            _lineaMonto('Total ingresos', b['bruto'] as num?),
-            for (final a in aportes) _lineaMonto('+ ${a['concepto']}', a['monto'] as num?),
-            _lineaMonto('TOTAL', det['costoTotal'] as num?, fuerte: true),
-            const Divider(height: 18),
-            const Text('Se reparte en pagos separados:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-            _lineaMonto('Para la trabajadora (neto)', _mapa(det['reparto'])['trabajadora'] as num?),
-            if (((_mapa(det['reparto'])['afp'] as num?) ?? 0) > 0) _lineaMonto('A la AFP ${_mapa(det['trabajador'])['afp'] ?? ''}', _mapa(det['reparto'])['afp'] as num?),
-            if (((_mapa(det['reparto'])['onp'] as num?) ?? 0) > 0) _lineaMonto('A la ONP', _mapa(det['reparto'])['onp'] as num?),
-            if (((_mapa(det['reparto'])['essalud'] as num?) ?? 0) > 0) _lineaMonto('A EsSalud', _mapa(det['reparto'])['essalud'] as num?),
-          ]),
-        ),
       ],
       for (final a in adv) Padding(padding: const EdgeInsets.only(top: 6), child: Text('• $a', style: const TextStyle(fontSize: 12, color: Colors.deepOrange))),
     ]);
@@ -3662,6 +3662,7 @@ class _AjustesTabState extends State<_AjustesTab> with AutomaticKeepAliveClientM
         'horaEntrada': _c['horaEntrada']!.text.trim(),
         'horaSalida': _c['horaSalida']!.text.trim(),
         'descontarTardanza': _cfg['descontarTardanza'],
+        'essaludDelTotal': _cfg['essaludDelTotal'] != false,
         'exigirFotoAsistencia': _cfg['exigirFotoAsistencia'],
         'exigirFotoPagos': _cfg['exigirFotoPagos'],
         'regimenEmpresa': _cfg['regimenEmpresa'],
@@ -3708,6 +3709,7 @@ class _AjustesTabState extends State<_AjustesTab> with AutomaticKeepAliveClientM
         _num('toleranciaMinutos', 'Minutos de tolerancia', 'min'),
         SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Exigir foto al marcar asistencia'), value: _cfg['exigirFotoAsistencia'] != false, onChanged: (v) => setState(() => _cfg['exigirFotoAsistencia'] = v)),
         SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Exigir foto en adelantos y pagos'), value: _cfg['exigirFotoPagos'] != false, onChanged: (v) => setState(() => _cfg['exigirFotoPagos'] = v)),
+        SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('AFP y EsSalud salen del total de la planilla'), subtitle: const Text('Encendido: a la trabajadora se le paga el total menos AFP y EsSalud (cada uno se paga aparte). Apagado: EsSalud lo paga la empresa encima del total. Confírmalo con tu contador.', style: TextStyle(fontSize: 12)), value: _cfg['essaludDelTotal'] != false, onChanged: (v) => setState(() => _cfg['essaludDelTotal'] = v)),
         SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Descontar las tardanzas del sueldo'), subtitle: const Text('Apagado: solo se registran'), value: _cfg['descontarTardanza'] == true, onChanged: (v) => setState(() => _cfg['descontarTardanza'] = v)),
       ]),
       _seccion('Valores de ley (Perú)', icono: Icons.gavel, children: [
