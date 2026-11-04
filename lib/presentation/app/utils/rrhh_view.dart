@@ -2892,8 +2892,6 @@ class _PagarBoletaSheetState extends State<_PagarBoletaSheet> {
         padding: const EdgeInsets.all(16),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Pagar ${_money(widget.boleta['neto'] as num?)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 6),
-          TextField(controller: _codigo, decoration: const InputDecoration(labelText: 'Código de pago (el que te pasa el contador)', helperText: 'Ej: N° de ticket AFPnet o N° de pago SUNAT', border: OutlineInputBorder(), isDense: true)),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('El dinero sale de la caja de hoy'),
@@ -4265,6 +4263,8 @@ class _PagarObligacionSheetState extends State<_PagarObligacionSheet> {
               value: _parcial,
               onChanged: (v) => setState(() => _parcial = v),
             ),
+          const SizedBox(height: 6),
+          TextField(controller: _codigo, decoration: const InputDecoration(labelText: 'Código de pago (el que te pasa el contador)', helperText: 'Ej: N° de ticket AFPnet o N° de pago SUNAT', border: OutlineInputBorder(), isDense: true)),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('El dinero sale de la caja de hoy'),
