@@ -2676,6 +2676,27 @@ class _DetalleBoleta extends StatelessWidget {
         const Text('Aportes que paga la empresa (no se le descuentan)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
         for (final a in aportes) _lineaMonto(a['concepto'].toString(), a['monto'] as num?),
       ],
+      if (det['reparto'] != null) ...[
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: Colors.indigo.shade50, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.indigo.shade200)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('🧮 TOTAL DE ESTA PLANILLA', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text('Sueldo y extras + lo que paga la empresa (EsSalud y seguro de AFP). Es todo lo que sale de la caja por esta trabajadora.', style: TextStyle(fontSize: 11, color: Colors.black54)),
+            const SizedBox(height: 4),
+            _lineaMonto('Total ingresos', b['bruto'] as num?),
+            for (final a in aportes) _lineaMonto('+ ${a['concepto']}', a['monto'] as num?),
+            _lineaMonto('TOTAL', det['costoTotal'] as num?, fuerte: true),
+            const Divider(height: 18),
+            const Text('Se reparte en pagos separados:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            _lineaMonto('Para la trabajadora (neto)', _mapa(det['reparto'])['trabajadora'] as num?),
+            if (((_mapa(det['reparto'])['afp'] as num?) ?? 0) > 0) _lineaMonto('A la AFP ${_mapa(det['trabajador'])['afp'] ?? ''}', _mapa(det['reparto'])['afp'] as num?),
+            if (((_mapa(det['reparto'])['onp'] as num?) ?? 0) > 0) _lineaMonto('A la ONP', _mapa(det['reparto'])['onp'] as num?),
+            if (((_mapa(det['reparto'])['essalud'] as num?) ?? 0) > 0) _lineaMonto('A EsSalud', _mapa(det['reparto'])['essalud'] as num?),
+          ]),
+        ),
+      ],
       for (final a in adv) Padding(padding: const EdgeInsets.only(top: 6), child: Text('• $a', style: const TextStyle(fontSize: 12, color: Colors.deepOrange))),
     ]);
   }
@@ -3301,6 +3322,53 @@ class _PlanillaTabState extends State<_PlanillaTab> with AutomaticKeepAliveClien
   }
 }
 
+class _AjusteMontoDialog extends StatefulWidget {
+  const _AjusteMontoDialog({required this.titulo, required this.ayuda, required this.actual});
+  final String titulo, ayuda;
+  final double actual;
+  @override
+  State<_AjusteMontoDialog> createState() => _AjusteMontoDialogState();
+}
+
+class _AjusteMontoDialogState extends State<_AjusteMontoDialog> {
+  late final TextEditingController _c = TextEditingController(text: widget.actual.toStringAsFixed(2));
+  double get _v => double.tryParse(_c.text.replaceAll(',', '.')) ?? 0;
+  void _sumar(double d) => setState(() => _c.text = (_v + d).clamp(0, 999999).toStringAsFixed(2));
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.titulo),
+      content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(widget.ayuda, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+        const SizedBox(height: 4),
+        Text('Calculado por el sistema: ${_money(widget.actual)}', style: const TextStyle(fontSize: 12)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _c,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          onChanged: (_) => setState(() {}),
+          decoration: const InputDecoration(prefixText: 'S/ ', border: OutlineInputBorder()),
+        ),
+        Wrap(spacing: 6, children: [
+          for (final d in const [-15.0, -10.0, -5.0, 5.0, 10.0, 15.0])
+            ActionChip(label: Text('${d > 0 ? '+' : '−'}${d.abs().toStringAsFixed(0)}'), onPressed: () => _sumar(d)),
+        ]),
+        if ((_v - widget.actual).abs() >= 0.01)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(_v > widget.actual ? '${_money(_v - widget.actual)} más de lo calculado' : '${_money(widget.actual - _v)} menos de lo calculado', style: TextStyle(color: Colors.orange.shade800, fontWeight: FontWeight.w600)),
+          ),
+      ]),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+        FilledButton(onPressed: () => Navigator.pop(context, _v), child: const Text('Aplicar')),
+      ],
+    );
+  }
+}
+
 class _CalculoBoletaPage extends StatefulWidget {
   const _CalculoBoletaPage({required this.api, required this.t, required this.periodo});
   final _Api api;
@@ -3315,21 +3383,58 @@ class _CalculoBoletaPageState extends State<_CalculoBoletaPage> {
   bool _cargando = true;
   bool _enviando = false;
   String? _error;
+  double? _afpOv;
+  double? _essOv;
 
   @override
   void initState() {
     super.initState();
-    widget.api.get('/rrhh/boletas/calcular', {'trabajadorId': widget.t['id'], 'periodo': widget.periodo}).then((v) {
-      if (mounted) setState(() { _c = _mapa(v); _cargando = false; });
-    }).catchError((e) {
+    _calcular();
+  }
+
+  Future<void> _calcular() async {
+    try {
+      final v = await widget.api.get('/rrhh/boletas/calcular', {
+        'trabajadorId': widget.t['id'], 'periodo': widget.periodo,
+        if (_afpOv != null) 'afpTotal': _afpOv,
+        if (_essOv != null) 'essalud': _essOv,
+      });
+      if (mounted) setState(() { _c = _mapa(v); _cargando = false; _error = null; });
+    } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _cargando = false; });
+    }
+  }
+
+  Future<void> _ajustar(String que) async {
+    final rep = _mapa(_c['reparto']);
+    final actual = ((que == 'afp' ? rep['afp'] : rep['essalud']) as num?)?.toDouble() ?? 0;
+    final nuevo = await showDialog<double>(
+      context: context,
+      builder: (_) => _AjusteMontoDialog(
+        titulo: que == 'afp' ? 'Ajustar AFP' : 'Ajustar EsSalud',
+        ayuda: que == 'afp' ? 'Escribe el total que te cobra la AFP este mes (aporte + seguro), o usa +/−.' : 'Escribe el total que te cobra EsSalud este mes, o usa +/−.',
+        actual: actual,
+      ),
+    );
+    if (nuevo == null) return;
+    setState(() {
+      if (que == 'afp') {
+        _afpOv = nuevo;
+      } else {
+        _essOv = nuevo;
+      }
     });
+    _calcular();
   }
 
   Future<void> _generar() async {
     setState(() => _enviando = true);
     try {
-      final b = _mapa(await widget.api.post('/rrhh/boletas/generar', {'trabajadorId': widget.t['id'], 'periodo': widget.periodo, 'usuarioId': widget.api.usuarioId}));
+      final b = _mapa(await widget.api.post('/rrhh/boletas/generar', {
+        'trabajadorId': widget.t['id'], 'periodo': widget.periodo, 'usuarioId': widget.api.usuarioId,
+        if (_afpOv != null) 'afpTotal': _afpOv,
+        if (_essOv != null) 'essalud': _essOv,
+      }));
       if (!mounted) return;
       await Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => _BoletaPage(api: widget.api, id: b['id'] as int)));
     } catch (e) {
@@ -3355,6 +3460,13 @@ class _CalculoBoletaPageState extends State<_CalculoBoletaPage> {
                   Text('Asistencia del mes: ${a['faltas'] ?? 0} falta(s), ${a['minutosTarde'] ?? 0} min de tardanza', style: const TextStyle(fontSize: 12, color: Colors.black54)),
                   const SizedBox(height: 10),
                   _DetalleBoleta(b: fake),
+                  const SizedBox(height: 8),
+                  Wrap(spacing: 8, children: [
+                    if (((_mapa(_c['reparto'])['afp'] as num?) ?? 0) > 0)
+                      OutlinedButton.icon(onPressed: () => _ajustar('afp'), icon: const Icon(Icons.tune, size: 18), label: const Text('Modificar AFP')),
+                    if (((_mapa(_c['reparto'])['essalud'] as num?) ?? 0) > 0)
+                      OutlinedButton.icon(onPressed: () => _ajustar('ess'), icon: const Icon(Icons.tune, size: 18), label: const Text('Modificar EsSalud')),
+                  ]),
                   const SizedBox(height: 8),
                   const Text('Esto es una vista previa. Al generar, los adelantos quedan descontados.', style: TextStyle(fontSize: 12, color: Colors.black54)),
                   const SizedBox(height: 10),
