@@ -745,9 +745,70 @@ class _HoyTabState extends State<_HoyTab> with AutomaticKeepAliveClientMixin {
     }
   }
 
+  /// Bono de refrigerio a mano: para quien se quedó (planilla o por días), aunque no tenga monto fijo.
+  Future<void> _bonoRefrigerioManual() async {
+    final items = _lista(_dia['items']);
+    if (items.isEmpty) {
+      _aviso(context, 'No hay personal en la lista de hoy', error: true);
+      return;
+    }
+    Map? sel;
+    final monto = TextEditingController();
+    final motivo = TextEditingController(text: 'Se quedó una hora más');
+    bool caja = true;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (c, set) => AlertDialog(
+          title: const Text('Bono de refrigerio'),
+          content: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('Para cualquier persona que se quedó trabajando (planilla o por días). No se descuenta de su sueldo.', style: TextStyle(fontSize: 12, color: Colors.black54)),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<Map>(
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: '¿A quién?', border: OutlineInputBorder(), isDense: true),
+                items: [for (final i in items) DropdownMenuItem<Map>(value: i, child: Text(_nombreDe(_mapa(i['trabajador'])), overflow: TextOverflow.ellipsis))],
+                onChanged: (v) => set(() {
+                  sel = v;
+                  final r = ((_mapa(v?['trabajador'])['refrigerioDia']) as num?) ?? 0;
+                  if (r > 0 && monto.text.isEmpty) monto.text = r.toString();
+                }),
+              ),
+              const SizedBox(height: 10),
+              TextField(controller: monto, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Monto', prefixText: 'S/. ', border: OutlineInputBorder(), isDense: true)),
+              const SizedBox(height: 10),
+              TextField(controller: motivo, decoration: const InputDecoration(labelText: 'Motivo (opcional)', border: OutlineInputBorder(), isDense: true)),
+              SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Sale de la caja de hoy'), value: caja, onChanged: (v) => set(() => caja = v)),
+            ]),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancelar')),
+            FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Dar bono')),
+          ],
+        ),
+      ),
+    );
+    if (ok != true) return;
+    if (sel == null) {
+      if (mounted) _aviso(context, 'Elige a quién se le da el bono', error: true);
+      return;
+    }
+    try {
+      await widget.api.post('/rrhh/refrigerio/manual', {
+        'trabajadorId': _mapa(sel!['trabajador'])['id'], 'monto': double.tryParse(monto.text.replaceAll(',', '.')) ?? 0,
+        'motivo': motivo.text.trim(), 'fecha': _fecha, 'desdeCaja': caja, 'usuarioId': widget.api.usuarioId, 'usuarioNombre': widget.api.usuarioNombre,
+        'sucursalId': widget.api.sucursalId > 0 ? widget.api.sucursalId : null,
+      });
+      if (mounted) _aviso(context, 'Bono de refrigerio registrado');
+      _cargar();
+    } catch (e) {
+      if (mounted) _aviso(context, e.toString(), error: true);
+    }
+  }
+
   Widget _tarjetaRefrigerio() {
     final conf = (_refri['configurados'] as num?) ?? 0;
-    if (conf == 0) return const SizedBox.shrink();
     final pend = (_refri['cantidadPendiente'] as num?) ?? 0;
     final items = _lista(_refri['items']);
     return Card(
@@ -755,18 +816,30 @@ class _HoyTabState extends State<_HoyTab> with AutomaticKeepAliveClientMixin {
       color: Colors.orange.shade50,
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Row(children: [
-          const Icon(Icons.restaurant, color: Colors.deepOrange),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              pend > 0
-                  ? 'Refrigerio de hoy: $pend persona(s) · ${_money(_refri['totalPendiente'] as num?)}'
-                  : items.isEmpty ? 'Refrigerio: nadie ha asistido aún' : 'Refrigerio de hoy ya entregado ✓',
-              style: const TextStyle(fontWeight: FontWeight.w600),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            const Icon(Icons.restaurant, color: Colors.deepOrange),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                conf == 0
+                    ? 'Bono de refrigerio'
+                    : pend > 0
+                        ? 'Refrigerio de hoy: $pend persona(s) · ${_money(_refri['totalPendiente'] as num?)}'
+                        : items.isEmpty ? 'Refrigerio: nadie ha asistido aún' : 'Refrigerio de hoy ya entregado ✓',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+            if (pend > 0) FilledButton(onPressed: _entregarRefrigerio, child: const Text('Entregar')),
+          ]),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: _bonoRefrigerioManual,
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Dar bono de refrigerio a quien se quedó'),
             ),
           ),
-          if (pend > 0) FilledButton(onPressed: _entregarRefrigerio, child: const Text('Entregar')),
         ]),
       ),
     );
@@ -2076,7 +2149,7 @@ class _FichaPageState extends State<_FichaPage> {
           if (((s['adelantos'] as num?) ?? 0) > 0) _lineaMonto('Adelantos que debe', -((s['adelantos'] as num?) ?? 0), rojo: true),
           if (((s['faltas'] as num?) ?? 0) > 0) Text('Faltas: ${s['faltas']} (no suman)', style: const TextStyle(fontSize: 12, color: Colors.red)),
           if (((s['sinMarcar'] as num?) ?? 0) > 0) Text('Hay ${s['sinMarcar']} día(s) sin marcar asistencia: no se están sumando.', style: const TextStyle(fontSize: 12, color: Colors.deepOrange)),
-          if (((s['refrigerioMes'] as num?) ?? 0) > 0) Text('Refrigerio entregado este mes: ${_money(s['refrigerioMes'] as num?)}', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+          if (((s['refrigerioMes'] as num?) ?? 0) > 0) Text('Bono de refrigerio este mes: ${_money(s['refrigerioMes'] as num?)}', style: const TextStyle(fontSize: 12, color: Colors.black54)),
           const SizedBox(height: 8),
           if (saldo > 0)
             FilledButton.icon(
@@ -3188,7 +3261,7 @@ class _PagosTabState extends State<_PagosTab> with AutomaticKeepAliveClientMixin
             Text('De caja: ${_money(_hist['deCaja'] as num?)}   ·   Fuera de caja: ${_money(total - ((_hist['deCaja'] as num?) ?? 0))}', style: const TextStyle(fontSize: 12, color: Colors.black54)),
             const SizedBox(height: 6),
             Wrap(spacing: 6, runSpacing: 0, children: [
-              for (final e in porTipo.entries) Chip(visualDensity: VisualDensity.compact, label: Text('${{'ADELANTO': 'Adelantos', 'PRESTAMO': 'Préstamos', 'QUINCENA': 'Quincenas', 'SUELDO': 'Sueldos', 'JORNAL': 'Jornales', 'REFRIGERIO': 'Refrigerio', 'GRATIFICACION': 'Gratificación', 'CTS': 'CTS', 'VACACIONES': 'Vacaciones', 'LIQUIDACION': 'Liquidaciones'}[e.key] ?? e.key}: ${_money(e.value as num?)}', style: const TextStyle(fontSize: 12))),
+              for (final e in porTipo.entries) Chip(visualDensity: VisualDensity.compact, label: Text('${{'ADELANTO': 'Adelantos', 'PRESTAMO': 'Préstamos', 'QUINCENA': 'Quincenas', 'SUELDO': 'Sueldos', 'JORNAL': 'Jornales', 'REFRIGERIO': 'Bono de refrigerio', 'GRATIFICACION': 'Gratificación', 'CTS': 'CTS', 'VACACIONES': 'Vacaciones', 'LIQUIDACION': 'Liquidaciones'}[e.key] ?? e.key}: ${_money(e.value as num?)}', style: const TextStyle(fontSize: 12))),
             ]),
             if (porT.isNotEmpty) ...[
               const SizedBox(height: 8),
@@ -4505,7 +4578,7 @@ class _PagarObligacionSheetState extends State<_PagarObligacionSheet> {
 // ===========================================================================
 const _tipoPagoTxt = {
   'ADELANTO': 'Adelanto', 'PRESTAMO': 'Préstamo', 'QUINCENA': 'Quincena', 'SUELDO': 'Sueldo', 'JORNAL': 'Pago de días',
-  'REFRIGERIO': 'Refrigerio', 'BONO': 'Bono', 'DESCUENTO': 'Descuento', 'GRATIFICACION': 'Gratificación', 'CTS': 'CTS',
+  'REFRIGERIO': 'Bono de refrigerio', 'BONO': 'Bono', 'DESCUENTO': 'Descuento', 'GRATIFICACION': 'Gratificación', 'CTS': 'CTS',
   'LIQUIDACION': 'Liquidación', 'VACACIONES': 'Vacaciones',
 };
 
