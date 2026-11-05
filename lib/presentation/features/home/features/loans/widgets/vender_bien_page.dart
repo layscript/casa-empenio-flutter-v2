@@ -38,6 +38,13 @@ class _VenderBienPageState extends State<VenderBienPage> {
   DateTime _fechaLimite = DateTime.now().add(const Duration(days: 15));
   late final TextEditingController _precio;
 
+  // Datos del producto (se pueden corregir al vender).
+  late Map<String, String> _prod;
+  bool _prodEditado = false;
+  String _dniBuscado = '';
+  bool _autoLlenado = false;
+  String? _aviso;
+
   List<WarrantyEntity> get _bienes => widget.prestamo.bienesGarantia ?? [];
 
   bool get _yaVencio {
@@ -87,6 +94,18 @@ class _VenderBienPageState extends State<VenderBienPage> {
     final sugerido = val > 0 ? val.toDouble() : deuda;
     _precio = TextEditingController(
         text: sugerido > 0 ? sugerido.toStringAsFixed(2) : '');
+    final b = _bienes.isNotEmpty ? _bienes.first : null;
+    _prod = {
+      'descripcion': _bienes
+          .map((e) => (e.description ?? '').trim())
+          .where((e) => e.isNotEmpty)
+          .join(' + '),
+      'marca': (b?.marca ?? '').trim(),
+      'modelo': (b?.modelo ?? '').trim(),
+      'color': (b?.color ?? '').trim(),
+      'serie': (b?.serie ?? '').trim(),
+      'placa': (b?.placa ?? '').trim(),
+    };
   }
 
   @override
@@ -100,37 +119,196 @@ class _VenderBienPageState extends State<VenderBienPage> {
     super.dispose();
   }
 
-  Future<void> _buscarDni() async {
+  /// Busca primero en los clientes del sistema y, si no está, en RENIEC/SUNAT.
+  Future<void> _buscarDni({bool auto = false}) async {
     final dni = _dni.text.trim();
-    if (dni.length < 8) {
-      setState(() => _error = 'Escriba el DNI (8 dígitos) o RUC (11)');
+    if (dni.length != 8 && dni.length != 11) {
+      if (!auto) setState(() => _error = 'Escriba el DNI (8 dígitos) o RUC (11)');
       return;
     }
+    if (auto && dni == _dniBuscado) return;
+    _dniBuscado = dni;
     setState(() {
       _buscando = true;
       _error = null;
+      _aviso = null;
     });
-    final r = await context
-        .read<CustomerRepository>()
-        .getCustomerSunatByDni(dni: dni);
-    if (!mounted) return;
-    r.fold(
-      (l) => setState(() {
-        _buscando = false;
-        _error = 'No se encontró. Escriba el nombre y domicilio a mano.';
-      }),
-      (c) => setState(() {
-        _buscando = false;
-        _nombre.text = c.customerFullName.trim();
-        _domicilio.text = c.domicilio?.direccion ?? '';
-      }),
+    final repo = context.read<CustomerRepository>();
+    final sucursal = context.read<Preferences>().token?.sucursal?.id ?? 1;
+
+    String? nombre;
+    String? domicilio;
+    String origen = '';
+
+    final local =
+        await repo.getCustomerByDni(dni: dni, userId: null, sucursal: sucursal);
+    local.fold((_) {}, (c) {
+      final n = c.customerFullName.trim();
+      if (n.isNotEmpty && n != 'null') {
+        nombre = n;
+        domicilio = (c.domicilio ?? '').trim();
+        origen = 'del sistema';
+      }
+    });
+
+    if (nombre == null) {
+      final r = await repo.getCustomerSunatByDni(dni: dni);
+      r.fold((_) {}, (c) {
+        final n = c.customerFullName.trim();
+        if (n.isNotEmpty) {
+          nombre = n;
+          domicilio = (c.domicilio?.direccion ?? '').trim();
+          origen = 'de RENIEC/SUNAT';
+        }
+      });
+    }
+    if (!mounted || _dni.text.trim() != dni) return;
+
+    setState(() {
+      _buscando = false;
+      if (nombre != null) {
+        _nombre.text = nombre!;
+        if ((domicilio ?? '').isNotEmpty || _domicilio.text.trim().isEmpty) {
+          _domicilio.text = domicilio ?? '';
+        }
+        _autoLlenado = true;
+        _aviso = 'Datos $origen. Puede corregirlos si hace falta.';
+      } else {
+        _autoLlenado = false;
+        _aviso =
+            'No se encontró este documento. Escriba el nombre y el domicilio a mano.';
+      }
+    });
+  }
+
+  Future<void> _editarProducto() async {
+    final ctl = {
+      for (final e in _prod.entries) e.key: TextEditingController(text: e.value)
+    };
+    const etiquetas = {
+      'descripcion': 'Descripción (ej. Televisor, Moto lineal)',
+      'marca': 'Marca',
+      'modelo': 'Modelo',
+      'color': 'Color',
+      'serie': 'Serie / IMEI / Chasis',
+      'placa': 'Placa (si es vehículo)',
+    };
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Editar datos del producto'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final k in etiquetas.keys)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: TextField(
+                    controller: ctl[k],
+                    maxLines: k == 'descripcion' ? 3 : 1,
+                    minLines: 1,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: InputDecoration(
+                        labelText: etiquetas[k],
+                        border: const OutlineInputBorder(),
+                        isDense: true),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar')),
+          ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Guardar')),
+        ],
+      ),
+    );
+    if (ok == true && mounted) {
+      setState(() {
+        for (final k in ctl.keys) {
+          _prod[k] = ctl[k]!.text.trim();
+        }
+        _prodEditado = true;
+      });
+    }
+    for (final c in ctl.values) {
+      c.dispose();
+    }
+  }
+
+  Widget _productoCard() {
+    final filas = <(String, String)>[
+      ('Descripción', _prod['descripcion'] ?? ''),
+      ('Marca', _prod['marca'] ?? ''),
+      ('Modelo', _prod['modelo'] ?? ''),
+      ('Color', _prod['color'] ?? ''),
+      ('Serie', _prod['serie'] ?? ''),
+      if ((_prod['placa'] ?? '').isNotEmpty) ('Placa', _prod['placa']!),
+    ];
+    final faltan = (_prod['modelo'] ?? '').isEmpty ||
+        (_prod['color'] ?? '').isEmpty ||
+        (_prod['serie'] ?? '').isEmpty;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Text('Producto que se vende',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _editarProducto,
+                  icon: const Icon(Icons.edit, size: 16),
+                  label: const Text('Editar'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            for (final f in filas)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 1),
+                child: Text.rich(TextSpan(children: [
+                  TextSpan(
+                      text: '${f.$1}: ',
+                      style: const TextStyle(color: Colors.black54)),
+                  TextSpan(
+                      text: f.$2.isEmpty ? '— falta —' : f.$2,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: f.$2.isEmpty ? Colors.orange[800] : null)),
+                ])),
+              ),
+            if (faltan)
+              const Padding(
+                padding: EdgeInsets.only(top: 6),
+                child: Text('Faltan datos. Toque Editar para completarlos antes de imprimir.',
+                    style: TextStyle(fontSize: 12, color: Colors.orange)),
+              ),
+            if (_prodEditado)
+              const Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Text('Corregido para esta venta.',
+                    style: TextStyle(fontSize: 12, color: Colors.green)),
+              ),
+          ],
+        ),
+      ),
     );
   }
 
   DatosContrato _datos(double precio) {
     final b = _bienes.isNotEmpty ? _bienes.first : null;
-    final vehiculo = (b?.motor ?? '').isNotEmpty || (b?.placa ?? '').isNotEmpty;
-    final desc = _bienes.map((e) => e.description ?? '').where((e) => e.isNotEmpty).join(' + ');
+    final vehiculo = (b?.motor ?? '').isNotEmpty || (_prod['placa'] ?? '').isNotEmpty;
+    final desc = _prod['descripcion'] ?? '';
     return DatosContrato(
       empresaCompra: false,
       esVehiculo: vehiculo,
@@ -138,11 +316,11 @@ class _VenderBienPageState extends State<VenderBienPage> {
       dni: _dni.text,
       domicilio: _domicilio.text,
       descripcion: desc,
-      marca: b?.marca ?? '',
-      modelo: b?.modelo ?? '',
-      color: b?.color ?? '',
-      serie: b?.serie ?? '',
-      placa: b?.placa ?? '',
+      marca: _prod['marca'] ?? '',
+      modelo: _prod['modelo'] ?? '',
+      color: _prod['color'] ?? '',
+      serie: _prod['serie'] ?? '',
+      placa: _prod['placa'] ?? '',
       motor: b?.motor ?? '',
       carroceria: b?.carroceria ?? '',
       anio: b?.anio?.toString() ?? '',
@@ -166,8 +344,16 @@ class _VenderBienPageState extends State<VenderBienPage> {
 
   Future<void> _vender() async {
     final precio = double.tryParse(_precio.text.replaceAll(',', '.'));
-    if (_dni.text.trim().isEmpty || _nombre.text.trim().isEmpty) {
-      setState(() => _error = 'Escriba el DNI y el nombre de quien compra');
+    if (_dni.text.trim().isEmpty) {
+      setState(() => _error = 'Falta el DNI o RUC de quien compra');
+      return;
+    }
+    if (_nombre.text.trim().isEmpty) {
+      setState(() => _error = 'Falta el nombre de quien compra. Si el DNI no se encontró, escríbalo a mano.');
+      return;
+    }
+    if ((_prod['descripcion'] ?? '').isEmpty) {
+      setState(() => _error = 'Falta la descripción del producto. Toque Editar.');
       return;
     }
     if (precio == null || precio <= 0) {
@@ -225,7 +411,8 @@ class _VenderBienPageState extends State<VenderBienPage> {
           'bienTemporal': null,
           'gastoAdicional': 0,
           'observaciones':
-              'Préstamo N° ${widget.prestamo.codigoFormateado ?? widget.prestamo.codigo}',
+              'Préstamo N° ${widget.prestamo.codigoFormateado ?? widget.prestamo.codigo}'
+              '${i == 0 && _prodEditado ? ' · ${[for (final k in ['descripcion', 'marca', 'modelo', 'color', 'serie', 'placa']) if ((_prod[k] ?? '').isNotEmpty) '${k.toUpperCase()}: ${_prod[k]}'].join(', ')}' : ''}',
         }
     ];
 
@@ -414,6 +601,22 @@ class _VenderBienPageState extends State<VenderBienPage> {
                 controller: _dni,
                 keyboardType: TextInputType.number,
                 maxLength: 11,
+                onChanged: (v) {
+                  final t = v.trim();
+                  if (t.length == 8 || t.length == 11) {
+                    _buscarDni(auto: true);
+                  } else if (_dniBuscado.isNotEmpty) {
+                    setState(() {
+                      _dniBuscado = '';
+                      _aviso = null;
+                      if (_autoLlenado) {
+                        _nombre.clear();
+                        _domicilio.clear();
+                        _autoLlenado = false;
+                      }
+                    });
+                  }
+                },
                 decoration: const InputDecoration(
                     labelText: 'DNI o RUC',
                     border: OutlineInputBorder(),
@@ -433,6 +636,14 @@ class _VenderBienPageState extends State<VenderBienPage> {
             ),
           ],
         ),
+        if (_aviso != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(_aviso!,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: _aviso!.startsWith('No se') ? Colors.orange[800] : Colors.green[700])),
+          ),
         const SizedBox(height: 10),
         TextField(
           controller: _nombre,
@@ -452,7 +663,12 @@ class _VenderBienPageState extends State<VenderBienPage> {
               isDense: true),
         ),
         const SizedBox(height: 16),
-        const Text('3. Precio de venta',
+        const Text('3. Producto',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        _productoCard(),
+        const SizedBox(height: 16),
+        const Text('4. Precio de venta',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         TextField(
@@ -465,7 +681,7 @@ class _VenderBienPageState extends State<VenderBienPage> {
         ),
         if (_doc == _Doc.contrato) ...[
           const SizedBox(height: 16),
-          const Text('4. ¿Cómo paga el cliente?',
+          const Text('5. ¿Cómo paga el cliente?',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Wrap(
