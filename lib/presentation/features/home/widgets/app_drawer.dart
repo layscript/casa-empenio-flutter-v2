@@ -142,6 +142,31 @@ class _AppDrawerState extends State<AppDrawer> {
                 },
               ),
             ListTile(
+              leading: const Icon(Icons.report_problem_outlined, color: Colors.deepOrange),
+              title: Text(auth?.isAdmin == true ? 'Reportes de problemas' : 'Reportar un problema', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              subtitle: Text(auth?.isAdmin == true ? 'Bandeja de reportes' : 'Con fotos, audio o texto', style: const TextStyle(fontSize: 11)),
+              onTap: () {
+                final pantalla = homeState.selected?.nombre;
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => auth?.isAdmin == true ? ReportesPage(pantalla: pantalla) : ReportarProblemaPage(pantalla: pantalla),
+                  ),
+                );
+              },
+            ),
+            if (auth?.isAdmin != true)
+              ListTile(
+                leading: const Icon(Icons.list_alt, color: Colors.deepOrange),
+                title: const Text('Mis reportes', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                onTap: () {
+                  final pantalla = homeState.selected?.nombre;
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => ReportesPage(pantalla: pantalla)));
+                },
+              ),
+            ListTile(
               leading: const Icon(Icons.system_update, color: AppColors.blue),
               title: const Text('Actualizaciones', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
               subtitle: Text(kBuildActual > 0 ? 'Versión instalada: $kBuildActual' : 'Versión de prueba', style: const TextStyle(fontSize: 11)),
