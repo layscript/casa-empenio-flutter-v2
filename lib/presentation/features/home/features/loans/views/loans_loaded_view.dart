@@ -301,6 +301,54 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
     });
   }
 
+  bool _esAjena(LoansEntity? p, Authenticated auth) {
+    final mia = auth.user?.sucursal?.id;
+    return p?.sucursalId != null && mia != null && p!.sucursalId != mia;
+  }
+
+  /// Préstamo de otra sucursal: solo se puede ver (no mezcla caja ni movimientos).
+  Widget _bloqueAjena(LoansEntity? p, Authenticated auth) {
+    final admin = auth.user?.isAdmin == true;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.orange.shade50,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            'Préstamo de otra sucursal: ${p?.sucursalNombre ?? ''}.\n'
+            'Solo para ver. Los pagos y cambios se hacen en esa sucursal, para no mezclar las cajas.'
+            '${admin ? '\nComo administrador: menú ☰ → "Trabajar en otra sucursal".' : ''}',
+            style: const TextStyle(fontSize: 12, color: Colors.deepOrange),
+          ),
+        ),
+        Row(
+          children: [
+            IconButton(
+              tooltip: 'Ver detalle',
+              onPressed: () async {
+                await showDialog(
+                  barrierDismissible: false,
+                  context: context,
+                  builder: (_) => BlocProvider.value(
+                    value: widget.loansBloc,
+                    child: ShowInfoClientLoans(nroPrestamo: p?.codigo),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.remove_red_eye_outlined, color: Colors.blue),
+            ),
+            const Text('Ver detalle', style: TextStyle(fontSize: 12, color: Colors.blue)),
+          ],
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AbsorbPointer(
@@ -565,7 +613,9 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                                     const Divider(height: 1),
                                     Padding(
                                       padding: const EdgeInsets.fromLTRB(6, 4, 6, 6),
-                                      child: Wrap(
+                                      child: _esAjena(prestamo, auth)
+                                          ? _bloqueAjena(prestamo, auth)
+                                          : Wrap(
                                         alignment: WrapAlignment.start,
                                         spacing: 2,
                                         runSpacing: 2,

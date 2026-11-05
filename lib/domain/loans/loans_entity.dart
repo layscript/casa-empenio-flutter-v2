@@ -2,7 +2,13 @@ import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:equatable/equatable.dart';
 
 class LoansEntity extends Equatable {
+  /// Sucursal a la que pertenece el préstamo (para saber si es de otra sucursal)
+  final int? sucursalId;
+  final String? sucursalNombre;
+
   const LoansEntity({
+    this.sucursalId,
+    this.sucursalNombre,
     required this.codigo,
     required this.codigoFormateado,
     required this.plazoDias,
@@ -114,6 +120,8 @@ caja: $caja,
 
   static LoansEntity getLoanFromMap(Map<String, dynamic> map) {
     return LoansEntity(
+      sucursalId: map['sucursal'] is Map ? (map['sucursal']['id'] as num?)?.toInt() : null,
+      sucursalNombre: map['sucursal'] is Map ? map['sucursal']['nombre'] as String? : null,
       codigo: map['codigo'] as int?,
       codigoFormateado: map['codigoFormateado'] as String?,
       plazoDias: map['plazoDias'] as int?,
@@ -175,6 +183,7 @@ caja: $caja,
 
   @override
   List<Object?> get props => [
+        sucursalId,
         codigo,
         codigoFormateado,
         plazoDias,

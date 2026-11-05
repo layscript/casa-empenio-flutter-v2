@@ -16,7 +16,7 @@ class HttpCustomerRepository implements CustomerRepository {
     required int? userId,
     required int sucursal,
   }) async {
-    final path = '/clientes/clientes/dni/$dni/$sucursal';
+    final path = '/clientes/clientes/dni/$dni/$sucursal?todas=1';
     try {
       final response = await _dio.get<String>(path);
       if (response.statusCode != 200) {

@@ -64,11 +64,21 @@ class _MainViewState extends State<MainView> {
               appBar: AppBar(
                 iconTheme: const IconThemeData(color: AppColors.white),
                 backgroundColor: AppColors.blue,
-                title: const Text(
-                  'Casa de Empeño',
-                  style: TextStyle(
-                    color: AppColors.white,
-                  ),
+                title: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Casa de Empeño',
+                      style: TextStyle(
+                        color: AppColors.white,
+                      ),
+                    ),
+                    if (preferencesState?.isAdmin == true)
+                      Text(
+                        'Sucursal: ${preferencesState?.sucursal?.nombre ?? '-'}',
+                        style: const TextStyle(color: AppColors.white, fontSize: 11),
+                      ),
+                  ],
                 ),
                 centerTitle: true,
                 actions: [

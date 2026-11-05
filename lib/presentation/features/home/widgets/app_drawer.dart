@@ -91,6 +91,56 @@ class _AppDrawerState extends State<AppDrawer> {
               },
             ),
             const Divider(height: 20),
+            if (auth?.isAdmin == true)
+              ListTile(
+                leading: const Icon(Icons.swap_horiz, color: AppColors.blue),
+                title: const Text('Trabajar en otra sucursal', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                subtitle: Text('Ahora: ${auth?.sucursal?.nombre ?? '-'}', style: const TextStyle(fontSize: 11)),
+                onTap: () async {
+                  final nav = Navigator.of(context);
+                  final authBloc = context.read<AuthBloc>();
+                  final repo = context.read<SucursalRepository>();
+                  final actual = auth?.sucursal?.id;
+                  nav.pop();
+                  final r = await repo.getSucursales();
+                  final lista = r.fold((_) => <SucursalEntity>[], (l) => l);
+                  final ctx = nav.context;
+                  if (!ctx.mounted) return;
+                  final elegida = await showModalBottomSheet<SucursalEntity>(
+                    context: ctx,
+                    builder: (c) => SafeArea(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
+                            child: Text('¿En qué sucursal vas a trabajar?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+                            child: Text('Sin cerrar sesión. Lo que hagas (pagos, caja, préstamos) queda en esa sucursal, sin mezclarse con las demás.', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                          ),
+                          if (lista.isEmpty) const Padding(padding: EdgeInsets.all(16), child: Text('No se pudo cargar la lista de sucursales')),
+                          for (final s in lista)
+                            ListTile(
+                              leading: Icon(s.id == actual ? Icons.check_circle : Icons.store_outlined, color: s.id == actual ? Colors.green : null),
+                              title: Text(s.nombre),
+                              subtitle: Text(s.direccion, style: const TextStyle(fontSize: 11)),
+                              onTap: () => Navigator.pop(c, s),
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                  if (elegida != null && elegida.id != actual) {
+                    authBloc.add(CambiarSucursal(elegida));
+                    if (ctx.mounted) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('Ahora trabajas en: ${elegida.nombre}')));
+                    }
+                  }
+                },
+              ),
             ListTile(
               leading: const Icon(Icons.system_update, color: AppColors.blue),
               title: const Text('Actualizaciones', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),

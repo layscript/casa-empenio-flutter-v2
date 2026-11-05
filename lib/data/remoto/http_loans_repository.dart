@@ -87,6 +87,7 @@ class HttpLoansRepository implements LoansRepository {
           : null,
       'sucursal': sucursal,
       'categoria': categoria,
+      'todas': true,
       'limit': 10,
       'offset': offset
     };

@@ -21,3 +21,12 @@ class SignOff extends AuthEvent {}
 class GetSession extends AuthEvent {}
 
 class RefreshDataUser extends AuthEvent {}
+
+/// Solo administrador: trabajar en otra sucursal sin cerrar sesión.
+class CambiarSucursal extends AuthEvent {
+  const CambiarSucursal(this.sucursal);
+  final SucursalEntity sucursal;
+
+  @override
+  List<Object> get props => [sucursal];
+}

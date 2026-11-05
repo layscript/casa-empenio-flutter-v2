@@ -21,6 +21,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<SignOff>(_onSignOff);
     on<GetSession>(_onGetSession);
     on<RefreshDataUser>(_onRefreshDataUser);
+    on<CambiarSucursal>(_onCambiarSucursal);
   }
 
   final UserRepository _userRepository;
@@ -60,6 +61,36 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         );
       },
     );
+  }
+
+  /// El administrador pasa a trabajar en otra sucursal sin cerrar sesión.
+  /// Todo lo que haga (pagos, cajas, préstamos) queda en la sucursal elegida.
+  Future<void> _onCambiarSucursal(
+      CambiarSucursal event, Emitter<AuthState> emit) async {
+    final u = _preferences.token;
+    if (u == null || u.isAdmin != true) return;
+    final nuevo = UserEntity(
+      id: u.id,
+      nombre: u.nombre,
+      apellido: u.apellido,
+      userName: u.userName,
+      oldUserName: u.oldUserName,
+      email: u.email,
+      avatar: u.avatar,
+      celular: u.celular,
+      role: u.role,
+      pagos: null,
+      prestamos: null,
+      createdAt: u.createdAt,
+      prestamosAdmin: null,
+      updatedAt: u.updatedAt,
+      ventas: null,
+      isAdmin: u.isAdmin,
+      sucursal: event.sucursal,
+    );
+    await _preferences.setToken(nuevo);
+    await _preferences.removeLoansPreferences();
+    emit(Authenticated(nuevo, state.modulos ?? []));
   }
 
   Future<void> _onSignOff(SignOff event, Emitter<AuthState> emit) async {
