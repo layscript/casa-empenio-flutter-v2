@@ -88,8 +88,29 @@ class _ExpedientePageState extends State<ExpedientePage> {
         await _generar();
         if (!mounted || _exp == null) return;
       }
-      // 2) Firma del cliente
+      // 2) ¿Firma digital o ya firmó ante notario?
       if (!_roles.contains('CLIENTE')) {
+        final notarial = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('¿Cómo firma el cliente?'),
+            content: const Text(
+                'Si el cliente ya firmó ante notario, solo se registra con una foto del contrato firmado. No necesita firma digital ni huella.'),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Ya firmó ante notario')),
+              ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Firma digital y huella')),
+            ],
+          ),
+        );
+        if (!mounted) return;
+        if (notarial == true) {
+          await _firmaNotarial();
+          return;
+        }
         await _firmar('CLIENTE');
         if (!mounted || !_roles.contains('CLIENTE')) return;
       }
@@ -412,6 +433,81 @@ class _ExpedientePageState extends State<ExpedientePage> {
     }, 'Expediente finalizado');
   }
 
+  /// El cliente ya firmó ante notario: solo se guarda la foto del contrato firmado y se cierra el expediente.
+  Future<void> _firmaNotarial() async {
+    var fotos = <XFile>[];
+    final obs = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => StatefulBuilder(
+        builder: (c, set) => AlertDialog(
+          title: const Text('Firma notarial'),
+          content: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text(
+                  'El cliente ya firmó ante notario. Toma foto del contrato firmado (mínimo 1, máximo 3). No se pide firma digital ni huella.',
+                  style: TextStyle(fontSize: 13)),
+              const SizedBox(height: 10),
+              TextField(
+                controller: obs,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(
+                    labelText: 'Notaría / observación (opcional)',
+                    border: OutlineInputBorder(),
+                    isDense: true),
+              ),
+              const SizedBox(height: 10),
+              CustomImagePicker(
+                onImagesSelected: (p) => set(() => fotos = p ?? []),
+                initialSelectedPhotos: fotos,
+                limit: 3,
+              ),
+              if (fotos.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.only(top: 6),
+                  child: Text('Sin foto no se puede registrar.',
+                      style: TextStyle(fontSize: 12, color: Colors.red)),
+                ),
+            ]),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancelar')),
+            FilledButton(
+                onPressed: fotos.isEmpty ? null : () => Navigator.pop(c, true),
+                child: const Text('Registrar firma notarial')),
+          ],
+        ),
+      ),
+    );
+    final texto = obs.text.trim();
+    obs.dispose();
+    if (ok != true || fotos.isEmpty) return;
+    await _accion(() async {
+      final repo = context.read<AnexoRepository>();
+      for (final foto in fotos) {
+        final urlRes = await repo.createImage(path: foto.path);
+        final url = urlRes.fold((e) => throw Exception(e), (u) => u);
+        final guardado = await repo.createAnexo(
+          description: 'FIRMA NOTARIAL${texto.isEmpty ? '' : ': $texto'}',
+          url: [
+            {'url': url}
+          ],
+          prestamoId: widget.prestamoCodigo.toString(),
+        );
+        if (!guardado.fold((l) => false, (r) => r)) {
+          throw Exception('No se pudo guardar la foto');
+        }
+      }
+      await _dio.post('/expediente/finalize', data: {
+        'prestamoId': widget.prestamoCodigo,
+        'empresaUserId': _userId,
+        'firmaNotarial': true,
+        'requireFirmas': false,
+      });
+    }, 'Firma notarial registrada y expediente finalizado');
+  }
+
   Future<void> _verPdf() async {
     final ruta = _exp?['pdf']?.toString();
     if (ruta == null || ruta.isEmpty) {
@@ -585,6 +681,8 @@ class _ExpedientePageState extends State<ExpedientePage> {
                     'Firmas',
                     Icons.draw,
                     [
+                      _boton('El cliente firmó ante notario (solo foto)',
+                          Icons.gavel, _firmaNotarial),
                       _boton('Firma del cliente', Icons.draw,
                           () => _firmar('CLIENTE')),
                       _boton('Firma del aval', Icons.draw_outlined,
