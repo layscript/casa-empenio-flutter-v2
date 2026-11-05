@@ -2413,6 +2413,7 @@ class _JornalSheetState extends State<_JornalSheet> {
   String? _error;
   final _ajH = TextEditingController();
   final _ajM = TextEditingController();
+  String? _hasta; // último día que se paga (para pagar un mes a la vez)
 
   double _num_(TextEditingController c) => double.tryParse(c.text.trim().replaceAll(',', '.')) ?? 0;
 
@@ -2431,7 +2432,7 @@ class _JornalSheetState extends State<_JornalSheet> {
 
   Future<void> _cargar() async {
     try {
-      final v = await widget.api.get('/rrhh/jornal/${widget.trabajador['id']}', {'ajusteHoras': _num_(_ajH), 'ajusteMonto': _num_(_ajM)});
+      final v = await widget.api.get('/rrhh/jornal/${widget.trabajador['id']}', {'ajusteHoras': _num_(_ajH), 'ajusteMonto': _num_(_ajM), if (_hasta != null) 'hasta': _hasta});
       if (mounted) setState(() { _j = _mapa(v); _cargando = false; _error = null; });
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _cargando = false; });
@@ -2451,7 +2452,7 @@ class _JornalSheetState extends State<_JornalSheet> {
     try {
       await widget.api.post('/rrhh/jornal/pagar', {
         'trabajadorId': widget.trabajador['id'], 'desdeCaja': _caja, 'usuarioId': widget.api.usuarioId,
-        'ajusteHoras': _num_(_ajH), 'ajusteMonto': _num_(_ajM),
+        'ajusteHoras': _num_(_ajH), 'ajusteMonto': _num_(_ajM), if (_hasta != null) 'hasta': _hasta,
         'usuarioNombre': widget.api.usuarioNombre, 'sucursalId': widget.api.sucursalId > 0 ? widget.api.sucursalId : null,
       }, archivo: _foto_, firma: _firma);
       if (mounted) {
@@ -2477,6 +2478,35 @@ class _JornalSheetState extends State<_JornalSheet> {
                 : Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text('Pagar a ${_nombreDe(t)}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
+                    if (_lista(_j['meses']).length > 1) ...[
+                      const Text('¿Qué mes vas a pagar?', style: TextStyle(fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 4),
+                      Wrap(spacing: 6, children: [
+                        for (final m in _lista(_j['meses']))
+                          ChoiceChip(
+                            label: Text('${m['mes']} · ${m['dias']} día(s) · ${_money(m['monto'] as num?)}'),
+                            selected: _hasta != null && _hasta!.startsWith(m['mes'].toString()),
+                            onSelected: (_) {
+                              // se pagan los días hasta el último día de ese mes, sin tocar los meses siguientes
+                              final p = m['mes'].toString().split('-');
+                              final ult = DateTime(int.parse(p[0]), int.parse(p[1]) + 1, 0);
+                              _hasta = '${p[0]}-${p[1]}-${ult.day.toString().padLeft(2, '0')}';
+                              setState(() => _cargando = true);
+                              _cargar();
+                            },
+                          ),
+                        ChoiceChip(
+                          label: const Text('Todo junto'),
+                          selected: _hasta == null,
+                          onSelected: (_) {
+                            _hasta = null;
+                            setState(() => _cargando = true);
+                            _cargar();
+                          },
+                        ),
+                      ]),
+                      const SizedBox(height: 8),
+                    ],
                     Text('Días trabajados sin pagar: ${_j['cantidad']}  (${_money(_mapa(_j['trabajador'])['pagoDia'] as num?)} por día)'),
                     if ((_j['detalleDias'] as List?)?.isNotEmpty ?? false)
                       for (final d in _lista(_j['detalleDias']))
