@@ -1,5 +1,6 @@
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/actualizaciones.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
@@ -20,6 +21,31 @@ class _AuthViewState extends State<AuthView> {
   final passwordCtrl = TextEditingController();
   bool emailIsValid = false;
   bool passwordIsValid = false;
+  String? _estadoServidor; // null = verificando
+  bool _servidorOk = false;
+  bool _verificando = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _verificar();
+    // También se avisa de actualizaciones desde esta pantalla, por si no se puede iniciar sesión
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) avisarActualizacion(context);
+    });
+  }
+
+  Future<void> _verificar() async {
+    setState(() => _verificando = true);
+    final r = await verificarServidor();
+    if (mounted) {
+      setState(() {
+        _servidorOk = r == null;
+        _estadoServidor = r ?? 'Servidor funcionando';
+        _verificando = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -114,7 +140,23 @@ class _AuthViewState extends State<AuthView> {
                         ),
                         const SizedBox(height: 20),
                         const Text(appVersion),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(color: _verificando ? Colors.grey.shade100 : (_servidorOk ? Colors.green.shade50 : Colors.red.shade50), borderRadius: BorderRadius.circular(10)),
+                          child: Column(children: [
+                            Row(children: [
+                              Icon(_verificando ? Icons.sync : (_servidorOk ? Icons.check_circle : Icons.error), size: 20, color: _verificando ? Colors.grey : (_servidorOk ? Colors.green : Colors.red)),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(_verificando ? 'Verificando el servidor…' : (_estadoServidor ?? ''), style: const TextStyle(fontSize: 12))),
+                            ]),
+                            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                              TextButton.icon(onPressed: _verificando ? null : _verificar, icon: const Icon(Icons.refresh, size: 16), label: const Text('Verificar', style: TextStyle(fontSize: 12))),
+                              TextButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ActualizacionesPage())), icon: const Icon(Icons.system_update, size: 16), label: const Text('Actualizaciones', style: TextStyle(fontSize: 12))),
+                            ]),
+                          ]),
+                        ),
+                        const SizedBox(height: 12),
                         const TermsPrivacy(),
                       ],
                     ),

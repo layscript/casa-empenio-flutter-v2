@@ -1,19 +1,22 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Número de la compilación instalada (lo pone el compilador automático; en pruebas locales es 0)
 const int kBuildActual = int.fromEnvironment('BUILD_NUMBER', defaultValue: 0);
 
 const _repo = 'layscript/casa-empenio-flutter-v2';
+const _servidor = endPointPrincipal;
 const _apkUrl = 'https://github.com/$_repo/releases/download/apk-latest/casa-empenio.apk';
 
 class Actualizacion {
-  Actualizacion({required this.numero, required this.titulo, required this.detalle, required this.fecha});
+  Actualizacion({required this.numero, required this.titulo, required this.detalle, required this.fecha, this.tieneApk = false});
   final int numero;
   final String titulo;
   final String detalle;
   final DateTime? fecha;
+  final bool tieneApk;
 }
 
 /// Evita avisar más de una vez cada vez que se abre la app
@@ -38,6 +41,7 @@ Future<List<Actualizacion>> buscarActualizaciones() async {
         titulo: lineas.isEmpty ? 'Mejoras y correcciones' : lineas.first.trim(),
         detalle: lineas.length > 1 ? lineas.skip(1).join('\n').trim() : '',
         fecha: DateTime.tryParse((e['published_at'] ?? '').toString())?.toLocal(),
+        tieneApk: ((e['assets'] as List?) ?? []).any((x) => x['name'] == 'casa-empenio.apk'),
       ));
     }
     lista.sort((a, b) => b.numero.compareTo(a.numero));
@@ -48,6 +52,25 @@ Future<List<Actualizacion>> buscarActualizaciones() async {
 
 Future<void> descargarApk() async {
   await launchUrl(Uri.parse(_apkUrl), mode: LaunchMode.externalApplication);
+}
+
+/// Descarga una versión anterior (por si una actualización falla)
+Future<void> descargarVersion(int numero) async {
+  await launchUrl(Uri.parse('https://github.com/$_repo/releases/download/build-$numero/casa-empenio.apk'), mode: LaunchMode.externalApplication);
+}
+
+/// Pregunta al servidor si está funcionando. Devuelve null si responde bien, o el motivo si no.
+Future<String?> verificarServidor() async {
+  try {
+    final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 6), receiveTimeout: const Duration(seconds: 6)));
+    final r = await dio.get('$_servidor/health/live');
+    return r.statusCode == 200 ? null : 'El servidor respondió con un problema (${r.statusCode})';
+  } on DioException catch (e) {
+    if (e.response != null) return 'El servidor respondió con un problema (${e.response?.statusCode})';
+    return 'No se puede conectar con el servidor. Revisa tu internet; si el internet está bien, el servidor está caído: avisa al administrador.';
+  } catch (_) {
+    return 'No se pudo verificar el servidor';
+  }
 }
 
 /// Cuántas actualizaciones nuevas hay respecto a la instalada
@@ -144,6 +167,22 @@ class _ActualizacionesPageState extends State<ActualizacionesPage> {
                     title: Text(a.titulo, style: const TextStyle(fontSize: 14)),
                     subtitle: Text('${_fecha(a.fecha)}${a.numero == kBuildActual ? ' · instalada' : (a.numero > kBuildActual ? ' · nueva' : '')}${a.detalle.isEmpty ? '' : '\n${a.detalle}'}', style: const TextStyle(fontSize: 12)),
                     isThreeLine: a.detalle.isNotEmpty,
+                    trailing: (a.tieneApk && a.numero != kBuildActual)
+                        ? TextButton(
+                            onPressed: () => showDialog<void>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: Text('Instalar la actualización ${a.numero}'),
+                                content: const Text('Úsalo solo si la última versión falla. Si Android no deja instalar una versión más antigua, desinstala la app primero (tus datos del servidor no se pierden) y vuelve a instalar.'),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+                                  FilledButton(onPressed: () { Navigator.pop(ctx); descargarVersion(a.numero); }, child: const Text('Descargar')),
+                                ],
+                              ),
+                            ),
+                            child: Text(a.numero > kBuildActual ? 'Instalar' : 'Volver'),
+                          )
+                        : null,
                   ),
                 ),
             ]),

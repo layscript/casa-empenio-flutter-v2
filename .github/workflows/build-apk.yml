@@ -39,3 +39,8 @@ jobs:
           MSG=$(printf '%s' "$COMMIT_MSG" | grep -v '^Co-Authored-By' | grep -v '^Claude-Session' | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')
           [ -z "$MSG" ] && MSG="Mejoras y correcciones"
           gh release create "build-${{ github.run_number }}" --repo "$GITHUB_REPOSITORY" --title "Actualización ${{ github.run_number }}" --notes "$MSG" --latest=false || true
+          # Cada actualización guarda su propio APK (se conservan las últimas 5 por si hay que volver atrás)
+          gh release upload "build-${{ github.run_number }}" casa-empenio.apk --clobber --repo "$GITHUB_REPOSITORY" || true
+          for tag in $(gh release list --repo "$GITHUB_REPOSITORY" --limit 60 --json tagName -q '.[].tagName' | grep '^build-' | sort -t- -k2 -n -r | tail -n +6); do
+            gh release delete-asset "$tag" casa-empenio.apk --yes --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
+          done
