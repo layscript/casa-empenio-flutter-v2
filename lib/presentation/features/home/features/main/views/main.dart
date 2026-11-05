@@ -1,6 +1,7 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/actualizaciones.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/vigilante_sesion.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/administracion_view.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/adjudicados_view.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/rrhh_view.dart';
@@ -37,7 +38,8 @@ class _MainViewState extends State<MainView> {
     final preferences = context.watch<Preferences>();
     final preferencesState = preferences.token;
 
-    return BlocProvider(
+    return VigilanteSesion(
+      child: BlocProvider(
       lazy: false,
       create: (context) => HomeBloc(
         preferences: context.read(),
@@ -193,6 +195,7 @@ class _MainViewState extends State<MainView> {
           );
         },
       ),
+    ),
     );
   }
 }

@@ -19,8 +19,8 @@ class Actualizacion {
   final bool tieneApk;
 }
 
-/// Evita avisar más de una vez cada vez que se abre la app
-bool _yaAviso = false;
+/// Última versión de la que ya se avisó (para no repetir el mismo aviso)
+int _ultimoAvisado = 0;
 List<Actualizacion> _cache = [];
 
 /// Lee la lista de actualizaciones publicadas (la más nueva primero). Si no hay internet devuelve lo último que se pudo leer.
@@ -76,17 +76,43 @@ Future<String?> verificarServidor() async {
 /// Cuántas actualizaciones nuevas hay respecto a la instalada
 int pendientes(List<Actualizacion> l) => kBuildActual <= 0 ? 0 : l.where((a) => a.numero > kBuildActual).length;
 
-/// Se llama al abrir la app: si hay una versión nueva, sugiere actualizar (no bloquea el uso)
-Future<void> avisarActualizacion(BuildContext context) async {
-  if (_yaAviso || kBuildActual <= 0) return;
+/// Avisa si hay una versión nueva. No bloquea el uso de la app.
+/// [banner]: true = franja discreta arriba (mientras se trabaja); false = ventana (al abrir).
+Future<void> avisarActualizacion(BuildContext context, {bool banner = false}) async {
+  if (kBuildActual <= 0) return;
   final lista = await buscarActualizaciones();
   final nuevas = lista.where((a) => a.numero > kBuildActual).toList();
   if (nuevas.isEmpty || !context.mounted) return;
-  _yaAviso = true;
+  final ultima = nuevas.first.numero;
+  if (ultima <= _ultimoAvisado) return;
+  _ultimoAvisado = ultima;
+  final titulo = nuevas.length == 1 ? 'Hay 1 actualización nueva' : 'Hay ${nuevas.length} actualizaciones nuevas';
+
+  if (banner) {
+    final m = ScaffoldMessenger.of(context);
+    m.clearMaterialBanners();
+    m.showMaterialBanner(MaterialBanner(
+      backgroundColor: Colors.blue.shade50,
+      leading: const Icon(Icons.system_update, color: Colors.blue),
+      content: Text('$titulo. Termina lo que estás haciendo y actualiza cuando puedas.', style: const TextStyle(fontSize: 13)),
+      actions: [
+        TextButton(onPressed: m.hideCurrentMaterialBanner, child: const Text('Más tarde')),
+        FilledButton(
+          onPressed: () {
+            m.hideCurrentMaterialBanner();
+            descargarApk();
+          },
+          child: const Text('Actualizar'),
+        ),
+      ],
+    ));
+    return;
+  }
+
   await showDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: Text(nuevas.length == 1 ? 'Hay 1 actualización nueva' : 'Hay ${nuevas.length} actualizaciones nuevas'),
+      title: Text(titulo),
       content: SizedBox(
         width: double.maxFinite,
         child: ListView(shrinkWrap: true, children: [
