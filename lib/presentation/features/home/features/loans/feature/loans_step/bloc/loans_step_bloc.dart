@@ -947,7 +947,7 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
             'categoria': e.category?.descripcion ?? '',
             'color': e.color,
             'serie': e.serie,
-            'valorizacion': double.parse(e.price == '' ? '0' : e.price!),
+            'valorizacion': (double.tryParse((e.price ?? '').replaceAll(',', '.')) ?? 0),
             'observaciones': e.warrantyObservations,
             'estado': e.status,
             'imagen': imagenes[0],
@@ -956,7 +956,7 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
           };
         }).toList();
       } else {
-        garantiasData = state.listWarranty!.map((e) {
+        garantiasData = (state.listWarranty ?? []).map((e) {
           List<String?> imagenes = [];
 
           for (int i = 0; i < 3; i++) {
@@ -977,7 +977,7 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
             'categoria': e.category?.descripcion ?? '',
             'color': e.color,
             'serie': e.serie,
-            'valorizacion': double.parse(e.price == '' ? '0' : e.price!),
+            'valorizacion': (double.tryParse((e.price ?? '').replaceAll(',', '.')) ?? 0),
             'observaciones': e.warrantyObservations,
             'estado': e.status,
             'imagen': imagenes[0],
@@ -987,17 +987,34 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
         }).toList();
       }
 
+      // Validaciones con mensaje claro (antes un dato faltante daba un error genérico)
+      String? faltante;
+      final plazoTxt = (loansLocalState?.deadline?.isNotEmpty ?? false) ? loansLocalState!.deadline : state.deadlines;
+      final interesTxt = loansLocalState?.interest?.intereses ?? state.interestRate?.intereses;
+      final montoTxt = (loansLocalState?.amount?.isNotEmpty ?? false) ? loansLocalState!.amount : state.amount;
+      if (montoTxt == null || double.tryParse(montoTxt.replaceAll(',', '.')) == null) {
+        faltante = 'Falta el monto del préstamo';
+      } else if (plazoTxt == null || int.tryParse(plazoTxt) == null) {
+        faltante = 'Falta el plazo en días';
+      } else if (interesTxt == null || double.tryParse(interesTxt.replaceAll(',', '.')) == null) {
+        faltante = 'Falta elegir el interés';
+      } else if (garantiasData.isEmpty) {
+        faltante = 'Falta agregar al menos una prenda en garantía';
+      } else if ((loansLocalState?.documentClient ?? state.documentClient) == null ||
+          (loansLocalState?.documentClient ?? state.documentClient)!.trim().isEmpty) {
+        faltante = 'Falta el DNI del cliente';
+      }
+      if (faltante != null) {
+        emit(state.copyWith(loansStepStatusSaved: LoansStepStatus.error, message: faltante));
+        return;
+      }
+
       final now = DateTime.now();
       DateTime? loansLocalDatePay;
 
-      if (loansLocalState?.deadline != null) {
+      if (loansLocalState?.deadline != null && loansLocalState!.deadline!.isNotEmpty) {
         loansLocalDatePay = now.add(
-          Duration(
-            days: int.parse(loansLocalState?.deadline == ''
-                    ? '0'
-                    : loansLocalState!.deadline!) -
-                1,
-          ),
+          Duration(days: (int.tryParse(loansLocalState.deadline!) ?? 0) - 1),
         );
       }
 
@@ -1025,16 +1042,10 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
       final result = await _loansRepository.saveLoan(
         cajaId: cajaId ?? state.cajaId,
         renew: false,
-        plazoDias: int.parse(
-          loansLocalState?.deadline ?? state.deadlines!,
-        ),
-        interes: double.parse(
-          loansLocalState?.interest?.intereses ?? state.interestRate!.intereses,
-        ),
-        fechaPago: loansLocalDatePay ?? state.paymentDateWithoutFormatt!,
-        monto: double.parse(
-          loansLocalState?.amount ?? state.amount!,
-        ),
+        plazoDias: int.parse(plazoTxt!),
+        interes: double.parse(interesTxt!.replaceAll(',', '.')),
+        fechaPago: loansLocalDatePay ?? state.paymentDateWithoutFormatt ?? now.add(Duration(days: int.parse(plazoTxt!) - 1)),
+        monto: double.parse(montoTxt!.replaceAll(',', '.')),
         observaciones:
             loansLocalState?.observations ?? state.observations ?? '',
         cliente: CustomerEntity(
@@ -1095,10 +1106,12 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
         ),
       );
     } catch (e, stackTrace) {
+      final detalle = e.toString().replaceAll('\n', ' ');
       emit(
         state.copyWith(
           loansStepStatusSaved: LoansStepStatus.error,
-          message: 'Ocurrió un error, intentelo más tarde',
+          message:
+              'No se pudo guardar el préstamo. Revisa monto, plazo, interés y prenda. (${detalle.length > 90 ? detalle.substring(0, 90) : detalle})',
         ),
       );
     }
