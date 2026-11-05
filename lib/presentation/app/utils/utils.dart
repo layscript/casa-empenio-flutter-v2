@@ -15,3 +15,4 @@ export 'terms_privacy.dart';
 export 'validators.dart';
 export 'delete_dialog.dart';
 export 'error_dialog.dart';
+export 'actualizaciones.dart';

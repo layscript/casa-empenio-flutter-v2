@@ -1,0 +1,152 @@
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+/// Número de la compilación instalada (lo pone el compilador automático; en pruebas locales es 0)
+const int kBuildActual = int.fromEnvironment('BUILD_NUMBER', defaultValue: 0);
+
+const _repo = 'layscript/casa-empenio-flutter-v2';
+const _apkUrl = 'https://github.com/$_repo/releases/download/apk-latest/casa-empenio.apk';
+
+class Actualizacion {
+  Actualizacion({required this.numero, required this.titulo, required this.detalle, required this.fecha});
+  final int numero;
+  final String titulo;
+  final String detalle;
+  final DateTime? fecha;
+}
+
+/// Evita avisar más de una vez cada vez que se abre la app
+bool _yaAviso = false;
+List<Actualizacion> _cache = [];
+
+/// Lee la lista de actualizaciones publicadas (la más nueva primero). Si no hay internet devuelve lo último que se pudo leer.
+Future<List<Actualizacion>> buscarActualizaciones() async {
+  try {
+    final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 8), receiveTimeout: const Duration(seconds: 10), headers: {'Accept': 'application/vnd.github+json'}));
+    final r = await dio.get('https://api.github.com/repos/$_repo/releases', queryParameters: {'per_page': 40});
+    final lista = <Actualizacion>[];
+    for (final e in (r.data as List)) {
+      final tag = (e['tag_name'] ?? '').toString();
+      if (!tag.startsWith('build-')) continue;
+      final n = int.tryParse(tag.substring(6));
+      if (n == null) continue;
+      final cuerpo = (e['body'] ?? '').toString().trim();
+      final lineas = cuerpo.split('\n').where((l) => l.trim().isNotEmpty).toList();
+      lista.add(Actualizacion(
+        numero: n,
+        titulo: lineas.isEmpty ? 'Mejoras y correcciones' : lineas.first.trim(),
+        detalle: lineas.length > 1 ? lineas.skip(1).join('\n').trim() : '',
+        fecha: DateTime.tryParse((e['published_at'] ?? '').toString())?.toLocal(),
+      ));
+    }
+    lista.sort((a, b) => b.numero.compareTo(a.numero));
+    _cache = lista;
+  } catch (_) {}
+  return _cache;
+}
+
+Future<void> descargarApk() async {
+  await launchUrl(Uri.parse(_apkUrl), mode: LaunchMode.externalApplication);
+}
+
+/// Cuántas actualizaciones nuevas hay respecto a la instalada
+int pendientes(List<Actualizacion> l) => kBuildActual <= 0 ? 0 : l.where((a) => a.numero > kBuildActual).length;
+
+/// Se llama al abrir la app: si hay una versión nueva, sugiere actualizar (no bloquea el uso)
+Future<void> avisarActualizacion(BuildContext context) async {
+  if (_yaAviso || kBuildActual <= 0) return;
+  final lista = await buscarActualizaciones();
+  final nuevas = lista.where((a) => a.numero > kBuildActual).toList();
+  if (nuevas.isEmpty || !context.mounted) return;
+  _yaAviso = true;
+  await showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(nuevas.length == 1 ? 'Hay 1 actualización nueva' : 'Hay ${nuevas.length} actualizaciones nuevas'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: ListView(shrinkWrap: true, children: [
+          const Text('Te recomendamos actualizar para tener las últimas mejoras. Puedes seguir trabajando y actualizar más tarde.', style: TextStyle(fontSize: 13, color: Colors.black54)),
+          const SizedBox(height: 10),
+          for (final a in nuevas.take(8))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text('${a.numero}. ${a.titulo}', style: const TextStyle(fontSize: 13)),
+            ),
+        ]),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Más tarde')),
+        FilledButton.icon(
+          onPressed: () {
+            Navigator.pop(ctx);
+            descargarApk();
+          },
+          icon: const Icon(Icons.download),
+          label: const Text('Descargar'),
+        ),
+      ],
+    ),
+  );
+}
+
+/// Pantalla "Actualizaciones": historial numerado y botón para descargar la última
+class ActualizacionesPage extends StatefulWidget {
+  const ActualizacionesPage({super.key});
+  @override
+  State<ActualizacionesPage> createState() => _ActualizacionesPageState();
+}
+
+class _ActualizacionesPageState extends State<ActualizacionesPage> {
+  List<Actualizacion> _lista = [];
+  bool _cargando = true;
+
+  @override
+  void initState() {
+    super.initState();
+    buscarActualizaciones().then((l) {
+      if (mounted) setState(() { _lista = l; _cargando = false; });
+    });
+  }
+
+  String _fecha(DateTime? d) => d == null ? '' : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+
+  @override
+  Widget build(BuildContext context) {
+    final nuevas = pendientes(_lista);
+    return Scaffold(
+      appBar: AppBar(title: const Text('Actualizaciones')),
+      body: _cargando
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(padding: const EdgeInsets.all(12), children: [
+              Card(
+                color: nuevas > 0 ? Colors.orange.shade50 : Colors.green.shade50,
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(kBuildActual <= 0 ? 'Versión de prueba' : 'Tienes instalada la actualización $kBuildActual', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    const SizedBox(height: 4),
+                    Text(_lista.isEmpty ? 'No se pudo consultar. Revisa tu internet.' : (nuevas > 0 ? 'Hay $nuevas actualización(es) nueva(s) por instalar.' : 'Estás al día.')),
+                    if (_lista.isNotEmpty && (nuevas > 0 || kBuildActual <= 0)) ...[
+                      const SizedBox(height: 8),
+                      FilledButton.icon(onPressed: descargarApk, icon: const Icon(Icons.download), label: const Text('Descargar la última versión')),
+                    ],
+                  ]),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text('Historial', style: TextStyle(fontWeight: FontWeight.bold)),
+              for (final a in _lista)
+                Card(
+                  child: ListTile(
+                    leading: CircleAvatar(backgroundColor: a.numero == kBuildActual ? Colors.green : (a.numero > kBuildActual ? Colors.orange : Colors.blueGrey.shade200), child: Text('${a.numero}', style: const TextStyle(color: Colors.white, fontSize: 12))),
+                    title: Text(a.titulo, style: const TextStyle(fontSize: 14)),
+                    subtitle: Text('${_fecha(a.fecha)}${a.numero == kBuildActual ? ' · instalada' : (a.numero > kBuildActual ? ' · nueva' : '')}${a.detalle.isEmpty ? '' : '\n${a.detalle}'}', style: const TextStyle(fontSize: 12)),
+                    isThreeLine: a.detalle.isNotEmpty,
+                  ),
+                ),
+            ]),
+    );
+  }
+}

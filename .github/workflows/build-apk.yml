@@ -20,7 +20,7 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
-      - run: flutter build apk --release
+      - run: flutter build apk --release --build-number=${{ github.run_number }} --dart-define=BUILD_NUMBER=${{ github.run_number }}
       - uses: actions/upload-artifact@v4
         with:
           name: casa-empenio-apk
@@ -28,9 +28,14 @@ jobs:
       - name: Publicar APK con enlace fijo
         env:
           GH_TOKEN: ${{ github.token }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
           cp build/app/outputs/flutter-apk/app-release.apk casa-empenio.apk
           gh release view apk-latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
             gh release create apk-latest --repo "$GITHUB_REPOSITORY" --title "APK más reciente" --notes "APK de la app"
           gh release upload apk-latest casa-empenio.apk --clobber --repo "$GITHUB_REPOSITORY"
           gh release edit apk-latest --repo "$GITHUB_REPOSITORY" --notes "Compilado el $(date -u '+%d/%m/%Y %H:%M') UTC · versión ${GITHUB_SHA::7}"
+          # Registro numerado de la actualización (la app lo lee para avisar y mostrar el historial)
+          MSG=$(printf '%s' "$COMMIT_MSG" | grep -v '^Co-Authored-By' | grep -v '^Claude-Session' | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')
+          [ -z "$MSG" ] && MSG="Mejoras y correcciones"
+          gh release create "build-${{ github.run_number }}" --repo "$GITHUB_REPOSITORY" --title "Actualización ${{ github.run_number }}" --notes "$MSG" --latest=false || true

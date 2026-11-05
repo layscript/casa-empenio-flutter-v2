@@ -1,5 +1,6 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/actualizaciones.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
@@ -90,6 +91,15 @@ class _AppDrawerState extends State<AppDrawer> {
               },
             ),
             const Divider(height: 20),
+            ListTile(
+              leading: const Icon(Icons.system_update, color: AppColors.blue),
+              title: const Text('Actualizaciones', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              subtitle: Text(kBuildActual > 0 ? 'Versión instalada: $kBuildActual' : 'Versión de prueba', style: const TextStyle(fontSize: 11)),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const ActualizacionesPage()));
+              },
+            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: SecondaryButton(

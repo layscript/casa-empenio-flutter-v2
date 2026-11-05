@@ -1,5 +1,6 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/actualizaciones.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/administracion_view.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/adjudicados_view.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/rrhh_view.dart';
@@ -25,6 +26,10 @@ class _MainViewState extends State<MainView> {
   @override
   void initState() {
     super.initState();
+    // Sugerir actualizar si hay una versión nueva (no bloquea el uso de la app)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) avisarActualizacion(context);
+    });
   }
 
   @override
