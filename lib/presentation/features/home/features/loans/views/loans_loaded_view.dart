@@ -1223,6 +1223,26 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                     children: [
                       PrimaryButton(
                         onPressed: () async {
+                          // Si no hay borrador en este teléfono (ej. se reinstaló la app), se recupera el de la nube
+                          try {
+                            final prefs = context.read<Preferences>();
+                            final uid = prefs.token?.id;
+                            if (prefs.getLoansPreferences == null && uid != null) {
+                              final nube = await context.read<LoansRepository>().obtenerBorrador(usuarioId: uid);
+                              if (nube != null) {
+                                nube['imagesClient'] = <String>[];
+                                nube['imagesAval'] = <String>[];
+                                final gar = nube['warrantyPreferences'];
+                                if (gar is List) {
+                                  for (final g in gar) {
+                                    if (g is Map) g['photoWarranty'] = <String>[];
+                                  }
+                                }
+                                await prefs.setLoansPreferences(LoansPreferencesEntity.fromJson(nube));
+                              }
+                            }
+                          } catch (_) {}
+                          if (!context.mounted) return;
                           final result = await Navigator.pushNamed(
                             context,
                             LoansStepView.route,

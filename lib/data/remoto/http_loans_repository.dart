@@ -115,6 +115,35 @@ class HttpLoansRepository implements LoansRepository {
   }
 
   @override
+  Future<void> guardarBorrador({required int usuarioId, required Map<String, dynamic> datos}) async {
+    try {
+      await _dio.put<String>('/prestamos/borrador/$usuarioId', data: {'datos': datos});
+    } catch (_) {
+      // el borrador local sigue guardado; si no hay internet se reintenta en el próximo cambio
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>?> obtenerBorrador({required int usuarioId}) async {
+    try {
+      final response = await _dio.get<String>('/prestamos/borrador/$usuarioId');
+      final map = json.decode(response.data!) as Map<String, dynamic>;
+      final body = map['body'];
+      if (body is Map && body['datos'] is Map) {
+        return Map<String, dynamic>.from(body['datos'] as Map);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  @override
+  Future<void> borrarBorrador({required int usuarioId}) async {
+    try {
+      await _dio.delete<String>('/prestamos/borrador/$usuarioId');
+    } catch (_) {}
+  }
+
+  @override
   Future<Either<String, ContratoEntity>> saveLoan({
     required int plazoDias,
     required double interes,

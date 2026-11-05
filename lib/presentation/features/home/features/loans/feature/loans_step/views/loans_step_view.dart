@@ -72,6 +72,7 @@ class LoansStepView extends StatelessWidget {
                             TextButton(
                               onPressed: () {
                                 preferences.removeLoansPreferences();
+                                context.read<LoansStepBloc>().borrarBorradorRemoto();
                                 Navigator.pop(context);
                                 Navigator.pop(context);
                               },
@@ -107,6 +108,7 @@ class LoansStepView extends StatelessWidget {
                     'Guardado correctamente',
                     onPressed: () async {
                       preferences.removeLoansPreferences();
+                      context.read<LoansStepBloc>().borrarBorradorRemoto();
                       final codigo = int.tryParse(state.codeLoans ?? '') ?? 0;
                       Navigator.pop(context);
                       if (codigo > 0) {

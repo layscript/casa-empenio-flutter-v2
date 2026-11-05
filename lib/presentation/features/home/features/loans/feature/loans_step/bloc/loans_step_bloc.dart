@@ -124,6 +124,7 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
       totalToPay: state.totalToPay,
     );
     _preferences.setLoansPreferences(newState);
+    _respaldar();
   }
 
   void _onChangeIndexLoans(
@@ -600,6 +601,7 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
       warrantyPreferences: newList,
     );
     await _preferences.setLoansPreferences(newStateLocal);
+    _respaldar();
 
     emit(
       state.copyWith(
@@ -651,6 +653,7 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
         localState.copyWith(warrantyPreferences: updatedList),
       );
 
+      _respaldar();
       if (response) {
         emit(
           state.copyWith(
@@ -661,6 +664,21 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
         );
       }
     }
+  }
+
+  /// Copia el borrador a la nube (servidor) para no perderlo aunque se desinstale la app
+  void _respaldar() {
+    final uid = _preferences.token?.id;
+    final local = _preferences.getLoansPreferences;
+    if (uid == null || local == null) return;
+    _loansRepository.guardarBorrador(usuarioId: uid, datos: local.toJson());
+  }
+
+  /// Borra el borrador de la nube (se llama al guardar bien o al eliminar el borrador)
+  void borrarBorradorRemoto() {
+    final uid = _preferences.token?.id;
+    if (uid == null) return;
+    _loansRepository.borrarBorrador(usuarioId: uid);
   }
 
   void _onDeleteListWarranty(
@@ -686,6 +704,7 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
       event.localState.copyWith(warrantyPreferences: newList),
     );
 
+    _respaldar();
     if (response) {
       emit(
         state.copyWith(
@@ -1039,6 +1058,7 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
         loansLocalState?.imagesAval,
       );
 
+      _respaldar();
       final result = await _loansRepository.saveLoan(
         cajaId: cajaId ?? state.cajaId,
         renew: false,

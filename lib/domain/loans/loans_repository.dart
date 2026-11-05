@@ -4,6 +4,10 @@ import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:dartz/dartz.dart';
 
 abstract class LoansRepository {
+  /// Borrador del préstamo que se está registrando (guardado en el servidor)
+  Future<void> guardarBorrador({required int usuarioId, required Map<String, dynamic> datos});
+  Future<Map<String, dynamic>?> obtenerBorrador({required int usuarioId});
+  Future<void> borrarBorrador({required int usuarioId});
   Future<Either<String, int>> getLastCode();
   Future<Either<String, LoansEntity>> getLoan({
     required int id,
