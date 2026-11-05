@@ -1144,7 +1144,10 @@ class _PersonalTabState extends State<_PersonalTab> with AutomaticKeepAliveClien
         trailing: t['saldo'] != null
             ? Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.end, children: [
                 const Text('Saldo hoy', style: TextStyle(fontSize: 11, color: Colors.black54)),
-                Text(_money(_mapa(t['saldo'])['saldo'] as num?), style: TextStyle(fontWeight: FontWeight.bold, color: (((_mapa(t['saldo'])['saldo'] as num?) ?? 0) >= 0) ? Colors.green.shade800 : Colors.red)),
+                if (_mapa(t['saldo'])['enCurso'] == true && (((_mapa(t['saldo'])['saldo'] as num?) ?? 0) >= 0))
+                  const Text('Mes en curso', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey))
+                else
+                  Text(_money(_mapa(t['saldo'])['saldo'] as num?), style: TextStyle(fontWeight: FontWeight.bold, color: (((_mapa(t['saldo'])['saldo'] as num?) ?? 0) >= 0) ? Colors.green.shade800 : Colors.red)),
                 if (pend > 0) Text('debe ${_money(pend)}', style: const TextStyle(fontSize: 10, color: Colors.red)),
               ])
             : const Icon(Icons.chevron_right),
@@ -4887,7 +4890,7 @@ class _HojaMesPageState extends State<_HojaMesPage> {
                               const Expanded(child: Text('SALDO A PAGAR', style: TextStyle(fontWeight: FontWeight.bold))),
                               Text(_money(saldo), style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: saldo >= 0 ? Colors.green.shade800 : Colors.red)),
                             ]),
-                            const Text('Es lo que se le debe pagar hoy, ya restados los adelantos.', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                            Text(_saldo['enCurso'] == true ? 'Está en planilla: se paga el mes completo (${_money(_saldo['sueldoMes'] as num?)}) con la boleta cuando termine el mes. No se cuenta por días.' : 'Es lo que se le debe pagar hoy, ya restados los adelantos.', style: const TextStyle(fontSize: 12, color: Colors.black54)),
                           ]),
                         ),
                       ),
