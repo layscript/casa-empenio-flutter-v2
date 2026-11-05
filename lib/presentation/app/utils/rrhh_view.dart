@@ -276,7 +276,42 @@ Widget _avatar(Map t, {double r = 24}) {
 }
 
 const _vinculoTxt = {'PLANILLA': 'En planilla', 'POR_DIAS': 'Por días', 'LOCACION': 'Recibo por honorarios'};
+/// Pregunta qué parte del día trabajó (medio día = 0.5, pero se puede poner cualquier fracción)
+Future<double?> _pedirFraccion(BuildContext c) async {
+  final ctl = TextEditingController();
+  final r = await showDialog<double>(
+    context: c,
+    builder: (_) => StatefulBuilder(
+      builder: (ctx, set) => AlertDialog(
+        title: const Text('¿Qué parte del día trabajó?'),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            for (final o in const [['Medio día (½)', 0.5], ['Un cuarto (¼)', 0.25], ['Tres cuartos (¾)', 0.75]])
+              ActionChip(label: Text(o[0] as String), onPressed: () => Navigator.pop(ctx, o[1] as double)),
+          ]),
+          const SizedBox(height: 12),
+          const Text('O escribe otra parte (entre 0.1 y 0.9). Ej: 0.4 = 4 de cada 10 horas', style: TextStyle(fontSize: 12, color: Colors.black54)),
+          TextField(controller: ctl, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(hintText: 'Ej: 0.4')),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          FilledButton(
+            onPressed: () {
+              final v = double.tryParse(ctl.text.trim().replaceAll(',', '.'));
+              if (v == null || v <= 0 || v >= 1) return;
+              Navigator.pop(ctx, v);
+            },
+            child: const Text('Usar este'),
+          ),
+        ],
+      ),
+    ),
+  );
+  return r;
+}
+
 const _estadoAsisTxt = {
+  'SIN_MARCA': 'Sin marca',
   'PRESENTE': 'Presente',
   'TARDANZA': 'Tardanza',
   'FALTA': 'Faltó',
@@ -625,6 +660,14 @@ class _HoyTabState extends State<_HoyTab> with AutomaticKeepAliveClientMixin {
     final t = _mapa(item['trabajador']);
     int dias = 1;
     String? nota;
+    double? fraccion;
+    if (estado == 'MEDIO_DIA') {
+      fraccion = await _pedirFraccion(context);
+      if (fraccion == null) return;
+    }
+    if (estado == 'SIN_MARCA') {
+      if (!await _confirmar(context, 'Quitar la marca', '${_nombreDe(t)}: se borra lo marcado el $_fecha y queda como que NO trabajó (sin marcar). Queda guardado en el historial de cambios.', si: 'Sí, quitar', color: Colors.red)) return;
+    }
     if (['VACACIONES', 'DESCANSO_MEDICO', 'PERMISO'].contains(estado)) {
       final d = await _pedirTexto(context, '¿Cuántos días? (${_estadoAsisTxt[estado]})', inicial: '1', tipo: TextInputType.number);
       if (d == null) return;
@@ -637,6 +680,7 @@ class _HoyTabState extends State<_HoyTab> with AutomaticKeepAliveClientMixin {
     try {
       await widget.api.post('/rrhh/asistencia/manual', {
         'trabajadorId': t['id'], 'estado': estado, 'fecha': _fecha, 'dias': dias, 'nota': nota, 'usuarioId': widget.api.usuarioId,
+        if (fraccion != null) 'fraccion': fraccion,
       });
       if (mounted) _aviso(context, '${t['nombres']}: ${_estadoAsisTxt[estado]}');
       await _cargar();
@@ -809,7 +853,7 @@ class _HoyTabState extends State<_HoyTab> with AutomaticKeepAliveClientMixin {
                     }
                   },
                   child: Text(
-                    esHoy ? 'HOY · ${DateFormat('dd/MM/yyyy').format(DateTime.now())}' : _fecha,
+                    esHoy ? 'HOY · ${_nomDias[DateTime.now().weekday % 7]} ${DateFormat('dd/MM/yyyy').format(DateTime.now())}' : '${_nomDias[DateTime.parse(_fecha).weekday % 7]} ${DateFormat('dd/MM/yyyy').format(DateTime.parse(_fecha))}',
                     textAlign: TextAlign.center,
                     style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                   ),
@@ -942,8 +986,9 @@ class _HoyTabState extends State<_HoyTab> with AutomaticKeepAliveClientMixin {
             PopupMenuButton<String>(
               tooltip: 'Más',
               onSelected: (v) => _manual(it, v),
-              itemBuilder: (_) => const [
-                PopupMenuItem(value: 'PRESENTE', child: Text('Presente (sin foto)')),
+              itemBuilder: (_) => [
+                if (a != null && a['auto'] != true) const PopupMenuItem(value: 'SIN_MARCA', child: Text('✖ Quitar marca (no trabajó)', style: TextStyle(color: Colors.red))),
+                const PopupMenuItem(value: 'PRESENTE', child: Text('Presente (sin foto)')),
                 PopupMenuItem(value: 'FALTA', child: Text('Faltó')),
                 PopupMenuItem(value: 'MEDIO_DIA', child: Text('Medio día')),
                 PopupMenuItem(value: 'FALTA_JUSTIFICADA', child: Text('Falta justificada')),
@@ -4426,6 +4471,7 @@ class _HojaMesPageState extends State<_HojaMesPage> {
   Map<String, String> _feriados = {};
   List<Map<String, dynamic>> _pagos = [];
   Map<String, dynamic> _saldo = {};
+  List<Map<String, dynamic>> _cambios = [];
   bool _cargando = true;
   String? _error;
 
@@ -4455,7 +4501,9 @@ class _HojaMesPageState extends State<_HojaMesPage> {
         widget.api.get('/rrhh/feriados', {'anio': anio}),
         widget.api.get('/rrhh/historial', {'trabajadorId': _id, 'periodo': _mes}),
         widget.api.get('/rrhh/saldo/$_id'),
+        widget.api.get('/rrhh/asistencia/historial', {'trabajadorId': _id, 'periodo': _mes}),
       ]);
+      _cambios = _lista(_mapa(r[4])['items']);
       _dias = {for (final d in _lista(_mapa(r[0])['dias'])) d['fecha'].toString().substring(0, 10): d};
       _feriados = {for (final f in _lista(_mapa(r[1])['items'])) f['fecha'].toString().substring(0, 10): f['nombre'].toString()};
       _pagos = _lista(_mapa(r[2])['pagos']);
@@ -4622,9 +4670,10 @@ class _HojaMesPageState extends State<_HojaMesPage> {
     }
     final f = DateFormat('yyyy-MM-dd').format(d);
     if (_dias[f]?['pagadoJornal'] == true) {
-      _aviso(context, 'Ese día ya fue pagado: no se puede cambiar', error: true);
+      _aviso(context, 'Ese día ya fue pagado: para cambiarlo primero anula ese pago', error: true);
       return;
     }
+    final marcado = _dias[f] != null;
     final futuro = f.compareTo(_hoy()) > 0;
     final opciones = <List<String>>[
       if (!futuro) ['PRESENTE', 'Asistió ✔'],
@@ -4635,6 +4684,7 @@ class _HojaMesPageState extends State<_HojaMesPage> {
       ['PERMISO', 'Permiso'],
       ['DESCANSO', 'Descanso'],
       ['FERIADO', 'Feriado'],
+      if (marcado) ['SIN_MARCA', '✖ Quitar marca (no trabajó)'],
     ];
     final elegido = await showModalBottomSheet<String>(
       context: context,
@@ -4644,6 +4694,7 @@ class _HojaMesPageState extends State<_HojaMesPage> {
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('${_nomDias[d.weekday % 7]} ${d.day} de ${_nombreMes(d.month)}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
             if (_feriados[f] != null) Text('Feriado: ${_feriados[f]}', style: TextStyle(color: Colors.purple.shade700)),
+            if (marcado) Text('Ahora dice: ${_estadoAsisTxt[est] ?? est}', style: const TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
             const Text('¿Qué pasó este día?', style: TextStyle(color: Colors.black54)),
             const SizedBox(height: 8),
@@ -4661,12 +4712,20 @@ class _HojaMesPageState extends State<_HojaMesPage> {
     );
     if (elegido == null || !mounted) return;
     String? nota;
+    double? fraccion;
+    if (elegido == 'SIN_MARCA') {
+      if (!await _confirmar(context, 'Quitar la marca', '${_nomDias[d.weekday % 7]} ${d.day} de ${_nombreMes(d.month)}: se borra la marca y queda como que NO trabajó. Queda guardado en el historial de cambios.', si: 'Sí, quitar', color: Colors.red)) return;
+    }
+    if (elegido == 'MEDIO_DIA') {
+      fraccion = await _pedirFraccion(context);
+      if (fraccion == null || !mounted) return;
+    }
     if (['FALTA', 'FALTA_JUSTIFICADA', 'PERMISO', 'MEDIO_DIA'].contains(elegido)) {
       nota = await _pedirTexto(context, 'Motivo (opcional)', hint: 'Ej: enfermedad, salió a las 2 pm…');
       if (nota == null) return;
     }
     try {
-      await widget.api.post('/rrhh/asistencia/manual', {'trabajadorId': _id, 'estado': elegido, 'fecha': f, 'dias': 1, 'nota': nota, 'usuarioId': widget.api.usuarioId});
+      await widget.api.post('/rrhh/asistencia/manual', {'trabajadorId': _id, 'estado': elegido, 'fecha': f, 'dias': 1, 'nota': nota, 'usuarioId': widget.api.usuarioId, if (fraccion != null) 'fraccion': fraccion});
       _cargar();
     } catch (e) {
       if (mounted) _aviso(context, e.toString(), error: true);
@@ -4744,7 +4803,7 @@ class _HojaMesPageState extends State<_HojaMesPage> {
                       for (final l in const [['PRESENTE', 'Asistió'], ['TARDANZA', 'Tarde'], ['MEDIO_DIA', 'Medio día'], ['FALTA', 'Faltó'], ['FERIADO', 'Feriado'], ['DESCANSO', 'Descanso']])
                         Row(mainAxisSize: MainAxisSize.min, children: [CircleAvatar(radius: 6, backgroundColor: _color(l[0])), const SizedBox(width: 4), Text(l[1], style: const TextStyle(fontSize: 12))]),
                     ]),
-                    const Text('Toca un día para marcarlo. Los días que aún no llegan solo permiten permiso, descanso o feriado.', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                    const Text('Toca un día para marcarlo, corregirlo o quitarle la marca. Se puede cambiar hasta que se genere la boleta del mes (después solo el administrador).', style: TextStyle(fontSize: 12, color: Colors.black54)),
                     const SizedBox(height: 6),
                     FilledButton.icon(
                       style: FilledButton.styleFrom(backgroundColor: Colors.green.shade700, minimumSize: const Size.fromHeight(46)),
@@ -4767,6 +4826,16 @@ class _HojaMesPageState extends State<_HojaMesPage> {
                         ),
                       ],
                     ]),
+                    if (_cambios.isNotEmpty)
+                      _seccion('Cambios hechos en $_mes', icono: Icons.history, plegable: true, abierta: false, children: [
+                        for (final c in _cambios)
+                          ListTile(
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            title: Text('${_fechaCorta(c['fecha'])}: ${c['accion'] == 'QUITAR' ? 'se quitó "${_estadoAsisTxt[c['estadoAntes']] ?? c['estadoAntes']}"' : c['accion'] == 'CREAR' ? 'se marcó "${_estadoAsisTxt[c['estadoDespues']] ?? c['estadoDespues']}"' : 'de "${_estadoAsisTxt[c['estadoAntes']] ?? c['estadoAntes']}" a "${_estadoAsisTxt[c['estadoDespues']] ?? c['estadoDespues']}"'}', style: const TextStyle(fontSize: 13)),
+                            subtitle: Text('${c['usuarioNombre'] ?? 'Usuario'} · ${_fechaCorta(c['createdAt'])}${(c['detalle'] ?? '').toString().isEmpty ? '' : ' · ${c['detalle']}'}', style: const TextStyle(fontSize: 11)),
+                          ),
+                      ]),
                     _seccion('Adelantos de $_mes', icono: Icons.price_change, children: [
                       if (adel.isEmpty) const Text('No tiene adelantos este mes.'),
                       for (final p in adel)
@@ -4845,7 +4914,7 @@ class _HojaMesPageState extends State<_HojaMesPage> {
         ),
         child: Stack(alignment: Alignment.center, children: [
           Text('${d.day}', style: TextStyle(fontWeight: FontWeight.bold, color: (antes || sin || e == 'FUTURO') ? Colors.black45 : Colors.white)),
-          if (_marca(e).isNotEmpty) Positioned(right: 3, top: 0, child: Text(_marca(e), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
+          if (_marca(e).isNotEmpty) Positioned(right: 3, top: 0, child: Text(e == 'MEDIO_DIA' && _dias[f]?['fraccion'] != null && (_dias[f]!['fraccion'] as num) != 0.5 ? '${_dias[f]!['fraccion']}' : _marca(e), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
         ]),
       ),
     );
