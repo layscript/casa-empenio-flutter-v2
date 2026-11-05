@@ -176,6 +176,7 @@ class HttpLoansRepository implements LoansRepository {
       payload['parentLoanId'] = parentLoanId;
     }
 
+    var creado = false;
     try {
       final response = await _dio.post<String>(path, data: payload);
       if (response.statusCode != 201) {
@@ -183,6 +184,7 @@ class HttpLoansRepository implements LoansRepository {
         final message = map['message'] ?? 'Ocurrió un error';
         return Left(message);
       } else {
+        creado = true;
         // Crear historial
         await _customerRepository.createHistory(
           accion: 'CREAR',
@@ -258,8 +260,26 @@ class HttpLoansRepository implements LoansRepository {
 
         return Right(contrato);
       }
-    } catch (e, stackTrace) {
-      return const Left('Ocurrió un error con el servidor');
+    } on DioException catch (e) {
+      // Mostrar lo que realmente dijo el servidor (ej. "falta el estado del bien")
+      var msg = 'No se pudo comunicar con el servidor. Revisa tu internet e intenta otra vez.';
+      final d = e.response?.data;
+      if (d != null) {
+        try {
+          final m = d is String ? json.decode(d) : d;
+          final mm = m['message'];
+          msg = mm is List ? mm.join(', ') : '$mm';
+        } catch (_) {
+          msg = d.toString();
+        }
+      }
+      final code = e.response?.statusCode;
+      return Left(code == null ? msg : 'Error $code: $msg');
+    } catch (e) {
+      if (creado) {
+        return Left('El préstamo SÍ se guardó, pero falló un paso final (fotos o contrato): $e. No lo registres de nuevo; búscalo en la lista de préstamos.');
+      }
+      return Left('Error dentro de la app: $e');
     }
   }
 
