@@ -276,35 +276,45 @@ Widget _avatar(Map t, {double r = 24}) {
 }
 
 const _vinculoTxt = {'PLANILLA': 'En planilla', 'POR_DIAS': 'Por días', 'LOCACION': 'Recibo por honorarios'};
-/// Pregunta qué parte del día trabajó (medio día = 0.5, pero se puede poner cualquier fracción)
-Future<double?> _pedirFraccion(BuildContext c) async {
+/// Pregunta qué parte del día trabajó: una fracción (½, ¼, ¾, otra) o las horas exactas.
+/// Devuelve {'fraccion': x} o {'horas': h}
+Future<Map<String, double>?> _pedirFraccion(BuildContext c) async {
   final ctl = TextEditingController();
-  final r = await showDialog<double>(
+  final horasCtl = TextEditingController();
+  final r = await showDialog<Map<String, double>>(
     context: c,
-    builder: (_) => StatefulBuilder(
-      builder: (ctx, set) => AlertDialog(
-        title: const Text('¿Qué parte del día trabajó?'),
-        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+    builder: (_) => AlertDialog(
+      title: const Text('¿Cuánto trabajó ese día?'),
+      content: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Wrap(spacing: 8, runSpacing: 8, children: [
             for (final o in const [['Medio día (½)', 0.5], ['Un cuarto (¼)', 0.25], ['Tres cuartos (¾)', 0.75]])
-              ActionChip(label: Text(o[0] as String), onPressed: () => Navigator.pop(ctx, o[1] as double)),
+              ActionChip(label: Text(o[0] as String), onPressed: () => Navigator.pop(c, {'fraccion': o[1] as double})),
           ]),
-          const SizedBox(height: 12),
-          const Text('O escribe otra parte (entre 0.1 y 0.9). Ej: 0.4 = 4 de cada 10 horas', style: TextStyle(fontSize: 12, color: Colors.black54)),
+          const SizedBox(height: 14),
+          const Text('O escribe cuántas HORAS trabajó (se paga lo proporcional a su jornada):', style: TextStyle(fontSize: 12, color: Colors.black54)),
+          TextField(controller: horasCtl, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(hintText: 'Ej: 5', suffixText: 'horas')),
+          const SizedBox(height: 10),
+          const Text('O escribe otra parte del día (entre 0.1 y 0.9):', style: TextStyle(fontSize: 12, color: Colors.black54)),
           TextField(controller: ctl, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(hintText: 'Ej: 0.4')),
         ]),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-          FilledButton(
-            onPressed: () {
-              final v = double.tryParse(ctl.text.trim().replaceAll(',', '.'));
-              if (v == null || v <= 0 || v >= 1) return;
-              Navigator.pop(ctx, v);
-            },
-            child: const Text('Usar este'),
-          ),
-        ],
       ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancelar')),
+        FilledButton(
+          onPressed: () {
+            final h = double.tryParse(horasCtl.text.trim().replaceAll(',', '.'));
+            if (h != null && h > 0) {
+              Navigator.pop(c, {'horas': h});
+              return;
+            }
+            final v = double.tryParse(ctl.text.trim().replaceAll(',', '.'));
+            if (v == null || v <= 0 || v >= 1) return;
+            Navigator.pop(c, {'fraccion': v});
+          },
+          child: const Text('Usar este'),
+        ),
+      ],
     ),
   );
   return r;
@@ -660,7 +670,7 @@ class _HoyTabState extends State<_HoyTab> with AutomaticKeepAliveClientMixin {
     final t = _mapa(item['trabajador']);
     int dias = 1;
     String? nota;
-    double? fraccion;
+    Map<String, double>? fraccion;
     if (estado == 'MEDIO_DIA') {
       fraccion = await _pedirFraccion(context);
       if (fraccion == null) return;
@@ -680,7 +690,7 @@ class _HoyTabState extends State<_HoyTab> with AutomaticKeepAliveClientMixin {
     try {
       await widget.api.post('/rrhh/asistencia/manual', {
         'trabajadorId': t['id'], 'estado': estado, 'fecha': _fecha, 'dias': dias, 'nota': nota, 'usuarioId': widget.api.usuarioId,
-        if (fraccion != null) 'fraccion': fraccion,
+        if (fraccion != null) ...fraccion,
       });
       if (mounted) _aviso(context, '${t['nombres']}: ${_estadoAsisTxt[estado]}');
       await _cargar();
@@ -2328,15 +2338,31 @@ class _JornalSheetState extends State<_JornalSheet> {
   String? _foto_;
   String? _firma;
   String? _error;
+  final _ajH = TextEditingController();
+  final _ajM = TextEditingController();
+
+  double _num_(TextEditingController c) => double.tryParse(c.text.trim().replaceAll(',', '.')) ?? 0;
 
   @override
   void initState() {
     super.initState();
-    widget.api.get('/rrhh/jornal/${widget.trabajador['id']}').then((v) {
-      if (mounted) setState(() { _j = _mapa(v); _cargando = false; });
-    }).catchError((e) {
+    _cargar();
+  }
+
+  @override
+  void dispose() {
+    _ajH.dispose();
+    _ajM.dispose();
+    super.dispose();
+  }
+
+  Future<void> _cargar() async {
+    try {
+      final v = await widget.api.get('/rrhh/jornal/${widget.trabajador['id']}', {'ajusteHoras': _num_(_ajH), 'ajusteMonto': _num_(_ajM)});
+      if (mounted) setState(() { _j = _mapa(v); _cargando = false; _error = null; });
+    } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _cargando = false; });
-    });
+    }
   }
 
   Future<void> _pagar() async {
@@ -2352,6 +2378,7 @@ class _JornalSheetState extends State<_JornalSheet> {
     try {
       await widget.api.post('/rrhh/jornal/pagar', {
         'trabajadorId': widget.trabajador['id'], 'desdeCaja': _caja, 'usuarioId': widget.api.usuarioId,
+        'ajusteHoras': _num_(_ajH), 'ajusteMonto': _num_(_ajM),
         'usuarioNombre': widget.api.usuarioNombre, 'sucursalId': widget.api.sucursalId > 0 ? widget.api.sucursalId : null,
       }, archivo: _foto_, firma: _firma);
       if (mounted) {
@@ -2378,8 +2405,26 @@ class _JornalSheetState extends State<_JornalSheet> {
                     Text('Pagar a ${_nombreDe(t)}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     Text('Días trabajados sin pagar: ${_j['cantidad']}  (${_money(_mapa(_j['trabajador'])['pagoDia'] as num?)} por día)'),
-                    if ((_j['dias'] as List?)?.isNotEmpty ?? false) Text((_j['dias'] as List).map((e) => e.toString().substring(5)).join('  ·  '), style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                    if ((_j['detalleDias'] as List?)?.isNotEmpty ?? false)
+                      for (final d in _lista(_j['detalleDias']))
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 1),
+                          child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                            Text('${_fechaCorta(d['fecha']).substring(0, 5)} · ${d['estado'] == 'MEDIO_DIA' ? 'parte del día (${d['fraccion']}${d['horas'] != null ? ' · ${d['horas']} h' : ''})' : 'día completo'}', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                            Text(_money(d['monto'] as num?), style: const TextStyle(fontSize: 12)),
+                          ]),
+                        ),
                     const Divider(height: 22),
+                    Text('Ajustes al pagar (opcional). Cada hora vale ${_money(_j['valorHora'] as num?)} (jornada de ${_j['jornadaHoras']} h).', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                    const SizedBox(height: 6),
+                    Row(children: [
+                      Expanded(child: TextField(controller: _ajH, keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true), onSubmitted: (_) => _cargar(), decoration: const InputDecoration(labelText: 'Horas ± (ej. 2 o -1.5)', border: OutlineInputBorder(), isDense: true))),
+                      const SizedBox(width: 8),
+                      Expanded(child: TextField(controller: _ajM, keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true), onSubmitted: (_) => _cargar(), decoration: const InputDecoration(labelText: 'Monto ± (S/)', border: OutlineInputBorder(), isDense: true))),
+                    ]),
+                    Align(alignment: Alignment.centerRight, child: TextButton.icon(onPressed: _cargar, icon: const Icon(Icons.refresh, size: 18), label: const Text('Recalcular'))),
+                    if (((_j['ajusteDeHoras'] as num?) ?? 0) != 0) _fila('Ajuste por horas', _money(_j['ajusteDeHoras'] as num?)),
+                    if (((_j['ajusteMonto'] as num?) ?? 0) != 0) _fila('Ajuste de monto', _money(_j['ajusteMonto'] as num?)),
                     _fila('Total ganado', _money(_j['bruto'] as num?)),
                     if (((_j['descuento'] as num?) ?? 0) > 0) _fila('Menos adelantos', '- ${_money(_j['descuento'] as num?)}', rojo: true),
                     _fila('A PAGAR', _money(_j['neto'] as num?), grande: true),
@@ -3692,7 +3737,7 @@ class _AjustesTabState extends State<_AjustesTab> with AutomaticKeepAliveClientM
       for (final a in _mapa(_cfg['afpComisiones']).keys) {
         (_c['afp_$a'] ??= TextEditingController()).text = '${_mapa(_cfg['afpComisiones'])[a]}';
       }
-      for (final k in ['horaEntrada', 'horaSalida']) {
+      for (final k in ['horaEntrada', 'horaSalida', 'refrigerioHora']) {
         (_c[k] ??= TextEditingController()).text = '${_cfg[k] ?? ''}';
       }
     } catch (e) {
@@ -3709,6 +3754,8 @@ class _AjustesTabState extends State<_AjustesTab> with AutomaticKeepAliveClientM
         for (final f in _campos) f[0]: v(f[0]),
         'horaEntrada': _c['horaEntrada']!.text.trim(),
         'horaSalida': _c['horaSalida']!.text.trim(),
+        'refrigerioHora': _c['refrigerioHora']!.text.trim(),
+        'jornalProporcional': _cfg['jornalProporcional'] != false,
         'descontarTardanza': _cfg['descontarTardanza'],
         'essaludDelTotal': _cfg['essaludDelTotal'] != false,
         'exigirFotoAsistencia': _cfg['exigirFotoAsistencia'],
@@ -3755,6 +3802,8 @@ class _AjustesTabState extends State<_AjustesTab> with AutomaticKeepAliveClientM
           Expanded(child: TextField(controller: _c['horaSalida'], decoration: const InputDecoration(labelText: 'Salida (HH:MM)', border: OutlineInputBorder(), isDense: true))),
         ]),
         _num('toleranciaMinutos', 'Minutos de tolerancia', 'min'),
+        TextField(controller: _c['refrigerioHora'], decoration: const InputDecoration(labelText: 'Hora del refrigerio (HH:MM): quien llega después no recibe', border: OutlineInputBorder(), isDense: true)),
+        SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Personal por días: pagar solo las horas si no completa la jornada'), subtitle: const Text('Al marcar la salida, si trabajó menos que su jornada, se le paga la parte proporcional (ej. S/ 45 entre las horas de la jornada). Con menos de la mitad no recibe refrigerio.'), value: _cfg['jornalProporcional'] != false, onChanged: (v) => setState(() => _cfg['jornalProporcional'] = v)),
         SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Exigir foto al marcar asistencia'), value: _cfg['exigirFotoAsistencia'] != false, onChanged: (v) => setState(() => _cfg['exigirFotoAsistencia'] = v)),
         SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Exigir foto en adelantos y pagos'), value: _cfg['exigirFotoPagos'] != false, onChanged: (v) => setState(() => _cfg['exigirFotoPagos'] = v)),
         SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('AFP y EsSalud salen del total de la planilla'), subtitle: const Text('Encendido: a la trabajadora se le paga el total menos AFP y EsSalud (cada uno se paga aparte). Apagado: EsSalud lo paga la empresa encima del total. Confírmalo con tu contador.', style: TextStyle(fontSize: 12)), value: _cfg['essaludDelTotal'] != false, onChanged: (v) => setState(() => _cfg['essaludDelTotal'] = v)),
@@ -4715,7 +4764,7 @@ class _HojaMesPageState extends State<_HojaMesPage> {
     );
     if (elegido == null || !mounted) return;
     String? nota;
-    double? fraccion;
+    Map<String, double>? fraccion;
     if (elegido == 'SIN_MARCA') {
       if (!await _confirmar(context, 'Quitar la marca', '${_nomDias[d.weekday % 7]} ${d.day} de ${_nombreMes(d.month)}: se borra la marca y queda como que NO trabajó. Queda guardado en el historial de cambios.', si: 'Sí, quitar', color: Colors.red)) return;
     }
@@ -4728,7 +4777,7 @@ class _HojaMesPageState extends State<_HojaMesPage> {
       if (nota == null) return;
     }
     try {
-      await widget.api.post('/rrhh/asistencia/manual', {'trabajadorId': _id, 'estado': elegido, 'fecha': f, 'dias': 1, 'nota': nota, 'usuarioId': widget.api.usuarioId, if (fraccion != null) 'fraccion': fraccion});
+      await widget.api.post('/rrhh/asistencia/manual', {'trabajadorId': _id, 'estado': elegido, 'fecha': f, 'dias': 1, 'nota': nota, 'usuarioId': widget.api.usuarioId, if (fraccion != null) ...fraccion});
       _cargar();
     } catch (e) {
       if (mounted) _aviso(context, e.toString(), error: true);
