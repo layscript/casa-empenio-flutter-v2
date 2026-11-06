@@ -738,6 +738,8 @@ class _UsuariosTabState extends State<_UsuariosTab> {
   List<Map<String, dynamic>> _usuarios = <Map<String, dynamic>>[];
   List<Map<String, dynamic>> _roles = <Map<String, dynamic>>[];
   List<Map<String, dynamic>> _sucursales = <Map<String, dynamic>>[];
+  List<Map<String, dynamic>> _resumen = <Map<String, dynamic>>[];
+  List<Map<String, dynamic>> _modulosRes = <Map<String, dynamic>>[];
   bool _cargando = true;
   String? _error;
 
@@ -767,16 +769,59 @@ class _UsuariosTabState extends State<_UsuariosTab> {
         final rs = await _dio.get('/sucursal');
         _sucursales = _filas(_cuerpo(rs));
       } catch (_) {}
+      try {
+        final rz = _cuerpo(await _dio.get('/acceso/resumen'));
+        if (rz is Map) {
+          _resumen = _filas(rz['puestos']);
+          _modulosRes = _filas(rz['modulos']);
+        }
+      } catch (_) {}
     } catch (e) {
       _error = _msg(e);
     }
     if (mounted) setState(() => _cargando = false);
   }
 
+  Map<String, dynamic>? _rolDe(Map<String, dynamic> u) {
+    final id = u['role'] is Map ? (u['role']['id'] as num?)?.toInt() : null;
+    for (final r in _roles) {
+      if ((r['id'] as num?)?.toInt() == id) return r;
+    }
+    return u['role'] is Map ? Map<String, dynamic>.from(u['role'] as Map) : null;
+  }
+
+  /// Usuarios cuyo "acceso total" no coincide con su puesto (el puesto manda).
+  List<Map<String, dynamic>> get _desajustados =>
+      _usuarios.where((u) => (u['isAdmin'] == true) != _rolEsAdmin(_rolDe(u))).toList();
+
+  Future<void> _corregirAccesos() async {
+    final yo = context.read<Preferences>().token?.id;
+    // Tu propio acceso nunca se quita desde aquí, para que no te quedes afuera.
+    final lista = _desajustados.where((u) => !(u['id'] == yo && !_rolEsAdmin(_rolDe(u)))).toList();
+    if (lista.isEmpty) {
+      _aviso(context, 'Solo queda tu propio usuario: cambia tu puesto a Administrador o déjalo así.');
+      return;
+    }
+    final ok = await _confirmar(context, 'Corregir accesos',
+        'Se dejará a cada persona con el acceso que le corresponde por su puesto:\n\n${lista.map((u) => '• ${u['nombre']} ${u['apellido']}: ${_rolEsAdmin(_rolDe(u)) ? 'pasa a acceso total' : 'pierde el acceso total'}').join('\n')}\n\n¿Continuar?');
+    if (!ok) return;
+    try {
+      // primero los que suben a administrador, para que siempre quede al menos uno
+      final orden = [...lista]..sort((a, b) => (_rolEsAdmin(_rolDe(b)) ? 1 : 0) - (_rolEsAdmin(_rolDe(a)) ? 1 : 0));
+      for (final u in orden) {
+        await _dio.put('/usuarios/${u['id']}', data: {'isAdmin': _rolEsAdmin(_rolDe(u))});
+      }
+      _aviso(context, 'Accesos corregidos');
+    } catch (e) {
+      _aviso(context, _msg(e));
+    }
+    await _cargar();
+  }
+
   Future<void> _formulario({Map<String, dynamic>? u}) async {
     final r = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (_) => _UsuarioDialog(usuario: u, roles: _roles, sucursales: _sucursales),
+      builder: (_) => _UsuarioDialog(usuario: u, roles: _roles, sucursales: _sucursales, resumen: _resumen, modulos: _modulosRes),
     );
     if (r == null) return;
     try {
@@ -913,8 +958,21 @@ class _UsuariosTabState extends State<_UsuariosTab> {
         padding: const EdgeInsets.only(bottom: 30),
         children: [
           const _Aviso(
-              'Aquí crea, edita y elimina a las personas que usan el sistema. Cada una tiene un puesto (rol) y una sucursal. '
-              'Marque "administrador" solo a personas de total confianza.'),
+              'Aquí editas a las personas que usan el sistema. El PUESTO decide todo: solo el puesto "Administrador" da acceso total. '
+              'Para crear a un trabajador nuevo, regístralo primero en Recursos Humanos.'),
+          if (_desajustados.isNotEmpty)
+            Card(
+              color: Colors.orange.shade50,
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('⚠ ${_desajustados.length} persona(s) con acceso que no coincide con su puesto', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.deepOrange)),
+                  Text(_desajustados.map((u) => '${u['nombre']} ${u['apellido']} (${u['role'] is Map ? u['role']['nombre'] : 'sin puesto'}${u['isAdmin'] == true ? ', tiene acceso total' : ''})').join(' · '), style: const TextStyle(fontSize: 12)),
+                  TextButton(onPressed: _corregirAccesos, child: const Text('Corregir ahora')),
+                ]),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
             child: Row(
@@ -962,7 +1020,7 @@ class _UsuariosTabState extends State<_UsuariosTab> {
                   children: [
                     if (u['isAdmin'] == true)
                       const Chip(
-                          label: Text('ADMIN', style: TextStyle(fontSize: 10)),
+                          label: Text('ACCESO TOTAL', style: TextStyle(fontSize: 10)),
                           visualDensity: VisualDensity.compact),
                     PopupMenuButton<String>(
                       onSelected: (v) {
@@ -996,17 +1054,37 @@ class _UsuariosTabState extends State<_UsuariosTab> {
   }
 }
 
+String _normRol(String t) => t
+    .toLowerCase()
+    .replaceAll('á', 'a')
+    .replaceAll('é', 'e')
+    .replaceAll('í', 'i')
+    .replaceAll('ó', 'o')
+    .replaceAll('ú', 'u')
+    .trim();
+
+/// El puesto manda: solo el puesto "Administrador" da acceso total.
+bool _rolEsAdmin(Map<String, dynamic>? rol) {
+  if (rol == null) return false;
+  if (rol['esAdmin'] == true) return true;
+  return const ['administrador', 'administradora', 'admin'].contains(_normRol('${rol['nombre'] ?? ''}'));
+}
+
 class _UsuarioDialog extends StatefulWidget {
   const _UsuarioDialog({
     Key? key,
     this.usuario,
     required this.roles,
     required this.sucursales,
+    this.resumen = const <Map<String, dynamic>>[],
+    this.modulos = const <Map<String, dynamic>>[],
   }) : super(key: key);
 
   final Map<String, dynamic>? usuario;
   final List<Map<String, dynamic>> roles;
   final List<Map<String, dynamic>> sucursales;
+  final List<Map<String, dynamic>> resumen;
+  final List<Map<String, dynamic>> modulos;
 
   @override
   State<_UsuarioDialog> createState() => _UsuarioDialogState();
@@ -1086,6 +1164,38 @@ class _UsuarioDialogState extends State<_UsuarioDialog> {
     });
   }
 
+  Widget _cajaAcceso() {
+    final eraAdmin = widget.usuario?['isAdmin'] == true;
+    Map<String, dynamic>? p;
+    for (final x in widget.resumen) {
+      if ((x['id'] as num?)?.toInt() == _rolId) p = x;
+    }
+    final ids = p == null ? <int>{} : (p['modulosIds'] is List ? (p['modulosIds'] as List).map((e) => (e as num).toInt()).toSet() : <int>{});
+    final ve = widget.modulos.where((m) => ids.contains((m['id'] as num).toInt())).map((m) => '${m['nombre']}').toList();
+    final bloq = p == null ? <String>[] : (p['bloqueos'] is List ? (p['bloqueos'] as List).map((b) => '${b['accion']} en ${b['modulo']}').toList() : <String>[]);
+    if (_rolId == 0) {
+      return const Text('Elige el puesto: él decide todo lo que esta persona ve y puede hacer.', style: TextStyle(fontSize: 12, color: Colors.grey));
+    }
+    if (_admin) {
+      return Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.green)),
+        child: const Text('✅ ACCESO TOTAL (administrador): ve y puede hacer todo. Solo para personas de total confianza.', style: TextStyle(fontSize: 12.5)),
+      );
+    }
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.blue)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('🔒 ACCESO SEGÚN SU PUESTO (no es administrador)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+        if (eraAdmin) const Text('⚠ Antes tenía acceso total: al guardar se le quita.', style: TextStyle(color: Colors.deepOrange, fontSize: 12.5)),
+        const SizedBox(height: 4),
+        Text(widget.resumen.isEmpty ? 'Para ver qué módulos tiene este puesto, mira "¿Qué ve cada puesto?" en el menú.' : (ve.isEmpty ? 'Ve: ningún módulo todavía.' : 'Ve: ${ve.join(', ')}.'), style: const TextStyle(fontSize: 12)),
+        if (bloq.isNotEmpty) Text('No puede: ${bloq.join(', ')}.', style: const TextStyle(fontSize: 12, color: Colors.red)),
+      ]),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -1138,7 +1248,11 @@ class _UsuarioDialogState extends State<_UsuarioDialog> {
                     child: Text((r['nombre'] ?? '').toString()),
                   ),
               ],
-              onChanged: (v) => setState(() => _rolId = v ?? 0),
+              onChanged: (v) => setState(() {
+                _rolId = v ?? 0;
+                // El puesto decide: solo "Administrador" da acceso total.
+                _admin = _rolEsAdmin(widget.roles.cast<Map<String, dynamic>?>().firstWhere((r) => (r?['id'] as num?)?.toInt() == _rolId, orElse: () => null));
+              }),
             ),
             DropdownButtonFormField<int>(
               value: widget.sucursales.any((r) => (r['id'] as num).toInt() == _sucursalId)
@@ -1154,13 +1268,8 @@ class _UsuarioDialogState extends State<_UsuarioDialog> {
               ],
               onChanged: (v) => setState(() => _sucursalId = v ?? 0),
             ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Es administrador'),
-              subtitle: const Text('Acceso total de administración'),
-              value: _admin,
-              onChanged: (v) => setState(() => _admin = v),
-            ),
+            const SizedBox(height: 8),
+            _cajaAcceso(),
             if (_error != null)
               Text(_error!, style: const TextStyle(color: Colors.red)),
           ],
