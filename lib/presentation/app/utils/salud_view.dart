@@ -98,15 +98,38 @@ const _kUltimaCopiaCelular = 'ultima_copia_celular';
 bool _bajandoCopia = false;
 
 /// Hace falta bajar la copia si pasaron 7 días o más desde la última que se guardó en este celular.
-Future<bool> copiaCelularVencida() async {
+/// Última vez que se bajó la copia: lo más reciente entre lo guardado en el celular y lo anotado en el servidor
+/// (así, aunque se reinstale la app o se cambie de celular, no se vuelve a pedir a cada rato).
+Future<Map<String, DateTime?>> _estadoCopia(int? uid) async {
+  DateTime? local;
+  DateTime? srvDesc;
+  DateTime? srvEnv;
   try {
     final t = (await SharedPreferences.getInstance()).getString(_kUltimaCopiaCelular);
-    if (t == null) return true;
-    final d = DateTime.tryParse(t);
-    return d == null || DateTime.now().difference(d).inDays >= 7;
-  } catch (_) {
-    return true;
+    if (t != null) local = DateTime.tryParse(t);
+  } catch (_) {}
+  if (uid != null) {
+    try {
+      final d = _mapa(_cuerpo(await _dio.get('/salud/copia-celular', queryParameters: {'usuarioId': uid})));
+      srvDesc = DateTime.tryParse('${d['descargada'] ?? ''}');
+      srvEnv = DateTime.tryParse('${d['enviada'] ?? ''}');
+    } catch (_) {}
   }
+  DateTime? ultima = local;
+  if (srvDesc != null && (ultima == null || srvDesc.isAfter(ultima))) ultima = srvDesc;
+  return {'ultima': ultima, 'enviada': srvEnv};
+}
+
+Future<bool> copiaCelularVencida([int? uid]) async {
+  final e = await _estadoCopia(uid);
+  final d = e['ultima'];
+  return d == null || DateTime.now().difference(d).inDays >= 7;
+}
+
+Future<void> _anotarCopia(int uid, {bool descargada = false, bool enviada = false}) async {
+  try {
+    await _dio.post('/salud/copia-celular', data: {'usuarioId': uid, 'descargada': descargada, 'enviada': enviada});
+  } catch (_) {}
 }
 
 Future<String?> _fechaCopiaCelular() async {
@@ -128,7 +151,7 @@ Future<void> copiaSemanalAdmin(BuildContext context, {bool forzar = false}) asyn
   if (_bajandoCopia) return;
   final user = context.read<Preferences>().token;
   if (user == null || user.isAdmin != true) return;
-  if (!forzar && !await copiaCelularVencida()) return;
+  if (!forzar && !await copiaCelularVencida(user.id)) return;
   _bajandoCopia = true;
   try {
     final r = await _dio.get('/salud/respaldos', queryParameters: {'usuarioId': user.id});
@@ -151,7 +174,14 @@ Future<void> copiaSemanalAdmin(BuildContext context, {bool forzar = false}) asyn
       } catch (_) {}
     }
     (await SharedPreferences.getInstance()).setString(_kUltimaCopiaCelular, DateTime.now().toIso8601String());
+    await _anotarCopia(user.id, descargada: true);
     if (!context.mounted) return;
+    final env = (await _estadoCopia(user.id))['enviada'];
+    if (env != null) {
+      final le = _lima(env);
+      final hl = _lima(DateTime.now());
+      if (le.year == hl.year && le.month == hl.month && le.day == hl.day) return; // ya la enviaste hoy: no molestar
+    }
     final mb = (File(ruta).lengthSync() / 1048576).toStringAsFixed(2);
     await showDialog<void>(
       context: context,
@@ -160,9 +190,17 @@ Future<void> copiaSemanalAdmin(BuildContext context, {bool forzar = false}) asyn
         content: Text('Se guardó en tu celular la copia de la base de datos ($mb MB).\n\nPara estar más seguro, envíala también a tu correo, a Drive o a WhatsApp. Así no depende de este celular ni del servidor.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c), child: const Text('Después')),
+          TextButton(
+            onPressed: () async {
+              await _anotarCopia(user.id, enviada: true);
+              if (c.mounted) Navigator.pop(c);
+            },
+            child: const Text('Ya la envié'),
+          ),
           FilledButton.icon(
             onPressed: () async {
-              await Share.shareXFiles([XFile(ruta)], text: 'Copia de seguridad $nombre');
+              final r = await Share.shareXFiles([XFile(ruta)], text: 'Copia de seguridad $nombre');
+              if (r.status != ShareResultStatus.dismissed) await _anotarCopia(user.id, enviada: true);
               if (c.mounted) Navigator.pop(c);
             },
             icon: const Icon(Icons.share),
@@ -172,7 +210,7 @@ Future<void> copiaSemanalAdmin(BuildContext context, {bool forzar = false}) asyn
       ),
     );
   } catch (e) {
-    if (context.mounted && (forzar || await copiaCelularVencida())) {
+    if (context.mounted && (forzar || await copiaCelularVencida(user.id))) {
       _aviso(context, 'No se pudo bajar la copia semanal: ${_err(e)}. Entra a Salud del sistema y toca "Bajar al celular".', error: true);
     }
   } finally {
