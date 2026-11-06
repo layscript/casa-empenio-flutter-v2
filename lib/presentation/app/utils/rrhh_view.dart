@@ -1642,6 +1642,32 @@ class _FichaPageState extends State<_FichaPage> {
     }
   }
 
+  /// Corrige a qué mes pertenece un pago (ej. un pago de octubre hecho en noviembre).
+  Future<void> _cambiarMesPago(Map pc) async {
+    final hoy = DateTime.now();
+    final meses = [for (var i = 0; i < 4; i++) DateFormat('yyyy-MM').format(DateTime(hoy.year, hoy.month - i, 1))];
+    final elegido = await showDialog<String>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('¿De qué mes es este pago?'),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('${pc['tipo']} de ${_money(pc['monto'] as num?)}. Ahora figura en el mes ${pc['periodo'] ?? '-'}.', style: const TextStyle(fontSize: 13)),
+          const SizedBox(height: 10),
+          Wrap(spacing: 6, children: [for (final m in meses) ActionChip(label: Text(m), onPressed: () => Navigator.pop(c, m))]),
+        ]),
+        actions: [TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancelar'))],
+      ),
+    );
+    if (elegido == null || elegido == pc['periodo']) return;
+    try {
+      await widget.api.post('/rrhh/pagos/${pc['id']}/periodo', {'periodo': elegido, 'usuarioId': widget.api.usuarioId});
+      if (mounted) _aviso(context, 'Listo: el pago ahora es del mes $elegido');
+      _cargar();
+    } catch (e) {
+      if (mounted) _aviso(context, e.toString(), error: true);
+    }
+  }
+
   Future<void> _pago(String tipo) async {
     final ok = await showModalBottomSheet<bool>(
       context: context,
@@ -2146,6 +2172,14 @@ class _FichaPageState extends State<_FichaPage> {
           if (((s['descuentos'] as num?) ?? 0) > 0) _lineaMonto('Descuentos (faltas, horas, daños…)', -((s['descuentos'] as num?) ?? 0), rojo: true),
           if (((s['feriadosPagados'] as num?) ?? 0) > 0) Text('Incluye ${s['feriadosPagados']} feriado(s) pagado(s) por ser planilla', style: const TextStyle(fontSize: 12, color: Colors.black54)),
           if (((s['pagado'] as num?) ?? 0) > 0) _lineaMonto('Ya pagado en este periodo', -((s['pagado'] as num?) ?? 0)),
+          for (final pc in _lista(s['pagosContados']))
+            Padding(
+              padding: const EdgeInsets.only(left: 6, bottom: 2),
+              child: Row(children: [
+                Expanded(child: Text('• ${pc['tipo']} ${_money(pc['monto'] as num?)} · mes ${pc['periodo'] ?? '-'}${(pc['concepto'] ?? '').toString().isNotEmpty ? ' · ${pc['concepto']}' : ''}', style: const TextStyle(fontSize: 11, color: Colors.black54))),
+                InkWell(onTap: () => _cambiarMesPago(pc), child: const Padding(padding: EdgeInsets.all(4), child: Text('¿Es de otro mes?', style: TextStyle(fontSize: 11, color: Colors.blue, decoration: TextDecoration.underline)))),
+              ]),
+            ),
           if (((s['adelantos'] as num?) ?? 0) > 0) _lineaMonto('Adelantos que debe', -((s['adelantos'] as num?) ?? 0), rojo: true),
           if (((s['faltas'] as num?) ?? 0) > 0) Text('Faltas: ${s['faltas']} (no suman)', style: const TextStyle(fontSize: 12, color: Colors.red)),
           if (((s['sinMarcar'] as num?) ?? 0) > 0) Text('Hay ${s['sinMarcar']} día(s) sin marcar asistencia: no se están sumando.', style: const TextStyle(fontSize: 12, color: Colors.deepOrange)),
@@ -2203,6 +2237,7 @@ class _PagoSheetState extends State<_PagoSheet> {
   late final _concepto = TextEditingController(text: widget.conceptoInicial ?? '');
   late String _tipo = widget.tipoInicial == 'JORNAL' ? 'ADELANTO' : widget.tipoInicial;
   bool _caja = true;
+  String? _mesPago; // mes al que pertenece el pago (por defecto, el actual)
   String? _fotoPath;
   String? _firma;
   String? _motivo;
@@ -2276,7 +2311,7 @@ class _PagoSheetState extends State<_PagoSheet> {
         'trabajadorId': widget.trabajador['id'],
         'tipo': _tipo,
         'monto': monto,
-        if (widget.periodo != null) 'periodo': widget.periodo,
+        if (_mesPago != null || widget.periodo != null) 'periodo': _mesPago ?? widget.periodo,
         'concepto': _concepto.text.trim(),
         'desdeCaja': concepto ? false : _caja,
         'usuarioId': widget.api.usuarioId,
@@ -2339,6 +2374,22 @@ class _PagoSheetState extends State<_PagoSheet> {
               isDense: true,
             ),
           ),
+          if (_tipo == 'SUELDO' || _tipo == 'QUINCENA') ...[
+            const SizedBox(height: 8),
+            const Text('¿De qué mes es este pago?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            Wrap(spacing: 6, children: [
+              for (var i = 0; i < 3; i++)
+                Builder(builder: (_) {
+                  final h = DateTime.now();
+                  final m = DateFormat('yyyy-MM').format(DateTime(h.year, h.month - i, 1));
+                  return ChoiceChip(
+                    label: Text(i == 0 ? '$m (este mes)' : m),
+                    selected: (_mesPago ?? _mesActual()) == m,
+                    onSelected: (_) => setState(() => _mesPago = m),
+                  );
+                }),
+            ]),
+          ],
           if (_tipo == 'DESCUENTO') ...[
             const SizedBox(height: 4),
             const Text('¿Por qué se descuenta?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
