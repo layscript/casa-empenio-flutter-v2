@@ -50,11 +50,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             if (!emit.isDone) emit(AuthError(message: error));
           },
           (modulos) async {
-            _preferences.setToken(user);
+            await _preferences.setSucursalTrabajo(null); // al iniciar sesión se empieza en la sucursal propia
+            await _preferences.setToken(user);
             if (!emit.isDone) {
               emit(
                 Authenticated(
-                  user,
+                  _preferences.token ?? user,
                   modulos,
                 ),
               );
@@ -90,9 +91,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       isAdmin: u.isAdmin,
       sucursal: event.sucursal,
     );
+    await _preferences.setSucursalTrabajo(event.sucursal);
     await _preferences.setToken(nuevo);
     await _preferences.removeLoansPreferences();
-    emit(Authenticated(nuevo, state.modulos ?? []));
+    emit(Authenticated(_preferences.token ?? nuevo, state.modulos ?? []));
   }
 
   /// Vista previa: el administrador mira la app como la ve otro puesto. No se guarda ni se puede modificar nada.
@@ -172,11 +174,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           emit(const UnAuthenticated());
         },
         (user) async {
-          _preferences.setToken(user);
+          await _preferences.setToken(user);
           _preferences.setRefresh(false);
           emit(
             Authenticated(
-              user,
+              _preferences.token ?? user,
               state.modulos ?? [],
             ),
           );
