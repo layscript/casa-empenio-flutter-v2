@@ -10,6 +10,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // ============================================================ AYUDAS
@@ -89,6 +91,93 @@ Future<void> reportarErrorAuto(Object error, StackTrace? stack, {String? pantall
       'version': kBuildActual > 0 ? '$kBuildActual' : 'prueba',
     });
   } catch (_) {}
+}
+
+// ============================================================ COPIA SEMANAL AL CELULAR (solo administrador)
+const _kUltimaCopiaCelular = 'ultima_copia_celular';
+bool _bajandoCopia = false;
+
+/// Hace falta bajar la copia si pasaron 7 días o más desde la última que se guardó en este celular.
+Future<bool> copiaCelularVencida() async {
+  try {
+    final t = (await SharedPreferences.getInstance()).getString(_kUltimaCopiaCelular);
+    if (t == null) return true;
+    final d = DateTime.tryParse(t);
+    return d == null || DateTime.now().difference(d).inDays >= 7;
+  } catch (_) {
+    return true;
+  }
+}
+
+Future<String?> _fechaCopiaCelular() async {
+  try {
+    final t = (await SharedPreferences.getInstance()).getString(_kUltimaCopiaCelular);
+    if (t == null) return null;
+    final d = DateTime.parse(t);
+    final l = _lima(d);
+    return '${_dos(l.day)}/${_dos(l.month)}/${l.year} ${_dos(l.hour)}:${_dos(l.minute)}';
+  } catch (_) {
+    return null;
+  }
+}
+
+/// Baja sola la copia más reciente al celular del administrador, una vez por semana.
+/// Se guarda en la carpeta "copias_seguridad" de la app (se conservan las últimas 4).
+/// Con [forzar] la baja aunque no hayan pasado 7 días.
+Future<void> copiaSemanalAdmin(BuildContext context, {bool forzar = false}) async {
+  if (_bajandoCopia) return;
+  final user = context.read<Preferences>().token;
+  if (user == null || user.isAdmin != true) return;
+  if (!forzar && !await copiaCelularVencida()) return;
+  _bajandoCopia = true;
+  try {
+    final r = await _dio.get('/salud/respaldos', queryParameters: {'usuarioId': user.id});
+    final lista = _lista(_cuerpo(r));
+    if (lista.isEmpty) {
+      if (forzar && context.mounted) _aviso(context, 'Todavía no hay copias en el servidor. Se hace la primera a las 3:00 a. m.');
+      return;
+    }
+    final nombre = '${lista.first['nombre']}';
+    final base = (await getExternalStorageDirectory()) ?? await getApplicationDocumentsDirectory();
+    final dir = Directory('${base.path}/copias_seguridad');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    final ruta = '${dir.path}/$nombre';
+    await _dio.download('/salud/respaldos/$nombre/descargar', ruta, queryParameters: {'usuarioId': user.id});
+    // se conservan solo las 4 más nuevas
+    final archivos = dir.listSync().whereType<File>().toList()..sort((a, b) => b.path.compareTo(a.path));
+    for (final f in archivos.skip(4)) {
+      try {
+        await f.delete();
+      } catch (_) {}
+    }
+    (await SharedPreferences.getInstance()).setString(_kUltimaCopiaCelular, DateTime.now().toIso8601String());
+    if (!context.mounted) return;
+    final mb = (File(ruta).lengthSync() / 1048576).toStringAsFixed(2);
+    await showDialog<void>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Copia de seguridad guardada'),
+        content: Text('Se guardó en tu celular la copia de la base de datos ($mb MB).\n\nPara estar más seguro, envíala también a tu correo, a Drive o a WhatsApp. Así no depende de este celular ni del servidor.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c), child: const Text('Después')),
+          FilledButton.icon(
+            onPressed: () async {
+              await Share.shareXFiles([XFile(ruta)], text: 'Copia de seguridad $nombre');
+              if (c.mounted) Navigator.pop(c);
+            },
+            icon: const Icon(Icons.share),
+            label: const Text('Enviar copia'),
+          ),
+        ],
+      ),
+    );
+  } catch (e) {
+    if (context.mounted && (forzar || await copiaCelularVencida())) {
+      _aviso(context, 'No se pudo bajar la copia semanal: ${_err(e)}. Entra a Salud del sistema y toca "Bajar al celular".', error: true);
+    }
+  } finally {
+    _bajandoCopia = false;
+  }
 }
 
 // ============================================================ ALERTA DE CLIENTE MOROSO
@@ -256,9 +345,27 @@ class _SaludPageState extends State<SaludPage> {
                     const SizedBox(height: 6),
                     const Text('Se hace sola todos los días a las 3:00 a. m. (hora de Lima).', style: TextStyle(fontSize: 12, color: Colors.black54)),
                     const SizedBox(height: 10),
+                    FutureBuilder<String?>(
+                      future: _fechaCopiaCelular(),
+                      builder: (c, snap) => Text(
+                        snap.data == null ? 'En este celular: todavía no se guardó ninguna copia. Se baja sola cada semana al abrir la app.' : 'En este celular: última copia guardada el ${snap.data}. Se baja sola cada semana.',
+                        style: const TextStyle(fontSize: 12.5),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     Wrap(spacing: 8, children: [
                       FilledButton.icon(onPressed: _trabajando ? null : _copia, icon: const Icon(Icons.save_alt), label: const Text('Hacer copia ahora')),
-                      OutlinedButton.icon(onPressed: _verCopias, icon: const Icon(Icons.download), label: const Text('Ver / bajar')),
+                      OutlinedButton.icon(
+                        onPressed: _trabajando
+                            ? null
+                            : () async {
+                                await copiaSemanalAdmin(context, forzar: true);
+                                if (mounted) setState(() {});
+                              },
+                        icon: const Icon(Icons.phone_android),
+                        label: const Text('Bajar al celular'),
+                      ),
+                      OutlinedButton.icon(onPressed: _verCopias, icon: const Icon(Icons.list), label: const Text('Ver copias')),
                     ]),
                   ]),
                 ),

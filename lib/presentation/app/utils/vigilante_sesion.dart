@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:casa_empenio_pe/domain/domain.dart' show Preferences;
 import 'package:casa_empenio_pe/presentation/app/utils/actualizaciones.dart';
-import 'package:casa_empenio_pe/presentation/app/utils/salud_view.dart' show recordarUsuarioParaErrores;
+import 'package:casa_empenio_pe/presentation/app/utils/salud_view.dart' show recordarUsuarioParaErrores, copiaSemanalAdmin;
 import 'package:casa_empenio_pe/presentation/features/auth/auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -45,6 +45,7 @@ class _VigilanteSesionState extends State<VigilanteSesion> with WidgetsBindingOb
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       recordarUsuarioParaErrores(context.read<Preferences>().token);
+      copiaSemanalAdmin(context); // solo administradores: baja la copia una vez por semana
       _revisarDia();
     });
     // Cada minuto revisa el día; cada 10 minutos, si hay actualización.
@@ -52,6 +53,7 @@ class _VigilanteSesionState extends State<VigilanteSesion> with WidgetsBindingOb
       _revisarDia();
       _vueltas++;
       if (_vueltas % 10 == 0 && mounted) avisarActualizacion(context, banner: true);
+      if (_vueltas % 30 == 0 && mounted) copiaSemanalAdmin(context);
     });
   }
 
