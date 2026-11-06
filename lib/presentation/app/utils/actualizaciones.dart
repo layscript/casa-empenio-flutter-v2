@@ -60,10 +60,17 @@ Future<void> descargarVersion(int numero) async {
 }
 
 /// Pregunta al servidor si está funcionando. Devuelve null si responde bien, o el motivo si no.
+/// Versión que dice tener el servidor (se llena al verificar)
+String versionServidor = '';
+
 Future<String?> verificarServidor() async {
   try {
     final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 6), receiveTimeout: const Duration(seconds: 6)));
     final r = await dio.get('$_servidor/health/live');
+    if (r.statusCode == 200 && r.data is Map) {
+      final d = r.data as Map;
+      versionServidor = '${d['version'] ?? ''}${d['commit'] != null ? ' · ${d['commit']}' : ''}'.trim();
+    }
     return r.statusCode == 200 ? null : 'El servidor respondió con un problema (${r.statusCode})';
   } on DioException catch (e) {
     if (e.response != null) return 'El servidor respondió con un problema (${e.response?.statusCode})';

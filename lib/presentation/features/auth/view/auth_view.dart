@@ -41,7 +41,7 @@ class _AuthViewState extends State<AuthView> {
     if (mounted) {
       setState(() {
         _servidorOk = r == null;
-        _estadoServidor = r ?? 'Servidor funcionando';
+        _estadoServidor = r ?? 'Servidor funcionando${versionServidor.isNotEmpty ? ' · versión $versionServidor' : ' · versión antigua'}';
         _verificando = false;
       });
     }
