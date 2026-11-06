@@ -491,6 +491,64 @@ class _EquipoTabState extends State<_EquipoTab> {
     }
   }
 
+  Future<void> _darAcceso(Map<String, dynamic> t) async {
+    final usuario = TextEditingController();
+    final clave = TextEditingController();
+    final sel = <String>{};
+    String? error;
+    bool ocupado = false;
+    const opciones = {'ADMIN': 'Administrador (dueño, ve todo)', 'GERENTE': 'Gerente (encargado de tienda)', 'VENDEDOR': 'Vendedor', 'RECEPCION': 'Recepción', 'MANTENIMIENTO': 'Mantenimiento'};
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dc) => StatefulBuilder(
+        builder: (dc, set) => AlertDialog(
+          title: Text('Dar acceso a ${t['nombre']}'),
+          content: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              TextField(controller: usuario, autocorrect: false, decoration: const InputDecoration(labelText: 'Usuario (mínimo 4 letras, sin espacios)')),
+              TextField(controller: clave, decoration: const InputDecoration(labelText: 'Contraseña (mínimo 6)')),
+              const SizedBox(height: 10),
+              const Text('Puesto (puede tener varios si es Vendedor / Recepción / Mantenimiento):', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              for (final e in opciones.entries)
+                CheckboxListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(e.value),
+                  value: sel.contains(e.key),
+                  onChanged: (v) => set(() {
+                    if (v == true) {
+                      if (e.key == 'ADMIN' || e.key == 'GERENTE') sel.clear();
+                      else { sel.remove('ADMIN'); sel.remove('GERENTE'); }
+                      sel.add(e.key);
+                    } else {
+                      sel.remove(e.key);
+                    }
+                  }),
+                ),
+              if (error != null) Text(error!, style: const TextStyle(color: Colors.red)),
+            ]),
+          ),
+          actions: [
+            TextButton(onPressed: ocupado ? null : () => Navigator.pop(dc, false), child: const Text('Cancelar')),
+            FilledButton(
+              onPressed: ocupado ? null : () async {
+                set(() { ocupado = true; error = null; });
+                try {
+                  await _dio.post<dynamic>('/operacion/dar-acceso', data: {'adminId': _uid(context), 'trabajadorId': t['id'], 'userName': usuario.text, 'password': clave.text, 'puestos': sel.toList(), 'sucursalId': t['sucursalId'] ?? _sid(context)});
+                  if (dc.mounted) Navigator.pop(dc, true);
+                } catch (e) {
+                  set(() { ocupado = false; error = _err(e); });
+                }
+              },
+              child: const Text('Crear acceso'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (ok == true) { if (mounted) _aviso(context, 'Acceso creado. Entrégale su usuario y contraseña.'); await _cargar(); }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_error != null) return Center(child: Padding(padding: const EdgeInsets.all(16), child: Text(_error!, style: const TextStyle(color: Colors.red))));
@@ -499,7 +557,7 @@ class _EquipoTabState extends State<_EquipoTab> {
     final ts = _lista(d['trabajadores']);
     final us = _lista(d['usuarios']);
     return ListView(padding: const EdgeInsets.all(12), children: [
-      const Text('Enlaza cada trabajador con su usuario de la app. Así marca su propia asistencia y ve su "Mi día".', style: TextStyle(fontSize: 12, color: Colors.grey)),
+      const Text('Solo los trabajadores registrados en Recursos Humanos pueden tener acceso a la app. Si falta alguien, primero regístralo en Recursos Humanos. Aquí le creas su usuario y se enlaza solo con su asistencia y tareas.', style: TextStyle(fontSize: 12, color: Colors.grey)),
       for (final t in ts)
         Card(
           child: Padding(
@@ -514,6 +572,7 @@ class _EquipoTabState extends State<_EquipoTab> {
                 items: [const DropdownMenuItem<int?>(value: null, child: Text('Sin usuario enlazado')), for (final u in us) DropdownMenuItem<int?>(value: u['id'] as int, child: Text('${u['nombre']} (${u['userName']})'))],
                 onChanged: (x) => x == null ? _guardar(t, quitar: true) : _guardar(t, usuarioId: x),
               ),
+              if (t['usuarioId'] == null) FilledButton.tonalIcon(icon: const Icon(Icons.key), label: const Text('Dar acceso a la app'), onPressed: () => _darAcceso(t)),
               SwitchListTile(contentPadding: EdgeInsets.zero, dense: true, title: const Text('Tiene tareas diarias'), value: t['tareasDiarias'] == true, onChanged: (x) => _guardar(t, tareas: x)),
             ]),
           ),
