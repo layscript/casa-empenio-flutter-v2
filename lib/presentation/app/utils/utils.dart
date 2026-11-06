@@ -19,3 +19,4 @@ export 'actualizaciones.dart';
 export 'reportes_problema.dart';
 export 'salud_view.dart';
 export 'cobranza_view.dart';
+export 'operacion_view.dart';

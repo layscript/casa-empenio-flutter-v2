@@ -831,6 +831,15 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
       ),
       // TODO:: falta aqui hacer ese flujo y queda!
       actions: [
+        if (widget.nroPrestamo != null)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              icon: const Icon(Icons.inventory_2_outlined),
+              label: const Text('Entrega / recepción del bien'),
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MovimientosBienPage(codigo: widget.nroPrestamo!))),
+            ),
+          ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [

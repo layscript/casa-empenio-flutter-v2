@@ -150,6 +150,25 @@ class _AppDrawerState extends State<AppDrawer> {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const CobranzaPage()));
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.today_outlined, color: Colors.teal),
+              title: const Text('Mi día', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              subtitle: const Text('Mi asistencia, tareas con foto y vehículos', style: TextStyle(fontSize: 11)),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const MiDiaPage()));
+              },
+            ),
+            if (auth?.isAdmin == true)
+              ListTile(
+                leading: const Icon(Icons.fact_check_outlined, color: Colors.teal),
+                title: const Text('Operación diaria', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                subtitle: const Text('Cumplimiento, equipo, tareas y vehículos', style: TextStyle(fontSize: 11)),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const OperacionAdminPage()));
+                },
+              ),
             if (auth?.isAdmin == true)
               ListTile(
                 leading: const Icon(Icons.health_and_safety_outlined, color: Colors.indigo),
