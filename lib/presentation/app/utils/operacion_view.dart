@@ -913,3 +913,146 @@ class _AvisosGerenteTileState extends State<AvisosGerenteTile> {
     );
   }
 }
+
+// ============================================================ ¿QUÉ VE CADA PUESTO? (solo administrador)
+class QueVeCadaPuestoPage extends StatefulWidget {
+  const QueVeCadaPuestoPage({super.key});
+  @override
+  State<QueVeCadaPuestoPage> createState() => _QueVeCadaPuestoPageState();
+}
+
+class _QueVeCadaPuestoPageState extends State<QueVeCadaPuestoPage> {
+  Map<String, dynamic>? _d;
+  String? _error;
+  int? _sel;
+
+  Options _op() => Options(headers: {'x-usuario-id': _uid(context).toString()});
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _cargar());
+  }
+
+  Future<void> _cargar() async {
+    try {
+      final r = await _dio.get<dynamic>('/acceso/resumen', options: _op());
+      if (mounted) setState(() { _d = _mapa(_cuerpo(r)); _error = null; });
+    } catch (e) {
+      if (mounted) setState(() => _error = _err(e));
+    }
+  }
+
+  Future<void> _encender() async {
+    try {
+      await _dio.put<dynamic>('/acceso/estado', data: {'activo': true}, options: _op());
+      if (mounted) _aviso(context, 'Bloqueos encendidos');
+      await _cargar();
+    } catch (e) {
+      if (mounted) _aviso(context, _err(e), error: true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final d = _d;
+    return Scaffold(
+      appBar: AppBar(title: const Text('¿Qué ve cada puesto?')),
+      body: _error != null
+          ? Center(child: Padding(padding: const EdgeInsets.all(16), child: Text(_error!, style: const TextStyle(color: Colors.red))))
+          : d == null
+              ? const Center(child: CircularProgressIndicator())
+              : _cuerpoUi(d),
+    );
+  }
+
+  Widget _cuerpoUi(Map<String, dynamic> d) {
+    final modulos = _lista(d['modulos']);
+    final puestos = _lista(d['puestos']);
+    if (puestos.isEmpty) return const Center(child: Text('No hay puestos creados.'));
+    final p = puestos.firstWhere((x) => x['id'] == _sel, orElse: () => puestos.first);
+    final ids = (p['modulosIds'] is List ? p['modulosIds'] as List : []).map((e) => (e as num).toInt()).toSet();
+    final bloqueos = _lista(p['bloqueos']);
+    final personas = (p['personas'] is List ? p['personas'] as List : []).map((e) => e.toString()).toList();
+    final ve = modulos.where((m) => ids.contains((m['id'] as num).toInt())).toList();
+    final noVe = modulos.where((m) => !ids.contains((m['id'] as num).toInt())).toList();
+    return ListView(padding: const EdgeInsets.all(12), children: [
+      if (d['restriccionesActivas'] != true)
+        Card(
+          color: Colors.orange.shade50,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('Ojo: los bloqueos están APAGADOS', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.deepOrange)),
+              const Text('Mientras estén apagados, nadie queda limitado para crear, editar, eliminar o anular. Solo funciona lo de "qué módulos ve" cada puesto.', style: TextStyle(fontSize: 12)),
+              TextButton(onPressed: _encender, child: const Text('Encender los bloqueos')),
+            ]),
+          ),
+        ),
+      const Text('Toca un puesto para ver, en simple, qué ve y qué no puede hacer:', style: TextStyle(fontSize: 13)),
+      Wrap(spacing: 6, children: [for (final x in puestos) ChoiceChip(label: Text('${x['nombre']}'), selected: x['id'] == p['id'], onSelected: (_) => setState(() => _sel = (x['id'] as num).toInt()))]),
+      const SizedBox(height: 10),
+      Card(
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('${p['nombre']}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(personas.isEmpty ? 'Nadie tiene este puesto todavía' : 'Lo tienen: ${personas.join(', ')}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            const SizedBox(height: 8),
+            if (p['esAdmin'] == true) const Text('Es administrador: ve y puede hacer TODO.', style: TextStyle(fontWeight: FontWeight.w600)),
+            if (p['esAdmin'] != true && p['autonomo'] == true)
+              const Text('Si le bloquean algo, puede hacerlo igual escribiendo un motivo. Tú recibes el aviso.', style: TextStyle(color: Colors.deepOrange, fontSize: 13)),
+            const SizedBox(height: 8),
+            Text('✅ VE (${ve.length})', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+            Wrap(spacing: 6, runSpacing: 2, children: [for (final m in ve) Chip(visualDensity: VisualDensity.compact, label: Text('${m['nombre']}', style: const TextStyle(fontSize: 12)), backgroundColor: Colors.green.shade50)]),
+            if (ve.isEmpty) const Text('No ve ningún módulo', style: TextStyle(color: Colors.red)),
+            const SizedBox(height: 8),
+            Text('🚫 NO VE (${noVe.length})', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+            Wrap(spacing: 6, runSpacing: 2, children: [for (final m in noVe) Chip(visualDensity: VisualDensity.compact, label: Text('${m['nombre']}', style: const TextStyle(fontSize: 12, color: Colors.grey)))]),
+            const SizedBox(height: 8),
+            Text('✋ NO PUEDE HACER (${bloqueos.length})', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+            if (bloqueos.isEmpty) Text(p['esAdmin'] == true ? 'Nada: es administrador.' : 'No tiene ninguna acción bloqueada (puede crear, editar, eliminar y anular en lo que ve).', style: const TextStyle(fontSize: 12)),
+            Wrap(spacing: 6, runSpacing: 2, children: [for (final b in bloqueos) Chip(visualDensity: VisualDensity.compact, label: Text('${b['accion']} en ${b['modulo']}', style: const TextStyle(fontSize: 12)), backgroundColor: Colors.red.shade50)]),
+          ]),
+        ),
+      ),
+      const SizedBox(height: 12),
+      const Text('Comparar todos los puestos', style: TextStyle(fontWeight: FontWeight.bold)),
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          columnSpacing: 14,
+          headingRowHeight: 40,
+          dataRowMinHeight: 32,
+          dataRowMaxHeight: 36,
+          columns: [const DataColumn(label: Text('Módulo')), for (final x in puestos) DataColumn(label: Text('${x['nombre']}', style: const TextStyle(fontSize: 12)))],
+          rows: [
+            for (final m in modulos)
+              DataRow(cells: [
+                DataCell(Text('${m['nombre']}', style: const TextStyle(fontSize: 12))),
+                for (final x in puestos) DataCell(Center(child: (x['modulosIds'] is List && (x['modulosIds'] as List).any((e) => (e as num).toInt() == (m['id'] as num).toInt())) ? const Icon(Icons.check_circle, color: Colors.green, size: 18) : const Icon(Icons.remove, color: Colors.grey, size: 18))),
+              ]),
+          ],
+        ),
+      ),
+      const SizedBox(height: 10),
+      const Text('Para cambiar lo que ve un puesto: Administración → Puestos y módulos. Para bloquear acciones: Administración → Permisos.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+    ]);
+  }
+}
+
+class QueVeCadaPuestoTile extends StatelessWidget {
+  const QueVeCadaPuestoTile({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: const Icon(Icons.visibility_outlined, color: Colors.blueGrey),
+      title: const Text('¿Qué ve cada puesto?', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+      subtitle: const Text('Resumen fácil de lo que ve y no puede hacer cada uno', style: TextStyle(fontSize: 11)),
+      onTap: () {
+        Navigator.pop(context);
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const QueVeCadaPuestoPage()));
+      },
+    );
+  }
+}

@@ -160,6 +160,7 @@ class _AppDrawerState extends State<AppDrawer> {
               },
             ),
             if (auth?.isAdmin == true) const AvisosGerenteTile(),
+            if (auth?.isAdmin == true) const QueVeCadaPuestoTile(),
             if (auth?.isAdmin == true)
               ListTile(
                 leading: const Icon(Icons.fact_check_outlined, color: Colors.teal),
