@@ -12,6 +12,7 @@ import 'package:casa_empenio_pe/presentation/features/home/features/features.dar
 import 'package:casa_empenio_pe/presentation/features/home/features/plantilla/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/home/home.dart';
 import 'package:casa_empenio_pe/presentation/features/home/widgets/widgets.dart';
+import 'package:casa_empenio_pe/presentation/features/auth/auth.dart' show AuthBloc;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -35,6 +36,7 @@ class _MainViewState extends State<MainView> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<AuthBloc>().state; // se redibuja al cambiar de sucursal o de vista previa
     final preferences = context.watch<Preferences>();
     final preferencesState = preferences.token;
 

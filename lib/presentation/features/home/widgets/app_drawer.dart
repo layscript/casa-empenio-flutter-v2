@@ -4,6 +4,7 @@ import 'package:casa_empenio_pe/presentation/app/utils/actualizaciones.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
+import 'package:casa_empenio_pe/data/local/local_preferences.dart' show VistaPrevia;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -160,6 +161,7 @@ class _AppDrawerState extends State<AppDrawer> {
               },
             ),
             if (auth?.isAdmin == true) const AvisosGerenteTile(),
+            if (auth?.isAdmin == true || VistaPrevia.usuario != null) const VerComoTile(),
             if (auth?.isAdmin == true) const QueVeCadaPuestoTile(),
             if (auth?.isAdmin == true)
               ListTile(

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:casa_empenio_pe/data/local/local_preferences.dart' show VistaPrevia;
 import 'package:casa_empenio_pe/domain/domain.dart' show Preferences;
 import 'package:casa_empenio_pe/presentation/app/utils/actualizaciones.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/salud_view.dart' show recordarUsuarioParaErrores, copiaSemanalAdmin;
@@ -106,5 +107,38 @@ class _VigilanteSesionState extends State<VigilanteSesion> with WidgetsBindingOb
   }
 
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) => Stack(
+        children: [
+          widget.child,
+          ValueListenableBuilder<String?>(
+            valueListenable: VistaPrevia.puesto,
+            builder: (c, puesto, _) => puesto == null
+                ? const SizedBox.shrink()
+                : Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: Material(
+                      color: Colors.deepOrange,
+                      child: SafeArea(
+                        top: false,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          child: Row(children: [
+                            const Icon(Icons.visibility, color: Colors.white, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text('VISTA PREVIA: ves la app como «$puesto». Solo mirar, no se guarda nada.', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600))),
+                            TextButton(
+                              style: TextButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.deepOrange, minimumSize: const Size(60, 30)),
+                              onPressed: () => c.read<AuthBloc>().add(const VerComo(null)),
+                              child: const Text('Salir'),
+                            ),
+                          ]),
+                        ),
+                      ),
+                    ),
+                  ),
+          ),
+        ],
+      );
 }

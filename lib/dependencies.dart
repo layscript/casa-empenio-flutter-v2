@@ -91,6 +91,21 @@ void configDio(Preferences preferences) {
   _client.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) {
+        // Vista previa del administrador: solo se puede mirar, nada se guarda.
+        if (VistaPrevia.usuario != null && options.method.toUpperCase() != 'GET') {
+          return handler.reject(
+            DioException(
+              requestOptions: options,
+              type: DioExceptionType.badResponse,
+              response: Response<dynamic>(
+                requestOptions: options,
+                statusCode: 400,
+                data: {'message': 'Estás en VISTA PREVIA: solo puedes mirar. Toca "Salir" en la franja naranja para volver a ser administrador y poder guardar.'},
+              ),
+            ),
+            true,
+          );
+        }
         if (preferences.token != null) {
           options.headers['Authorization'] = 'Token ${preferences.token}';
         }

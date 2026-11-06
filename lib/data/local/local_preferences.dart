@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show ValueNotifier;
 import 'dart:convert';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
@@ -7,12 +8,27 @@ const _tokenKey = 'du18sj17';
 const _loansKey = 'du1865z33';
 const _refreshKey = 'fj1625z33';
 
+/// Vista previa del administrador: mira la app como la vería otro puesto.
+/// Vive solo en memoria (no se guarda): al cerrar la app o salir de la vista, vuelve a ser administrador.
+class VistaPrevia {
+  static UserEntity? usuario; // lo que "ve" la app mientras dura la vista previa
+  static UserEntity? real; // el administrador de verdad
+  static final ValueNotifier<String?> puesto = ValueNotifier<String?>(null);
+
+  static void salir() {
+    usuario = null;
+    real = null;
+    puesto.value = null;
+  }
+}
+
 class LocalPreferences implements Preferences {
   LocalPreferences(this._preferences);
   final SharedPreferences _preferences;
 
   @override
   UserEntity? get token {
+    if (VistaPrevia.usuario != null) return VistaPrevia.usuario;
     final userString = _preferences.getString(_tokenKey);
     if (userString != null) {
       final userMap = jsonDecode(userString) as Map<String, dynamic>;

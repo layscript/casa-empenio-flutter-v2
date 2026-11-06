@@ -1,10 +1,12 @@
 import 'dart:convert';
 
+import 'package:casa_empenio_pe/data/local/local_preferences.dart' show VistaPrevia;
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:casa_empenio_pe/presentation/features/auth/auth.dart' show AuthBloc, VerComo;
 import 'package:image_picker/image_picker.dart';
 
 // ============================================================ AYUDAS
@@ -12,7 +14,16 @@ final Dio _dio = Dio(BaseOptions(
   baseUrl: endPointPrincipal,
   connectTimeout: const Duration(seconds: 30),
   receiveTimeout: const Duration(minutes: 2),
-));
+))
+  ..interceptors.add(InterceptorsWrapper(onRequest: (o, h) {
+    if (VistaPrevia.usuario != null && o.method.toUpperCase() != 'GET') {
+      return h.reject(
+        DioException(requestOptions: o, type: DioExceptionType.badResponse, response: Response<dynamic>(requestOptions: o, statusCode: 400, data: {'message': 'Estás en VISTA PREVIA: solo puedes mirar. Toca "Salir" en la franja naranja.'})),
+        true,
+      );
+    }
+    h.next(o);
+  }));
 
 dynamic _cuerpo(Response<dynamic> r) {
   try {
@@ -1077,6 +1088,64 @@ class QueVeCadaPuestoTile extends StatelessWidget {
         Navigator.pop(context);
         Navigator.push(context, MaterialPageRoute(builder: (_) => const QueVeCadaPuestoPage()));
       },
+    );
+  }
+}
+
+
+// ============================================================ VER LA APP COMO OTRO PUESTO (solo administrador)
+class VerComoTile extends StatelessWidget {
+  const VerComoTile({super.key});
+
+  Future<void> _elegir(BuildContext context) async {
+    final bloc = context.read<AuthBloc>();
+    final nav = Navigator.of(context);
+    nav.pop(); // cierra el menú
+    final ctx = nav.context;
+    List<Map<String, dynamic>> roles = [];
+    try {
+      final r = await _dio.get<dynamic>('/auth/roles', queryParameters: {'limit': 200, 'offset': 0});
+      dynamic b = r.data is Map ? (r.data as Map)['body'] : r.data;
+      if (b is List && b.isNotEmpty && b.first is List) b = b.first;
+      roles = _lista(b);
+    } catch (e) {
+      if (ctx.mounted) _aviso(ctx, _err(e), error: true);
+      return;
+    }
+    if (!ctx.mounted) return;
+    final elegido = await showModalBottomSheet<Map<String, dynamic>>(
+      context: ctx,
+      showDragHandle: true,
+      builder: (sc) => SafeArea(
+        child: ListView(shrinkWrap: true, padding: const EdgeInsets.fromLTRB(16, 0, 16, 16), children: [
+          const Text('Ver la app como…', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text('Verás exactamente los módulos de ese puesto. Solo es para mirar: no se guarda nada. Para salir, toca "Salir" en la franja naranja.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+          const SizedBox(height: 8),
+          for (final r in roles)
+            ListTile(
+              leading: const Icon(Icons.visibility_outlined),
+              title: Text('${r['nombre']}'),
+              subtitle: Text('${(r['modulos'] is List ? (r['modulos'] as List).length : 0)} módulos'),
+              onTap: () => Navigator.pop(sc, r),
+            ),
+        ]),
+      ),
+    );
+    if (elegido == null) return;
+    bloc.add(VerComo(RoleEntity.roleFromMap(elegido)));
+    if (ctx.mounted) Navigator.of(ctx).popUntil((r) => r.isFirst);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<String?>(
+      valueListenable: VistaPrevia.puesto,
+      builder: (c, puesto, _) => ListTile(
+        leading: const Icon(Icons.switch_account_outlined, color: Colors.deepOrange),
+        title: const Text('Ver la app como otro puesto', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+        subtitle: Text(puesto == null ? 'Gerente, cajero, vendedor… ve lo que ellos ven' : 'Ahora ves como: $puesto', style: const TextStyle(fontSize: 11)),
+        onTap: () => _elegir(c),
+      ),
     );
   }
 }

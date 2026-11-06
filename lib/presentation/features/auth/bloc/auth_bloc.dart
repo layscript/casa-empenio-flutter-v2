@@ -1,6 +1,7 @@
 import 'package:casa_empenio_pe/presentation/app/utils/vigilante_sesion.dart';
 import 'dart:async';
 
+import 'package:casa_empenio_pe/data/local/local_preferences.dart' show VistaPrevia;
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
@@ -22,6 +23,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<GetSession>(_onGetSession);
     on<RefreshDataUser>(_onRefreshDataUser);
     on<CambiarSucursal>(_onCambiarSucursal);
+    on<VerComo>(_onVerComo);
   }
 
   final UserRepository _userRepository;
@@ -93,7 +95,44 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(Authenticated(nuevo, state.modulos ?? []));
   }
 
+  /// Vista previa: el administrador mira la app como la ve otro puesto. No se guarda ni se puede modificar nada.
+  Future<void> _onVerComo(VerComo event, Emitter<AuthState> emit) async {
+    final base = VistaPrevia.real ?? _preferences.token;
+    if (event.rol == null) {
+      VistaPrevia.salir();
+      final real = _preferences.token;
+      if (real != null) emit(Authenticated(real, state.modulos ?? []));
+      return;
+    }
+    if (base == null || base.isAdmin != true) return;
+    final r = event.rol!;
+    final esAdminRol = const ['administrador', 'administradora', 'admin'].contains(r.nombre.toLowerCase().trim());
+    VistaPrevia.real = base;
+    VistaPrevia.usuario = UserEntity(
+      id: base.id,
+      nombre: base.nombre,
+      apellido: base.apellido,
+      userName: base.userName,
+      oldUserName: base.oldUserName,
+      email: base.email,
+      avatar: base.avatar,
+      celular: base.celular,
+      role: r,
+      pagos: null,
+      prestamos: null,
+      createdAt: base.createdAt,
+      prestamosAdmin: null,
+      updatedAt: base.updatedAt,
+      ventas: null,
+      isAdmin: esAdminRol,
+      sucursal: base.sucursal,
+    );
+    VistaPrevia.puesto.value = r.nombre;
+    emit(Authenticated(VistaPrevia.usuario!, state.modulos ?? []));
+  }
+
   Future<void> _onSignOff(SignOff event, Emitter<AuthState> emit) async {
+    VistaPrevia.salir();
     await _preferences.removeRefresh();
     await _preferences.removeLoansPreferences();
     await _preferences.removeToken();

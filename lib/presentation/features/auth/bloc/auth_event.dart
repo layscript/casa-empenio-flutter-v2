@@ -30,3 +30,12 @@ class CambiarSucursal extends AuthEvent {
   @override
   List<Object> get props => [sucursal];
 }
+
+/// Solo administrador: ver la app tal como la ve un puesto (null = volver a la vista normal).
+class VerComo extends AuthEvent {
+  const VerComo(this.rol);
+  final RoleEntity? rol;
+
+  @override
+  List<Object> get props => [rol ?? 0];
+}
