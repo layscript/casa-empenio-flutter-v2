@@ -989,7 +989,31 @@ class _QueVeCadaPuestoPageState extends State<QueVeCadaPuestoPage> {
             ]),
           ),
         ),
-      const Text('Toca un puesto para ver, en simple, qué ve y qué no puede hacer:', style: TextStyle(fontSize: 13)),
+      FilledButton.icon(
+        icon: const Icon(Icons.auto_fix_high),
+        label: const Text('Asignar según sus funciones y ordenar'),
+        onPressed: () async {
+          final seguro = await showDialog<bool>(
+            context: context,
+            builder: (dc) => AlertDialog(
+              title: const Text('¿Asignar y ordenar?'),
+              content: const Text('Crea los puestos que falten (Vendedor, Recepción, Mantenimiento y sus combinaciones) y les pone los módulos que corresponden a sus funciones. NO cambia los puestos que ya tienen módulos. Luego ordena de más a menos módulos: Administrador, Gerente y el resto.'),
+              actions: [TextButton(onPressed: () => Navigator.pop(dc, false), child: const Text('Cancelar')), FilledButton(onPressed: () => Navigator.pop(dc, true), child: const Text('Sí, hacerlo'))],
+            ),
+          );
+          if (seguro != true) return;
+          try {
+            final r = _mapa(_cuerpo(await _dio.post<dynamic>('/operacion/configurar-puestos', data: {'adminId': _uid(context)})));
+            final sin = (r['sinCoincidencia'] is List ? r['sinCoincidencia'] as List : []);
+            if (mounted) _aviso(context, sin.isEmpty ? 'Listo. Revisa abajo y corrige lo que falte.' : 'Listo, pero a ${sin.join(', ')} no le encontré módulos por nombre: asígnalos en Administración → Puestos y módulos.');
+            await _cargar();
+          } catch (e) {
+            if (mounted) _aviso(context, _err(e), error: true);
+          }
+        },
+      ),
+      const SizedBox(height: 8),
+      const Text('Los puestos se muestran de arriba (más módulos) hacia abajo (menos). Toca uno para ver el detalle:', style: TextStyle(fontSize: 13)),
       Wrap(spacing: 6, children: [for (final x in puestos) ChoiceChip(label: Text('${x['nombre']}'), selected: x['id'] == p['id'], onSelected: (_) => setState(() => _sel = (x['id'] as num).toInt()))]),
       const SizedBox(height: 10),
       Card(
