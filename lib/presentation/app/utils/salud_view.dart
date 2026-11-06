@@ -20,8 +20,11 @@ final Dio _dio = Dio(BaseOptions(
 ));
 
 dynamic _cuerpo(Response<dynamic> r) {
-  final d = r.data is String ? jsonDecode(r.data as String) : r.data;
-  return d is Map ? d['body'] : null;
+  try {
+    final d = r.data is String ? jsonDecode(r.data as String) : r.data;
+    if (d is Map) return d['body'];
+  } catch (_) {}
+  throw 'El servidor todavía no tiene esta función (se está actualizando o falló la actualización). Espera unos minutos, toca Verificar en el inicio de sesión y revisa que diga versión s14.';
 }
 
 String _err(Object e) {
