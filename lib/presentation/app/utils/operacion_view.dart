@@ -170,8 +170,8 @@ class _MiDiaPageState extends State<MiDiaPage> {
   }
 
   Future<void> _hacerTarea(Map<String, dynamic> t) async {
-    final ok = await _fotoMasNota(context, titulo: t['nombre'].toString(), enviar: (f, n) async {
-      await _dio.post<dynamic>('/operacion/tareas/hecha', data: {'usuarioId': _uid(context), 'plantillaId': t['id'], 'fotos': [f], 'nota': n});
+    final ok = await _fotoMasNota(context, titulo: t['nombre'].toString(), exigeFoto: t['tipo'] != 'CHECK', enviar: (f, n) async {
+      await _dio.post<dynamic>('/operacion/tareas/hecha', data: {'usuarioId': _uid(context), 'plantillaId': t['id'], 'fotos': [if (f != null) f], 'nota': n});
     });
     if (ok) { if (mounted) _aviso(context, 'Tarea cumplida'); await _cargar(); }
   }
@@ -246,7 +246,7 @@ class _MiDiaPageState extends State<MiDiaPage> {
               title: Text('${t['nombre']}'),
               subtitle: Text('${t['turnoNombre']} · hasta ${t['limite']}${t['tipo'] == 'VEHICULOS' ? ' · ${t['hechas']}/${t['requeridas']} vehículos' : ''}${t['descripcion'] != null ? '\n${t['descripcion']}' : ''}'),
               isThreeLine: t['descripcion'] != null,
-              trailing: t['estado'] == 'HECHA' || t['tipo'] == 'VEHICULOS' ? null : IconButton(icon: const Icon(Icons.photo_camera, color: Colors.indigo), onPressed: () => _hacerTarea(t)),
+              trailing: t['estado'] == 'HECHA' || t['tipo'] == 'VEHICULOS' ? null : IconButton(icon: Icon(t['tipo'] == 'CHECK' ? Icons.task_alt : Icons.photo_camera, color: Colors.indigo), onPressed: () => _hacerTarea(t)),
             ),
           ),
         if (sug.isNotEmpty) ...[
@@ -567,7 +567,7 @@ class _TareasTabState extends State<_TareasTab> {
               TextField(controller: nombre, decoration: const InputDecoration(labelText: 'Nombre (ej. Limpiar exhibición)')),
               TextField(controller: desc, decoration: const InputDecoration(labelText: 'Detalle (opcional)')),
               DropdownButton<String>(isExpanded: true, value: turno, items: _turnos.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value))).toList(), onChanged: (x) => set(() => turno = x ?? turno)),
-              DropdownButton<String>(isExpanded: true, value: tipo, items: const [DropdownMenuItem(value: 'FOTO', child: Text('Se cumple con foto')), DropdownMenuItem(value: 'VEHICULOS', child: Text('Prender vehículos'))], onChanged: (x) => set(() => tipo = x ?? tipo)),
+              DropdownButton<String>(isExpanded: true, value: tipo, items: const [DropdownMenuItem(value: 'FOTO', child: Text('Se cumple con foto')), DropdownMenuItem(value: 'CHECK', child: Text('Se cumple marcando (sin foto)')), DropdownMenuItem(value: 'VEHICULOS', child: Text('Prender vehículos'))], onChanged: (x) => set(() => tipo = x ?? tipo)),
               if (tipo == 'VEHICULOS') TextField(controller: cant, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Cuántos vehículos prender')),
               SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Activa'), value: activo, onChanged: (x) => set(() => activo = x)),
               if (error != null) Text(error!, style: const TextStyle(color: Colors.red)),
@@ -606,12 +606,25 @@ class _TareasTabState extends State<_TareasTab> {
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(onPressed: () => _editar(), icon: const Icon(Icons.add), label: const Text('Nueva tarea')),
       body: ListView(padding: const EdgeInsets.fromLTRB(12, 12, 12, 90), children: [
-        if (l.isEmpty) const Text('Aún no hay tareas. Ejemplos: Limpiar exhibición (Apertura, foto), Prender 5 vehículos (Mañana), Ordenar herramientas (Cierre, foto).'),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.auto_awesome),
+          label: const Text('Cargar tareas sugeridas (vendedor, recepción, mantenimiento)'),
+          onPressed: () async {
+            try {
+              final r = _mapa(_cuerpo(await _dio.post<dynamic>('/operacion/plantillas/sugeridas', data: {'adminId': _uid(context)})));
+              if (mounted) _aviso(context, 'Se agregaron ${r['creadas']} tareas. Puedes editarlas o apagarlas.');
+              await _cargar();
+            } catch (e) {
+              if (mounted) _aviso(context, _err(e), error: true);
+            }
+          },
+        ),
+        if (l.isEmpty) const Text('Aún no hay tareas. Toca el botón de arriba para cargar un juego completo y luego ajústalo.'),
         for (final t in l)
           Card(
             child: ListTile(
               title: Text('${t['nombre']}', style: TextStyle(decoration: t['activo'] == false ? TextDecoration.lineThrough : null)),
-              subtitle: Text('${_turnos[t['turno']] ?? t['turno']} · ${t['tipo'] == 'VEHICULOS' ? 'Prender ${t['cantidad']} vehículos' : 'Con foto'}'),
+              subtitle: Text('${_turnos[t['turno']] ?? t['turno']} · ${t['tipo'] == 'VEHICULOS' ? 'Prender ${t['cantidad']} vehículos' : t['tipo'] == 'CHECK' ? 'Se marca' : 'Con foto'}'),
               trailing: const Icon(Icons.edit),
               onTap: () => _editar(t),
             ),
@@ -719,6 +732,125 @@ class _VehiculosTabState extends State<_VehiculosTab> {
             ),
           ),
       ]),
+    );
+  }
+}
+
+
+// ============================================================ AVISOS DEL GERENTE (solo administrador)
+class AvisosGerentePage extends StatefulWidget {
+  const AvisosGerentePage({super.key});
+  @override
+  State<AvisosGerentePage> createState() => _AvisosGerentePageState();
+}
+
+class _AvisosGerentePageState extends State<AvisosGerentePage> {
+  Map<String, dynamic>? _d;
+  List<Map<String, dynamic>> _puestos = [];
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _cargar());
+  }
+
+  Options _op() => Options(headers: {'x-usuario-id': _uid(context).toString()});
+
+  Future<void> _cargar() async {
+    try {
+      final a = await _dio.get<dynamic>('/acceso/avisos', options: _op());
+      final p = await _dio.get<dynamic>('/acceso/autonomia', options: _op());
+      if (mounted) setState(() { _d = _mapa(_cuerpo(a)); _puestos = _lista(_cuerpo(p)); _error = null; });
+    } catch (e) {
+      if (mounted) setState(() => _error = _err(e));
+    }
+  }
+
+  Future<void> _visto() async {
+    try {
+      await _dio.put<dynamic>('/acceso/avisos/visto', options: _op());
+      await _cargar();
+    } catch (e) {
+      if (mounted) _aviso(context, _err(e), error: true);
+    }
+  }
+
+  Future<void> _cambiar(Map<String, dynamic> p, bool v) async {
+    try {
+      await _dio.put<dynamic>('/acceso/autonomia/${p['id']}', data: {'activo': v}, options: _op());
+      await _cargar();
+    } catch (e) {
+      if (mounted) _aviso(context, _err(e), error: true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final d = _d;
+    final items = d == null ? <Map<String, dynamic>>[] : _lista(d['items']);
+    return Scaffold(
+      appBar: AppBar(title: const Text('Acciones del gerente'), actions: [if (d != null && (d['nuevos'] ?? 0) > 0) TextButton(onPressed: _visto, child: const Text('Marcar vistos'))]),
+      body: _error != null
+          ? Center(child: Padding(padding: const EdgeInsets.all(16), child: Text(_error!, style: const TextStyle(color: Colors.red))))
+          : d == null
+              ? const Center(child: CircularProgressIndicator())
+              : RefreshIndicator(
+                  onRefresh: _cargar,
+                  child: ListView(padding: const EdgeInsets.all(12), children: [
+                    const Text('¿Qué puestos pueden actuar por su cuenta?', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text('Si activas un puesto (ej. Gerente), cuando el sistema le bloquee una acción podrá hacerla igual escribiendo un motivo. Dura 15 minutos y una sola vez, queda registrado y te aparece aquí.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    for (final p in _puestos) SwitchListTile(contentPadding: EdgeInsets.zero, dense: true, title: Text('${p['nombre']}'), value: p['autonomo'] == true, onChanged: (v) => _cambiar(p, v)),
+                    const Divider(),
+                    Text('Lo que hicieron sin esperarte (${d['nuevos']} nuevos)', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    if (items.isEmpty) const Padding(padding: EdgeInsets.all(8), child: Text('Nadie ha actuado por su cuenta todavía.')),
+                    for (final x in items)
+                      Card(
+                        color: x['nuevo'] == true ? Colors.orange.shade50 : null,
+                        child: ListTile(
+                          leading: Icon(Icons.shield_moon_outlined, color: x['nuevo'] == true ? Colors.deepOrange : Colors.grey),
+                          title: Text('${x['usuario']} (${x['rol'] ?? ''})'),
+                          subtitle: Text('Quiso: ${x['accion']} en ${x['moduloNombre']}\nMotivo: ${x['motivo'] ?? ''}\n${x['fecha']}'),
+                          isThreeLine: true,
+                        ),
+                      ),
+                  ]),
+                ),
+    );
+  }
+}
+
+/// Opción del menú para el administrador, con globo rojo si hay avisos nuevos.
+class AvisosGerenteTile extends StatefulWidget {
+  const AvisosGerenteTile({super.key});
+  @override
+  State<AvisosGerenteTile> createState() => _AvisosGerenteTileState();
+}
+
+class _AvisosGerenteTileState extends State<AvisosGerenteTile> {
+  int _n = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        final r = await _dio.get<dynamic>('/acceso/avisos', options: Options(headers: {'x-usuario-id': _uid(context).toString()}));
+        if (mounted) setState(() => _n = (_mapa(_cuerpo(r))['nuevos'] as num?)?.toInt() ?? 0);
+      } catch (_) {}
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Badge(isLabelVisible: _n > 0, label: Text('$_n'), child: const Icon(Icons.gavel_outlined, color: Colors.deepOrange)),
+      title: const Text('Acciones del gerente', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+      subtitle: Text(_n > 0 ? '$_n aviso(s) nuevo(s): lo que hicieron sin esperarte' : 'Lo que hicieron sin esperarte y con qué motivo', style: const TextStyle(fontSize: 11)),
+      onTap: () {
+        Navigator.pop(context);
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AvisosGerentePage()));
+      },
     );
   }
 }

@@ -127,7 +127,7 @@ void configDio(Preferences preferences) {
 bool _dialogoPermisoAbierto = false;
 
 /// Si el servidor bloqueó la acción por permisos, ofrece pedir autorización al administrador.
-void _ofrecerSolicitudPermiso(DioException e) {
+Future<void> _ofrecerSolicitudPermiso(DioException e) async {
   try {
     final data = e.response?.data;
     if (e.response?.statusCode != 403 ||
@@ -138,8 +138,14 @@ void _ofrecerSolicitudPermiso(DioException e) {
     final ctx = AppRoute.mainNavigatorKey.currentContext;
     if (ctx == null || _dialogoPermisoAbierto) return;
     _dialogoPermisoAbierto = true;
+    bool autonomo = false;
+    try {
+      final r = await _client.get<dynamic>('/acceso/autonomia/yo');
+      final b = r.data is Map ? r.data['body'] : null;
+      autonomo = b is Map && b['autonomo'] == true;
+    } catch (_) {}
     final motivo = TextEditingController();
-    showDialog<bool>(
+    showDialog<String>(
       context: ctx,
       barrierDismissible: false,
       builder: (dctx) => AlertDialog(
@@ -151,34 +157,53 @@ void _ofrecerSolicitudPermiso(DioException e) {
             Text((data['message'] ?? 'Su puesto no puede hacer esta acción.')
                 .toString()),
             const SizedBox(height: 12),
-            const Text('¿Desea pedir autorización al administrador?'),
+            Text(autonomo
+                ? 'Si el administrador no responde, puede hacerlo ahora escribiendo el motivo. Queda registrado y se le avisa al administrador.'
+                : '¿Desea pedir autorización al administrador?'),
             TextField(
               controller: motivo,
-              decoration: const InputDecoration(labelText: 'Motivo (opcional)'),
+              decoration: InputDecoration(labelText: autonomo ? 'Motivo (obligatorio, mínimo 10 letras)' : 'Motivo (opcional)'),
             ),
           ],
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(dctx, false),
+              onPressed: () => Navigator.pop(dctx, null),
               child: const Text('Ahora no')),
+          if (autonomo)
+            ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange, foregroundColor: Colors.white),
+                onPressed: () => Navigator.pop(dctx, 'ahora'),
+                child: const Text('Hacerlo ahora')),
           ElevatedButton(
-              onPressed: () => Navigator.pop(dctx, true),
+              onPressed: () => Navigator.pop(dctx, 'pedir'),
               child: const Text('Pedir autorización')),
         ],
       ),
     ).then((pedir) async {
       _dialogoPermisoAbierto = false;
-      if (pedir != true) return;
+      if (pedir == null) return;
       String aviso;
       try {
-        await _client.post('/acceso/solicitudes', data: {
-          'modulo': data['modulo'],
-          'accion': data['accion'],
-          'motivo': motivo.text.trim(),
-        });
-        aviso =
-            'Solicitud enviada. Avise al administrador para que la apruebe y luego vuelva a intentarlo.';
+        if (pedir == 'ahora') {
+          await _client.post('/acceso/solicitudes/autoaprobar', data: {
+            'modulo': data['modulo'],
+            'accion': data['accion'],
+            'motivo': motivo.text.trim(),
+          });
+          aviso = 'Listo: ya puede hacerlo. Vuelva a tocar la acción (vale 15 minutos y una sola vez). El administrador recibirá el aviso.';
+        } else {
+          await _client.post('/acceso/solicitudes', data: {
+            'modulo': data['modulo'],
+            'accion': data['accion'],
+            'motivo': motivo.text.trim(),
+          });
+          aviso =
+              'Solicitud enviada. Avise al administrador para que la apruebe y luego vuelva a intentarlo.';
+        }
+      } on DioException catch (err) {
+        final m = err.response?.data;
+        aviso = (m is Map && m['message'] != null) ? m['message'].toString() : 'No se pudo enviar. Intente de nuevo.';
       } catch (_) {
         aviso = 'No se pudo enviar la solicitud. Intente de nuevo.';
       }

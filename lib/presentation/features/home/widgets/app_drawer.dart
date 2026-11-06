@@ -159,6 +159,7 @@ class _AppDrawerState extends State<AppDrawer> {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const MiDiaPage()));
               },
             ),
+            if (auth?.isAdmin == true) const AvisosGerenteTile(),
             if (auth?.isAdmin == true)
               ListTile(
                 leading: const Icon(Icons.fact_check_outlined, color: Colors.teal),
