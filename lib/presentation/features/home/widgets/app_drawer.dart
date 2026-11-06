@@ -142,6 +142,25 @@ class _AppDrawerState extends State<AppDrawer> {
                 },
               ),
             ListTile(
+              leading: const Icon(Icons.notifications_active_outlined, color: Colors.green),
+              title: const Text('Cobranza de hoy', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              subtitle: const Text('A quién avisar: vence hoy, pronto o ya venció', style: TextStyle(fontSize: 11)),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const CobranzaPage()));
+              },
+            ),
+            if (auth?.isAdmin == true)
+              ListTile(
+                leading: const Icon(Icons.health_and_safety_outlined, color: Colors.indigo),
+                title: const Text('Salud del sistema', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                subtitle: const Text('Copias, errores, pruebas, informe del dueño', style: TextStyle(fontSize: 11)),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const SaludPage()));
+                },
+              ),
+            ListTile(
               leading: const Icon(Icons.report_problem_outlined, color: Colors.deepOrange),
               title: Text(auth?.isAdmin == true ? 'Reportes de problemas' : 'Reportar un problema', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
               subtitle: Text(auth?.isAdmin == true ? 'Bandeja de reportes' : 'Con fotos, audio o texto', style: const TextStyle(fontSize: 11)),

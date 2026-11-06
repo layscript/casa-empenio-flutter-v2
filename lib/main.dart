@@ -1,10 +1,12 @@
 import 'dart:developer';
+import 'dart:ui';
 
 import 'package:casa_empenio_pe/app.dart';
 import 'package:casa_empenio_pe/bootstrap.dart';
 import 'package:casa_empenio_pe/data/data.dart';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/salud_view.dart' show reportarErrorAuto;
 import 'package:casa_empenio_pe/presentation/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
 import 'package:dio/dio.dart';
@@ -16,6 +18,16 @@ part 'dependencies.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Cualquier falla de la app se manda sola al servidor (sección "Errores detectados")
+  final errorPrevio = FlutterError.onError;
+  FlutterError.onError = (detalles) {
+    errorPrevio?.call(detalles);
+    reportarErrorAuto(detalles.exception, detalles.stack);
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    reportarErrorAuto(error, stack);
+    return false;
+  };
   final sharedPreferences = await SharedPreferences.getInstance();
   final Preferences localPreferences = LocalPreferences(sharedPreferences);
   configDio(localPreferences);

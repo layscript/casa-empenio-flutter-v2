@@ -75,11 +75,15 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
                 labelText: 'DNI (requerido)',
                 keyboardType: TextInputType.number,
                 maxLength: 8,
-                onChanged: (e) => loansStepBloc.add(
-                  ChangeDocumentClient(
-                    value: e,
-                  ),
-                ),
+                onChanged: (e) {
+                  loansStepBloc.add(
+                    ChangeDocumentClient(
+                      value: e,
+                    ),
+                  );
+                  // Avisa si el cliente tiene mal historial en cualquier sucursal
+                  if (e.length == 8) revisarRiesgoCliente(context, e);
+                },
                 validator: (value) {
                   if (value!.isEmpty) return 'Campo Requerido';
                   if (value.length < 8) return 'Ingresar 8 Dígitos';

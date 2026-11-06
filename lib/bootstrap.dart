@@ -7,6 +7,7 @@
 
 import 'dart:developer';
 
+import 'package:casa_empenio_pe/presentation/app/utils/salud_view.dart' show reportarErrorAuto;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AppBlocObserver extends BlocObserver {
@@ -20,6 +21,7 @@ class AppBlocObserver extends BlocObserver {
   @override
   void onError(BlocBase bloc, Object error, StackTrace stackTrace) {
     log('onError(${bloc.runtimeType}, $error, $stackTrace)');
+    reportarErrorAuto(error, stackTrace, pantalla: bloc.runtimeType.toString());
     super.onError(bloc, error, stackTrace);
   }
 }

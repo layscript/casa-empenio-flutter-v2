@@ -17,3 +17,5 @@ export 'delete_dialog.dart';
 export 'error_dialog.dart';
 export 'actualizaciones.dart';
 export 'reportes_problema.dart';
+export 'salud_view.dart';
+export 'cobranza_view.dart';
