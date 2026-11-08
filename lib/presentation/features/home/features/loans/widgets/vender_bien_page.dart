@@ -626,6 +626,7 @@ class _VenderBienPageState extends State<VenderBienPage> {
             ),
             const SizedBox(width: 8),
             ElevatedButton(
+              style: ElevatedButton.styleFrom(minimumSize: const Size(0, 48)), // el tema pone ancho infinito: dentro de una fila rompe la pantalla
               onPressed: _buscando ? null : _buscarDni,
               child: _buscando
                   ? const SizedBox(

@@ -551,6 +551,7 @@ class _RolesTabState extends State<_RolesTab> {
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(minimumSize: const Size(0, 48)), // el tema pone ancho infinito: dentro de una fila rompe la pantalla
                   onPressed: () => _editarRol(),
                   icon: const Icon(Icons.add),
                   label: const Text('Nuevo rol'),
@@ -991,6 +992,7 @@ class _UsuariosTabState extends State<_UsuariosTab> {
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(minimumSize: const Size(0, 48)), // el tema pone ancho infinito: dentro de una fila rompe la pantalla
                   onPressed: () => _formulario(),
                   icon: const Icon(Icons.person_add),
                   label: const Text('Nuevo'),
@@ -2987,6 +2989,7 @@ class _SolicitudesTabState extends State<_SolicitudesTab> {
                                 style: TextStyle(color: Colors.red))),
                         const SizedBox(width: 8),
                         ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(minimumSize: const Size(0, 48)), // el tema pone ancho infinito: dentro de una fila rompe la pantalla
                             onPressed: () => _aprobar(s),
                             icon: const Icon(Icons.check),
                             label: const Text('Aprobar')),
