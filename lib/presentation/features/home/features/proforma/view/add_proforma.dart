@@ -18,6 +18,7 @@ class AddFormProforma extends StatefulWidget {
 }
 
 class _AddFormProformaState extends State<AddFormProforma> {
+  bool _editandoCliente = false; // corregir DNI / nombre a mano
   // Método para mostrar el diálogo de edición de producto
   void _showEditPriceDialog(BuildContext context, sales_bloc.ProductSales product) {
     final TextEditingController priceController = TextEditingController();
@@ -242,7 +243,7 @@ class _AddFormProformaState extends State<AddFormProforma> {
       }),
       body: Container(
         padding: const EdgeInsets.all(20),
-        child: Column(
+        child: SingleChildScrollView(child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SearchCustomerProforma(),
@@ -274,6 +275,29 @@ class _AddFormProformaState extends State<AddFormProforma> {
                 }
               },
               builder: (context, state) {
+                if (_editandoCliente) {
+                  final c = state.customer;
+                  final docActual = c == null || c.dni == '0' ? (state.lastSearchedDocument ?? '') : c.customerDocument;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Datos del cliente', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      const SizedBox(height: 4),
+                      const Text('Corrige el DNI/RUC y el nombre completo. Si no tiene documento, déjalo vacío.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      const SizedBox(height: 12),
+                      ManualCustomerForm(
+                        documentNumber: docActual,
+                        nombreInicial: c?.customerFullName.trim() ?? '',
+                        direccionInicial: c == null || c.dni == '0' ? '' : (c.domicilio?.direccion ?? ''),
+                        onSave: (customerData) {
+                          context.read<ProformaBloc>().add(SetManualCustomerData(customerData));
+                          setState(() => _editandoCliente = false);
+                        },
+                      ),
+                      TextButton(onPressed: () => setState(() => _editandoCliente = false), child: const Text('Cancelar')),
+                    ],
+                  );
+                }
                 switch (state.addStatus) {
                   case ProformaStatus.loading:
                     return const Center(
@@ -289,7 +313,7 @@ class _AddFormProformaState extends State<AddFormProforma> {
                         ),
                         const SizedBox(height: 10),
                         const Text(
-                          'Puedes ingresar los datos manualmente:',
+                          'Escribe aquí el DNI/RUC y el nombre completo:',
                           style: TextStyle(fontWeight: FontWeight.w500),
                         ),
                         const SizedBox(height: 15),
@@ -336,6 +360,11 @@ class _AddFormProformaState extends State<AddFormProforma> {
                                 ),
                               ),
                             ],
+                          ),
+                          TextButton.icon(
+                            onPressed: () => setState(() => _editandoCliente = true),
+                            icon: const Icon(Icons.edit, size: 16),
+                            label: const Text('Corregir DNI / nombre'),
                           ),
                           const SizedBox(height: 10),
                           Row(
@@ -541,12 +570,19 @@ class _AddFormProformaState extends State<AddFormProforma> {
                       );
                     }
                   case ProformaStatus.initial:
-                    return const SizedBox();
+                    return Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: () => setState(() => _editandoCliente = true),
+                        icon: const Icon(Icons.edit_note),
+                        label: const Text('Escribir DNI y nombre a mano (sin buscar)'),
+                      ),
+                    );
                 }
               },
             ),
           ],
-        ),
+        )),
       ),
     );
   }

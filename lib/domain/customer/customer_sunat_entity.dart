@@ -21,7 +21,7 @@ class CustomerSunatEntity extends Equatable {
 
   String get customerFullName => ruc != null
       ? nombre ?? ''
-      : '${nombre ?? ''} ${apellidoMaterno ?? ''} ${apellidoPaterno ?? ''}';
+      : '${nombre ?? ''} ${apellidoMaterno ?? ''} ${apellidoPaterno ?? ''}'.trim();
 
   static CustomerSunatEntity getCustomerSunatFromMap(Map<String, dynamic> map) {
     return CustomerSunatEntity(

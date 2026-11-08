@@ -269,7 +269,7 @@ class ProformaBloc extends Bloc<ProformaEvent, ProformaState> {
               previousValue + (element['cantidad']! * element['precio']!)),
       'nombres': state.customer?.nombre,
       'apellidos':
-          '${state.customer?.apellidoPaterno} ${state.customer?.apellidoMaterno}',
+          '${state.customer?.apellidoPaterno ?? ''} ${state.customer?.apellidoMaterno ?? ''}'.trim(),
       'direccion': '${state.customer?.domicilio?.direccion}',
       'dni': '${state.customer?.customerDocument}',
       'usuarioId': event.userId,
