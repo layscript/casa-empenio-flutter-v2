@@ -666,7 +666,7 @@ class _HoyTabState extends State<_HoyTab> with AutomaticKeepAliveClientMixin {
     if (mounted) setState(() => _ocupado = null);
   }
 
-  Future<void> _manual(Map item, String estado) async {
+  Future<void> _manual(Map item, String estado, {String? horaEntrada}) async {
     final t = _mapa(item['trabajador']);
     int dias = 1;
     String? nota;
@@ -690,6 +690,7 @@ class _HoyTabState extends State<_HoyTab> with AutomaticKeepAliveClientMixin {
     try {
       await widget.api.post('/rrhh/asistencia/manual', {
         'trabajadorId': t['id'], 'estado': estado, 'fecha': _fecha, 'dias': dias, 'nota': nota, 'usuarioId': widget.api.usuarioId,
+        if (horaEntrada != null) 'horaEntrada': horaEntrada,
         if (fraccion != null) ...fraccion,
       });
       if (mounted) _aviso(context, '${t['nombres']}: ${_estadoAsisTxt[estado]}');
@@ -1014,7 +1015,7 @@ class _HoyTabState extends State<_HoyTab> with AutomaticKeepAliveClientMixin {
     Widget accion;
     if (ocupado) {
       accion = const SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 2));
-    } else if (esHoy && (a == null || (a['auto'] == true && estado == 'FERIADO'))) {
+    } else if (esHoy && (a == null || (a['auto'] == true && (estado == 'FERIADO' || estado == 'DESCANSO')))) {
       accion = Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.end, children: [
         FilledButton.icon(
           style: FilledButton.styleFrom(backgroundColor: Colors.green.shade700),
@@ -1028,6 +1029,12 @@ class _HoyTabState extends State<_HoyTab> with AutomaticKeepAliveClientMixin {
           icon: const Icon(Icons.check_circle_outline, size: 16),
           label: const Text('Trabajó hoy (sin foto)', style: TextStyle(fontSize: 12)),
         ),
+        TextButton.icon(
+          style: TextButton.styleFrom(visualDensity: VisualDensity.compact, padding: EdgeInsets.zero),
+          onPressed: () => _manual(it, 'PRESENTE', horaEntrada: '08:00'),
+          icon: const Icon(Icons.wb_sunny_outlined, size: 16),
+          label: const Text('Asistió 8:00 am', style: TextStyle(fontSize: 12)),
+        ),
       ]);
     } else if (esHoy && tieneEntrada && !tieneSalida) {
       accion = FilledButton.icon(
@@ -1037,7 +1044,7 @@ class _HoyTabState extends State<_HoyTab> with AutomaticKeepAliveClientMixin {
         label: const Text('SALIDA'),
       );
     } else if (!esHoy && a == null) {
-      accion = FilledButton.tonalIcon(onPressed: () => _manual(it, 'PRESENTE'), icon: const Icon(Icons.check, size: 18), label: const Text('Asistió'));
+      accion = FilledButton.tonalIcon(onPressed: () => _manual(it, 'PRESENTE', horaEntrada: '08:00'), icon: const Icon(Icons.check, size: 18), label: const Text('Asistió 8:00'));
     } else {
       accion = const SizedBox.shrink();
     }
@@ -1065,12 +1072,12 @@ class _HoyTabState extends State<_HoyTab> with AutomaticKeepAliveClientMixin {
               ]),
             ),
             accion,
-            if (!(a?['auto'] == true && estado == 'DESCANSO'))
             PopupMenuButton<String>(
               tooltip: 'Más',
-              onSelected: (v) => _manual(it, v),
+              onSelected: (v) => v == 'MANANA' ? _manual(it, 'PRESENTE', horaEntrada: '08:00') : _manual(it, v),
               itemBuilder: (_) => [
                 if (a != null && a['auto'] != true) const PopupMenuItem(value: 'SIN_MARCA', child: Text('✖ Quitar marca (no trabajó)', style: TextStyle(color: Colors.red))),
+                const PopupMenuItem(value: 'MANANA', child: Text('☀ Asistió en la mañana (8:00 am)')),
                 const PopupMenuItem(value: 'PRESENTE', child: Text('Presente (sin foto)')),
                 PopupMenuItem(value: 'FALTA', child: Text('Faltó')),
                 PopupMenuItem(value: 'MEDIO_DIA', child: Text('Medio día')),
