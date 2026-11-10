@@ -311,6 +311,7 @@ class _VenderBienPageState extends State<VenderBienPage> {
     final desc = _prod['descripcion'] ?? '';
     return DatosContrato(
       empresaCompra: false,
+      representante: representanteDe(context),
       esVehiculo: vehiculo,
       nombre: _nombre.text,
       dni: _dni.text,

@@ -1,6 +1,8 @@
 import 'dart:typed_data';
 
+import 'package:casa_empenio_pe/domain/domain.dart' show Preferences;
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart' as p;
 import 'package:pdf/widgets.dart' as w;
@@ -20,6 +22,12 @@ const _meses = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto',
   'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ];
+
+/// Línea bajo la firma de la empresa: RUC y quién firma como representante.
+String _lineaEmpresa(DatosContrato d) {
+  final r = (d.representante ?? '').trim();
+  return r.isEmpty ? 'RUC $_ruc' : 'RUC $_ruc\nRepresentante: ${r.toUpperCase()}';
+}
 
 class DatosContrato {
   DatosContrato({
@@ -45,7 +53,11 @@ class DatosContrato {
     this.adelanto,
     this.fechaLimite,
     this.cocheraDia,
+    this.representante,
   });
+
+  /// Trabajador que firma en nombre de la empresa (nombre completo, tomado de su usuario enlazado a RRHH).
+  final String? representante;
 
   /// true: la empresa COMPRA (la persona es VENDEDOR). false: la empresa VENDE.
   final bool empresaCompra;
@@ -280,7 +292,7 @@ Future<Uint8List> crearContratoCompraVentaPdf(
             mainAxisAlignment: w.MainAxisAlignment.spaceAround,
             children: [
               firma(d.nombre.trim().toUpperCase(), 'DNI N° ${d.dni.trim()}', persona, firmaPersona, huellaPersona),
-              firma(_empresa, 'RUC $_ruc', empresaRol, firmaEmpresa, null),
+              firma(_empresa, _lineaEmpresa(d), empresaRol, firmaEmpresa, null),
             ],
           ),
           if (selloDigital != null) ...[
@@ -426,7 +438,7 @@ Future<Uint8List> crearConstanciaCancelacionPdf(
             mainAxisAlignment: w.MainAxisAlignment.spaceAround,
             children: [
               firma(d.nombre.trim().toUpperCase(), 'DNI N° ${d.dni.trim()}', persona, firmaPersona, huellaPersona),
-              firma(_empresa, 'RUC $_ruc', empresaRol, firmaEmpresa, null),
+              firma(_empresa, _lineaEmpresa(d), empresaRol, firmaEmpresa, null),
             ],
           ),
           if (selloDigital != null) ...[
@@ -544,7 +556,7 @@ Future<Uint8List> crearConstanciaDesistimientoPdf(
             mainAxisAlignment: w.MainAxisAlignment.spaceAround,
             children: [
               firma(d.nombre.trim().toUpperCase(), 'DNI N° ${d.dni.trim()}', 'COMPRADOR', firmaPersona, huellaPersona),
-              firma(_empresa, 'RUC $_ruc', 'VENDEDOR', firmaEmpresa, null),
+              firma(_empresa, _lineaEmpresa(d), 'VENDEDOR', firmaEmpresa, null),
             ],
           ),
           if (selloDigital != null) ...[
@@ -751,6 +763,7 @@ class _ContratoCompraVentaPageState extends State<ContratoCompraVentaPage> {
     setState(() => _error = null);
     final datos = DatosContrato(
       empresaCompra: _empresaCompra,
+      representante: representanteDe(context),
       esVehiculo: _esVehiculo,
       nombre: c('nombre').text,
       dni: c('dni').text,
@@ -864,4 +877,10 @@ class _ContratoCompraVentaPageState extends State<ContratoCompraVentaPage> {
       ),
     );
   }
+}
+
+/// Nombre completo de quien está usando la app (el usuario se enlaza con su ficha de RRHH).
+String representanteDe(BuildContext context) {
+  final u = context.read<Preferences>().token;
+  return '${u?.nombre ?? ''} ${u?.apellido ?? ''}'.trim();
 }

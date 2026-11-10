@@ -120,6 +120,7 @@ class _RegistrarCompraPageState extends State<RegistrarCompraPage> {
 
   DatosContrato _datos() => DatosContrato(
         empresaCompra: true,
+      representante: representanteDe(context),
         esVehiculo: _esVehiculo,
         nombre: _nombre.text,
         dni: _dni.text,

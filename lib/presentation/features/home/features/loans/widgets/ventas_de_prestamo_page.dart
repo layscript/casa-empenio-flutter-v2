@@ -93,6 +93,7 @@ class _VentasDePrestamoPageState extends State<VentasDePrestamoPage> {
     final lim = DateTime.tryParse('${venta['fechaLimite']}');
     return DatosContrato(
       empresaCompra: false,
+      representante: representanteDe(context),
       esVehiculo: vehiculo,
       nombre: '${cli['nombres'] ?? ''} ${cli['apellidos'] ?? ''}'.trim(),
       dni: '${cli['dni'] ?? ''}',
