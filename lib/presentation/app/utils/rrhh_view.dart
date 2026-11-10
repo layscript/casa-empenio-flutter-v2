@@ -3091,8 +3091,8 @@ class _BoletaPageState extends State<_BoletaPage> {
                     color: anulada ? Colors.red.shade50 : pagada ? Colors.green.shade50 : Colors.amber.shade50,
                     child: Text(anulada ? 'ANULADA' : pagada ? 'PAGADA' : 'Pendiente de pago', style: TextStyle(fontWeight: FontWeight.bold, color: anulada ? Colors.red : pagada ? Colors.green.shade800 : Colors.orange.shade900)),
                   ),
-                  _DetalleBoleta(b: _b),
                   if (!anulada) _pagosEntidades(),
+                  _DetalleBoleta(b: _b),
                   const SizedBox(height: 16),
                   OutlinedButton.icon(
                     onPressed: () async => mostrarPdf(await pdfBoleta(_b, nombre: _b['trabajadorNombre']?.toString()), 'Boleta ${_b['trabajadorNombre']} ${_b['periodo']}'),
