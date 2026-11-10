@@ -503,8 +503,8 @@ class _EquipoTabState extends State<_EquipoTab> {
   }
 
   Future<void> _darAcceso(Map<String, dynamic> t) async {
-    final usuario = TextEditingController();
-    final clave = TextEditingController();
+    final usuario = TextEditingController(text: (t['dni'] ?? '').toString());
+    final clave = TextEditingController(text: (t['dni'] ?? '').toString());
     final sel = <String>{};
     String? error;
     bool ocupado = false;

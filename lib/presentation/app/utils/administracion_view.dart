@@ -741,6 +741,8 @@ class _UsuariosTabState extends State<_UsuariosTab> {
   List<Map<String, dynamic>> _sucursales = <Map<String, dynamic>>[];
   List<Map<String, dynamic>> _resumen = <Map<String, dynamic>>[];
   List<Map<String, dynamic>> _modulosRes = <Map<String, dynamic>>[];
+  List<Map<String, dynamic>> _trabs = <Map<String, dynamic>>[];
+  List<Map<String, dynamic>> _vinc = <Map<String, dynamic>>[];
   bool _cargando = true;
   String? _error;
 
@@ -769,6 +771,14 @@ class _UsuariosTabState extends State<_UsuariosTab> {
       try {
         final rs = await _dio.get('/sucursal');
         _sucursales = _filas(_cuerpo(rs));
+      } catch (_) {}
+      try {
+        final yo = context.read<Preferences>().token?.id ?? 0;
+        final rv = _cuerpo(await _dio.get('/operacion/vinculos', queryParameters: {'usuarioId': yo}));
+        if (rv is Map) {
+          _trabs = _filas(rv['trabajadores']);
+          _vinc = _filas(rv['usuarios']);
+        }
       } catch (_) {}
       try {
         final rz = _cuerpo(await _dio.get('/acceso/resumen'));
@@ -817,6 +827,195 @@ class _UsuariosTabState extends State<_UsuariosTab> {
       _aviso(context, _msg(e));
     }
     await _cargar();
+  }
+
+
+  /// Trabajador de RRHH enlazado a este usuario (o null).
+  String? _trabajadorDe(Map<String, dynamic> u) {
+    for (final v in _vinc) {
+      if (v['id'] == u['id']) return v['trabajadorNombre']?.toString();
+    }
+    return null;
+  }
+
+  Future<void> _nuevoDesdeRrhh() async {
+    final libres = _trabs.where((t) => t['usuarioId'] == null).toList();
+    final t = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (dc) => SimpleDialog(
+        title: const Text('¿A qué trabajador le das acceso?'),
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(24, 0, 24, 8),
+            child: Text('Solo salen trabajadores registrados en Recursos Humanos que aún no tienen usuario. Si falta alguien, regístralo primero en RRHH.', style: TextStyle(fontSize: 12, color: Colors.black54)),
+          ),
+          if (libres.isEmpty) const Padding(padding: EdgeInsets.all(24), child: Text('Todos los trabajadores ya tienen usuario.')),
+          for (final x in libres)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(dc, x),
+              child: Text('${x['nombre']}${x['cargo'] != null ? '  ·  ${x['cargo']}' : ''}'),
+            ),
+        ],
+      ),
+    );
+    if (t == null || !mounted) return;
+    final usuario = TextEditingController(text: (t['dni'] ?? '').toString());
+    final clave = TextEditingController(text: (t['dni'] ?? '').toString());
+    final sel = <String>{};
+    String? error;
+    bool ocupado = false;
+    const opciones = {'ADMIN': 'Administrador (dueño, ve todo)', 'GERENTE': 'Gerente (encargado de tienda)', 'VENDEDOR': 'Vendedor', 'RECEPCION': 'Recepción', 'MANTENIMIENTO': 'Mantenimiento'};
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dc) => StatefulBuilder(
+        builder: (dc, set) => AlertDialog(
+          title: Text('Acceso para ${t['nombre']}'),
+          content: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(t['dni'] != null ? 'DNI ${t['dni']}: entrará con su DNI como usuario y como contraseña. Puedes cambiarlos.' : 'Este trabajador no tiene DNI en RRHH: escribe un usuario y una contraseña.', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+              TextField(controller: usuario, autocorrect: false, decoration: const InputDecoration(labelText: 'Usuario (mínimo 4, sin espacios)')),
+              TextField(controller: clave, decoration: const InputDecoration(labelText: 'Contraseña (mínimo 6)')),
+              const SizedBox(height: 10),
+              const Text('Puesto:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              for (final e in opciones.entries)
+                CheckboxListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(e.value),
+                  value: sel.contains(e.key),
+                  onChanged: (v) => set(() {
+                    if (v == true) {
+                      if (e.key == 'ADMIN' || e.key == 'GERENTE') {
+                        sel.clear();
+                      } else {
+                        sel.remove('ADMIN');
+                        sel.remove('GERENTE');
+                      }
+                      sel.add(e.key);
+                    } else {
+                      sel.remove(e.key);
+                    }
+                  }),
+                ),
+              if (error != null) Text(error!, style: const TextStyle(color: Colors.red)),
+            ]),
+          ),
+          actions: [
+            TextButton(onPressed: ocupado ? null : () => Navigator.pop(dc, false), child: const Text('Cancelar')),
+            FilledButton(
+              onPressed: ocupado
+                  ? null
+                  : () async {
+                      if (sel.isEmpty) {
+                        set(() => error = 'Elige al menos un puesto');
+                        return;
+                      }
+                      set(() {
+                        ocupado = true;
+                        error = null;
+                      });
+                      try {
+                        await _dio.post('/operacion/dar-acceso', data: {
+                          'adminId': context.read<Preferences>().token?.id ?? 0,
+                          'trabajadorId': t['id'],
+                          'userName': usuario.text.trim(),
+                          'password': clave.text,
+                          'puestos': sel.toList(),
+                          'sucursalId': t['sucursalId'],
+                        });
+                        if (dc.mounted) Navigator.pop(dc, true);
+                      } catch (e) {
+                        set(() {
+                          ocupado = false;
+                          error = _msg(e);
+                        });
+                      }
+                    },
+              child: const Text('Crear acceso'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (ok == true) {
+      if (mounted) _aviso(context, 'Acceso creado para ${t['nombre']}. Entrégale su usuario y contraseña.');
+      await _cargar();
+    }
+  }
+
+  /// Enlaza un usuario que ya existe con un trabajador de RRHH y le copia su nombre real.
+  Future<void> _vincularConRrhh(Map<String, dynamic> u) async {
+    final libres = _trabs.where((t) => t['usuarioId'] == null).toList();
+    if (libres.isEmpty) {
+      _aviso(context, 'No hay trabajadores libres en Recursos Humanos. Registra primero al trabajador allá.');
+      return;
+    }
+    Map<String, dynamic>? sel;
+    bool usarDni = false;
+    bool claveDni = false;
+    String? error;
+    bool ocupado = false;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dc) => StatefulBuilder(
+        builder: (dc, set) => AlertDialog(
+          title: Text('Vincular a ${u['nombre'] ?? ''} ${u['apellido'] ?? ''}'.trim()),
+          content: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('Elige quién es en Recursos Humanos. Se copiará su nombre completo y quedará enlazado a su asistencia y tareas.', style: TextStyle(fontSize: 12, color: Colors.black54)),
+              const SizedBox(height: 8),
+              DropdownButton<Map<String, dynamic>>(
+                isExpanded: true,
+                value: sel,
+                hint: const Text('Trabajador de RRHH'),
+                items: [for (final t in libres) DropdownMenuItem(value: t, child: Text('${t['nombre']}', overflow: TextOverflow.ellipsis))],
+                onChanged: (x) => set(() => sel = x),
+              ),
+              if (sel != null && sel!['dni'] != null) ...[
+                CheckboxListTile(dense: true, contentPadding: EdgeInsets.zero, title: Text('Que entre con su DNI (${sel!['dni']}) como usuario'), value: usarDni, onChanged: (v) => set(() => usarDni = v == true)),
+                CheckboxListTile(dense: true, contentPadding: EdgeInsets.zero, title: const Text('Cambiar su contraseña a su DNI'), value: claveDni, onChanged: (v) => set(() => claveDni = v == true)),
+              ] else if (sel != null)
+                const Text('Este trabajador no tiene DNI en RRHH.', style: TextStyle(fontSize: 12, color: Colors.orange)),
+              if (error != null) Text(error!, style: const TextStyle(color: Colors.red)),
+            ]),
+          ),
+          actions: [
+            TextButton(onPressed: ocupado ? null : () => Navigator.pop(dc, false), child: const Text('Cancelar')),
+            FilledButton(
+              onPressed: ocupado || sel == null
+                  ? null
+                  : () async {
+                      set(() {
+                        ocupado = true;
+                        error = null;
+                      });
+                      try {
+                        await _dio.put('/operacion/vincular', data: {
+                          'adminId': context.read<Preferences>().token?.id ?? 0,
+                          'trabajadorId': sel!['id'],
+                          'usuarioId': u['id'],
+                          'sincronizar': true,
+                          'usarDni': usarDni,
+                          'claveDni': claveDni,
+                        });
+                        if (dc.mounted) Navigator.pop(dc, true);
+                      } catch (e) {
+                        set(() {
+                          ocupado = false;
+                          error = _msg(e);
+                        });
+                      }
+                    },
+              child: const Text('Vincular'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (ok == true) {
+      if (mounted) _aviso(context, 'Vinculado con ${sel!['nombre']}');
+      await _cargar();
+    }
   }
 
   Future<void> _formulario({Map<String, dynamic>? u}) async {
@@ -960,7 +1159,7 @@ class _UsuariosTabState extends State<_UsuariosTab> {
         children: [
           const _Aviso(
               'Aquí editas a las personas que usan el sistema. El PUESTO decide todo: solo el puesto "Administrador" da acceso total. '
-              'Para crear a un trabajador nuevo, regístralo primero en Recursos Humanos.'),
+              'Para dar acceso a alguien, regístralo primero en Recursos Humanos y toca "Dar acceso": se jalan sus datos de RRHH.'),
           if (_desajustados.isNotEmpty)
             Card(
               color: Colors.orange.shade50,
@@ -993,9 +1192,9 @@ class _UsuariosTabState extends State<_UsuariosTab> {
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(minimumSize: const Size(0, 48)), // el tema pone ancho infinito: dentro de una fila rompe la pantalla
-                  onPressed: () => _formulario(),
+                  onPressed: _nuevoDesdeRrhh,
                   icon: const Icon(Icons.person_add),
-                  label: const Text('Nuevo'),
+                  label: const Text('Dar acceso'),
                 ),
               ],
             ),
@@ -1015,7 +1214,8 @@ class _UsuariosTabState extends State<_UsuariosTab> {
                 subtitle: Text(
                     '${u['userName'] != null ? '@${u['userName']}  ·  ' : ''}'
                     'Rol: ${u['role'] is Map ? u['role']['nombre'] : 'Sin rol'}\n'
-                    'Sucursal: ${u['sucursal'] is Map ? u['sucursal']['nombre'] : 'Sin sucursal'}'),
+                    'Sucursal: ${u['sucursal'] is Map ? u['sucursal']['nombre'] : 'Sin sucursal'}\n'
+                    '${_trabajadorDe(u) != null ? '✓ RRHH: ${_trabajadorDe(u)}' : (_vinc.isEmpty ? '' : '⚠ Sin vincular a un trabajador de RRHH')}'),
                 isThreeLine: true,
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -1028,6 +1228,8 @@ class _UsuariosTabState extends State<_UsuariosTab> {
                       onSelected: (v) {
                         if (v == 'e') {
                           _formulario(u: u);
+                        } else if (v == 'v') {
+                          _vincularConRrhh(u);
                         } else if (v == 'k') {
                           _restablecerClave(u);
                         } else {
@@ -1036,6 +1238,8 @@ class _UsuariosTabState extends State<_UsuariosTab> {
                       },
                       itemBuilder: (_) => [
                         const PopupMenuItem(value: 'e', child: Text('Editar')),
+                        if (_vinc.isNotEmpty && _trabajadorDe(u) == null)
+                          const PopupMenuItem(value: 'v', child: Text('Vincular con trabajador de RRHH')),
                         if (_puedeRestablecer)
                           const PopupMenuItem(
                               value: 'k', child: Text('Restablecer contraseña')),
