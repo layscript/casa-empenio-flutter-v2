@@ -872,7 +872,7 @@ class _UsuariosTabState extends State<_UsuariosTab> {
           title: Text('Acceso para ${t['nombre']}'),
           content: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(t['dni'] != null ? 'DNI ${t['dni']}: entrará con su DNI como usuario y como contraseña. Puedes cambiarlos.' : 'Este trabajador no tiene DNI en RRHH: escribe un usuario y una contraseña.', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+              Text(t['dni'] != null ? 'DNI ${t['dni']}: entrará con su DNI como usuario y como contraseña. Puedes cambiarlos.' : (t.containsKey('dni') ? 'Este trabajador no tiene DNI en RRHH: escribe un usuario y una contraseña.' : 'El servidor aún no se actualizó para leer el DNI: escribe un usuario y una contraseña.'), style: const TextStyle(fontSize: 12, color: Colors.black54)),
               TextField(controller: usuario, autocorrect: false, decoration: const InputDecoration(labelText: 'Usuario (mínimo 4, sin espacios)')),
               TextField(controller: clave, decoration: const InputDecoration(labelText: 'Contraseña (mínimo 6)')),
               const SizedBox(height: 10),
@@ -975,7 +975,7 @@ class _UsuariosTabState extends State<_UsuariosTab> {
                 CheckboxListTile(dense: true, contentPadding: EdgeInsets.zero, title: Text('Que entre con su DNI (${sel!['dni']}) como usuario'), value: usarDni, onChanged: (v) => set(() => usarDni = v == true)),
                 CheckboxListTile(dense: true, contentPadding: EdgeInsets.zero, title: const Text('Cambiar su contraseña a su DNI'), value: claveDni, onChanged: (v) => set(() => claveDni = v == true)),
               ] else if (sel != null)
-                const Text('Este trabajador no tiene DNI en RRHH.', style: TextStyle(fontSize: 12, color: Colors.orange)),
+                Text(sel!.containsKey('dni') ? 'Este trabajador no tiene DNI en RRHH.' : 'El servidor aún no se actualizó para leer el DNI. Puedes vincular igual; el DNI saldrá cuando se actualice.', style: const TextStyle(fontSize: 12, color: Colors.orange)),
               if (error != null) Text(error!, style: const TextStyle(color: Colors.red)),
             ]),
           ),
