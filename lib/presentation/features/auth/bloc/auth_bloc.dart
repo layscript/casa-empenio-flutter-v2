@@ -170,8 +170,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
       result.fold(
         (error) async {
-          _preferences.removeToken();
-          emit(const UnAuthenticated());
+          // Un fallo momentáneo del servidor no debe sacar a la persona de la app:
+          // se queda con su sesión actual y se vuelve a intentar después.
+          final actual = _preferences.token;
+          if (actual == null) {
+            emit(const UnAuthenticated());
+          } else {
+            emit(Authenticated(actual, state.modulos ?? []));
+          }
         },
         (user) async {
           await _preferences.setToken(user);
