@@ -107,7 +107,8 @@ void configDio(Preferences preferences) {
           );
         }
         if (preferences.token != null) {
-          options.headers['Authorization'] = 'Token ${preferences.token}';
+          // Solo el número de usuario: antes se enviaba todo el perfil (con todos los módulos del puesto) y el encabezado podía hacerse demasiado grande.
+          options.headers['Authorization'] = 'Token ${preferences.token?.id}';
         }
         // Identifica al usuario para la auditoría del servidor
         final usuarioActual = preferences.token;
