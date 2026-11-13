@@ -1684,7 +1684,7 @@ class _BienPageState extends State<_BienPage> {
                 FilledButton.tonalIcon(onPressed: _limpiar, icon: const Icon(Icons.cleaning_services), label: const Text('Limpié')),
                 FilledButton.tonalIcon(onPressed: _revision, icon: const Icon(Icons.fact_check), label: const Text('Revisión completa')),
                 OutlinedButton.icon(onPressed: _falla, icon: const Icon(Icons.report_problem, color: Colors.purple), label: const Text('Reportar falla')),
-                if (b['falla'] != null && b['puedePonerPrecio'] == true) OutlinedButton.icon(onPressed: _reparado, icon: const Icon(Icons.build_circle, color: Colors.green), label: const Text('Ya se reparó')),
+                if (b['falla'] != null && b['puedeReparar'] == true) OutlinedButton.icon(onPressed: _reparado, icon: const Icon(Icons.build_circle, color: Colors.green), label: const Text('Ya se reparó')),
               ]),
               const SizedBox(height: 6),
               Text(
