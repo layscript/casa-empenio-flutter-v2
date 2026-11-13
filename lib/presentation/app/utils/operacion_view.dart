@@ -1149,3 +1149,689 @@ class VerComoTile extends StatelessWidget {
     );
   }
 }
+
+
+// ============================================================ TIENDA Y ALMACÉN (vendedor: consultar y cuidar; sin vender)
+String _soles(dynamic v) {
+  if (v == null) return '—';
+  final n = (v as num).toDouble();
+  final partes = n.toStringAsFixed(n == n.roundToDouble() ? 0 : 2).split('.');
+  final ent = partes[0].replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
+  return 'S/ ${partes.length > 1 ? '$ent.${partes[1]}' : ent}';
+}
+
+Color _colorBien(String s) => s == 'FALLA' ? Colors.purple : s == 'ROJO' ? Colors.red : s == 'AMARILLO' ? Colors.orange : Colors.green;
+
+class TiendaTile extends StatefulWidget {
+  const TiendaTile({super.key});
+  @override
+  State<TiendaTile> createState() => _TiendaTileState();
+}
+
+class _TiendaTileState extends State<TiendaTile> {
+  int _n = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        final r = await _dio.get<dynamic>('/operacion/tienda/resumen', queryParameters: {'usuarioId': _uid(context)});
+        final m = _mapa(_cuerpo(r));
+        if (mounted) setState(() => _n = ((m['pendientes'] as num?)?.toInt() ?? 0) + ((m['fallasTienda'] as num?)?.toInt() ?? 0));
+      } catch (_) {}
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: const Icon(Icons.storefront_outlined, color: Colors.deepOrange),
+      title: const Text('Tienda y almacén', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+      subtitle: const Text('Mi lista, precios, prender, limpiar y fallas', style: TextStyle(fontSize: 11)),
+      trailing: _n > 0 ? CircleAvatar(radius: 11, backgroundColor: Colors.red, child: Text('$_n', style: const TextStyle(color: Colors.white, fontSize: 11))) : null,
+      onTap: () {
+        Navigator.pop(context);
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const TiendaPage()));
+      },
+    );
+  }
+}
+
+class TiendaPage extends StatefulWidget {
+  const TiendaPage({super.key});
+  @override
+  State<TiendaPage> createState() => _TiendaPageState();
+}
+
+class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateMixin {
+  late TabController _tab;
+  bool _esGerente = false;
+  Map<String, dynamic> _resumen = {};
+  List<Map<String, dynamic>> _mia = [];
+  List<Map<String, dynamic>> _venta = [];
+  List<Map<String, dynamic>> _fallas = [];
+  int _totalVenta = 0;
+  bool _cargando = true;
+  String? _error;
+  final _codigo = TextEditingController();
+  final _buscar = TextEditingController();
+  bool _agregando = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tab = TabController(length: 3, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _cargar());
+  }
+
+  @override
+  void dispose() {
+    _tab.dispose();
+    _codigo.dispose();
+    _buscar.dispose();
+    super.dispose();
+  }
+
+  Future<void> _cargar() async {
+    setState(() {
+      _cargando = true;
+      _error = null;
+    });
+    try {
+      final uid = _uid(context);
+      final rl = _mapa(_cuerpo(await _dio.get<dynamic>('/operacion/tienda/lista', queryParameters: {'usuarioId': uid})));
+      _mia = _lista(rl['items']);
+      final rr = _mapa(_cuerpo(await _dio.get<dynamic>('/operacion/tienda/resumen', queryParameters: {'usuarioId': uid})));
+      _resumen = _mapa(rl['resumen']);
+      _esGerente = rr['esGerente'] == true;
+      if (_esGerente) {
+        final rf = _mapa(_cuerpo(await _dio.get<dynamic>('/operacion/tienda/fallas', queryParameters: {'usuarioId': uid})));
+        _fallas = _lista(rf['items']);
+      }
+      await _buscarVenta(sinCargando: true);
+    } catch (e) {
+      _error = _err(e);
+    }
+    if (mounted) setState(() => _cargando = false);
+  }
+
+  Future<void> _buscarVenta({bool sinCargando = false}) async {
+    try {
+      final r = _mapa(_cuerpo(await _dio.get<dynamic>('/operacion/tienda/catalogo', queryParameters: {'usuarioId': _uid(context), 'q': _buscar.text.trim(), 'limit': 60})));
+      _venta = _lista(r['items']);
+      _totalVenta = (r['total'] as num?)?.toInt() ?? _venta.length;
+      if (!sinCargando && mounted) setState(() {});
+    } catch (e) {
+      if (mounted) _aviso(context, _err(e), error: true);
+    }
+  }
+
+  Future<void> _agregarPorCodigo() async {
+    final t = _codigo.text.trim();
+    if (t.isEmpty) return;
+    setState(() => _agregando = true);
+    try {
+      final r = _mapa(_cuerpo(await _dio.post<dynamic>('/operacion/tienda/lista', data: {'usuarioId': _uid(context), 'codigo': t})));
+      if (r['agregado'] == false && r['candidatos'] is List) {
+        final cands = _lista(r['candidatos']);
+        if (!mounted) return;
+        final elegido = await showDialog<Map<String, dynamic>>(
+          context: context,
+          builder: (dc) => SimpleDialog(
+            title: const Text('Hay varios, ¿cuál es?'),
+            children: [for (final c in cands) SimpleDialogOption(onPressed: () => Navigator.pop(dc, c), child: Text('${c['codigo']} · ${c['descripcion']}'))],
+          ),
+        );
+        if (elegido != null && mounted) {
+          await _dio.post<dynamic>('/operacion/tienda/lista', data: {'usuarioId': _uid(context), 'bienId': elegido['id']});
+        }
+      } else if (r['yaEstaba'] == true && mounted) {
+        _aviso(context, 'Ya estaba en tu lista');
+      } else if (mounted) {
+        _aviso(context, 'Agregado: ${_mapa(r['item'])['descripcion'] ?? ''}');
+      }
+      _codigo.clear();
+      await _cargar();
+    } catch (e) {
+      if (mounted) _aviso(context, _err(e), error: true);
+    }
+    if (mounted) setState(() => _agregando = false);
+  }
+
+  Future<void> _agregarTodo() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dc) => AlertDialog(
+        title: const Text('Agregar todo lo que está a la venta'),
+        content: const Text('Se agrega a tu lista todo lo que hay a la venta en tu sucursal. Después puedes quitar lo que no está a tu cargo.'),
+        actions: [TextButton(onPressed: () => Navigator.pop(dc, false), child: const Text('Cancelar')), FilledButton(onPressed: () => Navigator.pop(dc, true), child: const Text('Agregar todo'))],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      final r = _mapa(_cuerpo(await _dio.post<dynamic>('/operacion/tienda/lista/todo', data: {'usuarioId': _uid(context), 'sucursalId': _sid(context)})));
+      if (mounted) _aviso(context, 'Se agregaron ${r['agregados']} (ya estaban ${r['yaEstaban']})');
+      await _cargar();
+    } catch (e) {
+      if (mounted) _aviso(context, _err(e), error: true);
+    }
+  }
+
+  Future<void> _abrir(Map<String, dynamic> b) async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => _BienPage(bienId: (b['id'] as num).toInt())));
+    if (mounted) _cargar();
+  }
+
+  Widget _chip(String t, Color c) => Container(
+        margin: const EdgeInsets.only(right: 6, top: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(color: c.withOpacity(0.12), borderRadius: BorderRadius.circular(10), border: Border.all(color: c.withOpacity(0.5))),
+        child: Text(t, style: TextStyle(fontSize: 11, color: c, fontWeight: FontWeight.w600)),
+      );
+
+  Widget _tarjeta(Map<String, dynamic> b, {bool conAgregar = false}) {
+    final pend = _lista(b['pendientes']);
+    final sem = (b['semaforo'] ?? 'VERDE').toString();
+    final foto = (b['imagen'] ?? '').toString();
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: _colorBien(sem).withOpacity(0.6), width: 1.2)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _abrir(b),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: foto.isEmpty
+                  ? Container(width: 70, height: 70, color: Colors.grey.shade200, child: Icon(b['esVehiculo'] == true ? Icons.two_wheeler : Icons.inventory_2_outlined, color: Colors.grey))
+                  : Image.network('$endPointPrincipal/$foto', width: 70, height: 70, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(width: 70, height: 70, color: Colors.grey.shade200, child: const Icon(Icons.broken_image, color: Colors.grey))),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('${b['codigo']}${(b['placa'] ?? '').toString().isNotEmpty ? '  ·  ${b['placa']}' : ''}', style: const TextStyle(fontSize: 12, color: Colors.black54, fontWeight: FontWeight.w600)),
+                Text('${b['descripcion'] ?? ''}', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 2),
+                if (b['precioVenta'] != null)
+                  Text(_soles(b['precioVenta']), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF1B5E20)))
+                else
+                  const Text('Sin precio todavía', style: TextStyle(fontSize: 12, color: Colors.orange)),
+                if (b['precioMinimo'] != null || b['precioMaximo'] != null)
+                  Text('Mín ${_soles(b['precioMinimo'])}  ·  Máx ${_soles(b['precioMaximo'])}', style: const TextStyle(fontSize: 11, color: Colors.black54)),
+                Wrap(children: [
+                  if (b['falla'] != null) _chip('FALLA', Colors.purple),
+                  for (final p in pend.where((p) => p['cuidado'] != 'FALLA')) _chip('${p['texto']}${p['dias'] == null ? ' (nunca)' : ' · ${p['dias']} d'}', p['estado'] == 'ATRASADO' ? Colors.red : Colors.orange),
+                  if (pend.isEmpty && b['falla'] == null) _chip('Al día', Colors.green),
+                ]),
+              ]),
+            ),
+            if (conAgregar)
+              b['enMiLista'] == true
+                  ? const Padding(padding: EdgeInsets.only(top: 4), child: Icon(Icons.check_circle, color: Colors.green))
+                  : IconButton(
+                      tooltip: 'Agregar a mi lista',
+                      icon: const Icon(Icons.add_circle_outline, color: Colors.blue),
+                      onPressed: () async {
+                        try {
+                          await _dio.post<dynamic>('/operacion/tienda/lista', data: {'usuarioId': _uid(context), 'bienId': b['id']});
+                          await _cargar();
+                        } catch (e) {
+                          if (mounted) _aviso(context, _err(e), error: true);
+                        }
+                      },
+                    ),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Widget _resumenFila() {
+    Widget n(String t, dynamic v, Color c) => Expanded(
+          child: Column(children: [Text('${v ?? 0}', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: c)), Text(t, style: const TextStyle(fontSize: 11, color: Colors.black54))]),
+        );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+      child: Row(children: [n('Atrasados', _resumen['rojo'], Colors.red), n('Toca hoy', _resumen['amarillo'], Colors.orange), n('Al día', _resumen['verde'], Colors.green), n('Con falla', _resumen['fallas'], Colors.purple)]),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Tienda y almacén'),
+        bottom: TabBar(controller: _tab, tabs: [
+          const Tab(text: 'Mi lista'),
+          const Tab(text: 'A la venta'),
+          Tab(text: _esGerente ? 'Fallas (${_fallas.length})' : 'Mis fallas'),
+        ]),
+        actions: [IconButton(onPressed: _cargar, icon: const Icon(Icons.refresh))],
+      ),
+      body: _cargando
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [Text(_error!, textAlign: TextAlign.center), const SizedBox(height: 8), OutlinedButton(onPressed: _cargar, child: const Text('Reintentar'))])))
+              : TabBarView(controller: _tab, children: [
+                  // ---- Mi lista
+                  RefreshIndicator(
+                    onRefresh: _cargar,
+                    child: ListView(children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+                        child: Row(children: [
+                          Expanded(child: TextField(controller: _codigo, textCapitalization: TextCapitalization.characters, onSubmitted: (_) => _agregarPorCodigo(), decoration: const InputDecoration(labelText: 'Código o placa', hintText: 'Ej. VEH-003 o ABC-123', prefixIcon: Icon(Icons.qr_code_2), border: OutlineInputBorder(), isDense: true))),
+                          const SizedBox(width: 8),
+                          FilledButton(onPressed: _agregando ? null : _agregarPorCodigo, child: _agregando ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Agregar')),
+                        ]),
+                      ),
+                      Align(alignment: Alignment.centerLeft, child: TextButton.icon(onPressed: _agregarTodo, icon: const Icon(Icons.playlist_add), label: const Text('Agregar todo lo que está a la venta'))),
+                      if (_mia.isNotEmpty) _resumenFila(),
+                      if (_mia.isEmpty)
+                        const Padding(padding: EdgeInsets.all(28), child: Text('Tu lista está vacía.\nEscribe un código o placa arriba, o entra a "A la venta" y toca + en lo que está a tu cargo.', textAlign: TextAlign.center, style: TextStyle(color: Colors.black54))),
+                      for (final b in _mia) _tarjeta(b),
+                      const SizedBox(height: 24),
+                    ]),
+                  ),
+                  // ---- A la venta
+                  Column(children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+                      child: TextField(controller: _buscar, onSubmitted: (_) => _buscarVenta(), decoration: InputDecoration(labelText: 'Buscar por código, placa, marca o nombre', prefixIcon: const Icon(Icons.search), suffixIcon: IconButton(icon: const Icon(Icons.arrow_forward), onPressed: _buscarVenta), border: const OutlineInputBorder(), isDense: true)),
+                    ),
+                    Padding(padding: const EdgeInsets.symmetric(horizontal: 14), child: Align(alignment: Alignment.centerLeft, child: Text('$_totalVenta a la venta${_totalVenta > _venta.length ? ' (mostrando ${_venta.length}, busca para afinar)' : ''}', style: const TextStyle(fontSize: 12, color: Colors.black54)))),
+                    Expanded(child: ListView(children: [for (final b in _venta) _tarjeta(b, conAgregar: true), const SizedBox(height: 24)])),
+                  ]),
+                  // ---- Fallas
+                  RefreshIndicator(
+                    onRefresh: _cargar,
+                    child: ListView(children: [
+                      if (!_esGerente)
+                        Padding(padding: const EdgeInsets.all(16), child: Text(_mia.where((b) => b['falla'] != null).isEmpty ? 'Ninguno de tus bienes tiene fallas.' : 'Estos bienes tuyos tienen una falla reportada. El gerente decide la reparación.', style: const TextStyle(color: Colors.black54))),
+                      if (_esGerente && _fallas.isEmpty) const Padding(padding: EdgeInsets.all(24), child: Text('No hay fallas abiertas en la tienda. 👍', textAlign: TextAlign.center)),
+                      for (final b in (_esGerente ? _fallas : _mia.where((b) => b['falla'] != null).toList())) _tarjetaFalla(b),
+                      const SizedBox(height: 24),
+                    ]),
+                  ),
+                ]),
+    );
+  }
+
+  Widget _tarjetaFalla(Map<String, dynamic> b) {
+    final f = _mapa(b['falla']);
+    return Column(children: [
+      _tarjeta(b),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(color: Colors.purple.withOpacity(0.07), borderRadius: BorderRadius.circular(8)),
+          child: Text('⚠ ${f['texto'] ?? ''}\nReportó ${f['por'] ?? '—'} · ${f['fecha'] ?? ''}${f['dias'] != null ? ' · hace ${f['dias']} día(s)' : ''}', style: const TextStyle(fontSize: 12)),
+        ),
+      ),
+    ]);
+  }
+}
+
+class _BienPage extends StatefulWidget {
+  const _BienPage({required this.bienId});
+  final int bienId;
+  @override
+  State<_BienPage> createState() => _BienPageState();
+}
+
+class _BienPageState extends State<_BienPage> {
+  Map<String, dynamic>? _b;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _cargar());
+  }
+
+  Future<void> _cargar() async {
+    try {
+      final r = _mapa(_cuerpo(await _dio.get<dynamic>('/operacion/tienda/bien/${widget.bienId}', queryParameters: {'usuarioId': _uid(context)})));
+      if (mounted) {
+        setState(() {
+          _b = r;
+          _error = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = _err(e));
+    }
+  }
+
+  Future<void> _cuidado(Map<String, dynamic> datos, String ok) async {
+    await _dio.post<dynamic>('/operacion/tienda/cuidado', data: {'usuarioId': _uid(context), 'bienId': widget.bienId, ...datos});
+    if (mounted) _aviso(context, ok);
+    await _cargar();
+  }
+
+  Future<void> _prender() async {
+    final b = _b!;
+    final hecho = await showModalBottomSheet<String>(
+      context: context,
+      builder: (dc) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(title: Text(b['esVehiculo'] == true ? '¿Prendió?' : '¿Funciona?', style: const TextStyle(fontWeight: FontWeight.w700))),
+          ListTile(leading: const Icon(Icons.check_circle, color: Colors.green), title: Text(b['esVehiculo'] == true ? 'Sí, prendió y lo probé' : 'Sí, funciona'), onTap: () => Navigator.pop(dc, 'PRENDIO')),
+          ListTile(leading: const Icon(Icons.cancel, color: Colors.red), title: Text(b['esVehiculo'] == true ? 'No arranca / tiene falla' : 'No funciona'), onTap: () => Navigator.pop(dc, 'NO_ARRANCA')),
+        ]),
+      ),
+    );
+    if (hecho == null || !mounted) return;
+    final falla = hecho == 'NO_ARRANCA';
+    final ok = await _fotoMasNota(
+      context,
+      titulo: falla ? 'Foto y qué falla tiene' : 'Foto del bien funcionando',
+      enviar: (foto, nota) async {
+        if (falla && nota.isEmpty) throw 'Escribe qué falla tiene (ej. no hace corriente, no prende el motor)';
+        await _cuidado({'tipo': 'PRENDER', 'resultado': hecho, 'foto': foto, 'nota': nota}, falla ? 'Falla reportada al gerente' : 'Listo: anotado');
+      },
+    );
+    if (ok && mounted) setState(() {});
+  }
+
+  Future<void> _limpiar() async {
+    await _fotoMasNota(context, titulo: 'Limpieza hecha', exigeFoto: false, enviar: (foto, nota) => _cuidado({'tipo': 'LIMPIAR', 'foto': foto, 'nota': nota}, 'Limpieza anotada'));
+  }
+
+  Future<void> _falla() async {
+    await _fotoMasNota(
+      context,
+      titulo: 'Reportar una falla',
+      exigeFoto: false,
+      enviar: (foto, nota) async {
+        if (nota.isEmpty) throw 'Escribe qué falla tiene';
+        await _cuidado({'tipo': 'FALLA', 'foto': foto, 'nota': nota}, 'Falla reportada al gerente');
+      },
+    );
+  }
+
+  Future<void> _reparado() async {
+    await _fotoMasNota(context, titulo: 'Marcar como reparado', exigeFoto: false, enviar: (foto, nota) => _cuidado({'tipo': 'REPARADO', 'foto': foto, 'nota': nota}, 'Marcado como reparado'));
+  }
+
+  Future<void> _revision() async {
+    final r = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => _RevisionPage(bien: _b!)));
+    if (r == true) await _cargar();
+  }
+
+  Future<void> _editarPrecio() async {
+    final b = _b!;
+    final venta = TextEditingController(text: b['precioVenta']?.toString() ?? '');
+    final min = TextEditingController(text: b['precioMinimo']?.toString() ?? '');
+    final max = TextEditingController(text: b['precioMaximo']?.toString() ?? '');
+    final nota = TextEditingController(text: b['notaPrecio']?.toString() ?? '');
+    String? error;
+    bool ocupado = false;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dc) => StatefulBuilder(
+        builder: (dc, set) => AlertDialog(
+          title: const Text('Precio de venta'),
+          content: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              TextField(controller: venta, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Precio de venta (S/)')),
+              TextField(controller: min, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Precio mínimo (hasta dónde se puede bajar)')),
+              TextField(controller: max, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Precio máximo (opcional)')),
+              TextField(controller: nota, decoration: const InputDecoration(labelText: 'Nota (opcional)'), maxLines: 2),
+              if (error != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(error!, style: const TextStyle(color: Colors.red))),
+            ]),
+          ),
+          actions: [
+            TextButton(onPressed: ocupado ? null : () => Navigator.pop(dc, false), child: const Text('Cancelar')),
+            FilledButton(
+              onPressed: ocupado
+                  ? null
+                  : () async {
+                      set(() {
+                        ocupado = true;
+                        error = null;
+                      });
+                      try {
+                        await _dio.put<dynamic>('/operacion/tienda/precio/${widget.bienId}', data: {'usuarioId': _uid(context), 'precioVenta': venta.text.trim(), 'precioMinimo': min.text.trim(), 'precioMaximo': max.text.trim(), 'nota': nota.text.trim()});
+                        if (dc.mounted) Navigator.pop(dc, true);
+                      } catch (e) {
+                        set(() {
+                          ocupado = false;
+                          error = _err(e);
+                        });
+                      }
+                    },
+              child: const Text('Guardar'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (ok == true) await _cargar();
+  }
+
+  Future<void> _quitar() async {
+    try {
+      await _dio.delete<dynamic>('/operacion/tienda/lista/${widget.bienId}', queryParameters: {'usuarioId': _uid(context)});
+      await _cargar();
+      if (mounted) _aviso(context, 'Quitado de tu lista');
+    } catch (e) {
+      if (mounted) _aviso(context, _err(e), error: true);
+    }
+  }
+
+  Future<void> _agregar() async {
+    try {
+      await _dio.post<dynamic>('/operacion/tienda/lista', data: {'usuarioId': _uid(context), 'bienId': widget.bienId});
+      await _cargar();
+    } catch (e) {
+      if (mounted) _aviso(context, _err(e), error: true);
+    }
+  }
+
+  Widget _dato(String k, dynamic v) => (v == null || v.toString().trim().isEmpty)
+      ? const SizedBox.shrink()
+      : Padding(padding: const EdgeInsets.symmetric(vertical: 2), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [SizedBox(width: 110, child: Text(k, style: const TextStyle(color: Colors.black54, fontSize: 13))), Expanded(child: Text(v.toString(), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)))]));
+
+  @override
+  Widget build(BuildContext context) {
+    final b = _b;
+    return Scaffold(
+      appBar: AppBar(title: Text(b == null ? 'Detalle' : '${b['codigo']}')),
+      body: b == null
+          ? Center(child: _error == null ? const CircularProgressIndicator() : Padding(padding: const EdgeInsets.all(24), child: Text(_error!, textAlign: TextAlign.center)))
+          : ListView(padding: const EdgeInsets.all(14), children: [
+              SizedBox(
+                height: 150,
+                child: ListView(scrollDirection: Axis.horizontal, children: [
+                  for (final k in ['imagen', 'imagen2', 'imagen3'])
+                    if ((b[k] ?? '').toString().isNotEmpty) Padding(padding: const EdgeInsets.only(right: 8), child: _foto(b[k].toString(), size: 150)),
+                ]),
+              ),
+              const SizedBox(height: 8),
+              Text('${b['descripcion'] ?? ''}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: Colors.green.withOpacity(0.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.green.withOpacity(0.4))),
+                child: Row(children: [
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      const Text('PRECIO DE VENTA', style: TextStyle(fontSize: 11, color: Colors.black54, fontWeight: FontWeight.w700)),
+                      Text(b['precioVenta'] != null ? _soles(b['precioVenta']) : 'Sin precio todavía', style: TextStyle(fontSize: b['precioVenta'] != null ? 26 : 15, fontWeight: FontWeight.w800, color: const Color(0xFF1B5E20))),
+                      if (b['precioMinimo'] != null || b['precioMaximo'] != null) Text('Mínimo ${_soles(b['precioMinimo'])}   ·   Máximo ${_soles(b['precioMaximo'])}', style: const TextStyle(fontSize: 13)),
+                      if ((b['notaPrecio'] ?? '').toString().isNotEmpty) Text('${b['notaPrecio']}', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                    ]),
+                  ),
+                  if (b['puedePonerPrecio'] == true) IconButton(onPressed: _editarPrecio, icon: const Icon(Icons.edit), tooltip: 'Poner o cambiar precio'),
+                ]),
+              ),
+              if (b['falla'] != null)
+                Container(
+                  margin: const EdgeInsets.only(top: 10),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(color: Colors.purple.withOpacity(0.08), borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.purple.withOpacity(0.4))),
+                  child: Text('⚠ FALLA: ${_mapa(b['falla'])['texto'] ?? ''}\nReportó ${_mapa(b['falla'])['por'] ?? '—'} · ${_mapa(b['falla'])['fecha'] ?? ''}', style: const TextStyle(fontSize: 13)),
+                ),
+              const SizedBox(height: 10),
+              Wrap(spacing: 8, runSpacing: 6, children: [
+                FilledButton.icon(onPressed: _prender, icon: const Icon(Icons.power_settings_new), label: Text(b['esVehiculo'] == true ? 'Prendí / probé' : 'Probé')),
+                FilledButton.tonalIcon(onPressed: _limpiar, icon: const Icon(Icons.cleaning_services), label: const Text('Limpié')),
+                FilledButton.tonalIcon(onPressed: _revision, icon: const Icon(Icons.fact_check), label: const Text('Revisión completa')),
+                OutlinedButton.icon(onPressed: _falla, icon: const Icon(Icons.report_problem, color: Colors.purple), label: const Text('Reportar falla')),
+                if (b['falla'] != null && b['puedePonerPrecio'] == true) OutlinedButton.icon(onPressed: _reparado, icon: const Icon(Icons.build_circle, color: Colors.green), label: const Text('Ya se reparó')),
+              ]),
+              const SizedBox(height: 6),
+              Text(
+                [
+                  if (b['esVehiculo'] == true) 'Prender: ${b['diasPrender'] == null ? 'nunca' : 'hace ${b['diasPrender']} día(s)'} (cada 3)',
+                  'Limpieza: ${b['diasLimpiar'] == null ? 'nunca' : 'hace ${b['diasLimpiar']} día(s)'} (cada 3)',
+                  'Revisión completa: ${b['diasRevisar'] == null ? 'nunca' : 'hace ${b['diasRevisar']} día(s)'} (cada 7)',
+                ].join('\n'),
+                style: const TextStyle(fontSize: 12, color: Colors.black54),
+              ),
+              const Divider(height: 28),
+              const Text('Datos', style: TextStyle(fontWeight: FontWeight.w700)),
+              _dato('Código', b['codigo']),
+              _dato('Placa', b['placa']),
+              _dato('Categoría', b['categoria']),
+              _dato('Marca', b['marca']),
+              _dato('Modelo', b['modelo']),
+              _dato('Color', b['color']),
+              _dato('Año', b['anio']),
+              _dato('Serie', b['serie']),
+              _dato('Motor', b['motor']),
+              _dato('Carrocería', b['carroceria']),
+              _dato('Estado', b['estado']),
+              _dato('Cantidad', b['cantidad']),
+              _dato('Observaciones', b['observaciones']),
+              const SizedBox(height: 8),
+              b['enMiLista'] == true ? TextButton.icon(onPressed: _quitar, icon: const Icon(Icons.remove_circle_outline), label: const Text('Quitar de mi lista')) : TextButton.icon(onPressed: _agregar, icon: const Icon(Icons.add_circle_outline), label: const Text('Agregar a mi lista')),
+              const Divider(height: 24),
+              const Text('Historial', style: TextStyle(fontWeight: FontWeight.w700)),
+              if (_lista(b['historial']).isEmpty) const Padding(padding: EdgeInsets.all(8), child: Text('Todavía sin registros.', style: TextStyle(color: Colors.black54))),
+              for (final h in _lista(b['historial']))
+                ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(h['tipo'] == 'PRENDER' ? Icons.power_settings_new : h['tipo'] == 'LIMPIAR' ? Icons.cleaning_services : h['tipo'] == 'REVISAR' ? Icons.fact_check : h['tipo'] == 'REPARADO' ? Icons.build_circle : Icons.report_problem, color: h['resultado'] == 'FALLA' ? Colors.purple : Colors.green),
+                  title: Text('${{'PRENDER': 'Prendido / probado', 'LIMPIAR': 'Limpieza', 'REVISAR': 'Revisión completa', 'FALLA': 'Falla reportada', 'REPARADO': 'Reparado'}[h['tipo']] ?? h['tipo']}${h['resultado'] == 'FALLA' && h['tipo'] != 'FALLA' ? ' (con falla)' : ''}', style: const TextStyle(fontSize: 13)),
+                  subtitle: Text('${h['fecha']} ${h['hora']} · ${h['por'] ?? ''}${(h['nota'] ?? '').toString().isNotEmpty ? '\n${h['nota']}' : ''}', style: const TextStyle(fontSize: 12)),
+                  trailing: (h['foto'] ?? '').toString().isNotEmpty ? _foto(h['foto'].toString(), size: 44) : null,
+                ),
+              const SizedBox(height: 30),
+            ]),
+    );
+  }
+}
+
+class _RevisionPage extends StatefulWidget {
+  const _RevisionPage({required this.bien});
+  final Map<String, dynamic> bien;
+  @override
+  State<_RevisionPage> createState() => _RevisionPageState();
+}
+
+class _RevisionPageState extends State<_RevisionPage> {
+  final Map<String, bool> _resp = {};
+  final _nota = TextEditingController();
+  String? _fotoRuta;
+  String? _error;
+  bool _ocupado = false;
+
+  @override
+  void dispose() {
+    _nota.dispose();
+    super.dispose();
+  }
+
+  Future<void> _enviar() async {
+    final lista = _lista(widget.bien['checklist']);
+    final falta = lista.where((i) => !_resp.containsKey(i['clave'])).length;
+    if (falta > 0) {
+      setState(() => _error = 'Te falta marcar $falta punto(s): toca ✓ si está bien o ✗ si tiene problema');
+      return;
+    }
+    final malos = _resp.values.where((v) => !v).length;
+    if (malos > 0 && _nota.text.trim().isEmpty) {
+      setState(() => _error = 'Escribe qué encontraste mal');
+      return;
+    }
+    setState(() {
+      _ocupado = true;
+      _error = null;
+    });
+    try {
+      await _dio.post<dynamic>('/operacion/tienda/cuidado', data: {
+        'usuarioId': _uid(context),
+        'bienId': widget.bien['id'],
+        'tipo': 'REVISAR',
+        'checklist': [for (final i in lista) {'clave': i['clave'], 'ok': _resp[i['clave']] == true}],
+        'nota': _nota.text.trim(),
+        'foto': _fotoRuta,
+      });
+      if (mounted) {
+        _aviso(context, malos > 0 ? 'Revisión guardada. Se avisó la falla al gerente' : 'Revisión completa guardada');
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _ocupado = false;
+          _error = _err(e);
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final lista = _lista(widget.bien['checklist']);
+    return Scaffold(
+      appBar: AppBar(title: Text('Revisión · ${widget.bien['codigo']}')),
+      body: ListView(padding: const EdgeInsets.all(12), children: [
+        Text('${widget.bien['descripcion']}', style: const TextStyle(fontWeight: FontWeight.w700)),
+        const SizedBox(height: 4),
+        const Text('Revisa cada punto de verdad (prende, prueba, maneja). Toca ✓ si está bien o ✗ si tiene un problema.', style: TextStyle(fontSize: 12, color: Colors.black54)),
+        const SizedBox(height: 8),
+        for (final i in lista)
+          Card(
+            child: ListTile(
+              dense: true,
+              title: Text('${i['texto']}', style: const TextStyle(fontSize: 13)),
+              trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                IconButton(icon: Icon(Icons.check_circle, color: _resp[i['clave']] == true ? Colors.green : Colors.grey.shade400), onPressed: () => setState(() => _resp[i['clave'].toString()] = true)),
+                IconButton(icon: Icon(Icons.cancel, color: _resp[i['clave']] == false ? Colors.red : Colors.grey.shade400), onPressed: () => setState(() => _resp[i['clave'].toString()] = false)),
+              ]),
+            ),
+          ),
+        TextField(controller: _nota, decoration: const InputDecoration(labelText: 'Qué encontraste (obligatorio si hay ✗)'), maxLines: 2),
+        const SizedBox(height: 8),
+        if (_fotoRuta != null) Align(alignment: Alignment.centerLeft, child: _foto(_fotoRuta!, size: 120)),
+        OutlinedButton.icon(
+          onPressed: _ocupado
+              ? null
+              : () async {
+                  try {
+                    final f = await _tomarYSubir(context);
+                    if (f != null) setState(() => _fotoRuta = f);
+                  } catch (e) {
+                    setState(() => _error = _err(e));
+                  }
+                },
+          icon: const Icon(Icons.photo_camera),
+          label: Text(_fotoRuta == null ? 'Foto (opcional)' : 'Cambiar foto'),
+        ),
+        if (_error != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_error!, style: const TextStyle(color: Colors.red))),
+        const SizedBox(height: 10),
+        FilledButton.icon(onPressed: _ocupado ? null : _enviar, icon: const Icon(Icons.save), label: Text(_ocupado ? 'Guardando…' : 'Guardar revisión')),
+        const SizedBox(height: 30),
+      ]),
+    );
+  }
+}

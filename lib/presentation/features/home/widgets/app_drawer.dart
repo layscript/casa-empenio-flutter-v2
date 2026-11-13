@@ -160,6 +160,7 @@ class _AppDrawerState extends State<AppDrawer> {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const MiDiaPage()));
               },
             ),
+            const TiendaTile(),
             if (auth?.isAdmin == true) const AvisosGerenteTile(),
             if (auth?.isAdmin == true || VistaPrevia.usuario != null) const VerComoTile(),
             if (auth?.isAdmin == true) const QueVeCadaPuestoTile(),
