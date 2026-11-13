@@ -1199,7 +1199,10 @@ class _TiendaTileState extends State<TiendaTile> {
 }
 
 class TiendaPage extends StatefulWidget {
-  const TiendaPage({super.key});
+  const TiendaPage({super.key, this.initialTab = 0});
+
+  /// 0 = Mi lista, 1 = A la venta (buscador con filtros), 2 = Mapa.
+  final int initialTab;
   @override
   State<TiendaPage> createState() => _TiendaPageState();
 }
@@ -1222,6 +1225,10 @@ class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateM
   int _totalVenta = 0;
   String _grupo = '';
   String _zona = '';
+  String _color = '';
+  String _marca = '';
+  List<Map<String, dynamic>> _colores = [];
+  List<Map<String, dynamic>> _marcas = [];
   String _grupoMia = '';
   bool _compacto = true;
   bool _modoSel = false;
@@ -1235,7 +1242,7 @@ class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    _tab = TabController(length: 4, vsync: this);
+    _tab = TabController(length: 4, vsync: this, initialIndex: widget.initialTab.clamp(0, 3));
     WidgetsBinding.instance.addPostFrameCallback((_) => _cargar());
   }
 
@@ -1283,11 +1290,13 @@ class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateM
 
   Future<void> _buscarVenta({bool sinCargando = false}) async {
     try {
-      final r = _mapa(_cuerpo(await _dio.get<dynamic>('/operacion/tienda/catalogo', queryParameters: {'usuarioId': _uid(context), 'q': _buscar.text.trim(), 'grupo': _grupo, 'zona': _zona, 'limit': 150})));
+      final r = _mapa(_cuerpo(await _dio.get<dynamic>('/operacion/tienda/catalogo', queryParameters: {'usuarioId': _uid(context), 'q': _buscar.text.trim(), 'grupo': _grupo, 'zona': _zona, 'color': _color, 'marca': _marca, 'limit': 150})));
       _venta = _lista(r['items']);
       _totalVenta = (r['total'] as num?)?.toInt() ?? _venta.length;
       _grupos = _lista(r['grupos']);
       _zonas = _lista(r['zonas']);
+      _colores = _lista(r['colores']);
+      _marcas = _lista(r['marcas']);
       _sinUbicar = (r['sinUbicar'] as num?)?.toInt() ?? 0;
       if (!sinCargando && mounted) setState(() {});
     } catch (e) {
@@ -1549,12 +1558,16 @@ class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateM
         _boton('Todos', _grupo.isEmpty, () {
           _grupo = '';
           _zona = '';
+          _color = '';
+          _marca = '';
           _buscarVenta();
         }),
         for (final g in _grupos)
           _boton('${g['nombre']} (${g['n']})', _grupo == g['clave'], () {
             _grupo = '${g['clave']}';
             _zona = '';
+            _color = '';
+            _marca = '';
             _buscarVenta();
           }),
       ]),
@@ -1567,6 +1580,8 @@ class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateM
           for (final z in _zonas)
             _boton('${z['zona']} (${z['n']})', _zona == z['zona'], () {
               _zona = '${z['zona']}';
+              _color = '';
+              _marca = '';
               _buscarVenta();
             }, color: Colors.teal),
           if (_sinUbicar > 0)
@@ -1575,10 +1590,40 @@ class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateM
               _buscarVenta();
             }, color: Colors.orange),
         ]),
+      if (_colores.length > 1)
+        _filtros([
+          const Padding(padding: EdgeInsets.only(right: 6), child: Center(child: Text('Color:', style: TextStyle(fontSize: 12, color: Colors.black54)))),
+          for (final c in _colores)
+            _boton('${c['nombre']} (${c['n']})', _color == c['clave'], () {
+              _color = _color == c['clave'] ? '' : '${c['clave']}';
+              _buscarVenta();
+            }, color: Colors.deepPurple),
+        ]),
+      if (_marcas.length > 1)
+        _filtros([
+          const Padding(padding: EdgeInsets.only(right: 6), child: Center(child: Text('Marca:', style: TextStyle(fontSize: 12, color: Colors.black54)))),
+          for (final c in _marcas)
+            _boton('${c['nombre']} (${c['n']})', _marca == c['clave'], () {
+              _marca = _marca == c['clave'] ? '' : '${c['clave']}';
+              _buscarVenta();
+            }, color: Colors.indigo),
+        ]),
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12),
         child: Row(children: [
           Expanded(child: Text('$_totalVenta a la venta${_totalVenta > _venta.length ? ' (mostrando ${_venta.length}, filtra para afinar)' : ''}', style: const TextStyle(fontSize: 12, color: Colors.black54))),
+          if (_grupo.isNotEmpty || _zona.isNotEmpty || _color.isNotEmpty || _marca.isNotEmpty || _buscar.text.isNotEmpty)
+            TextButton(
+              onPressed: () {
+                _grupo = '';
+                _zona = '';
+                _color = '';
+                _marca = '';
+                _buscar.clear();
+                _buscarVenta();
+              },
+              child: const Text('Limpiar filtros'),
+            ),
           IconButton(visualDensity: VisualDensity.compact, tooltip: _compacto ? 'Ver con fotos' : 'Ver lista corta', icon: Icon(_compacto ? Icons.view_agenda_outlined : Icons.view_list), onPressed: () => setState(() => _compacto = !_compacto)),
           TextButton(
             onPressed: () => setState(() {
@@ -2155,6 +2200,24 @@ class _RevisionPageState extends State<_RevisionPage> {
         FilledButton.icon(onPressed: _ocupado ? null : _enviar, icon: const Icon(Icons.save), label: Text(_ocupado ? 'Guardando…' : 'Guardar revisión')),
         const SizedBox(height: 30),
       ]),
+    );
+  }
+}
+
+
+/// Botón grande "Buscar y filtrar": abre el buscador del almacén y la tienda con todos los filtros.
+class BuscadorAlmacenBoton extends StatelessWidget {
+  const BuscadorAlmacenBoton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.tonalIcon(
+        onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const TiendaPage(initialTab: 1))),
+        icon: const Icon(Icons.manage_search),
+        label: const Text('Buscar y filtrar: tipo, color, marca, zona'),
+      ),
     );
   }
 }

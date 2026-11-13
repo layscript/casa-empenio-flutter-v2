@@ -181,6 +181,8 @@ class _SalesViewState extends State<SalesView> {
                         ],
                       ),
                       const SizedBox(height: 10),
+                      const BuscadorAlmacenBoton(),
+                      const SizedBox(height: 10),
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(

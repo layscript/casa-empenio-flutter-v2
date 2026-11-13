@@ -117,7 +117,9 @@ class _ProductsViewLoadedState extends State<ProductsViewLoaded> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
+          const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: BuscadorAlmacenBoton()),
+          const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: SearchProducts(
