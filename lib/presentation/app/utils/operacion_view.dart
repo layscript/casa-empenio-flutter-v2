@@ -1204,6 +1204,9 @@ class TiendaPage extends StatefulWidget {
   State<TiendaPage> createState() => _TiendaPageState();
 }
 
+/// Zonas ya usadas en la tienda (para sugerirlas al ubicar un bien).
+List<String> _zonasConocidas = [];
+
 class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateMixin {
   late TabController _tab;
   bool _esGerente = false;
@@ -1211,7 +1214,18 @@ class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateM
   List<Map<String, dynamic>> _mia = [];
   List<Map<String, dynamic>> _venta = [];
   List<Map<String, dynamic>> _fallas = [];
+  List<Map<String, dynamic>> _grupos = [];
+  List<Map<String, dynamic>> _zonas = [];
+  List<Map<String, dynamic>> _zonasMapa = [];
+  int _sinUbicar = 0;
+  int _sinUbicarMapa = 0;
   int _totalVenta = 0;
+  String _grupo = '';
+  String _zona = '';
+  String _grupoMia = '';
+  bool _compacto = true;
+  bool _modoSel = false;
+  final Set<int> _sel = {};
   bool _cargando = true;
   String? _error;
   final _codigo = TextEditingController();
@@ -1221,7 +1235,7 @@ class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    _tab = TabController(length: 3, vsync: this);
+    _tab = TabController(length: 4, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _cargar());
   }
 
@@ -1250,17 +1264,31 @@ class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateM
         _fallas = _lista(rf['items']);
       }
       await _buscarVenta(sinCargando: true);
+      await _cargarMapa();
     } catch (e) {
       _error = _err(e);
     }
     if (mounted) setState(() => _cargando = false);
   }
 
+  /// Foto general de la tienda por zonas (sin filtros), para la pestaña Mapa.
+  Future<void> _cargarMapa() async {
+    try {
+      final r = _mapa(_cuerpo(await _dio.get<dynamic>('/operacion/tienda/catalogo', queryParameters: {'usuarioId': _uid(context), 'limit': 1})));
+      _zonasMapa = _lista(r['zonas']);
+      _sinUbicarMapa = (r['sinUbicar'] as num?)?.toInt() ?? 0;
+      _zonasConocidas = [for (final z in (r['todasZonas'] is List ? r['todasZonas'] as List : const [])) z.toString()];
+    } catch (_) {}
+  }
+
   Future<void> _buscarVenta({bool sinCargando = false}) async {
     try {
-      final r = _mapa(_cuerpo(await _dio.get<dynamic>('/operacion/tienda/catalogo', queryParameters: {'usuarioId': _uid(context), 'q': _buscar.text.trim(), 'limit': 60})));
+      final r = _mapa(_cuerpo(await _dio.get<dynamic>('/operacion/tienda/catalogo', queryParameters: {'usuarioId': _uid(context), 'q': _buscar.text.trim(), 'grupo': _grupo, 'zona': _zona, 'limit': 150})));
       _venta = _lista(r['items']);
       _totalVenta = (r['total'] as num?)?.toInt() ?? _venta.length;
+      _grupos = _lista(r['grupos']);
+      _zonas = _lista(r['zonas']);
+      _sinUbicar = (r['sinUbicar'] as num?)?.toInt() ?? 0;
       if (!sinCargando && mounted) setState(() {});
     } catch (e) {
       if (mounted) _aviso(context, _err(e), error: true);
@@ -1323,6 +1351,18 @@ class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateM
     if (mounted) _cargar();
   }
 
+  /// Pide la zona y la guarda para uno o varios bienes.
+  Future<void> _ubicarVarios(List<int> ids) async {
+    final ok = await _pedirUbicacion(context, ids, null);
+    if (ok == true && mounted) {
+      setState(() {
+        _modoSel = false;
+        _sel.clear();
+      });
+      await _cargar();
+    }
+  }
+
   Widget _chip(String t, Color c) => Container(
         margin: const EdgeInsets.only(right: 6, top: 4),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -1330,10 +1370,63 @@ class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateM
         child: Text(t, style: TextStyle(fontSize: 11, color: c, fontWeight: FontWeight.w600)),
       );
 
+  String _ubic(Map<String, dynamic> b) {
+    final u = b['ubicacion'];
+    if (u is! Map) return '';
+    final d = (u['detalle'] ?? '').toString();
+    return '${u['zona']}${d.isEmpty ? '' : ' · $d'}';
+  }
+
+  /// Fila corta para ver mucho de un vistazo.
+  Widget _fila(Map<String, dynamic> b, {bool conAgregar = false, bool seleccionable = false}) {
+    final sem = (b['semaforo'] ?? 'VERDE').toString();
+    final id = (b['id'] as num).toInt();
+    final ub = _ubic(b);
+    return InkWell(
+      onTap: seleccionable ? () => setState(() => _sel.contains(id) ? _sel.remove(id) : _sel.add(id)) : () => _abrir(b),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey.shade200))),
+        child: Row(children: [
+          if (seleccionable) Padding(padding: const EdgeInsets.only(right: 6), child: Icon(_sel.contains(id) ? Icons.check_box : Icons.check_box_outline_blank, color: Colors.blue)),
+          Container(width: 10, height: 10, margin: const EdgeInsets.only(right: 8), decoration: BoxDecoration(color: _colorBien(sem), shape: BoxShape.circle)),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('${b['codigo']}${(b['placa'] ?? '').toString().isNotEmpty ? ' · ${b['placa']}' : ''}${(b['codigoAnterior'] ?? '').toString().isNotEmpty ? ' · ant. ${b['codigoAnterior']}' : ''}', style: const TextStyle(fontSize: 11, color: Colors.black54, fontWeight: FontWeight.w600)),
+              Text('${b['descripcion'] ?? ''}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
+              Text(ub.isEmpty ? '📍 sin ubicar' : '📍 $ub', style: TextStyle(fontSize: 11, color: ub.isEmpty ? Colors.orange : Colors.blueGrey)),
+            ]),
+          ),
+          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            Text(b['precioVenta'] != null ? _soles(b['precioVenta']) : 'sin precio', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: b['precioVenta'] != null ? const Color(0xFF1B5E20) : Colors.orange)),
+            if (b['falla'] != null) const Text('FALLA', style: TextStyle(fontSize: 10, color: Colors.purple, fontWeight: FontWeight.w700)),
+          ]),
+          if (conAgregar && !seleccionable)
+            b['enMiLista'] == true
+                ? const Padding(padding: EdgeInsets.only(left: 6), child: Icon(Icons.check_circle, color: Colors.green, size: 22))
+                : IconButton(
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Agregar a mi lista',
+                    icon: const Icon(Icons.add_circle_outline, color: Colors.blue),
+                    onPressed: () async {
+                      try {
+                        await _dio.post<dynamic>('/operacion/tienda/lista', data: {'usuarioId': _uid(context), 'bienId': b['id']});
+                        await _cargar();
+                      } catch (e) {
+                        if (mounted) _aviso(context, _err(e), error: true);
+                      }
+                    },
+                  ),
+        ]),
+      ),
+    );
+  }
+
   Widget _tarjeta(Map<String, dynamic> b, {bool conAgregar = false}) {
     final pend = _lista(b['pendientes']);
     final sem = (b['semaforo'] ?? 'VERDE').toString();
     final foto = (b['imagen'] ?? '').toString();
+    final ub = _ubic(b);
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: _colorBien(sem).withOpacity(0.6), width: 1.2)),
@@ -1352,7 +1445,7 @@ class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateM
             const SizedBox(width: 10),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('${b['codigo']}${(b['placa'] ?? '').toString().isNotEmpty ? '  ·  ${b['placa']}' : ''}', style: const TextStyle(fontSize: 12, color: Colors.black54, fontWeight: FontWeight.w600)),
+                Text('${b['codigo']}${(b['placa'] ?? '').toString().isNotEmpty ? '  ·  ${b['placa']}' : ''}${(b['codigoAnterior'] ?? '').toString().isNotEmpty ? '  ·  ant. ${b['codigoAnterior']}' : ''}', style: const TextStyle(fontSize: 12, color: Colors.black54, fontWeight: FontWeight.w600)),
                 Text('${b['descripcion'] ?? ''}', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 2),
                 if (b['precioVenta'] != null)
@@ -1361,6 +1454,7 @@ class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateM
                   const Text('Sin precio todavía', style: TextStyle(fontSize: 12, color: Colors.orange)),
                 if (b['precioMinimo'] != null || b['precioMaximo'] != null)
                   Text('Mín ${_soles(b['precioMinimo'])}  ·  Máx ${_soles(b['precioMaximo'])}', style: const TextStyle(fontSize: 11, color: Colors.black54)),
+                Text(ub.isEmpty ? '📍 sin ubicar' : '📍 $ub', style: TextStyle(fontSize: 12, color: ub.isEmpty ? Colors.orange : Colors.blueGrey, fontWeight: FontWeight.w600)),
                 Wrap(children: [
                   if (b['falla'] != null) _chip('FALLA', Colors.purple),
                   for (final p in pend.where((p) => p['cuidado'] != 'FALLA')) _chip('${p['texto']}${p['dias'] == null ? ' (nunca)' : ' · ${p['dias']} d'}', p['estado'] == 'ATRASADO' ? Colors.red : Colors.orange),
@@ -1399,14 +1493,176 @@ class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateM
     );
   }
 
+  /// Fila de botones para filtrar (grupo o zona). `vacio` es el texto de "todos".
+  Widget _filtros(List<Widget> hijos) => SizedBox(height: 42, child: ListView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 10), children: hijos));
+
+  Widget _boton(String t, bool activo, VoidCallback f, {Color color = Colors.blue}) => Padding(
+        padding: const EdgeInsets.only(right: 6, top: 4, bottom: 4),
+        child: ChoiceChip(label: Text(t, style: TextStyle(fontSize: 12, color: activo ? Colors.white : Colors.black87)), selected: activo, selectedColor: color, onSelected: (_) => f(), visualDensity: VisualDensity.compact),
+      );
+
+  Widget _listaMia() {
+    final grupos = <String, int>{};
+    for (final b in _mia) {
+      final g = (b['grupo'] ?? 'OTRO').toString();
+      grupos[g] = (grupos[g] ?? 0) + 1;
+    }
+    final vis = _grupoMia.isEmpty ? _mia : _mia.where((b) => b['grupo'] == _grupoMia).toList();
+    return RefreshIndicator(
+      onRefresh: _cargar,
+      child: ListView(children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+          child: Row(children: [
+            Expanded(child: TextField(controller: _codigo, textCapitalization: TextCapitalization.characters, onSubmitted: (_) => _agregarPorCodigo(), decoration: const InputDecoration(labelText: 'Código, código anterior o placa', hintText: 'Ej. VEH-003, 011864 o ABC-123', prefixIcon: Icon(Icons.qr_code_2), border: OutlineInputBorder(), isDense: true))),
+            const SizedBox(width: 8),
+            FilledButton(onPressed: _agregando ? null : _agregarPorCodigo, child: _agregando ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Agregar')),
+          ]),
+        ),
+        Align(alignment: Alignment.centerLeft, child: TextButton.icon(onPressed: _agregarTodo, icon: const Icon(Icons.playlist_add), label: const Text('Agregar todo lo que está a la venta'))),
+        if (_mia.isNotEmpty) _resumenFila(),
+        if (grupos.length > 1)
+          _filtros([
+            _boton('Todos (${_mia.length})', _grupoMia.isEmpty, () => setState(() => _grupoMia = '')),
+            for (final e in grupos.entries) _boton('${_nombreGrupo(e.key)} (${e.value})', _grupoMia == e.key, () => setState(() => _grupoMia = e.key)),
+          ]),
+        if (_mia.isEmpty)
+          const Padding(padding: EdgeInsets.all(28), child: Text('Tu lista está vacía.\nEscribe un código o placa arriba, o entra a "A la venta" y toca + en lo que está a tu cargo.', textAlign: TextAlign.center, style: TextStyle(color: Colors.black54))),
+        for (final b in vis) _compacto ? _fila(b) : _tarjeta(b),
+        const SizedBox(height: 24),
+      ]),
+    );
+  }
+
+  String _nombreGrupo(String clave) {
+    const n = {'CELULAR': 'Celulares', 'LAPTOP': 'Laptops', 'MOTO_LINEAL': 'Moto lineal', 'MOTOCAR': 'Motocar', 'AUTO': 'Autos', 'MOTOR': 'Motores', 'TV_AUDIO': 'TV y audio', 'HERRAMIENTA': 'Herramientas', 'JOYA': 'Joyas', 'OTRO': 'Otros'};
+    return n[clave] ?? clave;
+  }
+
+  Widget _tabVenta() {
+    return Column(children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+        child: TextField(controller: _buscar, onSubmitted: (_) => _buscarVenta(), decoration: InputDecoration(labelText: 'Código, código anterior, placa o nombre', prefixIcon: const Icon(Icons.search), suffixIcon: IconButton(icon: const Icon(Icons.arrow_forward), onPressed: _buscarVenta), border: const OutlineInputBorder(), isDense: true)),
+      ),
+      _filtros([
+        _boton('Todos', _grupo.isEmpty, () {
+          _grupo = '';
+          _zona = '';
+          _buscarVenta();
+        }),
+        for (final g in _grupos)
+          _boton('${g['nombre']} (${g['n']})', _grupo == g['clave'], () {
+            _grupo = '${g['clave']}';
+            _zona = '';
+            _buscarVenta();
+          }),
+      ]),
+      if (_zonas.isNotEmpty || _sinUbicar > 0)
+        _filtros([
+          _boton('📍 Toda la tienda', _zona.isEmpty, () {
+            _zona = '';
+            _buscarVenta();
+          }, color: Colors.teal),
+          for (final z in _zonas)
+            _boton('${z['zona']} (${z['n']})', _zona == z['zona'], () {
+              _zona = '${z['zona']}';
+              _buscarVenta();
+            }, color: Colors.teal),
+          if (_sinUbicar > 0)
+            _boton('Sin ubicar ($_sinUbicar)', _zona == '__NONE__', () {
+              _zona = '__NONE__';
+              _buscarVenta();
+            }, color: Colors.orange),
+        ]),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Row(children: [
+          Expanded(child: Text('$_totalVenta a la venta${_totalVenta > _venta.length ? ' (mostrando ${_venta.length}, filtra para afinar)' : ''}', style: const TextStyle(fontSize: 12, color: Colors.black54))),
+          IconButton(visualDensity: VisualDensity.compact, tooltip: _compacto ? 'Ver con fotos' : 'Ver lista corta', icon: Icon(_compacto ? Icons.view_agenda_outlined : Icons.view_list), onPressed: () => setState(() => _compacto = !_compacto)),
+          TextButton(
+            onPressed: () => setState(() {
+              _modoSel = !_modoSel;
+              _sel.clear();
+            }),
+            child: Text(_modoSel ? 'Cancelar' : 'Ubicar varios'),
+          ),
+        ]),
+      ),
+      if (_modoSel)
+        Container(
+          color: Colors.blue.withOpacity(0.08),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          child: Row(children: [
+            Expanded(child: Text('${_sel.length} marcados', style: const TextStyle(fontWeight: FontWeight.w600))),
+            TextButton(onPressed: () => setState(() => _sel.addAll(_venta.map((b) => (b['id'] as num).toInt()))), child: const Text('Marcar todos')),
+            FilledButton(onPressed: _sel.isEmpty ? null : () => _ubicarVarios(_sel.toList()), child: const Text('Poner ubicación')),
+          ]),
+        ),
+      Expanded(
+        child: ListView(children: [
+          if (_venta.isEmpty) const Padding(padding: EdgeInsets.all(28), child: Text('No hay nada con ese filtro.', textAlign: TextAlign.center, style: TextStyle(color: Colors.black54))),
+          for (final b in _venta) _compacto || _modoSel ? _fila(b, conAgregar: true, seleccionable: _modoSel) : _tarjeta(b, conAgregar: true),
+          const SizedBox(height: 24),
+        ]),
+      ),
+    ]);
+  }
+
+  /// Mapa de la tienda: cada zona con cuántos bienes tiene. Al tocar una zona se ven sus bienes.
+  Widget _tabMapa() {
+    Widget cuadro(String zona, int n, Color c, IconData icono, String filtro) => InkWell(
+          onTap: () {
+            _grupo = '';
+            _zona = filtro;
+            _buscar.clear();
+            _buscarVenta().then((_) {
+              if (mounted) _tab.animateTo(1);
+            });
+          },
+          child: Container(
+            decoration: BoxDecoration(color: c.withOpacity(0.10), borderRadius: BorderRadius.circular(12), border: Border.all(color: c.withOpacity(0.5))),
+            padding: const EdgeInsets.all(10),
+            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Icon(icono, color: c, size: 28),
+              const SizedBox(height: 4),
+              Text(zona, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+              Text('$n bien${n == 1 ? '' : 'es'}', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+            ]),
+          ),
+        );
+    return RefreshIndicator(
+      onRefresh: _cargar,
+      child: ListView(padding: const EdgeInsets.all(12), children: [
+        const Text('Así está ordenada la tienda y el almacén. Toca una zona para ver qué hay en ella. Lo que se vende desaparece solo.', style: TextStyle(fontSize: 12, color: Colors.black54)),
+        const SizedBox(height: 10),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          childAspectRatio: 1.5,
+          children: [
+            for (final z in _zonasMapa) cuadro('${z['zona']}', (z['n'] as num).toInt(), Colors.teal, Icons.place_outlined, '${z['zona']}'),
+            if (_sinUbicarMapa > 0) cuadro('Sin ubicar', _sinUbicarMapa, Colors.orange, Icons.help_outline, '__NONE__'),
+          ],
+        ),
+        if (_zonasMapa.isEmpty)
+          const Padding(padding: EdgeInsets.all(20), child: Text('Todavía no hay zonas. En "A la venta" toca "Ubicar varios", marca lo que está junto y ponle un nombre de zona (ej. Vitrina 1, Almacén estante B, Patio).', textAlign: TextAlign.center, style: TextStyle(color: Colors.black54))),
+      ]),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tienda y almacén'),
-        bottom: TabBar(controller: _tab, tabs: [
+        bottom: TabBar(controller: _tab, isScrollable: true, tabs: [
           const Tab(text: 'Mi lista'),
           const Tab(text: 'A la venta'),
+          const Tab(text: 'Mapa'),
           Tab(text: _esGerente ? 'Fallas (${_fallas.length})' : 'Mis fallas'),
         ]),
         actions: [IconButton(onPressed: _cargar, icon: const Icon(Icons.refresh))],
@@ -1416,36 +1672,9 @@ class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateM
           : _error != null
               ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [Text(_error!, textAlign: TextAlign.center), const SizedBox(height: 8), OutlinedButton(onPressed: _cargar, child: const Text('Reintentar'))])))
               : TabBarView(controller: _tab, children: [
-                  // ---- Mi lista
-                  RefreshIndicator(
-                    onRefresh: _cargar,
-                    child: ListView(children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-                        child: Row(children: [
-                          Expanded(child: TextField(controller: _codigo, textCapitalization: TextCapitalization.characters, onSubmitted: (_) => _agregarPorCodigo(), decoration: const InputDecoration(labelText: 'Código o placa', hintText: 'Ej. VEH-003 o ABC-123', prefixIcon: Icon(Icons.qr_code_2), border: OutlineInputBorder(), isDense: true))),
-                          const SizedBox(width: 8),
-                          FilledButton(onPressed: _agregando ? null : _agregarPorCodigo, child: _agregando ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Agregar')),
-                        ]),
-                      ),
-                      Align(alignment: Alignment.centerLeft, child: TextButton.icon(onPressed: _agregarTodo, icon: const Icon(Icons.playlist_add), label: const Text('Agregar todo lo que está a la venta'))),
-                      if (_mia.isNotEmpty) _resumenFila(),
-                      if (_mia.isEmpty)
-                        const Padding(padding: EdgeInsets.all(28), child: Text('Tu lista está vacía.\nEscribe un código o placa arriba, o entra a "A la venta" y toca + en lo que está a tu cargo.', textAlign: TextAlign.center, style: TextStyle(color: Colors.black54))),
-                      for (final b in _mia) _tarjeta(b),
-                      const SizedBox(height: 24),
-                    ]),
-                  ),
-                  // ---- A la venta
-                  Column(children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
-                      child: TextField(controller: _buscar, onSubmitted: (_) => _buscarVenta(), decoration: InputDecoration(labelText: 'Buscar por código, placa, marca o nombre', prefixIcon: const Icon(Icons.search), suffixIcon: IconButton(icon: const Icon(Icons.arrow_forward), onPressed: _buscarVenta), border: const OutlineInputBorder(), isDense: true)),
-                    ),
-                    Padding(padding: const EdgeInsets.symmetric(horizontal: 14), child: Align(alignment: Alignment.centerLeft, child: Text('$_totalVenta a la venta${_totalVenta > _venta.length ? ' (mostrando ${_venta.length}, busca para afinar)' : ''}', style: const TextStyle(fontSize: 12, color: Colors.black54)))),
-                    Expanded(child: ListView(children: [for (final b in _venta) _tarjeta(b, conAgregar: true), const SizedBox(height: 24)])),
-                  ]),
-                  // ---- Fallas
+                  _listaMia(),
+                  _tabVenta(),
+                  _tabMapa(),
                   RefreshIndicator(
                     onRefresh: _cargar,
                     child: ListView(children: [
@@ -1475,6 +1704,77 @@ class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateM
       ),
     ]);
   }
+}
+
+/// Pregunta en qué zona está (o van a estar) uno o varios bienes y lo guarda. Devuelve true si guardó.
+Future<bool?> _pedirUbicacion(BuildContext context, List<int> ids, Map<String, dynamic>? actual) async {
+  final zona = TextEditingController(text: (actual?['zona'] ?? '').toString());
+  final detalle = TextEditingController(text: (actual?['detalle'] ?? '').toString());
+  String? error;
+  bool ocupado = false;
+  final uid = _uid(context);
+  final r = await showDialog<bool>(
+    context: context,
+    builder: (dc) => StatefulBuilder(
+      builder: (dc, set) => AlertDialog(
+        title: Text(ids.length > 1 ? 'Ubicación de ${ids.length} bienes' : 'Ubicación'),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            TextField(controller: zona, textCapitalization: TextCapitalization.sentences, decoration: const InputDecoration(labelText: 'Zona (ej. Vitrina 1, Estante B, Patio)')),
+            if (_zonasConocidas.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              const Text('Ya usadas:', style: TextStyle(fontSize: 11, color: Colors.black54)),
+              Wrap(spacing: 6, children: [for (final z in _zonasConocidas.take(20)) ActionChip(label: Text(z, style: const TextStyle(fontSize: 12)), visualDensity: VisualDensity.compact, onPressed: () => set(() => zona.text = z))]),
+            ],
+            TextField(controller: detalle, decoration: const InputDecoration(labelText: 'Detalle (opcional: repisa 2, al fondo…)')),
+            if (error != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(error!, style: const TextStyle(color: Colors.red))),
+          ]),
+        ),
+        actions: [
+          if (actual != null)
+            TextButton(
+              onPressed: ocupado
+                  ? null
+                  : () async {
+                      try {
+                        await _dio.put<dynamic>('/operacion/tienda/ubicacion', data: {'usuarioId': uid, 'bienIds': ids, 'zona': ''});
+                        if (dc.mounted) Navigator.pop(dc, true);
+                      } catch (e) {
+                        set(() => error = _err(e));
+                      }
+                    },
+              child: const Text('Quitar'),
+            ),
+          TextButton(onPressed: ocupado ? null : () => Navigator.pop(dc, false), child: const Text('Cancelar')),
+          FilledButton(
+            onPressed: ocupado
+                ? null
+                : () async {
+                    if (zona.text.trim().isEmpty) {
+                      set(() => error = 'Escribe la zona');
+                      return;
+                    }
+                    set(() {
+                      ocupado = true;
+                      error = null;
+                    });
+                    try {
+                      await _dio.put<dynamic>('/operacion/tienda/ubicacion', data: {'usuarioId': uid, 'bienIds': ids, 'zona': zona.text.trim(), 'detalle': detalle.text.trim()});
+                      if (dc.mounted) Navigator.pop(dc, true);
+                    } catch (e) {
+                      set(() {
+                        ocupado = false;
+                        error = _err(e);
+                      });
+                    }
+                  },
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    ),
+  );
+  return r;
 }
 
 class _BienPage extends StatefulWidget {
@@ -1679,6 +1979,28 @@ class _BienPageState extends State<_BienPage> {
                   child: Text('⚠ FALLA: ${_mapa(b['falla'])['texto'] ?? ''}\nReportó ${_mapa(b['falla'])['por'] ?? '—'} · ${_mapa(b['falla'])['fecha'] ?? ''}', style: const TextStyle(fontSize: 13)),
                 ),
               const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(color: Colors.teal.withOpacity(0.08), borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.teal.withOpacity(0.4))),
+                child: Row(children: [
+                  const Icon(Icons.place, color: Colors.teal),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      b['ubicacion'] is Map ? 'Está en: ${_mapa(b['ubicacion'])['zona']}${(_mapa(b['ubicacion'])['detalle'] ?? '').toString().isEmpty ? '' : ' · ${_mapa(b['ubicacion'])['detalle']}'}' : 'Sin ubicar todavía',
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      final ok = await _pedirUbicacion(context, [widget.bienId], b['ubicacion'] is Map ? _mapa(b['ubicacion']) : null);
+                      if (ok == true) await _cargar();
+                    },
+                    child: Text(b['ubicacion'] is Map ? 'Cambiar' : 'Ubicar'),
+                  ),
+                ]),
+              ),
+              const SizedBox(height: 10),
               Wrap(spacing: 8, runSpacing: 6, children: [
                 FilledButton.icon(onPressed: _prender, icon: const Icon(Icons.power_settings_new), label: Text(b['esVehiculo'] == true ? 'Prendí / probé' : 'Probé')),
                 FilledButton.tonalIcon(onPressed: _limpiar, icon: const Icon(Icons.cleaning_services), label: const Text('Limpié')),
@@ -1698,6 +2020,7 @@ class _BienPageState extends State<_BienPage> {
               const Divider(height: 28),
               const Text('Datos', style: TextStyle(fontWeight: FontWeight.w700)),
               _dato('Código', b['codigo']),
+              _dato('Código anterior', b['codigoAnterior']),
               _dato('Placa', b['placa']),
               _dato('Categoría', b['categoria']),
               _dato('Marca', b['marca']),
