@@ -1,5 +1,6 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/sales/bloc/sales_bloc.dart';
@@ -25,6 +26,7 @@ class _CreateProductAlmacenState extends State<CreateProductAlmacen> {
   final precioController = TextEditingController();
   final observacionesController = TextEditingController();
 
+  String _tipo = '';
   bool isPrecioValid = false;
   int cantidad = 1;
 
@@ -33,7 +35,7 @@ class _CreateProductAlmacenState extends State<CreateProductAlmacen> {
     if (role == 1) {
       final result = await context
           .read<ProductRepository>()
-          .getProductsLimitFree(criterio: text);
+          .getProductsLimitFree(criterio: '$_tipo $text'.trim());
 
       result.fold(
         (l) => prodcs = null,
@@ -42,7 +44,7 @@ class _CreateProductAlmacenState extends State<CreateProductAlmacen> {
     } else {
       final result = await context
           .read<ProductRepository>()
-          .getProductsLimitSales(criterio: text);
+          .getProductsLimitSales(criterio: '$_tipo $text'.trim());
 
       result.fold(
         (l) => prodcs = null,
@@ -70,9 +72,32 @@ class _CreateProductAlmacenState extends State<CreateProductAlmacen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const Text('Filtrar por tipo:', style: TextStyle(fontSize: 12, color: Colors.black54)),
+          Wrap(spacing: 6, children: [
+            for (final t in const [
+              ['Todos', ''],
+              ['Celulares', 'celular'],
+              ['Laptops', 'laptop'],
+              ['Moto lineal', 'moto'],
+              ['Motocar', 'motocar'],
+              ['Motores', 'motor'],
+              ['Autos', 'auto'],
+            ])
+              ChoiceChip(
+                label: Text(t[0], style: const TextStyle(fontSize: 12)),
+                selected: _tipo == t[1],
+                visualDensity: VisualDensity.compact,
+                onSelected: (_) => setState(() {
+                  _tipo = t[1];
+                  _selection = null;
+                }),
+              ),
+          ]),
+          const SizedBox(height: 6),
           SizedBox(
             width: double.infinity,
             child: Autocomplete<String>(
+              key: ValueKey('tipo-$_tipo'),
               fieldViewBuilder: (context, textEditingController, focusNode,
                   onFieldSubmitted) {
                 return TextField(
@@ -119,7 +144,7 @@ class _CreateProductAlmacenState extends State<CreateProductAlmacen> {
                 );
               },
               optionsBuilder: (TextEditingValue textEditingValue) async {
-                if (textEditingValue.text == '') {
+                if (textEditingValue.text == '' && _tipo.isEmpty) {
                   return const Iterable<String>.empty();
                 } else {
                   final productos = await _getProducts(
@@ -371,6 +396,7 @@ class _CreateProductAlmacenState extends State<CreateProductAlmacen> {
                 ),
               ],
             ),
+            if (_selection?.id != null) PrecioVentaAviso(bienId: _selection!.id!, precioCtrl: precioController),
             const SizedBox(height: 15),
             AppTextFormField(
               labelText: 'Observaciones del gasto (opcional)',
