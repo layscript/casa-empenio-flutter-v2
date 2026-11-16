@@ -54,10 +54,10 @@ class _VenderBienPageState extends State<VenderBienPage> {
   }
 
   Future<void> _pedirVenta() async {
-    if (!_yaVencio || _diasVencido < 60) {
+    if (!_yaVencio || _diasDejado < 60) {
       final texto = !_yaVencio
           ? 'Aún no venció este préstamo.\n\n¿Está seguro que desea vender el bien?'
-          : 'Este préstamo lleva solo $_diasVencido días vencido (menos de 60).\n\n¿Está seguro que desea vender el bien?';
+          : 'Hace solo $_diasDejado días que el cliente dejó el bien (menos de 60 cumplidos).\n\n¿Está seguro que desea vender el bien?';
       final ok = await showDialog<bool>(
         context: context,
         builder: (_) => AlertDialog(
@@ -76,6 +76,14 @@ class _VenderBienPageState extends State<VenderBienPage> {
       if (ok != true) return;
     }
     if (mounted) setState(() => _venta = true);
+  }
+
+  /// Días cumplidos desde que el cliente dejó el bien (de aquí se cuentan los 60 días de adjudicación).
+  int get _diasDejado {
+    final f = DateTime.tryParse(widget.prestamo.fecha ?? '') ?? DateTime.tryParse(widget.prestamo.createdAt ?? '') ?? DateTime.tryParse(widget.prestamo.fechaPago ?? '');
+    if (f == null) return 0;
+    final d = DateTime.now().difference(f.toLocal()).inDays;
+    return d < 0 ? 0 : d;
   }
 
   int get _diasVencido {
@@ -510,16 +518,17 @@ class _VenderBienPageState extends State<VenderBienPage> {
                       ? 'Vence el ${DateFormat('dd/MM/yyyy').format(venc.toLocal())} (aún vigente)'
                       : 'Venció el ${DateFormat('dd/MM/yyyy').format(venc.toLocal())} · hace $_diasVencido días',
               style: TextStyle(
-                color: !_yaVencio ? Colors.blue[800] : _diasVencido >= 60 ? Colors.red[700] : Colors.orange[800],
+                color: !_yaVencio ? Colors.blue[800] : _diasDejado >= 60 ? Colors.red[700] : Colors.orange[800],
                 fontWeight: FontWeight.w600,
               ),
             ),
             Text('Deuda total: S/. ${deuda.toStringAsFixed(2)}'),
-            if (_yaVencio && _diasVencido < 60)
+            Text('Hace $_diasDejado días que el cliente dejó el bien (el plazo de adjudicación es de 60 días cumplidos).', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+            if (_yaVencio && _diasDejado < 60)
               const Padding(
                 padding: EdgeInsets.only(top: 4),
                 child: Text(
-                  'Aún no pasan 60 días de vencido. Se le pedirá confirmar.',
+                  'Aún no se cumplen 60 días desde que dejó el bien. Se le pedirá confirmar.',
                   style: TextStyle(fontSize: 12, color: Colors.black54),
                 ),
               ),

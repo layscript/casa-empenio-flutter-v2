@@ -2762,7 +2762,7 @@ Future<void> _dialogoNoVenta(BuildContext context, Map<String, dynamic> info, bo
           if (puedeSolicitar) ...[
             const SizedBox(height: 6),
             Text(info['avisosHechos'] != null && (info['avisosHechos'] as num) > 0 ? 'Avisos al cliente registrados: ${info['avisosHechos']}' : 'Avisos al cliente registrados: ninguno', style: const TextStyle(fontSize: 12)),
-            if (!listo) Text('Se puede adjudicar cuando cumpla ${info['limite']} días vencido (faltan ${info['faltanDias']}).', style: const TextStyle(fontSize: 12, color: Colors.deepOrange)),
+            if (!listo) Text('Se puede adjudicar cuando se cumplan ${info['limite']} días desde que dejó el bien (faltan ${info['faltanDias']}).', style: const TextStyle(fontSize: 12, color: Colors.deepOrange)),
           ],
           if (puedeSolicitar && !puedeAtender && info['yaSolicitado'] != true)
             TextField(controller: nota, decoration: const InputDecoration(labelText: 'Nota para la cajera (opcional)')),

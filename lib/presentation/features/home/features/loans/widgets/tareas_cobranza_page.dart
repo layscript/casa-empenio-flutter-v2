@@ -646,7 +646,7 @@ class _TareasCobranzaPageState extends State<TareasCobranzaPage> {
                     padding: EdgeInsets.all(24),
                     child: Text(
                       'No hay préstamos en proceso de adjudicación.\n'
-                      'Cuando un préstamo cumpla 60 días vencido aparecerá aquí.',
+                      'Cuando un préstamo vencido cumpla 45 días desde que el cliente dejó el bien aparecerá aquí.',
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -717,13 +717,13 @@ class _TareasCobranzaPageState extends State<TareasCobranzaPage> {
                         fontWeight: FontWeight.bold, fontSize: 15)),
               ),
               Chip(
-                label: Text('${t['diasVencido']} días',
+                label: Text('${t['diasDejado'] ?? t['diasVencido']} días desde que dejó',
                     style: const TextStyle(fontSize: 12)),
                 visualDensity: VisualDensity.compact,
               ),
             ]),
             Text('Celular: ${cli['celular'] ?? '-'}  ·  Saldo S/.${(t['saldo'] as num).toStringAsFixed(2)}\n'
-                'Se adjudica como máximo en ${t['diasParaLimite']} día(s)'),
+                'Hace ${t['diasDejado'] ?? '-'} días que dejó el bien (${t['diasVencido']} de vencido)\nSe adjudica como máximo en ${t['diasParaLimite']} día(s)'),
             const SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.all(8),
