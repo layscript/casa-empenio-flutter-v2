@@ -1178,7 +1178,7 @@ class _TiendaTileState extends State<TiendaTile> {
       try {
         final r = await _dio.get<dynamic>('/operacion/tienda/resumen', queryParameters: {'usuarioId': _uid(context)});
         final m = _mapa(_cuerpo(r));
-        if (mounted) setState(() => _n = ((m['pendientes'] as num?)?.toInt() ?? 0) + ((m['fallasTienda'] as num?)?.toInt() ?? 0));
+        if (mounted) setState(() => _n = ((m['pendientes'] as num?)?.toInt() ?? 0) + ((m['fallasTienda'] as num?)?.toInt() ?? 0) + ((m['solicitudes'] as num?)?.toInt() ?? 0));
       } catch (_) {}
     });
   }
@@ -1216,6 +1216,8 @@ List<String> _zonasConocidas = [];
 class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateMixin {
   late TabController _tab;
   bool _esGerente = false;
+  bool _puedeAtender = false;
+  int _nSolicitudes = 0;
   Map<String, dynamic> _resumen = {};
   List<Map<String, dynamic>> _mia = [];
   List<Map<String, dynamic>> _venta = [];
@@ -1272,6 +1274,8 @@ class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateM
       final rr = _mapa(_cuerpo(await _dio.get<dynamic>('/operacion/tienda/resumen', queryParameters: {'usuarioId': uid})));
       _resumen = _mapa(rl['resumen']);
       _esGerente = rr['esGerente'] == true;
+      _puedeAtender = rr['puedeAtender'] == true;
+      _nSolicitudes = (rr['solicitudes'] as num?)?.toInt() ?? 0;
       if (_esGerente) {
         final rf = _mapa(_cuerpo(await _dio.get<dynamic>('/operacion/tienda/fallas', queryParameters: {'usuarioId': uid})));
         _fallas = _lista(rf['items']);
@@ -1317,7 +1321,12 @@ class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateM
     setState(() => _agregando = true);
     try {
       final r = _mapa(_cuerpo(await _dio.post<dynamic>('/operacion/tienda/lista', data: {'usuarioId': _uid(context), 'codigo': t})));
-      if (r['agregado'] == false && r['candidatos'] is List) {
+      if (r['noALaVenta'] is Map) {
+        if (mounted) {
+          await _dialogoNoVenta(context, _mapa(r['noALaVenta']), _puedeAtender);
+          await _cargar();
+        }
+      } else if (r['agregado'] == false && r['candidatos'] is List) {
         final cands = _lista(r['candidatos']);
         if (!mounted) return;
         final elegido = await showDialog<Map<String, dynamic>>(
@@ -1757,7 +1766,30 @@ class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateM
           IconButton(onPressed: _cargar, icon: const Icon(Icons.refresh)),
         ],
       ),
-      body: _cargando
+      body: Column(children: [
+        if (_puedeAtender && _nSolicitudes > 0)
+          Material(
+            color: Colors.orange.withOpacity(0.18),
+            child: ListTile(
+              dense: true,
+              leading: const Icon(Icons.assignment_late, color: Colors.deepOrange),
+              title: Text('$_nSolicitudes pedido(s) de adjudicación esperando', style: const TextStyle(fontWeight: FontWeight.w700)),
+              subtitle: const Text('Toca para atenderlos', style: TextStyle(fontSize: 11)),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () async {
+                await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const SolicitudesAdjudicacionPage()));
+                if (mounted) _cargar();
+              },
+            ),
+          ),
+        Expanded(child: _cuerpoPagina()),
+      ]),
+    );
+  }
+
+  Widget _cuerpoPagina() {
+    return Builder(builder: (context) {
+      return _cargando
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [Text(_error!, textAlign: TextAlign.center), const SizedBox(height: 8), OutlinedButton(onPressed: _cargar, child: const Text('Reintentar'))])))
@@ -1775,8 +1807,8 @@ class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateM
                       const SizedBox(height: 24),
                     ]),
                   ),
-                ]),
-    );
+                ]);
+    });
   }
 
   Widget _tarjetaFalla(Map<String, dynamic> b) {
@@ -2674,6 +2706,190 @@ class _PrecioVentaAvisoState extends State<PrecioVentaAviso> {
             ),
         ]);
       },
+    );
+  }
+}
+
+
+// ============================================================ ADJUDICAR BIENES VENCIDOS (pedido del vendedor → cajera)
+/// Hace la llamada de adjudicar. Si falta el aviso al cliente, pregunta si de todos modos se adjudica.
+Future<bool> _llamarAdjudicar(BuildContext context, String url, Map<String, dynamic> data) async {
+  try {
+    await _dio.post<dynamic>(url, data: data);
+    return true;
+  } catch (e) {
+    final msg = _err(e);
+    if (msg.startsWith('Sin aviso') && context.mounted) {
+      final seguir = await showDialog<bool>(
+        context: context,
+        builder: (dc) => AlertDialog(
+          title: const Text('No hay aviso al cliente'),
+          content: const Text('Todavía no se registró ningún aviso (SMS, WhatsApp o llamada) a este cliente. Lo correcto es enviarle primero el aviso final: "se pone a la venta y ya no hay derecho a reclamo".\n\n¿Adjudicar de todos modos?'),
+          actions: [TextButton(onPressed: () => Navigator.pop(dc, false), child: const Text('No, primero avisar')), FilledButton(onPressed: () => Navigator.pop(dc, true), child: const Text('Adjudicar igual'))],
+        ),
+      );
+      if (seguir == true && context.mounted) {
+        try {
+          await _dio.post<dynamic>(url, data: {...data, 'confirmarSinAviso': true});
+          return true;
+        } catch (e2) {
+          if (context.mounted) _aviso(context, _err(e2), error: true);
+        }
+      }
+      return false;
+    }
+    if (context.mounted) _aviso(context, msg, error: true);
+    return false;
+  }
+}
+
+/// Muestra por qué un bien no está a la venta y qué se puede hacer: la cajera o gerente adjudica; el vendedor lo pide.
+Future<void> _dialogoNoVenta(BuildContext context, Map<String, dynamic> info, bool puedeAtender) async {
+  final nota = TextEditingController();
+  final uid = _uid(context);
+  final puedeSolicitar = info['puedeSolicitar'] == true;
+  final listo = info['listoParaAdjudicar'] == true;
+  await showDialog<void>(
+    context: context,
+    builder: (dc) => AlertDialog(
+      title: const Text('Todavía no está a la venta'),
+      content: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('${info['descripcion'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w700)),
+          if (info['codigoFormateado'] != null) Text('Préstamo N° ${info['codigoFormateado']}', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+          const SizedBox(height: 8),
+          Text('${info['situacion'] ?? ''}'),
+          if (puedeSolicitar) ...[
+            const SizedBox(height: 6),
+            Text(info['avisosHechos'] != null && (info['avisosHechos'] as num) > 0 ? 'Avisos al cliente registrados: ${info['avisosHechos']}' : 'Avisos al cliente registrados: ninguno', style: const TextStyle(fontSize: 12)),
+            if (!listo) Text('Se puede adjudicar cuando cumpla ${info['limite']} días vencido (faltan ${info['faltanDias']}).', style: const TextStyle(fontSize: 12, color: Colors.deepOrange)),
+          ],
+          if (puedeSolicitar && !puedeAtender && info['yaSolicitado'] != true)
+            TextField(controller: nota, decoration: const InputDecoration(labelText: 'Nota para la cajera (opcional)')),
+          if (puedeSolicitar && !puedeAtender && info['yaSolicitado'] == true) const Padding(padding: EdgeInsets.only(top: 8), child: Text('Ya pediste la adjudicación. La cajera la verá.', style: TextStyle(color: Colors.green))),
+        ]),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(dc), child: const Text('Cerrar')),
+        if (puedeSolicitar && puedeAtender && listo)
+          FilledButton(
+            onPressed: () async {
+              final ok = await _llamarAdjudicar(dc, '/operacion/tienda/adjudicacion/adjudicar', {'usuarioId': uid, 'bienId': info['bienId']});
+              if (ok && dc.mounted) {
+                Navigator.pop(dc);
+                if (context.mounted) _aviso(context, 'Adjudicado: ya está a la venta');
+              }
+            },
+            child: const Text('Adjudicar ahora'),
+          ),
+        if (puedeSolicitar && !puedeAtender && info['yaSolicitado'] != true)
+          FilledButton(
+            onPressed: () async {
+              try {
+                await _dio.post<dynamic>('/operacion/tienda/adjudicacion/solicitar', data: {'usuarioId': uid, 'bienId': info['bienId'], 'nota': nota.text.trim()});
+                if (dc.mounted) Navigator.pop(dc);
+                if (context.mounted) _aviso(context, 'Pedido enviado a la cajera');
+              } catch (e) {
+                if (dc.mounted) _aviso(dc, _err(e), error: true);
+              }
+            },
+            child: const Text('Pedir adjudicación'),
+          ),
+      ],
+    ),
+  );
+}
+
+class SolicitudesAdjudicacionPage extends StatefulWidget {
+  const SolicitudesAdjudicacionPage({super.key});
+  @override
+  State<SolicitudesAdjudicacionPage> createState() => _SolicitudesAdjudicacionPageState();
+}
+
+class _SolicitudesAdjudicacionPageState extends State<SolicitudesAdjudicacionPage> {
+  List<Map<String, dynamic>>? _l;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _cargar());
+  }
+
+  Future<void> _cargar() async {
+    try {
+      final r = await _dio.get<dynamic>('/operacion/tienda/adjudicacion/solicitudes', queryParameters: {'usuarioId': _uid(context)});
+      if (mounted) {
+        setState(() {
+          _l = _lista(_cuerpo(r));
+          _error = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = _err(e));
+    }
+  }
+
+  Future<void> _atender(Map<String, dynamic> x, String accion) async {
+    if (accion == 'ADJUDICAR') {
+      final ok = await _llamarAdjudicar(context, '/operacion/tienda/adjudicacion/solicitudes/${x['id']}/atender', {'usuarioId': _uid(context), 'accion': 'ADJUDICAR'});
+      if (ok && mounted) {
+        _aviso(context, 'Adjudicado: ya está a la venta');
+        await _cargar();
+      }
+      return;
+    }
+    final nota = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dc) => AlertDialog(
+        title: const Text('Rechazar pedido'),
+        content: TextField(controller: nota, decoration: const InputDecoration(labelText: 'Motivo (ej. el cliente ya pagó)')),
+        actions: [TextButton(onPressed: () => Navigator.pop(dc, false), child: const Text('Cancelar')), FilledButton(onPressed: () => Navigator.pop(dc, true), child: const Text('Rechazar'))],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      await _dio.post<dynamic>('/operacion/tienda/adjudicacion/solicitudes/${x['id']}/atender', data: {'usuarioId': _uid(context), 'accion': 'RECHAZAR', 'nota': nota.text.trim()});
+      await _cargar();
+    } catch (e) {
+      if (mounted) _aviso(context, _err(e), error: true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Pedidos de adjudicación'), actions: [IconButton(onPressed: _cargar, icon: const Icon(Icons.refresh))]),
+      body: _l == null
+          ? Center(child: _error == null ? const CircularProgressIndicator() : Padding(padding: const EdgeInsets.all(24), child: Text(_error!, textAlign: TextAlign.center)))
+          : RefreshIndicator(
+              onRefresh: _cargar,
+              child: ListView(padding: const EdgeInsets.all(12), children: [
+                if (_l!.isEmpty) const Padding(padding: EdgeInsets.all(28), child: Text('No hay pedidos esperando. 👍', textAlign: TextAlign.center)),
+                for (final x in _l!)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text('${x['descripcion'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                        Text('Préstamo N° ${_mapa(x['info'])['codigoFormateado'] ?? x['prestamoCodigo']} · pidió ${x['por'] ?? '—'} · ${x['fecha']}', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                        if ((x['nota'] ?? '').toString().isNotEmpty) Text('Nota: ${x['nota']}', style: const TextStyle(fontSize: 12)),
+                        const SizedBox(height: 6),
+                        Text('${_mapa(x['info'])['situacion'] ?? ''}', style: const TextStyle(fontSize: 13)),
+                        Text('Avisos al cliente: ${_mapa(x['info'])['avisosHechos'] ?? 0}', style: const TextStyle(fontSize: 12)),
+                        if (_mapa(x['info'])['listoParaAdjudicar'] != true) Text('Aún faltan ${_mapa(x['info'])['faltanDias'] ?? '?'} días para poder adjudicar.', style: const TextStyle(fontSize: 12, color: Colors.deepOrange)),
+                        const SizedBox(height: 6),
+                        Row(children: [
+                          OutlinedButton(onPressed: () => _atender(x, 'RECHAZAR'), child: const Text('Rechazar')),
+                          const SizedBox(width: 8),
+                          Expanded(child: FilledButton(onPressed: _mapa(x['info'])['listoParaAdjudicar'] == true ? () => _atender(x, 'ADJUDICAR') : null, child: const Text('Adjudicar (pasa a la venta)'))),
+                        ]),
+                      ]),
+                    ),
+                  ),
+              ]),
+            ),
     );
   }
 }
