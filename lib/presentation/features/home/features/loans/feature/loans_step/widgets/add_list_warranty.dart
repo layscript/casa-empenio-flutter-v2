@@ -117,9 +117,12 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
     poner(_modelo, c['modelo'], (t) => bloc.add(ChangeModel(value: t)));
     poner(_color, c['color'], (t) => bloc.add(ChangeColor(value: t)));
     poner(_serie, c['serie'], (t) => bloc.add(ChangeSerie(value: t)));
-    final obs = r.extras.isNotEmpty
-        ? 'Registrado con escáner · ${r.extras}'
-        : 'Registrado con escáner';
+    final partes = <String>[
+      if (_obs.text.trim().isNotEmpty) _obs.text.trim(),
+      if (r.observaciones.isNotEmpty) r.observaciones,
+      if (r.extras.isNotEmpty) r.extras,
+    ];
+    final obs = partes.isEmpty ? 'Registrado con escáner' : partes.join(' · ');
     _obs.text = obs;
     bloc.add(ChangeWarrantyObservations(value: obs));
     if (r.fotos.isNotEmpty) {

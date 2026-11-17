@@ -16,7 +16,9 @@ class EscanerResultado {
     required this.campos,
     required this.extras,
     required this.fotos,
+    this.observaciones = '',
   });
+  final String observaciones;
   final String tipo;
   final Map<String, String> campos;
   final String extras;
@@ -24,6 +26,7 @@ class EscanerResultado {
 }
 
 const _tipos = <String, String>{
+  'DETECTAR': 'Detectar solo',
   'CELULAR': 'Celular',
   'LAPTOP': 'Laptop',
   'MOTO_LINEAL': 'Moto lineal',
@@ -127,9 +130,14 @@ class _EscanerPage extends StatefulWidget {
 }
 
 class _EscanerPageState extends State<_EscanerPage> {
-  late String _tipo = _tipos.containsKey(widget.tipoInicial)
+  late String _tipo = (_tipos.containsKey(widget.tipoInicial) && widget.tipoInicial != 'OTRO')
       ? widget.tipoInicial
-      : 'OTRO';
+      : 'DETECTAR';
+  final Set<String> _elegidas = {};
+  final _obsAdicional = TextEditingController();
+
+  /// Tipo real del bien: el que se eligió o el que el sistema reconoció.
+  String get _tipoFinal => (_res?['tipo'] ?? (_tipo == 'DETECTAR' ? 'OTRO' : _tipo)).toString();
   List<_Paso> _pasos = [];
   bool _cargandoGuia = true;
   bool _consultando = false;
@@ -145,6 +153,7 @@ class _EscanerPageState extends State<_EscanerPage> {
 
   @override
   void dispose() {
+    _obsAdicional.dispose();
     for (final c in _ctl.values) {
       c.dispose();
     }
@@ -263,6 +272,9 @@ class _EscanerPageState extends State<_EscanerPage> {
         _ctl[k] = TextEditingController(text: '${campos[k] ?? ''}');
       }
       _ctl['extras'] = TextEditingController(text: '${res['extras'] ?? ''}');
+      _elegidas
+        ..clear()
+        ..addAll(_sugeridas().map((f) => f.path));
       if (!mounted) return;
       setState(() {
         _res = res;
@@ -279,20 +291,29 @@ class _EscanerPageState extends State<_EscanerPage> {
     }
   }
 
-  List<XFile> _fotosParaGuardar() {
-    const orden = ['GENERAL', 'TARJETA', 'SERIE', 'MODELO', 'CHASIS', 'MOTOR', 'PANTALLA', 'CAJA', 'OTRO'];
+  /// Las fotos con más información: la primera general (para ver el bien) y las que más texto útil dieron.
+  List<XFile> _sugeridas() {
     final con = _pasos.where((p) => p.foto != null).toList();
-    final out = <XFile>[];
-    for (final rol in orden) {
-      for (final p in con) {
-        if (p.rol == rol && out.length < 3 && !out.contains(p.foto)) {
-          out.add(p.foto!);
-          break;
-        }
-      }
+    if (con.isEmpty) return [];
+    double puntos(_Paso p) {
+      final letras = p.textos.fold<int>(0, (a, t) => a + t.trim().length) + p.codigos.length * 30;
+      final bono = p.rol == 'TARJETA' ? 150 : (p.rol == 'SERIE' || p.rol == 'CHASIS' ? 80 : 0);
+      return letras + bono.toDouble();
     }
-    return out;
+    final out = <_Paso>[];
+    final general = con.where((p) => p.rol == 'GENERAL').toList();
+    if (general.isNotEmpty) out.add(general.first);
+    final resto = con.where((p) => !out.contains(p)).toList()
+      ..sort((a, b) => puntos(b).compareTo(puntos(a)));
+    for (final p in resto) {
+      if (out.length >= 3) break;
+      out.add(p);
+    }
+    return out.map((p) => p.foto!).toList();
   }
+
+  List<XFile> _fotosParaGuardar() =>
+      _pasos.where((p) => p.foto != null && _elegidas.contains(p.foto!.path)).map((p) => p.foto!).take(3).toList();
 
   void _usar() {
     final campos = <String, String>{
@@ -300,9 +321,10 @@ class _EscanerPageState extends State<_EscanerPage> {
         if (e.key != 'extras') e.key: e.value.text.trim(),
     };
     Navigator.of(context).pop(EscanerResultado(
-      tipo: _tipo,
+      tipo: _tipoFinal,
       campos: campos,
       extras: _ctl['extras']?.text.trim() ?? '',
+      observaciones: _obsAdicional.text.trim(),
       fotos: _fotosParaGuardar(),
     ));
   }
@@ -319,7 +341,7 @@ class _EscanerPageState extends State<_EscanerPage> {
     if (t.contains('modelo')) return 'MODELO';
     if (t.contains('motor')) return 'MOTOR';
     if (t.contains('serie') || t.contains('imei')) {
-      return (_tipo == 'MOTO_LINEAL' || _tipo == 'MOTOCAR' || _tipo == 'AUTO')
+      return (_tipoFinal == 'MOTO_LINEAL' || _tipoFinal == 'MOTOCAR' || _tipoFinal == 'AUTO')
           ? 'CHASIS'
           : 'SERIE';
     }
@@ -327,7 +349,7 @@ class _EscanerPageState extends State<_EscanerPage> {
   }
 
   void _menuOtraFoto() {
-    final esVeh = _tipo == 'MOTO_LINEAL' || _tipo == 'MOTOCAR' || _tipo == 'AUTO';
+    final esVeh = _tipoFinal == 'MOTO_LINEAL' || _tipoFinal == 'MOTOCAR' || _tipoFinal == 'AUTO';
     final opciones = <List<String>>[
       ['SERIE', 'Foto extra: serie', 'Acerca solo el número de serie.'],
       ['MODELO', 'Foto extra: modelo', 'Acerca la etiqueta donde dice Model / Modelo.'],
@@ -387,6 +409,84 @@ class _EscanerPageState extends State<_EscanerPage> {
     );
   }
 
+  Widget _panelTipo() {
+    final d = _res?['tipoDetectado'];
+    if (d is! Map) return const SizedBox.shrink();
+    final t = '${d['tipo']}';
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8)),
+      child: Row(children: [
+        const Icon(Icons.auto_awesome, size: 18),
+        const SizedBox(width: 8),
+        Expanded(child: Text('Reconocido como: ${_tipos[t] ?? t}. ${d['motivo']}', style: const TextStyle(fontSize: 13))),
+      ]),
+    );
+  }
+
+  Widget _panelMemoria() {
+    final m = _res?['memoria'];
+    if (m is! Map) return const SizedBox.shrink();
+    final val = m['valorizacionTipica'];
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Ya registraste este modelo ${m['veces']} vez/veces antes.',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+        const SizedBox(height: 4),
+        Text('Descripción usada: ${m['descripcion']}${val != null ? '\nValorización típica: S/ $val' : ''}',
+            style: const TextStyle(fontSize: 13)),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton(
+            onPressed: () => setState(() => _ctl['descripcion']?.text = '${m['descripcion']}'),
+            child: const Text('Usar esa descripción'),
+          ),
+        ),
+      ]),
+    );
+  }
+
+  Widget _panelFotos() {
+    final con = _pasos.where((p) => p.foto != null).toList();
+    if (con.isEmpty) return const SizedBox.shrink();
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('Fotos que se guardan: ${_elegidas.length} de 3',
+          style: const TextStyle(fontWeight: FontWeight.bold)),
+      const Text('El sistema eligió las que tienen más información. Toca para cambiar.',
+          style: TextStyle(fontSize: 12, color: Colors.black54)),
+      const SizedBox(height: 6),
+      Wrap(spacing: 8, runSpacing: 8, children: [
+        for (final p in con)
+          GestureDetector(
+            onTap: () => setState(() {
+              final k = p.foto!.path;
+              if (_elegidas.contains(k)) {
+                _elegidas.remove(k);
+              } else if (_elegidas.length < 3) {
+                _elegidas.add(k);
+              }
+            }),
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(
+                    color: _elegidas.contains(p.foto!.path) ? Colors.green : Colors.grey.shade300,
+                    width: _elegidas.contains(p.foto!.path) ? 3 : 1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: Image.file(File(p.foto!.path), width: 70, height: 70, fit: BoxFit.cover),
+              ),
+            ),
+          ),
+      ]),
+    ]);
+  }
+
   Widget _revision() {
     final avisos = List<String>.from((_res?['avisos'] ?? []).map((e) => '$e'));
     final verif = List<Map>.from(_res?['verificaciones'] ?? []);
@@ -400,6 +500,8 @@ class _EscanerPageState extends State<_EscanerPage> {
             'Compara con el bien. Corrige lo que esté mal; lo que no se pudo leer lo escribes tú.',
             style: TextStyle(color: Colors.black54)),
         const SizedBox(height: 12),
+        _panelTipo(),
+        _panelMemoria(),
         for (final a in avisos)
           Container(
             margin: const EdgeInsets.only(bottom: 8),
@@ -440,8 +542,8 @@ class _EscanerPageState extends State<_EscanerPage> {
         _campo('descripcion', 'Descripción'),
         _campo('marca', 'Marca'),
         _campo('modelo', 'Modelo'),
-        _campo('serie', _tipo == 'CELULAR' ? 'Serie / IMEI' : 'Serie'),
-        if (_tipo == 'MOTO_LINEAL' || _tipo == 'MOTOCAR' || _tipo == 'AUTO')
+        _campo('serie', _tipoFinal == 'CELULAR' ? 'Serie / IMEI' : 'Serie'),
+        if (_tipoFinal == 'MOTO_LINEAL' || _tipoFinal == 'MOTOCAR' || _tipoFinal == 'AUTO')
           _campo('placa', 'Placa'),
         _campo('color', 'Color (el sistema no lo lee: míralo y escríbelo)'),
         TextField(
@@ -452,6 +554,17 @@ class _EscanerPageState extends State<_EscanerPage> {
               border: OutlineInputBorder(),
               isDense: true),
         ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _obsAdicional,
+          maxLines: 2,
+          decoration: const InputDecoration(
+              labelText: 'Observaciones propias (contraseña, estado, accesorios...)',
+              border: OutlineInputBorder(),
+              isDense: true),
+        ),
+        const SizedBox(height: 12),
+        _panelFotos(),
         for (final f in List<String>.from((_res?['faltan'] ?? []).map((e) => '$e')))
           if (_rolDeFalta(f) != null)
             Padding(
