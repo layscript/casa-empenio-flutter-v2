@@ -1333,11 +1333,28 @@ class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateM
           context: context,
           builder: (dc) => SimpleDialog(
             title: const Text('Hay varios, ¿cuál es?'),
-            children: [for (final c in cands) SimpleDialogOption(onPressed: () => Navigator.pop(dc, c), child: Text('${c['codigo']} · ${c['descripcion']}'))],
+            children: [
+              for (final c in cands)
+                SimpleDialogOption(
+                  onPressed: () => Navigator.pop(dc, c),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('${c['codigo']} · ${c['descripcion']}'),
+                    if (c['noALaVenta'] is Map)
+                      Text(
+                        'Vencido, aún no está a la venta · ${_mapa(c['noALaVenta'])['diasDejado'] ?? '-'} días${_mapa(c['noALaVenta'])['listoParaAdjudicar'] == true ? ' · ya se puede adjudicar' : ''}',
+                        style: TextStyle(fontSize: 12, color: Colors.deepOrange.shade700, fontWeight: FontWeight.w600),
+                      ),
+                  ]),
+                ),
+            ],
           ),
         );
         if (elegido != null && mounted) {
-          await _dio.post<dynamic>('/operacion/tienda/lista', data: {'usuarioId': _uid(context), 'bienId': elegido['id']});
+          if (elegido['noALaVenta'] is Map) {
+            await _dialogoNoVenta(context, _mapa(elegido['noALaVenta']), _puedeAtender);
+          } else {
+            await _dio.post<dynamic>('/operacion/tienda/lista', data: {'usuarioId': _uid(context), 'bienId': elegido['id']});
+          }
         }
       } else if (r['yaEstaba'] == true && mounted) {
         _aviso(context, 'Ya estaba en tu lista');
