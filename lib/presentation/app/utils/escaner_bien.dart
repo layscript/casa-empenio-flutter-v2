@@ -841,6 +841,20 @@ List<String> _candidatos(String texto) {
   return out.take(12).toList();
 }
 
+/// Botón de cámara para cualquier buscador: se toma una foto del bien (serie, IMEI, placa, código de barras o etiqueta),
+/// la persona confirma lo que se leyó y eso se pone en el buscador.
+Widget botonBuscarConFoto(BuildContext context, {required void Function(String valor) alLeer}) {
+  return IconButton(
+    tooltip: 'Buscar con foto (serie, IMEI, placa, código o etiqueta)',
+    icon: const Icon(Icons.photo_camera_outlined),
+    onPressed: () async {
+      final r = await capturarCampo(context, campo: 'serie', tipo: 'OTRO');
+      if (r == null || r.valor.trim().isEmpty) return;
+      alLeer(r.valor.trim());
+    },
+  );
+}
+
 /// Toma una foto y lee solo ese campo: 'serie', 'modelo' o 'descripcion'. La persona confirma o corrige antes de usarlo.
 Future<CapturaCampo?> capturarCampo(
   BuildContext context, {

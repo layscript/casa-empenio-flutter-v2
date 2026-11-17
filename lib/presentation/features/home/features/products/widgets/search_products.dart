@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/escaner_bien.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 
@@ -44,16 +45,24 @@ class _SearchProductsState extends State<SearchProducts> {
         Expanded(
           flex: 2,
           child: AppTextFormField(
-            suffixIcon: nameCtrl.text.isNotEmpty
-                ? GestureDetector(
+            suffixIcon: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (nameCtrl.text.isNotEmpty)
+                  GestureDetector(
                     onTap: () {
                       clearSearch(); // Llama a la función para limpiar
                     },
                     child: const Icon(
                       Icons.clear,
                     ),
-                  )
-                : null,
+                  ),
+                botonBuscarConFoto(context, alLeer: (v) {
+                  setState(() => nameCtrl.text = v);
+                  widget.onPressed?.call(v);
+                }),
+              ],
+            ),
             controller: nameCtrl,
             labelText: 'Buscar por nombre, código, placa, DNI…',
             isValid: (value) => setState(() {}),

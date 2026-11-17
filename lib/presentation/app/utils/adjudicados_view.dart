@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/escaner_bien.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:dio/dio.dart';
@@ -113,8 +114,13 @@ class _AdjudicadosViewState extends State<AdjudicadosView> {
             decoration: InputDecoration(
               hintText: 'Buscar por código, DNI, cliente o bien',
               prefixIcon: const Icon(Icons.search),
-              suffixIcon: IconButton(
-                  icon: const Icon(Icons.arrow_forward), onPressed: _cargar),
+              suffixIcon: Row(mainAxisSize: MainAxisSize.min, children: [
+                botonBuscarConFoto(context, alLeer: (v) {
+                  _busca.text = v;
+                  _cargar();
+                }),
+                IconButton(icon: const Icon(Icons.arrow_forward), onPressed: _cargar),
+              ]),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               isDense: true,
             ),

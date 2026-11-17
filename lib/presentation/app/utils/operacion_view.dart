@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/escaner_bien.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'dart:convert';
 
@@ -1568,7 +1569,7 @@ class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateM
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
           child: Row(children: [
-            Expanded(child: TextField(controller: _codigo, textCapitalization: TextCapitalization.characters, onSubmitted: (_) => _agregarPorCodigo(), decoration: const InputDecoration(labelText: 'Buscar por cualquier dato', hintText: 'Código, placa, nombre, DNI del cliente…', prefixIcon: Icon(Icons.qr_code_2), border: OutlineInputBorder(), isDense: true))),
+            Expanded(child: TextField(controller: _codigo, textCapitalization: TextCapitalization.characters, onSubmitted: (_) => _agregarPorCodigo(), decoration: InputDecoration(labelText: 'Buscar por cualquier dato', hintText: 'Código, placa, nombre, DNI del cliente…', prefixIcon: const Icon(Icons.qr_code_2), suffixIcon: botonBuscarConFoto(context, alLeer: (v) { _codigo.text = v; _agregarPorCodigo(); }), border: const OutlineInputBorder(), isDense: true))),
             const SizedBox(width: 8),
             FilledButton(onPressed: _agregando ? null : _agregarPorCodigo, child: _agregando ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Agregar')),
           ]),
@@ -1597,7 +1598,7 @@ class _TiendaPageState extends State<TiendaPage> with SingleTickerProviderStateM
     return Column(children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-        child: TextField(controller: _buscar, onSubmitted: (_) => _buscarVenta(), decoration: InputDecoration(labelText: 'Buscar por cualquier dato: nombre, código, placa, DNI del cliente…', prefixIcon: const Icon(Icons.search), suffixIcon: IconButton(icon: const Icon(Icons.arrow_forward), onPressed: _buscarVenta), border: const OutlineInputBorder(), isDense: true)),
+        child: TextField(controller: _buscar, onSubmitted: (_) => _buscarVenta(), decoration: InputDecoration(labelText: 'Buscar por cualquier dato: nombre, código, placa, DNI del cliente…', prefixIcon: const Icon(Icons.search), suffixIcon: Row(mainAxisSize: MainAxisSize.min, children: [botonBuscarConFoto(context, alLeer: (v) { _buscar.text = v; _buscarVenta(); }), IconButton(icon: const Icon(Icons.arrow_forward), onPressed: _buscarVenta)]), border: const OutlineInputBorder(), isDense: true)),
       ),
       _filtros([
         _boton('Todos', _grupo.isEmpty, () {

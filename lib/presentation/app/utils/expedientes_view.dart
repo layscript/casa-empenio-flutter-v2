@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/escaner_bien.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'dart:typed_data';
 
@@ -278,13 +279,19 @@ class _ExpedientesViewState extends State<ExpedientesView> {
             decoration: InputDecoration(
               hintText: 'Buscar por DNI, nombre o N° de préstamo',
               prefixIcon: const Icon(Icons.search),
-              suffixIcon: IconButton(
-                icon: const Icon(Icons.clear),
-                onPressed: () {
-                  _buscar.clear();
+              suffixIcon: Row(mainAxisSize: MainAxisSize.min, children: [
+                botonBuscarConFoto(context, alLeer: (v) {
+                  _buscar.text = v;
                   _cargar(reiniciar: true);
-                },
-              ),
+                }),
+                IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _buscar.clear();
+                    _cargar(reiniciar: true);
+                  },
+                ),
+              ]),
               border: const OutlineInputBorder(),
               isDense: true,
             ),

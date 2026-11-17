@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/escaner_bien.dart';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
@@ -231,12 +232,20 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                   decoration: InputDecoration(
                     hintText: 'Buscar: DNI, nombre, prenda o código',
                     prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _busquedaCtrl.text.isEmpty
-                        ? null
-                        : IconButton(
+                    suffixIcon: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_busquedaCtrl.text.isNotEmpty)
+                          IconButton(
                             icon: const Icon(Icons.close),
                             onPressed: () => setState(_busquedaCtrl.clear),
                           ),
+                        botonBuscarConFoto(context, alLeer: (v) {
+                          setState(() => _busquedaCtrl.text = v);
+                          _buscarRapido();
+                        }),
+                      ],
+                    ),
                     filled: true,
                     fillColor: Colors.grey[100],
                     contentPadding: const EdgeInsets.symmetric(vertical: 12),
