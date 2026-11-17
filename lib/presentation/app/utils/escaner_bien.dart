@@ -7,6 +7,7 @@ import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
+import 'package:google_mlkit_image_labeling/google_mlkit_image_labeling.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -66,19 +67,19 @@ String tipoEscaneoDeCategoria(String? nombre, [String? padre]) {
 List<String> palabrasCategoria(String tipo) {
   switch (tipo) {
     case 'CELULAR':
-      return ['celular', 'telefono'];
+      return ['celular', 'telefono', 'movil', 'smartphone'];
     case 'LAPTOP':
-      return ['laptop', 'computadora'];
+      return ['laptop', 'computadora', 'computo', 'notebook'];
     case 'MOTO_LINEAL':
-      return ['moto lineal', 'lineal', 'moto'];
+      return ['moto lineal', 'lineal', 'motocicleta', 'moto'];
     case 'MOTOCAR':
       return ['motocar', 'motokar'];
     case 'AUTO':
       return ['auto', 'camioneta', 'vehiculo'];
     case 'MOTOR':
-      return ['motor', 'maquinaria'];
+      return ['motor', 'maquinaria', 'herramienta', 'motosierra', 'generador'];
     case 'ELECTRO':
-      return ['electro'];
+      return ['electro', 'artefacto', 'hogar', 'television'];
     default:
       return [];
   }
@@ -96,6 +97,20 @@ dynamic _body(Response<dynamic> r) {
   return null;
 }
 
+/// Lo que el teléfono reconoce mirando la imagen (ej. "Mobile phone", "Motorcycle").
+Future<List<String>> _etiquetasDeImagen(String ruta) async {
+  final et = ImageLabeler(options: ImageLabelerOptions(confidenceThreshold: 0.5));
+  try {
+    final r = await et.processImage(InputImage.fromFilePath(ruta));
+    r.sort((a, b) => b.confidence.compareTo(a.confidence));
+    return r.map((e) => e.label).take(10).toList();
+  } catch (_) {
+    return [];
+  } finally {
+    await et.close();
+  }
+}
+
 class _Paso {
   _Paso(this.clave, this.rol, this.titulo, this.ayuda, this.leerTexto,
       this.obligatorio);
@@ -108,6 +123,7 @@ class _Paso {
   XFile? foto;
   List<String> textos = [];
   List<String> codigos = [];
+  List<String> etiquetas = [];
   bool leyendo = false;
 }
 
@@ -217,9 +233,14 @@ class _EscanerPageState extends State<_EscanerPage> {
       p.foto = foto;
       p.textos = [];
       p.codigos = [];
-      p.leyendo = p.leerTexto;
+      p.etiquetas = [];
+      p.leyendo = true;
     });
-    if (!p.leerTexto) return;
+    p.etiquetas = await _etiquetasDeImagen(foto.path);
+    if (!p.leerTexto) {
+      if (mounted) setState(() => p.leyendo = false);
+      return;
+    }
     final reconocedor = TextRecognizer(script: TextRecognitionScript.latin);
     final lector = BarcodeScanner();
     try {
@@ -252,12 +273,13 @@ class _EscanerPageState extends State<_EscanerPage> {
       final r = await _dioEscaner.post('operacion/escaner/consultar', data: {
         'tipo': _tipo,
         'fuentes': _pasos
-            .where((p) => p.foto != null && p.leerTexto)
+            .where((p) => p.foto != null)
             .map((p) => {
                   'etiqueta': p.titulo,
                   'rol': p.rol,
                   'textos': p.textos,
                   'codigos': p.codigos,
+                  'etiquetas': p.etiquetas,
                 })
             .toList(),
       });
@@ -842,6 +864,7 @@ Future<CapturaCampo?> capturarCampo(
 
   var texto = '';
   var codigos = <String>[];
+  final etiquetas = await _etiquetasDeImagen(foto.path);
   final reconocedor = TextRecognizer(script: TextRecognitionScript.latin);
   final lector = BarcodeScanner();
   try {
@@ -867,6 +890,7 @@ Future<CapturaCampo?> capturarCampo(
           'rol': campo == 'modelo' ? 'MODELO' : (campo == 'serie' ? 'SERIE' : 'GENERAL'),
           'textos': [texto],
           'codigos': codigos,
+          'etiquetas': etiquetas,
         }
       ],
     });
