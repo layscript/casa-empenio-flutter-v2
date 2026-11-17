@@ -841,18 +841,249 @@ List<String> _candidatos(String texto) {
   return out.take(12).toList();
 }
 
-/// Botón de cámara para cualquier buscador: se toma una foto del bien (serie, IMEI, placa, código de barras o etiqueta),
-/// la persona confirma lo que se leyó y eso se pone en el buscador.
+/// Botón de cámara para cualquier buscador: se toman hasta 4 fotos del bien (aunque no tengan texto) y sale la lista de
+/// bienes iguales o parecidos. Al tocar uno, su código o serie se pone en el buscador.
 Widget botonBuscarConFoto(BuildContext context, {required void Function(String valor) alLeer}) {
   return IconButton(
-    tooltip: 'Buscar con foto (serie, IMEI, placa, código o etiqueta)',
+    tooltip: 'Buscar con foto: el mismo bien o los parecidos',
     icon: const Icon(Icons.photo_camera_outlined),
     onPressed: () async {
-      final r = await capturarCampo(context, campo: 'serie', tipo: 'OTRO');
-      if (r == null || r.valor.trim().isEmpty) return;
-      alLeer(r.valor.trim());
+      final v = await Navigator.of(context).push<String>(
+        MaterialPageRoute(fullscreenDialog: true, builder: (_) => const _BuscarParecidosPage()),
+      );
+      if (v == null || v.trim().isEmpty) return;
+      alLeer(v.trim());
     },
   );
+}
+
+class _FotoBusqueda {
+  _FotoBusqueda(this.foto, this.textos, this.codigos, this.etiquetas);
+  final XFile foto;
+  final String textos;
+  final List<String> codigos;
+  final List<String> etiquetas;
+}
+
+class _BuscarParecidosPage extends StatefulWidget {
+  const _BuscarParecidosPage();
+  @override
+  State<_BuscarParecidosPage> createState() => _BuscarParecidosPageState();
+}
+
+class _BuscarParecidosPageState extends State<_BuscarParecidosPage> {
+  final List<_FotoBusqueda> _fotos = [];
+  List<Map<String, dynamic>> _resultados = [];
+  bool _leyendo = false;
+  bool _buscando = false;
+  bool _buscado = false;
+  String _error = '';
+  String _color = '';
+
+  static const _colores = ['negro', 'blanco', 'plata', 'gris', 'rojo', 'azul', 'verde', 'amarillo', 'dorado'];
+
+  Future<void> _tomarFoto(ImageSource origen) async {
+    final foto = await ImagePicker().pickImage(source: origen, imageQuality: 85);
+    if (foto == null || !mounted) return;
+    setState(() => _leyendo = true);
+    var texto = '';
+    var codigos = <String>[];
+    final etiquetas = await _etiquetasDeImagen(foto.path);
+    final reconocedor = TextRecognizer(script: TextRecognitionScript.latin);
+    final lector = BarcodeScanner();
+    try {
+      final entrada = InputImage.fromFilePath(foto.path);
+      texto = (await reconocedor.processImage(entrada)).text;
+      codigos = (await lector.processImage(entrada))
+          .map((b) => b.rawValue ?? '')
+          .where((x) => x.isNotEmpty)
+          .toList();
+    } catch (_) {
+    } finally {
+      await reconocedor.close();
+      await lector.close();
+    }
+    if (!mounted) return;
+    setState(() {
+      _fotos.add(_FotoBusqueda(foto, texto, codigos, etiquetas));
+      _leyendo = false;
+    });
+    // con la primera foto ya se busca solo; las siguientes afinan
+    await _buscar();
+  }
+
+  Future<void> _buscar() async {
+    if (_fotos.isEmpty) return;
+    setState(() {
+      _buscando = true;
+      _error = '';
+    });
+    try {
+      final r = await _dioEscaner.post('operacion/escaner/consultar-parecidos', data: {
+        'fuentes': [
+          for (var i = 0; i < _fotos.length; i++)
+            {
+              'etiqueta': 'foto ${i + 1}',
+              'rol': 'GENERAL',
+              'textos': [_fotos[i].textos],
+              'codigos': _fotos[i].codigos,
+              'etiquetas': _fotos[i].etiquetas,
+            }
+        ],
+        if (_color.isNotEmpty) 'color': _color,
+      });
+      final b = _body(r);
+      final lista = (b is Map && b['resultados'] is List) ? (b['resultados'] as List) : <dynamic>[];
+      if (!mounted) return;
+      setState(() {
+        _resultados = lista.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        _buscado = true;
+        _buscando = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'No se pudo buscar. Revisa la conexión e intenta de nuevo.';
+        _buscando = false;
+      });
+    }
+  }
+
+  String _identificador(Map<String, dynamic> r) {
+    for (final k in ['codigoInventario', 'prestamoCodigo', 'serie', 'placa']) {
+      final v = '${r[k] ?? ''}'.trim();
+      if (v.isNotEmpty && v != 'null') return v;
+    }
+    return '${r['descripcion'] ?? ''}'.trim();
+  }
+
+  Color _colorNivel(String n) {
+    if (n == 'EXACTO') return Colors.green.shade700;
+    if (n == 'MUY_PARECIDO') return Colors.orange.shade800;
+    return Colors.blueGrey;
+  }
+
+  String _textoNivel(String n) {
+    if (n == 'EXACTO') return 'ES ESTE';
+    if (n == 'MUY_PARECIDO') return 'MUY PARECIDO';
+    return 'PARECIDO';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Buscar con foto')),
+      body: ListView(
+        padding: const EdgeInsets.all(12),
+        children: [
+          const Text(
+            'Toma una foto del bien (hasta 4: de frente, la etiqueta, la serie). Aunque no tenga letras, te muestro los iguales y los parecidos.',
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 88,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                for (var i = 0; i < _fotos.length; i++)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Stack(children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(File(_fotos[i].foto.path), width: 88, height: 88, fit: BoxFit.cover),
+                      ),
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: InkWell(
+                          onTap: () {
+                            setState(() => _fotos.removeAt(i));
+                            if (_fotos.isEmpty) {
+                              setState(() {
+                                _resultados = [];
+                                _buscado = false;
+                              });
+                            } else {
+                              _buscar();
+                            }
+                          },
+                          child: const CircleAvatar(radius: 11, backgroundColor: Colors.black54, child: Icon(Icons.close, size: 14, color: Colors.white)),
+                        ),
+                      ),
+                    ]),
+                  ),
+                if (_fotos.length < 4)
+                  InkWell(
+                    onTap: _leyendo ? null : () => _tomarFoto(ImageSource.camera),
+                    child: Container(
+                      width: 88,
+                      height: 88,
+                      decoration: BoxDecoration(border: Border.all(color: Colors.grey), borderRadius: BorderRadius.circular(8)),
+                      child: _leyendo
+                          ? const Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)))
+                          : const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.add_a_photo_outlined), SizedBox(height: 4), Text('Foto', style: TextStyle(fontSize: 12))]),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          TextButton.icon(
+            onPressed: _leyendo || _fotos.length >= 4 ? null : () => _tomarFoto(ImageSource.gallery),
+            icon: const Icon(Icons.photo_library_outlined),
+            label: const Text('Elegir de la galería'),
+          ),
+          Wrap(spacing: 6, children: [
+            const Padding(padding: EdgeInsets.only(top: 8), child: Text('Color:')),
+            for (final c in _colores)
+              ChoiceChip(
+                label: Text(c),
+                selected: _color == c,
+                onSelected: (v) {
+                  setState(() => _color = v ? c : '');
+                  _buscar();
+                },
+              ),
+          ]),
+          const Divider(),
+          if (_buscando) const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator())),
+          if (_error.isNotEmpty) Text(_error, style: const TextStyle(color: Colors.red)),
+          if (_buscado && !_buscando && _resultados.isEmpty)
+            const Padding(padding: EdgeInsets.all(16), child: Text('No encontré nada parecido. Prueba con otra foto (la etiqueta o la serie ayudan mucho).')),
+          for (final r in _resultados)
+            Card(
+              child: ListTile(
+                leading: (r['imagen'] != null && '${r['imagen']}'.isNotEmpty)
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: Image.network('$endPointPrincipal/${r['imagen']}', width: 56, height: 56, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported_outlined)),
+                      )
+                    : const Icon(Icons.inventory_2_outlined),
+                title: Text('${r['descripcion'] ?? ''}', maxLines: 2, overflow: TextOverflow.ellipsis),
+                subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text([
+                    if ('${r['marca'] ?? ''}'.isNotEmpty) '${r['marca']}',
+                    if ('${r['modelo'] ?? ''}'.isNotEmpty) '${r['modelo']}',
+                    if ('${r['color'] ?? ''}'.isNotEmpty) '${r['color']}',
+                  ].where((e) => e != 'null').join(' · ')),
+                  if (r['prestamoCodigo'] != null) Text('Préstamo ${r['prestamoCodigo']}${r['estado'] != null ? ' · ${r['estado']}' : ''}'),
+                  if (r['codigoInventario'] != null) Text('Código ${r['codigoInventario']}'),
+                  Text(((r['motivos'] as List?) ?? const []).take(2).join(' · '), style: const TextStyle(fontSize: 12)),
+                  Container(
+                    margin: const EdgeInsets.only(top: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(color: _colorNivel('${r['nivel']}'), borderRadius: BorderRadius.circular(10)),
+                    child: Text(_textoNivel('${r['nivel']}'), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                  ),
+                ]),
+                isThreeLine: true,
+                onTap: () => Navigator.of(context).pop(_identificador(r)),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 /// Toma una foto y lee solo ese campo: 'serie', 'modelo' o 'descripcion'. La persona confirma o corrige antes de usarlo.
