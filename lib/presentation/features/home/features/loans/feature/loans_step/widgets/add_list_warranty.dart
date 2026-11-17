@@ -116,8 +116,7 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
     poner(_desc, c['descripcion'], (t) => bloc.add(ChangeDescription(value: t)));
     poner(_placa, c['placa'], (t) => bloc.add(ChangePlacaWarranty(t)));
     poner(_motor, c['motor'], (t) => bloc.add(ChangeMotorWarranty(t)));
-    final esVeh = r.tipo == 'MOTO_LINEAL' || r.tipo == 'MOTOCAR' || r.tipo == 'AUTO';
-    if (esVeh) poner(_carroceria, c['serie'], (t) => bloc.add(ChangeCarroceriaWarranty(t)));
+    poner(_carroceria, c['clase'], (t) => bloc.add(ChangeCarroceriaWarranty(t)));
     poner(_marca, c['marca'], (t) => bloc.add(ChangeBrand(value: t)));
     poner(_modelo, c['modelo'], (t) => bloc.add(ChangeModel(value: t)));
     poner(_color, c['color'], (t) => bloc.add(ChangeColor(value: t)));
@@ -226,7 +225,7 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
         ),
         const SizedBox(height: 15),
         AppTextFormField(
-          labelText: 'Chasis / VIN (vehículos, opcional)',
+          labelText: 'Carrocería / tipo (vehículos, opcional)',
           controller: _carroceria,
           onChanged: (e) => loansStepBloc.add(ChangeCarroceriaWarranty(e)),
         ),
@@ -306,7 +305,7 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppTextFormField(
-          labelText: 'Serie (opcional)',
+          labelText: 'Serie / chasis / VIN (opcional)',
           controller: _serie,
           suffixIcon: _botonCaptura(loansStepBloc, 'serie', _serie, (t) => loansStepBloc.add(ChangeSerie(value: t))),
           onChanged: (e) => loansStepBloc.add(ChangeSerie(value: e)),

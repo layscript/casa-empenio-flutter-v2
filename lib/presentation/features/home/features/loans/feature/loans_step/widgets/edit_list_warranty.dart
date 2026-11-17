@@ -45,7 +45,7 @@ class EditFormWarranty extends StatelessWidget {
         ),
         const SizedBox(height: 15),
         AppTextFormField(
-          labelText: 'Chasis / VIN (opcional)',
+          labelText: 'Carrocería / tipo (opcional)',
           initialValue: loansState.carroceria,
           onChanged: (e) => loansStepBloc.add(ChangeCarroceriaWarranty(e)),
         ),
@@ -116,7 +116,7 @@ class EditFormWarranty extends StatelessWidget {
         ),
         const SizedBox(height: 15),
         AppTextFormField(
-          labelText: 'Serie (opcional)',
+          labelText: 'Serie / chasis / VIN (opcional)',
           initialValue: loansState.serie,
           onChanged: (e) => loansStepBloc.add(ChangeSerie(value: e)),
         ),
