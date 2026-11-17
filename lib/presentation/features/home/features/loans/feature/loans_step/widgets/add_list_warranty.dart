@@ -21,6 +21,8 @@ class AddFormWarranty extends StatefulWidget {
 class _AddFormWarrantyState extends State<AddFormWarranty> {
   final _desc = TextEditingController();
   final _placa = TextEditingController();
+  final _motor = TextEditingController();
+  final _carroceria = TextEditingController();
   final _marca = TextEditingController();
   final _modelo = TextEditingController();
   final _color = TextEditingController();
@@ -30,7 +32,7 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
 
   @override
   void dispose() {
-    for (final c in [_desc, _placa, _marca, _modelo, _color, _serie, _obs]) {
+    for (final c in [_desc, _placa, _motor, _carroceria, _marca, _modelo, _color, _serie, _obs]) {
       c.dispose();
     }
     super.dispose();
@@ -113,6 +115,9 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
 
     poner(_desc, c['descripcion'], (t) => bloc.add(ChangeDescription(value: t)));
     poner(_placa, c['placa'], (t) => bloc.add(ChangePlacaWarranty(t)));
+    poner(_motor, c['motor'], (t) => bloc.add(ChangeMotorWarranty(t)));
+    final esVeh = r.tipo == 'MOTO_LINEAL' || r.tipo == 'MOTOCAR' || r.tipo == 'AUTO';
+    if (esVeh) poner(_carroceria, c['serie'], (t) => bloc.add(ChangeCarroceriaWarranty(t)));
     poner(_marca, c['marca'], (t) => bloc.add(ChangeBrand(value: t)));
     poner(_modelo, c['modelo'], (t) => bloc.add(ChangeModel(value: t)));
     poner(_color, c['color'], (t) => bloc.add(ChangeColor(value: t)));
@@ -212,6 +217,18 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
           labelText: 'Placa (opcional)',
           controller: _placa,
           onChanged: (e) => loansStepBloc.add(ChangePlacaWarranty(e)),
+        ),
+        const SizedBox(height: 15),
+        AppTextFormField(
+          labelText: 'N° de motor (vehículos, opcional)',
+          controller: _motor,
+          onChanged: (e) => loansStepBloc.add(ChangeMotorWarranty(e)),
+        ),
+        const SizedBox(height: 15),
+        AppTextFormField(
+          labelText: 'Chasis / VIN (vehículos, opcional)',
+          controller: _carroceria,
+          onChanged: (e) => loansStepBloc.add(ChangeCarroceriaWarranty(e)),
         ),
       ],
     );
@@ -420,6 +437,8 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
                         id: generateIDFromDateTime(),
                         category: state.categories,
                         placa: state.placa,
+                        motor: state.motor,
+                        carroceria: state.carroceria,
                         description: state.description,
                         brand: state.brand,
                         model: state.model,

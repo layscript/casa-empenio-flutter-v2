@@ -66,6 +66,8 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
     on<ChangeDescription>(_onChangeDescription);
     on<ChangeCategoryWarranty>(_onChangeCategoryWarranty);
     on<ChangePlacaWarranty>(_onChangePlacaWarranty);
+    on<ChangeMotorWarranty>((e, emit) => emit(state.copyWith(motor: e.value, idWarranty: state.idWarranty)));
+    on<ChangeCarroceriaWarranty>((e, emit) => emit(state.copyWith(carroceria: e.value, idWarranty: state.idWarranty)));
     on<ChangeBrand>(_onChangeBrand);
     on<ChangeModel>(_onChangeModel);
     on<ChangeColor>(_onChangeColor);
@@ -579,6 +581,8 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
       id: generateIDFromDateTime(),
       category: state.categories,
       placa: state.placa,
+      motor: state.motor,
+      carroceria: state.carroceria,
       description: state.description,
       brand: state.brand,
       model: state.model,
@@ -620,6 +624,8 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
       id: state.idWarranty,
       category: state.categories,
       placa: state.placa,
+      motor: state.motor,
+      carroceria: state.carroceria,
       description: state.description,
       brand: state.brand,
       model: state.model,
@@ -789,6 +795,8 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
         addListWarranty: event.value,
         description: filterData.description,
         placa: filterData.placa,
+        motor: filterData.motor,
+        carroceria: filterData.carroceria,
         categories: filterData.category,
         idWarranty: event.id,
         brand: filterData.brand,
@@ -963,6 +971,8 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
             'marca': e.brand,
             'modelo': e.model,
             'placa': e.placa,
+            'motor': e.motor,
+            'carroceria': e.carroceria,
             'categoria': e.category?.descripcion ?? '',
             'color': e.color,
             'serie': e.serie,
@@ -993,6 +1003,8 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
             'marca': e.brand,
             'modelo': e.model,
             'placa': e.placa,
+            'motor': e.motor,
+            'carroceria': e.carroceria,
             'categoria': e.category?.descripcion ?? '',
             'color': e.color,
             'serie': e.serie,
@@ -1173,6 +1185,8 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
         description: event.value.description,
         categories: event.value.category,
         placa: event.value.placa,
+        motor: event.value.motor,
+        carroceria: event.value.carroceria,
         brand: event.value.brand,
         model: event.value.model,
         color: event.value.color,

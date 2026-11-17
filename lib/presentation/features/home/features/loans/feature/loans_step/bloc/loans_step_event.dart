@@ -180,6 +180,16 @@ class ChangePlacaWarranty extends LoansStepEvent {
   const ChangePlacaWarranty(this.value);
 }
 
+class ChangeMotorWarranty extends LoansStepEvent {
+  final String value;
+  const ChangeMotorWarranty(this.value);
+}
+
+class ChangeCarroceriaWarranty extends LoansStepEvent {
+  final String value;
+  const ChangeCarroceriaWarranty(this.value);
+}
+
 class ChangeBrand extends LoansStepEvent {
   const ChangeBrand({required this.value});
   final String value;

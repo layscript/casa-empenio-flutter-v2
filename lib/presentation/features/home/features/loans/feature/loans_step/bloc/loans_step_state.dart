@@ -8,6 +8,8 @@ class WarrantyState {
     required this.description,
     required this.category,
     required this.placa,
+    this.motor,
+    this.carroceria,
     required this.brand,
     required this.model,
     required this.color,
@@ -21,6 +23,8 @@ class WarrantyState {
   final String? id;
   final CategoriesEntity? category;
   final String? placa;
+  final String? motor;
+  final String? carroceria;
   final String? description;
   final String? brand;
   final String? model;
@@ -44,6 +48,8 @@ class WarrantyState {
             )
           : null,
       placa: json['placa'],
+      motor: json['motor'],
+      carroceria: json['carroceria'],
       brand: json['brand'],
       model: json['model'],
       color: json['color'],
@@ -71,6 +77,8 @@ class WarrantyState {
             }
           : null,
       'placa': placa,
+      'motor': motor,
+      'carroceria': carroceria,
       'description': description,
       'brand': brand,
       'model': model,
@@ -123,6 +131,8 @@ class LoansStepState extends Equatable {
     this.brand,
     this.model,
     this.placa,
+    this.motor,
+    this.carroceria,
     this.color,
     this.status,
     this.serie,
@@ -176,6 +186,8 @@ class LoansStepState extends Equatable {
   final String? brand;
   final String? model;
   final String? placa;
+  final String? motor;
+  final String? carroceria;
   final String? color;
   final String? status;
   final String? serie;
@@ -294,6 +306,8 @@ class LoansStepState extends Equatable {
     String? totalProfit,
     List<XFile>? photoWarranty,
     String? placa,
+    String? motor,
+    String? carroceria,
     int? cajaId,
   }) =>
       LoansStepState(
@@ -343,6 +357,8 @@ class LoansStepState extends Equatable {
         listCategories: listCategories ?? this.listCategories,
         categories: categories ?? this.categories,
         placa: placa ?? this.placa,
+        motor: motor ?? this.motor,
+        carroceria: carroceria ?? this.carroceria,
         cajaId: cajaId ?? this.cajaId,
       );
 
@@ -477,6 +493,8 @@ class LoansStepState extends Equatable {
         listCategories,
         categories,
         placa,
+        motor,
+        carroceria,
         cajaId,
       ];
 }

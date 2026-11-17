@@ -51,6 +51,10 @@ class ShowListWarranty extends StatelessWidget {
                 if ((warranty.brand ?? '').isNotEmpty)
                   Text('Marca: ${warranty.brand}'),
                 if (warranty.placa != null) Text('Placa: ${warranty.placa}'),
+                if ((warranty.motor ?? '').isNotEmpty)
+                  Text('Motor: ${warranty.motor}'),
+                if ((warranty.carroceria ?? '').isNotEmpty)
+                  Text('Chasis/VIN: ${warranty.carroceria}'),
                 if ((warranty.color ?? '').isNotEmpty)
                   Text('Color: ${warranty.color}'),
                 if ((warranty.status ?? '').isNotEmpty)

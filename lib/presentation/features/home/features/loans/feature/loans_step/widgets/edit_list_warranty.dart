@@ -38,6 +38,18 @@ class EditFormWarranty extends StatelessWidget {
           onChanged: (e) => loansStepBloc.add(ChangePlacaWarranty(e)),
         ),
         const SizedBox(height: 15),
+        AppTextFormField(
+          labelText: 'N° de motor (opcional)',
+          initialValue: loansState.motor,
+          onChanged: (e) => loansStepBloc.add(ChangeMotorWarranty(e)),
+        ),
+        const SizedBox(height: 15),
+        AppTextFormField(
+          labelText: 'Chasis / VIN (opcional)',
+          initialValue: loansState.carroceria,
+          onChanged: (e) => loansStepBloc.add(ChangeCarroceriaWarranty(e)),
+        ),
+        const SizedBox(height: 15),
         Row(
           children: [
             Expanded(
