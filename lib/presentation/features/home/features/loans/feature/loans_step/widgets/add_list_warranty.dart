@@ -9,6 +9,7 @@ import 'package:casa_empenio_pe/presentation/features/home/features/loans/featur
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/feature/loans_step/widgets/selector_categoria.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AddFormWarranty extends StatefulWidget {
   const AddFormWarranty({super.key});
@@ -292,16 +293,72 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
     );
   }
 
+  Future<void> _agregarDocumento(
+      LoansStepBloc bloc, ImageSource origen) async {
+    final foto = await ImagePicker().pickImage(source: origen, imageQuality: 92);
+    if (foto == null || !mounted) return;
+    final actuales = List<XFile>.from(bloc.state.photoWarranty ?? <XFile>[]);
+    if (actuales.length >= 3) return;
+    actuales.add(foto);
+    bloc.add(UploadImagesWarranty(actuales));
+    setState(() => _fotosNonce++);
+  }
+
   Widget _buildPhotoSelectionRow(LoansStepBloc loansStepBloc) {
     return BlocBuilder<LoansStepBloc, LoansStepState>(
       builder: (context, state) {
-        return CustomImagePicker(
-          key: ValueKey('fotos$_fotosNonce'),
-          onImagesSelected: (e) => loansStepBloc.add(
-            UploadImagesWarranty(e),
-          ),
-          initialSelectedPhotos: state.photoWarranty,
-          limit: 3,
+        final n = state.photoWarranty?.length ?? 0;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CustomImagePicker(
+              key: ValueKey('fotos$_fotosNonce'),
+              onImagesSelected: (e) => loansStepBloc.add(
+                UploadImagesWarranty(e),
+              ),
+              initialSelectedPhotos: state.photoWarranty,
+              limit: 3,
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: n >= 3
+                  ? null
+                  : () => showModalBottomSheet<void>(
+                        context: context,
+                        builder: (ctx) => SafeArea(
+                          child: Wrap(children: [
+                            ListTile(
+                              leading: const Icon(Icons.photo_camera),
+                              title: const Text('Tomar foto del documento'),
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                _agregarDocumento(
+                                    loansStepBloc, ImageSource.camera);
+                              },
+                            ),
+                            ListTile(
+                              leading: const Icon(Icons.photo_library),
+                              title: const Text('Elegir de la galería'),
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                _agregarDocumento(
+                                    loansStepBloc, ImageSource.gallery);
+                              },
+                            ),
+                          ]),
+                        ),
+                      ),
+              icon: const Icon(Icons.description_outlined),
+              label: const Text('Agregar tarjeta o documento'),
+            ),
+            const Padding(
+              padding: EdgeInsets.only(top: 4),
+              child: Text(
+                'Hasta 3 fotos en total (bien, tarjeta de propiedad, otros documentos).',
+                style: TextStyle(fontSize: 12, color: Colors.black54),
+              ),
+            ),
+          ],
         );
       },
     );
