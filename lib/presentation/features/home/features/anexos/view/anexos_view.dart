@@ -2,7 +2,7 @@ import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
-import 'package:casa_empenio_pe/presentation/features/home/features/anexos/widgets/add_anexo_dialog.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/operacion_view.dart' show mostrarVisita, mostrarVisitaPidiendoPrestamo;
 import 'package:casa_empenio_pe/presentation/features/home/features/anexos/widgets/show_details_anexo.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/features.dart';
 import 'package:excel/excel.dart';
@@ -139,7 +139,7 @@ class AnexosView extends StatelessWidget {
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Text(
-                                            'Descripción: ${anexo.descripcion}',
+                                            '${anexo.resultadoTexto.isNotEmpty ? '${anexo.resultadoTexto}\n' : ''}Descripción: ${anexo.descripcion}',
                                           ),
                                           Text(
                                             'Tipo: ${anexo.tipo}',
@@ -209,24 +209,9 @@ class AnexosView extends StatelessWidget {
                           ),
                           child: Center(
                             child: PrimaryButton(
-                              onPressed: () {
-                                showDialog(
-                                  barrierDismissible: false,
-                                  context: context,
-                                  builder: (_) {
-                                    return AddAnexoDialog(
-                                      onPressed: (anexo) {
-                                        anexosBloc.add(
-                                          SaveAnexo(
-                                            description: anexo.description,
-                                            imagenes: anexo.imagenes,
-                                            prestamoId: anexo.prestamoId,
-                                          ),
-                                        );
-                                      },
-                                    );
-                                  },
-                                );
+                              onPressed: () async {
+                                final ok = await mostrarVisitaPidiendoPrestamo(context);
+                                if (ok) anexosBloc.add(const GetAnexos());
                               },
                               child: const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,

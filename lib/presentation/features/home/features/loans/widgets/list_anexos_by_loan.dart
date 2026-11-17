@@ -119,12 +119,14 @@ class _ListAnexosByLoanState extends State<ListAnexosByLoan> {
                             final anexo = state.listAnexos[index];
 
                             return ListTile(
-                              trailing: CustomImageApp(
-                                urlImg: anexo.url,
-                              ),
+                              trailing: anexo.url.isEmpty
+                                  ? null
+                                  : CustomImageApp(
+                                      urlImg: anexo.url,
+                                    ),
                               contentPadding: EdgeInsets.zero,
                               title: Text(
-                                'Descripción: ${anexo.descripcion}',
+                                '${anexo.resultadoTexto.isNotEmpty ? '${anexo.resultadoTexto}\n' : ''}Descripción: ${anexo.descripcion}',
                                 maxLines: 3,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
@@ -140,6 +142,12 @@ class _ListAnexosByLoanState extends State<ListAnexosByLoan> {
                                   Text(
                                     'Fecha: ${setDateTimeToLocal(anexo.createdAt)}',
                                   ),
+                                  if ((anexo.promesaFecha ?? '').isNotEmpty)
+                                    Text(
+                                      'Promete pagar: ${anexo.promesaFecha!.split('-').reversed.join('/')}${(anexo.promesaMonto ?? '').isNotEmpty ? ' · S/.${anexo.promesaMonto}' : ''}',
+                                    ),
+                                  if (anexo.prorrogaDias != null)
+                                    Text('Prórroga dada: ${anexo.prorrogaDias} días'),
                                 ],
                               ),
                             );

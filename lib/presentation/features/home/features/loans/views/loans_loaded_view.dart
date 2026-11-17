@@ -5,7 +5,7 @@ import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/expediente_page.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/auth/auth.dart';
-import 'package:casa_empenio_pe/presentation/features/home/features/anexos/widgets/add_anexo_dialog.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/operacion_view.dart' show mostrarVisita, mostrarVisitaPidiendoPrestamo;
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/blocs/loans_bloc/loans_bloc.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/feature/loans_step/views/loans_step_view.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/views/loan_client_view.dart';
@@ -534,24 +534,7 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                               ),
                               confirmDismiss: (direction) async {
                                 if (direction == DismissDirection.endToStart) {
-                                  await showDialog(
-                                    barrierDismissible: false,
-                                    context: context,
-                                    builder: (_) {
-                                      return AddAnexoDialog(
-                                        idPrestamo: prestamo?.codigo,
-                                        onPressed: (anexo) {
-                                          widget.loansBloc.add(
-                                            SaveAnexoLoan(
-                                              description: anexo.description,
-                                              imagenes: anexo.imagenes,
-                                              prestamoId: anexo.prestamoId,
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    },
-                                  );
+                                  await mostrarVisita(context, prestamoCodigo: prestamo?.codigo ?? 0);
                                 } else if (direction ==
                                     DismissDirection.startToEnd) {
                                   await showDialog(

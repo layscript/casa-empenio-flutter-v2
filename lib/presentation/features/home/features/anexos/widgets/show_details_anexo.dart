@@ -40,10 +40,31 @@ class ShowDetailsAnexo extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (anexo.resultadoTexto.isNotEmpty)
+            CustomRow(
+              label: 'Qué pasó',
+              value: anexo.resultadoTexto,
+            ),
           CustomRow(
             label: 'Descripción',
             value: anexo.descripcion,
           ),
+          if ((anexo.promesaFecha ?? '').isNotEmpty)
+            CustomRow(
+              label: 'Promete pagar',
+              value:
+                  '${anexo.promesaFecha!.split('-').reversed.join('/')}${(anexo.promesaMonto ?? '').isNotEmpty ? ' · S/.${anexo.promesaMonto}' : ''}',
+            ),
+          if (anexo.prorrogaDias != null)
+            CustomRow(
+              label: 'Prórroga dada',
+              value: '${anexo.prorrogaDias} días',
+            ),
+          if ((anexo.usuarioNombre ?? '').isNotEmpty)
+            CustomRow(
+              label: 'Registró',
+              value: anexo.usuarioNombre!,
+            ),
           CustomRow(
             label: 'Tipo',
             value: anexo.tipo,
@@ -65,16 +86,18 @@ class ShowDetailsAnexo extends StatelessWidget {
             label: 'Observaciones',
             value: anexo.prestamo?.observaciones ?? '',
           ),
-          const CustomRow(
-            label: 'Imagen Anexo',
-            value: '',
-          ),
-          const SizedBox(height: 10),
-          CustomImageApp(
-            urlImg: anexo.url,
-            width: 100,
-            height: 100,
-          ),
+          if (anexo.url.isNotEmpty) ...[
+            const CustomRow(
+              label: 'Imagen Anexo',
+              value: '',
+            ),
+            const SizedBox(height: 10),
+            CustomImageApp(
+              urlImg: anexo.url,
+              width: 100,
+              height: 100,
+            ),
+          ],
         ],
       ),
     );

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/operacion_view.dart' show mostrarVisita;
 import 'package:casa_empenio_pe/presentation/features/auth/auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -609,6 +610,51 @@ class _TareasCobranzaPageState extends State<TareasCobranzaPage> {
     });
   }
 
+  Future<void> _prorroga(Map<String, dynamic> t) async {
+    final motivo = TextEditingController();
+    var dias = 15;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => StatefulBuilder(
+        builder: (c, setD) => AlertDialog(
+          title: const Text('Dar prórroga'),
+          content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('El bien no pasará a la venta antes de que termine la prórroga. Los días se suman a lo que le queda de plazo.'),
+            const SizedBox(height: 10),
+            Wrap(spacing: 8, children: [
+              for (final d in const [7, 15, 30])
+                ChoiceChip(label: Text('$d días'), selected: dias == d, onSelected: (_) => setD(() => dias = d)),
+            ]),
+            const SizedBox(height: 10),
+            TextField(controller: motivo, maxLength: 200, decoration: const InputDecoration(labelText: 'Motivo', hintText: 'Ej: vino a reclamar, pagará el lunes')),
+          ]),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancelar')),
+            FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Dar prórroga')),
+          ],
+        ),
+      ),
+    );
+    if (ok != true) return;
+    await _accion(t, 'prorroga', {'dias': dias, 'motivo': motivo.text.trim()}, ok: 'Prórroga de $dias días registrada');
+  }
+
+  Future<void> _visita(Map<String, dynamic> t) async {
+    final guardada = await mostrarVisita(context, prestamoCodigo: t['prestamoCodigo'] as int);
+    if (guardada && mounted) {
+      _hist.remove(t['prestamoCodigo']);
+      await _cargar();
+    }
+  }
+
+  String _dmyIso(dynamic v) {
+    final txt = v?.toString() ?? '';
+    if (RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(txt)) return txt.split('-').reversed.join('/');
+    final d = DateTime.tryParse(txt);
+    if (d == null) return '';
+    return DateFormat('dd/MM/yyyy').format(d.toUtc().subtract(const Duration(hours: 5)));
+  }
+
   Future<void> _verHistorial(Map<String, dynamic> t) async {
     final cod = t['prestamoCodigo'] as int;
     if (_hist.containsKey(cod)) {
@@ -646,7 +692,7 @@ class _TareasCobranzaPageState extends State<TareasCobranzaPage> {
                     padding: EdgeInsets.all(24),
                     child: Text(
                       'No hay préstamos en proceso de adjudicación.\n'
-                      'Cuando un préstamo vencido cumpla 45 días desde que el cliente dejó el bien aparecerá aquí.',
+                      'Cuando un préstamo vencido cumpla 45 días desde que el cliente dejó el bien (o desde su último pago) aparecerá aquí.',
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -703,6 +749,21 @@ class _TareasCobranzaPageState extends State<TareasCobranzaPage> {
           label: const Text('Adjudicar ahora')));
     }
 
+    botones.addAll([
+      OutlinedButton.icon(
+          onPressed: () => _visita(t),
+          icon: const Icon(Icons.directions_walk),
+          label: const Text('Registrar visita')),
+      OutlinedButton.icon(
+          onPressed: () => _prorroga(t),
+          icon: const Icon(Icons.more_time),
+          label: const Text('Dar prórroga')),
+    ]);
+
+    final promesa = t['promesa'] is Map ? Map<String, dynamic>.from(t['promesa'] as Map) : null;
+    final promesaFecha = promesa == null ? null : DateTime.tryParse('${promesa['fecha']}');
+    final promesaVencida = promesaFecha != null && promesaFecha.isBefore(DateTime.now().subtract(const Duration(days: 1)));
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -717,13 +778,20 @@ class _TareasCobranzaPageState extends State<TareasCobranzaPage> {
                         fontWeight: FontWeight.bold, fontSize: 15)),
               ),
               Chip(
-                label: Text('${t['diasDejado'] ?? t['diasVencido']} días desde que dejó',
+                label: Text('${t['diasCuenta'] ?? t['diasDejado'] ?? t['diasVencido']} días ${t['cuentaDesdePago'] == true ? 'sin pagar' : 'desde que dejó'}',
                     style: const TextStyle(fontSize: 12)),
                 visualDensity: VisualDensity.compact,
               ),
             ]),
             Text('Celular: ${cli['celular'] ?? '-'}  ·  Saldo S/.${(t['saldo'] as num).toStringAsFixed(2)}\n'
-                'Hace ${t['diasDejado'] ?? '-'} días que dejó el bien (${t['diasVencido']} de vencido)\nSe adjudica como máximo en ${t['diasParaLimite']} día(s)'),
+                '${t['cuentaDesdePago'] == true ? 'Último pago: ${_dmyIso(t['cuentaDesde'])}' : 'Dejó el bien: ${_dmyIso(t['cuentaDesde'])}'} · ${t['diasVencido']} días de vencido\nPlazo: ${t['limiteDias'] ?? 60} días desde esa fecha · se adjudica como máximo en ${t['diasParaLimite']} día(s)'),
+            if (t['prorrogaHasta'] != null)
+              Text('Tiene prórroga hasta el ${_dmyIso(t['prorrogaHasta'])}', style: TextStyle(color: Colors.green.shade800, fontWeight: FontWeight.w600)),
+            if (promesa != null)
+              Text(
+                '${promesaVencida ? 'Prometió pagar el' : 'Promete pagar el'} ${_dmyIso(promesa['fecha'])}${promesa['monto'] != null ? ' · S/.${promesa['monto']}' : ''}${promesaVencida ? ' (ya pasó)' : ''}',
+                style: TextStyle(color: promesaVencida ? Colors.red.shade700 : Colors.blueGrey.shade700, fontWeight: FontWeight.w600),
+              ),
             const SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.all(8),

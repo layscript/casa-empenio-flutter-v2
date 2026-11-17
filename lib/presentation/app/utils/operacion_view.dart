@@ -2893,3 +2893,254 @@ class _SolicitudesAdjudicacionPageState extends State<SolicitudesAdjudicacionPag
     );
   }
 }
+
+// ============================================================ VISITA AL CLIENTE
+const _visitaConFoto = {'NO_ESTABA', 'DEJO_AVISO', 'DIRECCION_ERRADA'};
+const _visitaPermiteProrroga = {'RECLAMO', 'HABLO_CLIENTE', 'HABLO_FAMILIAR'};
+const _visitaIconos = <String, IconData>{
+  'RECLAMO': Icons.record_voice_over,
+  'HABLO_CLIENTE': Icons.person,
+  'HABLO_FAMILIAR': Icons.family_restroom,
+  'NO_ESTABA': Icons.door_front_door_outlined,
+  'DEJO_AVISO': Icons.mail_outline,
+  'DIRECCION_ERRADA': Icons.wrong_location_outlined,
+  'SE_NEGO': Icons.block,
+};
+
+/// Pide el número de préstamo y abre la visita (para la lista general de visitas).
+Future<bool> mostrarVisitaPidiendoPrestamo(BuildContext context) async {
+  final ctrl = TextEditingController();
+  final cod = await showDialog<int>(
+    context: context,
+    builder: (c) => AlertDialog(
+      title: const Text('Visita: ¿de qué préstamo?'),
+      content: TextField(controller: ctrl, keyboardType: TextInputType.number, autofocus: true, decoration: const InputDecoration(labelText: 'Nro de préstamo')),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancelar')),
+        FilledButton(onPressed: () => Navigator.pop(c, int.tryParse(ctrl.text.trim())), child: const Text('Seguir')),
+      ],
+    ),
+  );
+  if (cod == null || cod <= 0 || !context.mounted) return false;
+  return mostrarVisita(context, prestamoCodigo: cod);
+}
+
+/// Registro de una visita al cliente: qué pasó, promesa de pago, foto y, si vino a reclamar, prórroga.
+Future<bool> mostrarVisita(BuildContext context, {required int prestamoCodigo}) async {
+  final uid = _uid(context);
+  final nombre = context.read<Preferences>().token?.fullName ?? '';
+  final r = await showModalBottomSheet<bool>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    builder: (_) => _VisitaForm(prestamoCodigo: prestamoCodigo, uid: uid, nombre: nombre),
+  );
+  return r == true;
+}
+
+class _VisitaForm extends StatefulWidget {
+  const _VisitaForm({required this.prestamoCodigo, required this.uid, required this.nombre});
+  final int prestamoCodigo;
+  final int uid;
+  final String nombre;
+
+  @override
+  State<_VisitaForm> createState() => _VisitaFormState();
+}
+
+class _VisitaFormState extends State<_VisitaForm> {
+  String? _res;
+  final _nota = TextEditingController();
+  final _monto = TextEditingController();
+  bool _promesa = false;
+  DateTime? _fechaPromesa;
+  bool _prorroga = false;
+  int _dias = 15;
+  XFile? _foto;
+  bool _guardando = false;
+  String? _error;
+
+  bool get _necesitaFoto => _visitaConFoto.contains(_res);
+  bool get _puedeProrroga => _visitaPermiteProrroga.contains(_res);
+
+  @override
+  void dispose() {
+    _nota.dispose();
+    _monto.dispose();
+    super.dispose();
+  }
+
+  String _ymd(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  String _dmy(DateTime d) => '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+
+  Future<void> _tomarFoto() async {
+    final x = await ImagePicker().pickImage(source: ImageSource.camera, imageQuality: 70, maxWidth: 1600);
+    if (x != null && mounted) setState(() => _foto = x);
+  }
+
+  Future<void> _elegirFecha() async {
+    final hoy = DateTime.now();
+    final d = await showDatePicker(context: context, initialDate: _fechaPromesa ?? hoy.add(const Duration(days: 3)), firstDate: hoy, lastDate: hoy.add(const Duration(days: 120)));
+    if (d != null && mounted) setState(() => _fechaPromesa = d);
+  }
+
+  Future<void> _guardar() async {
+    if (_res == null) return;
+    if (_necesitaFoto && _foto == null) {
+      setState(() => _error = 'Tome una foto como prueba de la visita.');
+      return;
+    }
+    if (_promesa && _fechaPromesa == null) {
+      setState(() => _error = 'Elija la fecha en que el cliente promete pagar.');
+      return;
+    }
+    setState(() {
+      _guardando = true;
+      _error = null;
+    });
+    final mensajes = ScaffoldMessenger.of(context);
+    try {
+      var url = '';
+      if (_foto != null) {
+        final r = await _dio.post<dynamic>('/comercial/anexo/imagenAnexo', data: FormData.fromMap({'imagen': await MultipartFile.fromFile(_foto!.path, filename: _foto!.name)}));
+        url = (_cuerpo(r) as Map)['url'].toString();
+      }
+      final etiqueta = etiquetasVisita[_res]!;
+      final nota = _nota.text.trim();
+      final monto = double.tryParse(_monto.text.trim().replaceAll(',', '.')) ?? 0;
+      final r = await _dio.post<dynamic>('/comercial/anexo', data: {
+        'descripcion': nota.isEmpty ? etiqueta : '$etiqueta. $nota',
+        'url': url,
+        'prestamoId': widget.prestamoCodigo,
+        'resultado': _res,
+        'usuarioId': widget.uid,
+        'usuarioNombre': widget.nombre,
+        if (_promesa && _fechaPromesa != null) 'promesaFecha': _ymd(_fechaPromesa!),
+        if (_promesa && monto > 0) 'promesaMonto': monto,
+        if (_prorroga && _puedeProrroga) 'prorrogaDias': _dias,
+      });
+      final pro = _mapa(_mapa(_cuerpo(r))['prorroga']);
+      if (!mounted) return;
+      Navigator.pop(context, true);
+      mensajes.showSnackBar(SnackBar(
+        content: Text(pro.isEmpty
+            ? 'Visita registrada'
+            : 'Visita registrada. Prórroga de $_dias días: el bien no pasa a la venta antes del ${pro['hastaTexto']}.'),
+      ));
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _guardando = false;
+          _error = _err(e);
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final teclado = MediaQuery.of(context).viewInsets.bottom;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + teclado),
+      child: SingleChildScrollView(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Expanded(child: Text('Visita · Préstamo N° ${widget.prestamoCodigo}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17))),
+            IconButton(onPressed: _guardando ? null : () => Navigator.pop(context, false), icon: const Icon(Icons.close)),
+          ]),
+          const Text('1. ¿Qué pasó?', style: TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          Wrap(spacing: 8, runSpacing: 4, children: [
+            for (final e in etiquetasVisita.entries)
+              ChoiceChip(
+                avatar: Icon(_visitaIconos[e.key], size: 18),
+                label: Text(e.value),
+                selected: _res == e.key,
+                onSelected: _guardando ? null : (_) => setState(() {
+                  _res = e.key;
+                  if (!_visitaPermiteProrroga.contains(e.key)) _prorroga = false;
+                  _error = null;
+                }),
+              ),
+          ]),
+          if (_res != null) ...[
+            const SizedBox(height: 12),
+            TextField(
+              controller: _nota,
+              maxLength: 200,
+              maxLines: 2,
+              decoration: const InputDecoration(labelText: 'Detalle (opcional)', hintText: 'Ej: dice que cobra el viernes', border: OutlineInputBorder()),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('El cliente promete pagar'),
+              value: _promesa,
+              onChanged: _guardando ? null : (v) => setState(() => _promesa = v),
+            ),
+            if (_promesa)
+              Row(children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _guardando ? null : _elegirFecha,
+                    icon: const Icon(Icons.event),
+                    label: Text(_fechaPromesa == null ? 'Elegir fecha' : _dmy(_fechaPromesa!)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(controller: _monto, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Monto S/ (opcional)', border: OutlineInputBorder())),
+                ),
+              ]),
+            if (_puedeProrroga) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(8)),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Dar prórroga (que no pase a la venta todavía)', style: TextStyle(fontWeight: FontWeight.w600)),
+                    value: _prorroga,
+                    onChanged: _guardando ? null : (v) => setState(() => _prorroga = v),
+                  ),
+                  if (_prorroga) ...[
+                    Wrap(spacing: 8, children: [
+                      for (final d in const [7, 15, 30])
+                        ChoiceChip(label: Text('$d días'), selected: _dias == d, onSelected: _guardando ? null : (_) => setState(() => _dias = d)),
+                    ]),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Se suman a lo que le queda de plazo. Si ya tenía avisos en marcha, se detienen y vuelven a empezar antes del nuevo límite.',
+                      style: TextStyle(fontSize: 12, color: Colors.black54),
+                    ),
+                  ],
+                ]),
+              ),
+            ],
+            const SizedBox(height: 8),
+            Row(children: [
+              OutlinedButton.icon(
+                onPressed: _guardando ? null : _tomarFoto,
+                icon: const Icon(Icons.photo_camera),
+                label: Text(_foto == null ? (_necesitaFoto ? 'Tomar foto (obligatoria)' : 'Tomar foto (opcional)') : 'Cambiar foto'),
+              ),
+              const SizedBox(width: 8),
+              if (_foto != null) const Icon(Icons.check_circle, color: Colors.green),
+            ]),
+          ],
+          if (_error != null)
+            Padding(padding: const EdgeInsets.only(top: 8), child: Text(_error!, style: TextStyle(color: Colors.red.shade700))),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: (_res == null || _guardando) ? null : _guardar,
+              icon: _guardando ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save),
+              label: Text(_guardando ? 'Guardando...' : 'Guardar visita'),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
