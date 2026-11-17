@@ -21,14 +21,15 @@ class CustomerSunatEntity extends Equatable {
 
   String get customerFullName => ruc != null
       ? nombre ?? ''
-      : '${nombre ?? ''} ${apellidoMaterno ?? ''} ${apellidoPaterno ?? ''}'.trim();
+      : '${nombre ?? ''} ${apellidoPaterno ?? ''} ${apellidoMaterno ?? ''}'.trim();
 
   static CustomerSunatEntity getCustomerSunatFromMap(Map<String, dynamic> map) {
     return CustomerSunatEntity(
       dni: map['dni'],
       nombre: map['nombre'],
-      apellidoPaterno: map['apellido_paterno'],
-      apellidoMaterno: map['apellido_materno'],
+      // El servicio de consulta de DNI entrega los dos apellidos al revés: aquí se ponen en su lugar.
+      apellidoPaterno: map['apellido_materno'],
+      apellidoMaterno: map['apellido_paterno'],
       ruc: map['ruc'],
       domicilio: map['domicilio'] != null
           ? HomeSunatEntity.getCustomerHomeSunatEntity(map['domicilio'])
