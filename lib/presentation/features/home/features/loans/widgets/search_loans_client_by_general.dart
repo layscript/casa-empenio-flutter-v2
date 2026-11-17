@@ -1,5 +1,6 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/escaner_bien.dart';
 import 'package:flutter/material.dart';
 
 class SearchDTO {
@@ -49,16 +50,32 @@ class _SearchLoansClientByGeneralState
                   if (value!.isEmpty) return 'Campo requerido';
                   return null;
                 },
-                suffixIcon: textCtrl.text.isNotEmpty
-                    ? GestureDetector(
-                        onTap: () {
-                          textCtrl.clear();
-                        },
-                        child: const Icon(
-                          Icons.clear,
-                        ),
-                      )
-                    : null,
+                suffixIcon: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (textCtrl.text.isNotEmpty)
+                      GestureDetector(
+                        onTap: () => setState(() => textCtrl.clear()),
+                        child: const Icon(Icons.clear),
+                      ),
+                    IconButton(
+                      tooltip: 'Buscar tomando foto (serie, modelo, placa o IMEI)',
+                      icon: const Icon(Icons.photo_camera_outlined),
+                      onPressed: () async {
+                        final r = await capturarCampo(context, campo: 'serie', tipo: 'OTRO');
+                        if (r == null || r.valor.isEmpty) return;
+                        setState(() {
+                          textCtrl.text = r.valor;
+                          textIsValid = true;
+                        });
+                        widget.onPressed?.call(SearchDTO(
+                          category: selectedCategory?.descripcion,
+                          text: r.valor,
+                        ));
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(width: 10),
