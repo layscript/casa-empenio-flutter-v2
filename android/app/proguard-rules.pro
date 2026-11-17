@@ -10,3 +10,9 @@
 -keep class com.example.casa_empenio_pe.HuelleroChannel { *; }
 -dontwarn com.biominiseries.**
 -dontwarn com.android.biomini.**
+
+# ML Kit (escáner de bienes): idiomas de texto que no usamos
+-dontwarn com.google.mlkit.vision.text.chinese.**
+-dontwarn com.google.mlkit.vision.text.devanagari.**
+-dontwarn com.google.mlkit.vision.text.japanese.**
+-dontwarn com.google.mlkit.vision.text.korean.**
