@@ -2955,7 +2955,7 @@ class _VisitaFormState extends State<_VisitaForm> {
   bool _promesa = false;
   DateTime? _fechaPromesa;
   bool _prorroga = false;
-  int _dias = 15;
+  int _dias = 10;
   XFile? _foto;
   bool _guardando = false;
   String? _error;
@@ -3019,13 +3019,18 @@ class _VisitaFormState extends State<_VisitaForm> {
         if (_promesa && monto > 0) 'promesaMonto': monto,
         if (_prorroga && _puedeProrroga) 'prorrogaDias': _dias,
       });
-      final pro = _mapa(_mapa(_cuerpo(r))['prorroga']);
+      final cuerpo = _mapa(_cuerpo(r));
+      final pro = _mapa(cuerpo['prorroga']);
+      final pedido = _mapa(cuerpo['solicitudProrroga']);
       if (!mounted) return;
       Navigator.pop(context, true);
       mensajes.showSnackBar(SnackBar(
-        content: Text(pro.isEmpty
-            ? 'Visita registrada'
-            : 'Visita registrada. Prórroga de $_dias días: el bien no pasa a la venta antes del ${pro['hastaTexto']}.'),
+        duration: const Duration(seconds: 6),
+        content: Text(pedido.isNotEmpty
+            ? 'Visita registrada. Los $_dias días de prórroga necesitan la autorización del administrador: ya se le envió el pedido.'
+            : pro.isEmpty
+                ? 'Visita registrada'
+                : 'Visita registrada. Prórroga de $_dias días: el bien no pasa a la venta antes del ${pro['hastaTexto']}.'),
       ));
     } catch (e) {
       if (mounted) {
@@ -3105,12 +3110,12 @@ class _VisitaFormState extends State<_VisitaForm> {
                   ),
                   if (_prorroga) ...[
                     Wrap(spacing: 8, children: [
-                      for (final d in const [7, 15, 30])
+                      for (final d in const [5, 10, 15, 30])
                         ChoiceChip(label: Text('$d días'), selected: _dias == d, onSelected: _guardando ? null : (_) => setState(() => _dias = d)),
                     ]),
                     const SizedBox(height: 6),
                     const Text(
-                      'Se suman a lo que le queda de plazo. Si ya tenía avisos en marcha, se detienen y vuelven a empezar antes del nuevo límite.',
+                      'Se suman a lo que le queda de plazo. Hasta 10 días en total los das tú; más días los autoriza el administrador (se le envía el pedido solo). Si ya tenía avisos en marcha, se detienen y vuelven a empezar antes del nuevo límite.',
                       style: TextStyle(fontSize: 12, color: Colors.black54),
                     ),
                   ],
@@ -3139,6 +3144,104 @@ class _VisitaFormState extends State<_VisitaForm> {
               label: Text(_guardando ? 'Guardando...' : 'Guardar visita'),
             ),
           ),
+        ]),
+      ),
+    );
+  }
+}
+
+
+// ============================================================ PEDIDOS DE PRÓRROGA (autorización del administrador)
+/// Lista los pedidos de prórroga que esperan autorización. El administrador o gerente puede autorizar o rechazar.
+class PedidosProrrogaCard extends StatefulWidget {
+  const PedidosProrrogaCard({super.key, this.onCambio});
+  final VoidCallback? onCambio;
+
+  @override
+  State<PedidosProrrogaCard> createState() => _PedidosProrrogaCardState();
+}
+
+class _PedidosProrrogaCardState extends State<PedidosProrrogaCard> {
+  List<Map<String, dynamic>> _items = [];
+  bool _puede = false;
+  bool _ocupado = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _cargar());
+  }
+
+  Future<void> _cargar() async {
+    try {
+      final r = await _dio.get<dynamic>('/adjudicacion/prorroga/solicitudes', queryParameters: {'usuarioId': _uid(context)});
+      final m = _mapa(_cuerpo(r));
+      if (mounted) setState(() { _items = _lista(m['items']); _puede = m['puedeAtender'] == true; });
+    } catch (_) {
+      // si el servidor aún no tiene la función, simplemente no se muestra
+    }
+  }
+
+  Future<void> _atender(Map<String, dynamic> x, bool aprobar) async {
+    String? respuesta;
+    if (!aprobar) {
+      final ctrl = TextEditingController();
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (c) => AlertDialog(
+          title: const Text('No autorizar'),
+          content: TextField(controller: ctrl, maxLength: 200, decoration: const InputDecoration(labelText: 'Motivo (opcional)')),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancelar')),
+            FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('No autorizar')),
+          ],
+        ),
+      );
+      if (ok != true) return;
+      respuesta = ctrl.text.trim();
+    }
+    setState(() => _ocupado = true);
+    try {
+      await _dio.post<dynamic>('/adjudicacion/prorroga/solicitudes/${x['id']}/atender', data: {
+        'usuarioId': _uid(context),
+        'usuarioNombre': context.read<Preferences>().token?.fullName ?? '',
+        'aprobar': aprobar,
+        if (respuesta != null && respuesta.isNotEmpty) 'respuesta': respuesta,
+      });
+      if (mounted) _aviso(context, aprobar ? 'Prórroga autorizada' : 'Pedido rechazado');
+      await _cargar();
+      widget.onCambio?.call();
+    } catch (e) {
+      if (mounted) _aviso(context, _err(e), error: true);
+    } finally {
+      if (mounted) setState(() => _ocupado = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_items.isEmpty) return const SizedBox.shrink();
+    return Card(
+      margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      color: Colors.amber.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(_puede ? 'Prórrogas por autorizar (${_items.length})' : 'Prórrogas esperando autorización (${_items.length})', style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          for (final x in _items)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('N° ${x['codigoFormateado']} · ${x['cliente']}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text('Pide ${x['dias']} días${(x['motivo'] ?? '').toString().isNotEmpty ? ' · ${x['motivo']}' : ''}\nPor ${x['por'] ?? '-'} · ${x['fecha']}', style: const TextStyle(fontSize: 12)),
+                if (_puede)
+                  Wrap(spacing: 8, children: [
+                    FilledButton.icon(onPressed: _ocupado ? null : () => _atender(x, true), icon: const Icon(Icons.check), label: const Text('Autorizar')),
+                    OutlinedButton.icon(onPressed: _ocupado ? null : () => _atender(x, false), icon: const Icon(Icons.close, color: Colors.red), label: const Text('No')),
+                  ]),
+              ]),
+            ),
         ]),
       ),
     );

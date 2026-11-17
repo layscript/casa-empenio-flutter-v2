@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
-import 'package:casa_empenio_pe/presentation/app/utils/operacion_view.dart' show mostrarVisita;
+import 'package:casa_empenio_pe/presentation/app/utils/operacion_view.dart' show mostrarVisita, PedidosProrrogaCard;
 import 'package:casa_empenio_pe/presentation/features/auth/auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -133,6 +133,7 @@ class TareasCobranzaPage extends StatefulWidget {
 class _TareasCobranzaPageState extends State<TareasCobranzaPage> {
   List<Map<String, dynamic>> _tareas = [];
   bool _cargando = true;
+  int _version = 0;
   final _hist = <int, List<Map<String, dynamic>>>{};
 
   SalesRepository get _repo => context.read<SalesRepository>();
@@ -151,7 +152,10 @@ class _TareasCobranzaPageState extends State<TareasCobranzaPage> {
   }
 
   Future<void> _cargar() async {
-    setState(() => _cargando = true);
+    setState(() {
+      _cargando = true;
+      _version++;
+    });
     final sid = context.read<Preferences>().token?.sucursal?.id ?? 1;
     final t = await _repo.tareasCobranza(sid);
     if (!mounted) return;
@@ -612,17 +616,17 @@ class _TareasCobranzaPageState extends State<TareasCobranzaPage> {
 
   Future<void> _prorroga(Map<String, dynamic> t) async {
     final motivo = TextEditingController();
-    var dias = 15;
+    var dias = 10;
     final ok = await showDialog<bool>(
       context: context,
       builder: (c) => StatefulBuilder(
         builder: (c, setD) => AlertDialog(
           title: const Text('Dar prórroga'),
           content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('El bien no pasará a la venta antes de que termine la prórroga. Los días se suman a lo que le queda de plazo.'),
+            const Text('El bien no pasará a la venta antes de que termine la prórroga. Los días se suman a lo que le queda de plazo. Hasta 10 días en total los das tú; más días los autoriza el administrador.'),
             const SizedBox(height: 10),
             Wrap(spacing: 8, children: [
-              for (final d in const [7, 15, 30])
+              for (final d in const [5, 10, 15, 30])
                 ChoiceChip(label: Text('$d días'), selected: dias == d, onSelected: (_) => setD(() => dias = d)),
             ]),
             const SizedBox(height: 10),
@@ -636,7 +640,26 @@ class _TareasCobranzaPageState extends State<TareasCobranzaPage> {
       ),
     );
     if (ok != true) return;
-    await _accion(t, 'prorroga', {'dias': dias, 'motivo': motivo.text.trim()}, ok: 'Prórroga de $dias días registrada');
+    final cuerpo = {'dias': dias, 'motivo': motivo.text.trim(), 'usuarioId': _uid, 'usuarioNombre': _unombre};
+    final err = await _repo.accionCobranza(t['prestamoCodigo'] as int, 'prorroga', cuerpo);
+    if (!mounted) return;
+    if (err == null) {
+      _msg('Prórroga de $dias días registrada');
+      _hist.remove(t['prestamoCodigo']);
+      await _cargar();
+      return;
+    }
+    if (!err.toLowerCase().contains('autorizaci')) {
+      _msg(err, error: true);
+      return;
+    }
+    // Pasa de lo que puede dar una cajera: se pide la autorización al administrador
+    final pedir = await _confirmar('Necesita autorización', '$err\n\n¿Quieres enviarle el pedido al administrador?');
+    if (!pedir) return;
+    final e2 = await _repo.accionCobranza(t['prestamoCodigo'] as int, 'prorroga/solicitar', cuerpo);
+    if (!mounted) return;
+    _msg(e2 ?? 'Pedido enviado al administrador', error: e2 != null);
+    if (e2 == null) await _cargar();
   }
 
   Future<void> _visita(Map<String, dynamic> t) async {
@@ -684,7 +707,15 @@ class _TareasCobranzaPageState extends State<TareasCobranzaPage> {
           IconButton(onPressed: _cargar, icon: const Icon(Icons.refresh)),
         ],
       ),
-      body: _cargando
+      body: Column(children: [
+        PedidosProrrogaCard(key: ValueKey(_version), onCambio: _cargar),
+        Expanded(child: _cuerpoLista()),
+      ]),
+    );
+  }
+
+  Widget _cuerpoLista() {
+    return (_cargando
           ? const Center(child: CircularProgressIndicator())
           : _tareas.isEmpty
               ? const Center(
@@ -701,8 +732,7 @@ class _TareasCobranzaPageState extends State<TareasCobranzaPage> {
                   padding: const EdgeInsets.all(12),
                   itemCount: _tareas.length,
                   itemBuilder: (_, i) => _tarjeta(_tareas[i]),
-                ),
-    );
+                ));
   }
 
   Widget _tarjeta(Map<String, dynamic> t) {
