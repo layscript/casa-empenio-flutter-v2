@@ -1,6 +1,7 @@
 import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:dio/dio.dart';
@@ -134,6 +135,13 @@ class _EscanerPageState extends State<_EscanerPage> {
       ? widget.tipoInicial
       : 'DETECTAR';
   final Set<String> _elegidas = {};
+  bool _guardando = false;
+
+  int get _totalFotos => _pasos.where((p) => p.foto != null).length;
+
+  /// Con más de 3 fotos, las demás se juntan en una hoja de evidencia (que ocupa la tercera foto del bien).
+  bool get _conHoja => _totalFotos > 3;
+  int get _maxElegidas => _conHoja ? 2 : 3;
   final _obsAdicional = TextEditingController();
 
   /// Tipo real del bien: el que se eligió o el que el sistema reconoció.
@@ -306,27 +314,89 @@ class _EscanerPageState extends State<_EscanerPage> {
     final resto = con.where((p) => !out.contains(p)).toList()
       ..sort((a, b) => puntos(b).compareTo(puntos(a)));
     for (final p in resto) {
-      if (out.length >= 3) break;
+      if (out.length >= _maxElegidas) break;
       out.add(p);
     }
     return out.map((p) => p.foto!).toList();
   }
 
   List<XFile> _fotosParaGuardar() =>
-      _pasos.where((p) => p.foto != null && _elegidas.contains(p.foto!.path)).map((p) => p.foto!).take(3).toList();
+      _pasos.where((p) => p.foto != null && _elegidas.contains(p.foto!.path)).map((p) => p.foto!).take(_maxElegidas).toList();
 
-  void _usar() {
+  Future<void> _usar() async {
+    if (_guardando) return;
     final campos = <String, String>{
       for (final e in _ctl.entries)
         if (e.key != 'extras') e.key: e.value.text.trim(),
     };
+    final fotos = _fotosParaGuardar();
+    if (_conHoja) {
+      setState(() => _guardando = true);
+      try {
+        final hoja = await _armarHoja(_pasos.where((p) => p.foto != null).toList());
+        if (hoja != null) fotos.add(hoja);
+      } catch (_) {
+        // si la hoja falla, igual se guardan las fotos elegidas
+      }
+      if (!mounted) return;
+    }
     Navigator.of(context).pop(EscanerResultado(
       tipo: _tipoFinal,
       campos: campos,
       extras: _ctl['extras']?.text.trim() ?? '',
       observaciones: _obsAdicional.text.trim(),
-      fotos: _fotosParaGuardar(),
+      fotos: fotos,
     ));
+  }
+
+  /// Junta todas las fotos en una sola imagen con miniaturas y su nombre (evidencia pequeña pero completa).
+  Future<XFile?> _armarHoja(List<_Paso> con) async {
+    const columnas = 3;
+    const celda = 300.0;
+    const margen = 12.0;
+    const pie = 34.0;
+    const cabecera = 50.0;
+    final filas = (con.length / columnas).ceil();
+    final ancho = columnas * celda + (columnas + 1) * margen;
+    final alto = cabecera + filas * (celda + pie + margen) + margen;
+    final grabador = ui.PictureRecorder();
+    final lienzo = Canvas(grabador, Rect.fromLTWH(0, 0, ancho, alto));
+    lienzo.drawRect(Rect.fromLTWH(0, 0, ancho, alto), Paint()..color = const Color(0xFFFFFFFF));
+    void texto(String t, Offset o, double tam, {bool negrita = false, double maxAncho = 300}) {
+      final tp = TextPainter(
+        text: TextSpan(text: t, style: TextStyle(color: const Color(0xFF222222), fontSize: tam, fontWeight: negrita ? FontWeight.bold : FontWeight.normal)),
+        textDirection: TextDirection.ltr,
+        maxLines: 1,
+        ellipsis: '…',
+      )..layout(maxWidth: maxAncho);
+      tp.paint(lienzo, o);
+    }
+    final lima = DateTime.now().toUtc().subtract(const Duration(hours: 5));
+    String dos(int n) => n.toString().padLeft(2, '0');
+    texto('Evidencia de escaneo · ${dos(lima.day)}/${dos(lima.month)}/${lima.year} ${dos(lima.hour)}:${dos(lima.minute)} (Lima)', const Offset(margen, 14), 18, negrita: true, maxAncho: ancho - 2 * margen);
+    for (var i = 0; i < con.length; i++) {
+      final f = i ~/ columnas;
+      final c = i % columnas;
+      final x = margen + c * (celda + margen);
+      final y = cabecera + f * (celda + pie + margen);
+      final bytes = await File(con[i].foto!.path).readAsBytes();
+      final codec = await ui.instantiateImageCodec(bytes, targetWidth: celda.toInt());
+      final img = (await codec.getNextFrame()).image;
+      final alta = img.height.toDouble() > celda ? celda : img.height.toDouble();
+      lienzo.drawImageRect(
+        img,
+        Rect.fromLTWH(0, 0, img.width.toDouble(), alta),
+        Rect.fromLTWH(x, y, celda, alta),
+        Paint()..filterQuality = FilterQuality.medium,
+      );
+      texto('${i + 1}. ${con[i].titulo}', Offset(x, y + celda + 6), 14, maxAncho: celda);
+    }
+    final imagen = await grabador.endRecording().toImage(ancho.toInt(), alto.toInt());
+    final datos = await imagen.toByteData(format: ui.ImageByteFormat.png);
+    if (datos == null) return null;
+    final archivo = File('${Directory.systemTemp.path}/hoja_evidencia_${DateTime.now().millisecondsSinceEpoch}.png');
+    await archivo.writeAsBytes(datos.buffer.asUint8List());
+    return XFile(archivo.path);
   }
 
   void _agregarFoto(String rol, String titulo, String ayuda) {
@@ -454,10 +524,13 @@ class _EscanerPageState extends State<_EscanerPage> {
     final con = _pasos.where((p) => p.foto != null).toList();
     if (con.isEmpty) return const SizedBox.shrink();
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('Fotos que se guardan: ${_elegidas.length} de 3',
+      Text('Fotos que se guardan: ${_elegidas.length} de $_maxElegidas${_conHoja ? ' + la hoja con todas' : ''}',
           style: const TextStyle(fontWeight: FontWeight.bold)),
-      const Text('El sistema eligió las que tienen más información. Toca para cambiar.',
-          style: TextStyle(fontSize: 12, color: Colors.black54)),
+      Text(
+          _conHoja
+              ? 'Tomaste $_totalFotos fotos. Se guardan las ${_maxElegidas} que elijas y una hoja con miniaturas de todas, como evidencia en el expediente. El sistema eligió las que tienen más información; toca para cambiar.'
+              : 'El sistema eligió las que tienen más información. Toca para cambiar.',
+          style: const TextStyle(fontSize: 12, color: Colors.black54)),
       const SizedBox(height: 6),
       Wrap(spacing: 8, runSpacing: 8, children: [
         for (final p in con)
@@ -466,7 +539,7 @@ class _EscanerPageState extends State<_EscanerPage> {
               final k = p.foto!.path;
               if (_elegidas.contains(k)) {
                 _elegidas.remove(k);
-              } else if (_elegidas.length < 3) {
+              } else if (_elegidas.length < _maxElegidas) {
                 _elegidas.add(k);
               }
             }),
@@ -577,9 +650,11 @@ class _EscanerPageState extends State<_EscanerPage> {
             ),
         const SizedBox(height: 16),
         FilledButton.icon(
-          onPressed: _usar,
-          icon: const Icon(Icons.check),
-          label: const Text('Usar estos datos'),
+          onPressed: _guardando ? null : _usar,
+          icon: _guardando
+              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              : const Icon(Icons.check),
+          label: Text(_guardando ? 'Preparando fotos...' : 'Usar estos datos'),
         ),
         TextButton(
           onPressed: () => setState(() => _res = null),
