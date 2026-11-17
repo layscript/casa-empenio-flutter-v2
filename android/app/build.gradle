@@ -49,7 +49,7 @@ android {
         // App de PRUEBA (se instala aparte de la real y no la reemplaza): se activa con la variable APP_PRUEBA=true al compilar
         if (System.getenv('APP_PRUEBA') == 'true') {
             applicationIdSuffix ".prueba"
-            manifestPlaceholders += [appLabel: "PRUEBA Casa de Empeño"]
+            manifestPlaceholders += [appLabel: "PRUEBA - NO REAL"]
         } else {
             manifestPlaceholders += [appLabel: "Casa de Empeño v2"]
         }

@@ -66,11 +66,35 @@ class _AppState extends State<App> {
         routes: AppRoute.routes,
         builder: (context, child) {
           final mediaQuery = MediaQuery.of(context);
-          return MediaQuery(
+          final contenido = MediaQuery(
             data: mediaQuery.copyWith(
               textScaleFactor: 1,
             ),
             child: child!,
+          );
+          // App de PRUEBA: franja roja permanente para no confundirla con la real
+          if (!const bool.fromEnvironment('PRUEBA')) return contenido;
+          return Directionality(
+            textDirection: TextDirection.ltr,
+            child: Column(children: [
+              Material(
+                color: Colors.red.shade700,
+                child: SafeArea(
+                  bottom: false,
+                  child: const SizedBox(
+                    width: double.infinity,
+                    height: 22,
+                    child: Center(
+                      child: Text(
+                        'PRUEBA · los datos NO son reales',
+                        style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold, decoration: TextDecoration.none),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(child: contenido),
+            ]),
           );
         },
       ),

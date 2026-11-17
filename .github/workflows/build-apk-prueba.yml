@@ -19,9 +19,17 @@ jobs:
           flutter-version: '3.19.5'
           channel: stable
           cache: true
+      - name: Ícono distinto para la app de PRUEBA (franja roja)
+        run: |
+          for f in android/app/src/main/res/mipmap-*/launcher_icon.png android/app/src/main/res/mipmap-*/ic_launcher.png; do
+            [ -f "$f" ] || continue
+            W=$(identify -format %w "$f"); H=$(identify -format %h "$f")
+            B=$((H*40/100)); Y=$((H-B))
+            convert "$f" -fill 'rgba(200,0,0,0.92)' -draw "rectangle 0,$Y $W,$H" -fill white -gravity south -pointsize $((H*22/100)) -annotate +0+$((H*6/100)) 'PRUEBA' "$f"
+          done
       - run: flutter pub get
       # Apunta al servidor de prueba (base de datos aparte). No genera avisos de actualización para la app real.
-      - run: flutter build apk --release --build-number=${{ github.run_number }} --dart-define=SERVIDOR=http://04k65lhlpeqxzf1kzu9mmyhm.86.48.22.211.sslip.io
+      - run: flutter build apk --release --build-number=${{ github.run_number }} --dart-define=PRUEBA=true --dart-define=SERVIDOR=http://04k65lhlpeqxzf1kzu9mmyhm.86.48.22.211.sslip.io
       - name: Publicar APK de prueba con enlace fijo
         env:
           GH_TOKEN: ${{ github.token }}
