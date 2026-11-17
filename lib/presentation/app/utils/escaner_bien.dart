@@ -97,6 +97,27 @@ dynamic _body(Response<dynamic> r) {
   return null;
 }
 
+/// Pregunta de dónde viene la foto: cámara o galería (el cliente a veces la manda por WhatsApp).
+Future<ImageSource?> _elegirOrigenFoto(BuildContext context) {
+  return showModalBottomSheet<ImageSource>(
+    context: context,
+    builder: (ctx) => SafeArea(
+      child: Wrap(children: [
+        ListTile(
+          leading: const Icon(Icons.photo_camera),
+          title: const Text('Tomar foto ahora'),
+          onTap: () => Navigator.pop(ctx, ImageSource.camera),
+        ),
+        ListTile(
+          leading: const Icon(Icons.photo_library),
+          title: const Text('Elegir de la galería'),
+          onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+        ),
+      ]),
+    ),
+  );
+}
+
 /// Lo que el teléfono reconoce mirando la imagen (ej. "Mobile phone", "Motorcycle").
 Future<List<String>> _etiquetasDeImagen(String ruta) async {
   final et = ImageLabeler(options: ImageLabelerOptions(confidenceThreshold: 0.5));
@@ -225,9 +246,9 @@ class _EscanerPageState extends State<_EscanerPage> {
   }
 
   Future<void> _tomar(_Paso p) async {
-    final picker = ImagePicker();
-    final foto = await picker.pickImage(
-        source: ImageSource.camera, imageQuality: 92);
+    final origen = await _elegirOrigenFoto(context);
+    if (origen == null || !mounted) return;
+    final foto = await ImagePicker().pickImage(source: origen, imageQuality: 92);
     if (foto == null) return;
     setState(() {
       p.foto = foto;
@@ -1092,7 +1113,9 @@ Future<CapturaCampo?> capturarCampo(
   required String campo,
   required String tipo,
 }) async {
-  final foto = await ImagePicker().pickImage(source: ImageSource.camera, imageQuality: 92);
+  final origen = await _elegirOrigenFoto(context);
+  if (origen == null || !context.mounted) return null;
+  final foto = await ImagePicker().pickImage(source: origen, imageQuality: 92);
   if (foto == null || !context.mounted) return null;
 
   showDialog<void>(
