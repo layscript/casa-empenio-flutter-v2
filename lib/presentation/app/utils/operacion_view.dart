@@ -2759,6 +2759,18 @@ Future<void> _dialogoNoVenta(BuildContext context, Map<String, dynamic> info, bo
           if (info['codigoFormateado'] != null) Text('Préstamo N° ${info['codigoFormateado']}', style: const TextStyle(fontSize: 12, color: Colors.black54)),
           const SizedBox(height: 8),
           Text('${info['situacion'] ?? ''}'),
+          if (puedeSolicitar && !puedeAtender)
+            Container(
+              margin: const EdgeInsets.only(top: 10),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
+              child: Text(
+                listo
+                    ? 'Ya cumplió el plazo. Toca "Pedir adjudicación": la cajera lo pasa a la venta y te aparecerá aquí. No tienes que hacer nada más.'
+                    : 'Todavía no cumple el plazo. Si igual lo necesitas, toca "Pedir adjudicación" y la cajera lo revisa.',
+                style: const TextStyle(fontSize: 13),
+              ),
+            ),
           if (puedeSolicitar) ...[
             const SizedBox(height: 6),
             Text(info['avisosHechos'] != null && (info['avisosHechos'] as num) > 0 ? 'Avisos al cliente registrados: ${info['avisosHechos']}' : 'Avisos al cliente registrados: ninguno', style: const TextStyle(fontSize: 12)),
