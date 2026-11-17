@@ -21,11 +21,14 @@ jobs:
           cache: true
       - name: Ícono distinto para la app de PRUEBA (franja roja)
         run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq imagemagick fonts-dejavu-core
+          CONV=$(command -v magick || command -v convert)
           for f in android/app/src/main/res/mipmap-*/launcher_icon.png android/app/src/main/res/mipmap-*/ic_launcher.png; do
             [ -f "$f" ] || continue
             W=$(identify -format %w "$f"); H=$(identify -format %h "$f")
             B=$((H*40/100)); Y=$((H-B))
-            convert "$f" -fill 'rgba(200,0,0,0.92)' -draw "rectangle 0,$Y $W,$H" -fill white -gravity south -pointsize $((H*22/100)) -annotate +0+$((H*6/100)) 'PRUEBA' "$f"
+            $CONV "$f" -fill 'rgba(200,0,0,0.92)' -draw "rectangle 0,$Y $W,$H" -fill white -font DejaVu-Sans-Bold -gravity south -pointsize $((H*22/100)) -annotate +0+$((H*6/100)) 'PRUEBA' "$f"
           done
       - run: flutter pub get
       # Apunta al servidor de prueba (base de datos aparte). No genera avisos de actualización para la app real.
