@@ -279,7 +279,7 @@ class _EscanerPageState extends State<_EscanerPage> {
   }
 
   List<XFile> _fotosParaGuardar() {
-    const orden = ['GENERAL', 'TARJETA', 'SERIE', 'CHASIS', 'MOTOR', 'PANTALLA', 'CAJA', 'OTRO'];
+    const orden = ['GENERAL', 'TARJETA', 'SERIE', 'MODELO', 'CHASIS', 'MOTOR', 'PANTALLA', 'CAJA', 'OTRO'];
     final con = _pasos.where((p) => p.foto != null).toList();
     final out = <XFile>[];
     for (final rol in orden) {
@@ -304,6 +304,51 @@ class _EscanerPageState extends State<_EscanerPage> {
       extras: _ctl['extras']?.text.trim() ?? '',
       fotos: _fotosParaGuardar(),
     ));
+  }
+
+  void _agregarFoto(String rol, String titulo, String ayuda) {
+    setState(() {
+      _res = null;
+      _pasos.add(_Paso('extra${_pasos.length}', rol, titulo, ayuda, true, false));
+    });
+  }
+
+  String? _rolDeFalta(String f) {
+    final t = _sinTildes(f);
+    if (t.contains('modelo')) return 'MODELO';
+    if (t.contains('motor')) return 'MOTOR';
+    if (t.contains('serie') || t.contains('imei')) {
+      return (_tipo == 'MOTO_LINEAL' || _tipo == 'MOTOCAR' || _tipo == 'AUTO')
+          ? 'CHASIS'
+          : 'SERIE';
+    }
+    return null;
+  }
+
+  void _menuOtraFoto() {
+    final esVeh = _tipo == 'MOTO_LINEAL' || _tipo == 'MOTOCAR' || _tipo == 'AUTO';
+    final opciones = <List<String>>[
+      ['SERIE', 'Foto extra: serie', 'Acerca solo el número de serie.'],
+      ['MODELO', 'Foto extra: modelo', 'Acerca la etiqueta donde dice Model / Modelo.'],
+      if (esVeh) ['MOTOR', 'Foto extra: motor', 'Número grabado en el motor.'],
+      if (esVeh) ['TARJETA', 'Foto extra: tarjeta (reverso u otra hoja)', 'Que se lea todo el texto.'],
+    ];
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Wrap(children: [
+          for (final o in opciones)
+            ListTile(
+              leading: const Icon(Icons.add_a_photo_outlined),
+              title: Text(o[1]),
+              onTap: () {
+                Navigator.pop(ctx);
+                _agregarFoto(o[0], o[1], o[2]);
+              },
+            ),
+        ]),
+      ),
+    );
   }
 
   Color _colorConf(String? c) {
@@ -406,6 +451,16 @@ class _EscanerPageState extends State<_EscanerPage> {
               border: OutlineInputBorder(),
               isDense: true),
         ),
+        for (final f in List<String>.from((_res?['faltan'] ?? []).map((e) => '$e')))
+          if (_rolDeFalta(f) != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: OutlinedButton.icon(
+                onPressed: () => _agregarFoto(_rolDeFalta(f)!, 'Foto extra: $f', 'Acerca la cámara donde está $f.'),
+                icon: const Icon(Icons.add_a_photo_outlined),
+                label: Text('Falta $f: tomar otra foto'),
+              ),
+            ),
         const SizedBox(height: 16),
         FilledButton.icon(
           onPressed: _usar,
@@ -508,6 +563,12 @@ class _EscanerPageState extends State<_EscanerPage> {
           const Center(child: CircularProgressIndicator())
         else
           for (var i = 0; i < _pasos.length; i++) _tarjetaPaso(i, _pasos[i]),
+        if (!_cargandoGuia)
+          OutlinedButton.icon(
+            onPressed: _menuOtraFoto,
+            icon: const Icon(Icons.add_a_photo_outlined),
+            label: const Text('Agregar otra foto (serie, modelo...)'),
+          ),
         if (_error != null)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
