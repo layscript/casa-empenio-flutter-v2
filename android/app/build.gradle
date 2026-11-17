@@ -46,6 +46,13 @@ android {
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId "com.example.casa_empenio_pe"
+        // App de PRUEBA (se instala aparte de la real y no la reemplaza): se activa con la variable APP_PRUEBA=true al compilar
+        if (System.getenv('APP_PRUEBA') == 'true') {
+            applicationIdSuffix ".prueba"
+            manifestPlaceholders += [appLabel: "PRUEBA Casa de Empeño"]
+        } else {
+            manifestPlaceholders += [appLabel: "Casa de Empeño v2"]
+        }
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         minSdkVersion 23 // Android 6.0 o superior (lo pide la grabación de audio de los reportes; el lector BioMini sigue funcionando)

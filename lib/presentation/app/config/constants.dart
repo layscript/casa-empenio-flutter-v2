@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-const endPointPrincipal = 'http://86.48.22.211:3000';
+// La app de PRUEBA se compila con --dart-define=SERVIDOR=<dirección de prueba>; la normal usa el servidor real.
+const endPointPrincipal = String.fromEnvironment('SERVIDOR', defaultValue: 'http://86.48.22.211:3000');
 
 // const endPointPrincipal = 'http://161.132.38.162:31032';
 // const endPointPrincipal = 'http://161.132.38.162:31037';
