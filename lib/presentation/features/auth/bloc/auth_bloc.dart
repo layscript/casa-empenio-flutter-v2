@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/vigilante_sesion.dart';
 import 'dart:async';
 
@@ -138,6 +139,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     await _preferences.removeRefresh();
     await _preferences.removeLoansPreferences();
     await _preferences.removeToken();
+    await SesionSegura.guardar(null);
     await olvidarDiaSesion();
     emit(const UnAuthenticated());
   }

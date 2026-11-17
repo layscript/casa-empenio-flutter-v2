@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'dart:typed_data';
 
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
@@ -12,7 +13,7 @@ import 'package:printing/printing.dart';
 // Usa las rutas /expediente-modulo del servidor (solo lectura).
 // ---------------------------------------------------------------------------
 
-Dio _crearDio() => Dio(
+Dio _crearDio() => crearDio(
       BaseOptions(
         baseUrl: endPointPrincipal,
         connectTimeout: const Duration(seconds: 30),

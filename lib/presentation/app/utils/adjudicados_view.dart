@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -15,7 +16,7 @@ class AdjudicadosView extends StatefulWidget {
 }
 
 class _AdjudicadosViewState extends State<AdjudicadosView> {
-  final Dio _dio = Dio(BaseOptions(
+  final Dio _dio = crearDio(BaseOptions(
     baseUrl: endPointPrincipal,
     connectTimeout: const Duration(seconds: 30),
     receiveTimeout: const Duration(seconds: 90),

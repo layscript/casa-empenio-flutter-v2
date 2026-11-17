@@ -88,6 +88,7 @@ final RolRepository _rolRepository = HttpRolRepository(
 );
 
 void configDio(Preferences preferences) {
+  agregarSesion(_client);
   _client.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) {

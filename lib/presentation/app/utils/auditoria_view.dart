@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -44,7 +45,7 @@ _AccionInfo _info(String accion) =>
     _acciones[accion] ??
     _AccionInfo(accion, Icons.history, Colors.grey, 'Otra acción del sistema.');
 
-Dio _crearDio() => Dio(
+Dio _crearDio() => crearDio(
       BaseOptions(
         baseUrl: endPointPrincipal,
         connectTimeout: const Duration(seconds: 30),

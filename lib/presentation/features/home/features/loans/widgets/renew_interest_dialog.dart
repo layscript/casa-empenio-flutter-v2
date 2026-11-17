@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'dart:convert';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
@@ -20,7 +21,7 @@ class RenewInterestDialog extends StatefulWidget {
 }
 
 class _RenewInterestDialogState extends State<RenewInterestDialog> {
-  final Dio _dio = Dio(
+  final Dio _dio = crearDio(
     BaseOptions(
       baseUrl: endPointPrincipal,
       connectTimeout: const Duration(seconds: 30),

@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:casa_empenio_pe/domain/domain.dart';
@@ -634,7 +635,7 @@ abstract class CreateContractPdf {
 
     final response = await http.post(
       url,
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': 'application/json', ...SesionSegura.encabezado},
       body: jsonEncode({'htmlContent': htmlContent}),
     );
 

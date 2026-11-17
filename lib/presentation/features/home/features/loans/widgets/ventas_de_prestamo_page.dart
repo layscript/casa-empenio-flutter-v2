@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'dart:typed_data';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
@@ -59,7 +60,7 @@ class _VentasDePrestamoPageState extends State<VentasDePrestamoPage> {
 
   Future<Uint8List?> _bajar(String ruta) async {
     try {
-      final r = await Dio().get<List<int>>(
+      final r = await crearDio().get<List<int>>(
         '$endPointPrincipal/$ruta',
         options: Options(responseType: ResponseType.bytes),
       );
@@ -311,7 +312,7 @@ class _VentasDePrestamoPageState extends State<VentasDePrestamoPage> {
   Future<void> _verPdf(String ruta, String titulo) async {
     setState(() => _abriendo = true);
     try {
-      final r = await Dio().get<List<int>>(
+      final r = await crearDio().get<List<int>>(
         '$endPointPrincipal/$ruta',
         options: Options(responseType: ResponseType.bytes),
       );

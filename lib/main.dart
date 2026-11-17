@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'dart:developer';
 import 'dart:ui';
 
@@ -30,6 +31,7 @@ Future<void> main() async {
   };
   final sharedPreferences = await SharedPreferences.getInstance();
   final Preferences localPreferences = LocalPreferences(sharedPreferences);
+  await SesionSegura.cargar();
   configDio(localPreferences);
   Bloc.observer = AppBlocObserver();
 

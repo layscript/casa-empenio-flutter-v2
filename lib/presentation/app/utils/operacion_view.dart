@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'dart:convert';
 
 import 'package:casa_empenio_pe/data/local/local_preferences.dart' show VistaPrevia;
@@ -10,7 +11,7 @@ import 'package:casa_empenio_pe/presentation/features/auth/auth.dart' show AuthB
 import 'package:image_picker/image_picker.dart';
 
 // ============================================================ AYUDAS
-final Dio _dio = Dio(BaseOptions(
+final Dio _dio = crearDio(BaseOptions(
   baseUrl: endPointPrincipal,
   connectTimeout: const Duration(seconds: 30),
   receiveTimeout: const Duration(minutes: 2),

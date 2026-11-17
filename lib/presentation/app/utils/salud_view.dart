@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -15,7 +16,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // ============================================================ AYUDAS
-final Dio _dio = Dio(BaseOptions(
+final Dio _dio = crearDio(BaseOptions(
   baseUrl: endPointPrincipal,
   connectTimeout: const Duration(seconds: 30),
   receiveTimeout: const Duration(minutes: 5),

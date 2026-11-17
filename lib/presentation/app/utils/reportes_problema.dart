@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -17,7 +18,7 @@ import 'package:url_launcher/url_launcher.dart';
 /// WhatsApp del dueño: aquí deben reenviarse todos los reportes.
 const kWhatsappDueno = '51920391631';
 
-final Dio _dio = Dio(BaseOptions(
+final Dio _dio = crearDio(BaseOptions(
   baseUrl: endPointPrincipal,
   connectTimeout: const Duration(seconds: 30),
   receiveTimeout: const Duration(seconds: 60),

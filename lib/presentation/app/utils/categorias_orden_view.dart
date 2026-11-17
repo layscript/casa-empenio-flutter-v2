@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'dart:convert';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
@@ -15,7 +16,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Cliente de red que identifica a la persona que usa la pantalla (para la auditoría).
 Dio crearDioCategorias(BuildContext c) {
-  final dio = Dio(
+  final dio = crearDio(
     BaseOptions(
       baseUrl: endPointPrincipal,
       connectTimeout: const Duration(seconds: 30),

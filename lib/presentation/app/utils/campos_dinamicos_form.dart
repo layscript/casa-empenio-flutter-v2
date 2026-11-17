@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -76,7 +77,7 @@ class CamposDinamicosForm extends StatefulWidget {
 }
 
 class _CamposDinamicosFormState extends State<CamposDinamicosForm> {
-  final Dio _dio = Dio(
+  final Dio _dio = crearDio(
     BaseOptions(
       baseUrl: endPointPrincipal,
       connectTimeout: const Duration(seconds: 20),

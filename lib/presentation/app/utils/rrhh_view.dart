@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/sucursal_vista.dart';
 import 'dart:io';
 import 'dart:typed_data';
@@ -35,7 +36,7 @@ class _Api {
     final s = u?.sucursal?.id;
     sucursalId = s == null ? 0 : (int.tryParse(s.toString()) ?? 0);
     usuarioNombre = '${u?.nombre ?? ''} ${u?.apellido ?? ''}'.trim();
-    dio = Dio(BaseOptions(
+    dio = crearDio(BaseOptions(
       baseUrl: endPointPrincipal,
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 120),

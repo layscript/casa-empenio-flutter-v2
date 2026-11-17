@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'dart:convert';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
@@ -30,6 +31,7 @@ class HttpUserRepository implements UserRepository {
       } else {
         final map = json.decode(response.data!) as Map<String, dynamic>;
         final data = map['body'];
+        await SesionSegura.guardar(data is Map ? data['token']?.toString() : null);
         return Right(UserEntity.userFromMap(data));
       }
     } on DioException catch (e) {

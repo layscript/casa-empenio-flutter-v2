@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'dart:convert';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
@@ -15,7 +16,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 // y configuración del sistema. Usa rutas que ya existen en el servidor.
 // ---------------------------------------------------------------------------
 
-Dio _crearDio() => Dio(
+Dio _crearDio() => crearDio(
       BaseOptions(
         baseUrl: endPointPrincipal,
         connectTimeout: const Duration(seconds: 30),
@@ -2587,6 +2588,7 @@ class _PermisosTab extends StatefulWidget {
 class _PermisosTabState extends State<_PermisosTab> {
   late final Dio _dio = _dioUsuario(context);
   bool _activo = false;
+  bool _obligatoria = false;
   List<Map<String, dynamic>> _roles = <Map<String, dynamic>>[];
   List<Map<String, dynamic>> _modulos = <Map<String, dynamic>>[];
   List<Map<String, dynamic>> _acciones = <Map<String, dynamic>>[];
@@ -2623,6 +2625,10 @@ class _PermisosTabState extends State<_PermisosTab> {
       final re = await _dio.get('/acceso/estado');
       final eb = _cuerpo(re);
       _activo = eb is Map && eb['activo'] == true;
+      try {
+        final rs = _cuerpo(await _dio.get('/acceso/seguridad'));
+        _obligatoria = rs is Map && rs['obligatoria'] == true;
+      } catch (_) {}
       final rr = await _dio.get('/acceso/roles');
       _roles = _filas(_cuerpo(rr));
       if (_rolSel == 0 && _roles.isNotEmpty) {
@@ -2775,6 +2781,25 @@ class _PermisosTabState extends State<_PermisosTab> {
     await _cargar();
   }
 
+  Future<void> _cambiarSeguridad(bool v) async {
+    final ok = await _confirmar(
+        context,
+        v ? 'Activar sesión segura' : 'Apagar sesión segura',
+        v
+            ? 'Desde ahora el sistema solo atenderá a quien haya iniciado sesión con la app actualizada. '
+                'Los celulares con la app vieja tendrán que actualizarse e iniciar sesión otra vez. '
+                'Antes de activar, confirme que todos tus trabajadores ya instalaron la última versión. ¿Activar?'
+            : 'El sistema volverá a aceptar la app vieja (menos seguro). ¿Apagar?');
+    if (!ok) return;
+    try {
+      await _dio.put('/acceso/seguridad', data: {'obligatoria': v});
+      _aviso(context, v ? 'Sesión segura activada' : 'Sesión segura apagada');
+    } catch (e) {
+      _aviso(context, _msg(e));
+    }
+    await _cargar();
+  }
+
   Future<void> _cambiarEstado(bool v) async {
     final ok = await _confirmar(
         context,
@@ -2810,6 +2835,18 @@ class _PermisosTabState extends State<_PermisosTab> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 40),
         children: [
+          Card(
+            margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            color: _obligatoria ? Colors.green.shade50 : Colors.red.shade50,
+            child: SwitchListTile(
+              title: const Text('Sesión segura (recomendado)', style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text(_obligatoria
+                  ? 'ACTIVA: solo entra quien inició sesión. Nadie puede ver ni cambiar datos desde afuera.'
+                  : 'APAGADA: el sistema aún acepta la app vieja y es menos seguro. Cuando todos tengan la app nueva, actívala.'),
+              value: _obligatoria,
+              onChanged: _cambiarSeguridad,
+            ),
+          ),
           const _Aviso(
               'En 3 pasos: 1) ordene los puestos por autoridad, 2) elija qué puede hacer cada puesto, '
               '3) active las restricciones. Mientras estén apagadas, nadie queda bloqueado.'),

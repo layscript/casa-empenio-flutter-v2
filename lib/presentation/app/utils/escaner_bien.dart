@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -79,7 +80,7 @@ List<String> palabrasCategoria(String tipo) {
   }
 }
 
-final Dio _dioEscaner = Dio(BaseOptions(
+final Dio _dioEscaner = crearDio(BaseOptions(
   baseUrl: endPointPrincipal,
   connectTimeout: const Duration(seconds: 30),
   receiveTimeout: const Duration(seconds: 60),

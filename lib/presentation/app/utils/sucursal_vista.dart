@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'dart:convert';
 
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
@@ -12,7 +13,7 @@ class SucursalVista {
 }
 
 Future<List<Map<String, dynamic>>> cargarSucursales() async {
-  final r = await Dio(BaseOptions(
+  final r = await crearDio(BaseOptions(
     baseUrl: endPointPrincipal,
     connectTimeout: const Duration(seconds: 30),
     receiveTimeout: const Duration(seconds: 60),

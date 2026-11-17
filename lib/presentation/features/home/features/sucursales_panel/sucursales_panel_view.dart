@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'dart:convert';
 
 import 'package:casa_empenio_pe/domain/caja/caja_entity.dart';
@@ -16,7 +17,7 @@ import 'package:intl/intl.dart';
 // hoy, las cajas anteriores y la cartera de cada sucursal.
 // ---------------------------------------------------------------------------
 
-final _dio = Dio(
+final _dio = crearDio(
   BaseOptions(
     baseUrl: endPointPrincipal,
     connectTimeout: const Duration(seconds: 30),

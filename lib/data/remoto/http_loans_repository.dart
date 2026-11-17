@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -457,7 +458,7 @@ class HttpLoansRepository implements LoansRepository {
       // Las proformas se generan en nuestro propio servidor (carpeta /files);
       // el resto de comprobantes siguen descargandose del servicio de facturacion.
       final esProformaLocal = url.startsWith('proforma-');
-      final dio = Dio(BaseOptions(
+      final dio = crearDio(BaseOptions(
         baseUrl: esProformaLocal ? '$endPointPrincipal/files/' : downloadFactura,
       ));
       final path = url;

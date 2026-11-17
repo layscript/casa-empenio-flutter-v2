@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:casa_empenio_pe/data/local/local_preferences.dart' show VistaPrevia;
 import 'package:casa_empenio_pe/domain/domain.dart' show Preferences;
 import 'package:casa_empenio_pe/presentation/app/utils/actualizaciones.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/salud_view.dart' show recordarUsuarioParaErrores, copiaSemanalAdmin;
 import 'package:casa_empenio_pe/presentation/features/auth/auth.dart';
 import 'package:flutter/material.dart';
@@ -44,6 +45,7 @@ class _VigilanteSesionState extends State<VigilanteSesion> with WidgetsBindingOb
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    SesionSegura.vencimientos.addListener(_sesionVencida);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       recordarUsuarioParaErrores(context.read<Preferences>().token);
       copiaSemanalAdmin(context); // solo administradores: baja la copia una vez por semana
@@ -61,6 +63,7 @@ class _VigilanteSesionState extends State<VigilanteSesion> with WidgetsBindingOb
   @override
   void dispose() {
     _reloj?.cancel();
+    SesionSegura.vencimientos.removeListener(_sesionVencida);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -71,6 +74,24 @@ class _VigilanteSesionState extends State<VigilanteSesion> with WidgetsBindingOb
       _revisarDia();
       if (mounted) avisarActualizacion(context, banner: true);
     }
+  }
+
+  Future<void> _sesionVencida() async {
+    if (_cerrando || !mounted) return;
+    _cerrando = true;
+    try {
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          icon: const Icon(Icons.lock_outline, size: 36),
+          title: const Text('Vuelve a iniciar sesión'),
+          content: const Text('Por seguridad, el sistema pide iniciar sesión otra vez. Lo que estabas registrando no se pierde.'),
+          actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Entendido'))],
+        ),
+      );
+    } catch (_) {}
+    if (mounted) context.read<AuthBloc>().add(SignOff());
   }
 
   Future<void> _revisarDia() async {
