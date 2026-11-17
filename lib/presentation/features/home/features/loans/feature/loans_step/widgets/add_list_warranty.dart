@@ -55,6 +55,38 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
     return null;
   }
 
+  String _tipoActual(LoansStepBloc bloc) {
+    final st = bloc.state;
+    final cat = st.categories;
+    String? padre;
+    if (cat != null && cat.padreId != null) {
+      for (final c in st.listCategories ?? <CategoriesEntity>[]) {
+        if (c.id == cat.padreId) padre = c.descripcion;
+      }
+    }
+    return tipoEscaneoDeCategoria(cat?.descripcion, padre);
+  }
+
+  Widget _botonCaptura(LoansStepBloc bloc, String campo, TextEditingController ctl, void Function(String) enviar) {
+    return IconButton(
+      tooltip: 'Capturar con la cámara',
+      icon: const Icon(Icons.photo_camera_outlined),
+      onPressed: () async {
+        final r = await capturarCampo(context, campo: campo, tipo: _tipoActual(bloc));
+        if (r == null || !mounted) return;
+        ctl.text = r.valor;
+        enviar(r.valor);
+        // la foto queda como evidencia si todavía hay lugar (máximo 3 fotos)
+        final actuales = List<XFile>.from(bloc.state.photoWarranty ?? <XFile>[]);
+        if (campo != 'descripcion' && actuales.length < 3) {
+          actuales.add(r.foto);
+          bloc.add(UploadImagesWarranty(actuales));
+          setState(() => _fotosNonce++);
+        }
+      },
+    );
+  }
+
   Future<void> _escanear(LoansStepBloc bloc) async {
     final st = bloc.state;
     String? padre;
@@ -109,7 +141,7 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
           OutlinedButton.icon(
             onPressed: () => _escanear(loansStepBloc),
             icon: const Icon(Icons.document_scanner_outlined),
-            label: const Text('Escanear bien con la cámara'),
+            label: const Text('Escanear todo el bien (varias fotos)'),
           ),
           const Padding(
             padding: EdgeInsets.only(top: 4),
@@ -156,6 +188,7 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
     return AppTextFormField(
       labelText: 'Descripción (requerido)',
       controller: _desc,
+      suffixIcon: _botonCaptura(loansStepBloc, 'descripcion', _desc, (t) => loansStepBloc.add(ChangeDescription(value: t))),
       onChanged: (e) => loansStepBloc.add(
         ChangeDescription(value: e),
       ),
@@ -200,6 +233,7 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
           child: AppTextFormField(
             labelText: 'Modelo (requerido)',
             controller: _modelo,
+            suffixIcon: _botonCaptura(loansStepBloc, 'modelo', _modelo, (t) => loansStepBloc.add(ChangeModel(value: t))),
             onChanged: (e) => loansStepBloc.add(ChangeModel(value: e)),
             validator: (value) {
               if (value!.isEmpty) return 'Campo Requerido';
@@ -254,6 +288,7 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
         AppTextFormField(
           labelText: 'Serie (opcional)',
           controller: _serie,
+          suffixIcon: _botonCaptura(loansStepBloc, 'serie', _serie, (t) => loansStepBloc.add(ChangeSerie(value: t))),
           onChanged: (e) => loansStepBloc.add(ChangeSerie(value: e)),
         ),
         const SizedBox(height: 15),

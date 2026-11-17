@@ -608,3 +608,148 @@ class _EscanerPageState extends State<_EscanerPage> {
     );
   }
 }
+
+/// Resultado de capturar un solo campo (serie, modelo...) con una foto.
+class CapturaCampo {
+  CapturaCampo(this.valor, this.foto);
+  final String valor;
+  final XFile foto;
+}
+
+List<String> _candidatos(String texto) {
+  final out = <String>[];
+  for (final linea in texto.split(RegExp(r'[\r\n]+'))) {
+    final l = linea.trim();
+    if (l.length >= 3 && l.length <= 40 && !out.contains(l)) out.add(l);
+    for (final t in l.split(RegExp(r'[\s,;:]+'))) {
+      final x = t.replaceAll(RegExp(r'[^A-Za-z0-9\-/]'), '');
+      if (x.length >= 4 && x.length <= 30 && RegExp(r'\d').hasMatch(x) && !out.contains(x)) {
+        out.add(x);
+      }
+    }
+  }
+  return out.take(12).toList();
+}
+
+/// Toma una foto y lee solo ese campo: 'serie', 'modelo' o 'descripcion'. La persona confirma o corrige antes de usarlo.
+Future<CapturaCampo?> capturarCampo(
+  BuildContext context, {
+  required String campo,
+  required String tipo,
+}) async {
+  final foto = await ImagePicker().pickImage(source: ImageSource.camera, imageQuality: 92);
+  if (foto == null || !context.mounted) return null;
+
+  showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => const AlertDialog(
+      content: Row(children: [
+        SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
+        SizedBox(width: 16),
+        Expanded(child: Text('Leyendo la foto...')),
+      ]),
+    ),
+  );
+
+  var texto = '';
+  var codigos = <String>[];
+  final reconocedor = TextRecognizer(script: TextRecognitionScript.latin);
+  final lector = BarcodeScanner();
+  try {
+    final entrada = InputImage.fromFilePath(foto.path);
+    texto = (await reconocedor.processImage(entrada)).text;
+    codigos = (await lector.processImage(entrada))
+        .map((b) => b.rawValue ?? '')
+        .where((s) => s.isNotEmpty)
+        .toList();
+  } catch (_) {
+  } finally {
+    await reconocedor.close();
+    await lector.close();
+  }
+
+  var propuesto = '';
+  try {
+    final r = await _dioEscaner.post('operacion/escaner/consultar', data: {
+      'tipo': tipo,
+      'fuentes': [
+        {
+          'etiqueta': campo,
+          'rol': campo == 'modelo' ? 'MODELO' : (campo == 'serie' ? 'SERIE' : 'GENERAL'),
+          'textos': [texto],
+          'codigos': codigos,
+        }
+      ],
+    });
+    final b = _body(r);
+    if (b is Map && b['campos'] is Map) {
+      propuesto = '${(b['campos'] as Map)[campo] ?? ''}';
+    }
+  } catch (_) {
+    // sin conexión con el servidor: igual se puede elegir el texto leído
+  }
+  if (propuesto.isEmpty && codigos.isNotEmpty && campo == 'serie') propuesto = codigos.first;
+
+  if (!context.mounted) return null;
+  Navigator.of(context, rootNavigator: true).pop(); // cierra "Leyendo..."
+
+  final cands = {..._candidatos(texto), ...codigos}.where((e) => e != propuesto).take(12).toList();
+  final ctl = TextEditingController(text: propuesto);
+  final nombre = campo == 'serie' ? 'la serie' : (campo == 'modelo' ? 'el modelo' : 'la descripción');
+  final elegido = await showModalBottomSheet<String>(
+    context: context,
+    isScrollControlled: true,
+    builder: (ctx) => Padding(
+      padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.of(ctx).viewInsets.bottom),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(propuesto.isEmpty ? 'No se pudo leer $nombre' : 'Esto se leyó. Revísalo con el bien.',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 10),
+            TextField(
+              controller: ctl,
+              autofocus: propuesto.isEmpty,
+              textCapitalization: TextCapitalization.characters,
+              decoration: InputDecoration(
+                labelText: campo == 'serie' ? 'Serie' : (campo == 'modelo' ? 'Modelo' : 'Descripción'),
+                border: const OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+            if (cands.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              const Text('Otros textos que se leyeron (toca uno para usarlo):',
+                  style: TextStyle(fontSize: 12, color: Colors.black54)),
+              const SizedBox(height: 4),
+              Wrap(spacing: 6, runSpacing: 0, children: [
+                for (final c in cands)
+                  ActionChip(
+                    label: Text(c, style: const TextStyle(fontSize: 12)),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => ctl.text = c,
+                  ),
+              ]),
+            ],
+            const SizedBox(height: 12),
+            Row(children: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+              const Spacer(),
+              FilledButton.icon(
+                onPressed: () => Navigator.pop(ctx, ctl.text.trim()),
+                icon: const Icon(Icons.check),
+                label: const Text('Usar'),
+              ),
+            ]),
+          ],
+        ),
+      ),
+    ),
+  );
+  ctl.dispose();
+  if (elegido == null || elegido.isEmpty) return null;
+  return CapturaCampo(elegido, foto);
+}
