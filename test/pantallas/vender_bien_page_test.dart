@@ -26,11 +26,12 @@ Future<void> _abrirVenta(WidgetTester tester) async {
       builder: (ctx) => Theme(data: buildTheme(ctx), child: VenderBienPage(prestamo: _prestamo())),
     ),
   ));
-  await tester.tap(find.textContaining('VENTA'));
+  await tester.tap(find.textContaining('se lo vendemos'));
   await tester.pumpAndSettle();
 }
 
 void main() {
+  ventaAutorizadaTests();
   for (final doc in ['Contrato privado', 'Proforma', 'Boleta']) {
     testWidgets('$doc: se ve el campo DNI y el botón Buscar, sin errores', (tester) async {
       await _abrirVenta(tester);
@@ -59,5 +60,22 @@ void main() {
     expect(find.text('1234'), findsOneWidget);
     expect(find.text('Juan Pérez'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+}
+
+void ventaAutorizadaTests() {
+  testWidgets('La elección ofrece Venta, Venta con autorización del cliente y Recojo', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.625;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(MaterialApp(
+      home: Builder(
+        builder: (ctx) => Theme(data: buildTheme(ctx), child: VenderBienPage(prestamo: _prestamo())),
+      ),
+    ));
+    expect(tester.takeException(), isNull);
+    expect(find.textContaining('se lo vendemos'), findsOneWidget);
+    expect(find.textContaining('VENTA CON AUTORIZACIÓN DEL CLIENTE'), findsOneWidget);
+    expect(find.textContaining('RECOJO'), findsOneWidget);
   });
 }
