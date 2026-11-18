@@ -66,8 +66,16 @@ class PanelPrestamosState extends State<PanelPrestamos> {
     final numero = cel.length == 9 ? '51$cel' : cel;
     final nombre = (f['cliente'] ?? '').toString();
     final codigo = (f['codigoFormateado'] ?? f['codigo']).toString();
-    final msg = vencido
-        ? 'Hola $nombre, le saludamos de Negocios Múltiples Mayta. Su préstamo N° $codigo '
+    final inmueble = f['inmueble'] == true;
+    // Terrenos y viviendas se cobran como ALQUILER: sin "préstamo", sin monto, sin N°.
+    final msg = inmueble
+        ? (vencido
+            ? 'Hola $nombre, le saludamos de Negocios Múltiples Mayta. Le recordamos que el pago por alquiler '
+                'ya venció. Por favor acérquese a pagar o renovar. Gracias.'
+            : 'Hola $nombre, le saludamos de Negocios Múltiples Mayta. Le recordamos que el pago por alquiler '
+                'está por vencer. Puede acercarse a pagar o renovar. Gracias.')
+        : vencido
+            ? 'Hola $nombre, le saludamos de Negocios Múltiples Mayta. Su préstamo N° $codigo '
             'ya venció y tiene un saldo de ${_s(f['saldo'])}. Por favor acérquese a regularizar su pago. Gracias.'
         : 'Hola $nombre, le saludamos de Negocios Múltiples Mayta. Le recordamos que su '
             'préstamo N° $codigo está por vencer. Saldo: ${_s(f['saldo'])}. Lo esperamos. Gracias.';
