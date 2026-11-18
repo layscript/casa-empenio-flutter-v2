@@ -375,13 +375,13 @@ class OperacionAdminPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 4,
+      length: 5,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Operación diaria'),
-          bottom: const TabBar(isScrollable: true, tabs: [Tab(text: 'Cumplimiento'), Tab(text: 'Equipo'), Tab(text: 'Tareas'), Tab(text: 'Vehículos')]),
+          bottom: const TabBar(isScrollable: true, tabs: [Tab(text: 'Revisión de caja'), Tab(text: 'Cumplimiento'), Tab(text: 'Equipo'), Tab(text: 'Tareas'), Tab(text: 'Vehículos')]),
         ),
-        body: const TabBarView(children: [_CumplimientoTab(), _EquipoTab(), _TareasTab(), _VehiculosTab()]),
+        body: const TabBarView(children: [RevisionCajaTab(), _CumplimientoTab(), _EquipoTab(), _TareasTab(), _VehiculosTab()]),
       ),
     );
   }
@@ -3274,6 +3274,204 @@ class _PedidosProrrogaCardState extends State<PedidosProrrogaCard> {
               ]),
             ),
         ]),
+      ),
+    );
+  }
+}
+
+
+// ============================================================ REVISIÓN DE CAJA (administrador)
+String _sol(num? n) => 'S/ ${(n ?? 0).toStringAsFixed(2)}';
+
+class RevisionCajaTab extends StatefulWidget {
+  const RevisionCajaTab({super.key});
+  @override
+  State<RevisionCajaTab> createState() => _RevisionCajaTabState();
+}
+
+class _RevisionCajaTabState extends State<RevisionCajaTab> {
+  Map<String, dynamic>? d;
+  String? error;
+  bool cargando = true;
+  String filtro = 'Pendientes';
+  final Set<int> elegidos = {};
+  final contado = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _cargar());
+  }
+
+  @override
+  void dispose() {
+    contado.dispose();
+    super.dispose();
+  }
+
+  Future<void> _cargar() async {
+    setState(() { cargando = true; error = null; });
+    try {
+      final sid = _sid(context);
+      final r = await _dio.get<dynamic>('/operacion/revision-caja', queryParameters: {'usuarioId': _uid(context), if (sid != null) 'sucursalId': sid});
+      d = _mapa(_cuerpo(r));
+      elegidos.clear();
+    } catch (e) {
+      error = _err(e);
+    }
+    if (mounted) setState(() => cargando = false);
+  }
+
+  Future<void> _post(String ruta, Map<String, dynamic> body, String ok) async {
+    try {
+      await _dio.post<dynamic>('/operacion/revision-caja/$ruta', data: {'adminId': _uid(context), 'cajaId': _mapa(d?['caja'])['id'], ...body});
+      if (mounted) _aviso(context, ok);
+      await _cargar();
+    } catch (e) {
+      if (mounted) _aviso(context, _err(e), error: true);
+    }
+  }
+
+  Future<void> _reclasificar() async {
+    final motivo = TextEditingController(text: 'Eran Yapes/depósitos registrados como efectivo');
+    String medio = 'YAPE';
+    final items = _lista(d?['items']).where((i) => elegidos.contains(i['id'])).toList();
+    final total = items.fold<double>(0, (a, i) => a + ((i['monto'] as num?)?.toDouble() ?? 0));
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dc) => StatefulBuilder(builder: (dc, set) => AlertDialog(
+        title: const Text('Pasar a otro medio de pago'),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('${items.length} movimientos · ${_sol(total)}. El monto no cambia: solo se saca del efectivo de la gaveta. Queda guardado quién y por qué.'),
+          const SizedBox(height: 12),
+          DropdownButton<String>(value: medio, isExpanded: true, items: const ['YAPE', 'PLIN', 'DEPOSITO', 'OTRO'].map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(), onChanged: (v) => set(() => medio = v ?? 'YAPE')),
+          TextField(controller: motivo, decoration: const InputDecoration(labelText: 'Motivo')),
+        ]),
+        actions: [TextButton(onPressed: () => Navigator.pop(dc, false), child: const Text('Cancelar')), FilledButton(onPressed: () => Navigator.pop(dc, true), child: const Text('Confirmar'))],
+      )),
+    );
+    if (ok == true) await _post('reclasificar', {'movimientoIds': items.map((i) => i['id']).toList(), 'medioPago': medio, 'motivo': motivo.text.trim()}, 'Listo, ya no cuentan como efectivo');
+  }
+
+  Future<void> _conciliar() async {
+    final t = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dc) => AlertDialog(
+        title: const Text('Comparar con el historial'),
+        content: TextField(controller: t, maxLines: 8, keyboardType: TextInputType.multiline, decoration: const InputDecoration(hintText: 'Pega los montos del historial de Yape/banco, uno por línea. Ej:\n50\n120.50')),
+        actions: [TextButton(onPressed: () => Navigator.pop(dc, false), child: const Text('Cancelar')), FilledButton(onPressed: () => Navigator.pop(dc, true), child: const Text('Comparar'))],
+      ),
+    );
+    if (ok != true) return;
+    final lineas = t.text.split(RegExp(r'[\n;]')).map((x) => x.replaceAll(RegExp(r'[^0-9.,]'), '').replaceAll(',', '.')).where((x) => x.isNotEmpty).map(double.tryParse).whereType<double>().toList();
+    try {
+      final r = _mapa(_cuerpo(await _dio.post<dynamic>('/operacion/revision-caja/conciliar', data: {'adminId': _uid(context), 'cajaId': _mapa(d?['caja'])['id'], 'lineas': lineas})));
+      if (!mounted) return;
+      final sin = _lista(r['sinRespaldo']);
+      final sob = (r['sobrantes'] as List?) ?? [];
+      await showDialog<void>(context: context, builder: (dc) => AlertDialog(
+        title: const Text('Resultado'),
+        content: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+          Text('Sistema: ${_sol(r['totalSistema'] as num?)}  ·  Historial: ${_sol(r['totalExtracto'] as num?)}'),
+          Text('Coinciden: ${r['coinciden']} de ${r['revisados']}'),
+          const SizedBox(height: 8),
+          if (sin.isNotEmpty) const Text('En el sistema pero NO en el historial:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+          for (final s in sin) Text('• #${s['id']} ${_sol(s['monto'] as num?)} ${s['medioPago']} ${s['detalle']}'),
+          if (sob.isNotEmpty) const Text('En el historial pero NO en el sistema:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
+          for (final s in sob) Text('• ${_sol(s as num?)}'),
+          if (sin.isEmpty && sob.isEmpty) const Text('Todo coincide.', style: TextStyle(color: Colors.green)),
+        ])),
+        actions: [TextButton(onPressed: () => Navigator.pop(dc), child: const Text('Cerrar'))],
+      ));
+    } catch (e) {
+      if (mounted) _aviso(context, _err(e), error: true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (cargando) return const Center(child: CircularProgressIndicator());
+    if (error != null) return Center(child: Padding(padding: const EdgeInsets.all(16), child: Column(mainAxisSize: MainAxisSize.min, children: [Text(error!), TextButton(onPressed: _cargar, child: const Text('Reintentar'))])));
+    final caja = _mapa(d?['caja']);
+    final cuadre = _mapa(d?['cuadre']);
+    final dias = (caja['diasAbierta'] as num?)?.toInt() ?? 0;
+    final todos = _lista(d?['items']);
+    final items = todos.where((i) {
+      if (i['anulado'] == true) return filtro == 'Todos';
+      switch (filtro) {
+        case 'Gastos': return i['suma'] != true;
+        case 'Alertas': return _lista(i['alertas']).isNotEmpty;
+        case 'Efectivo': return i['suma'] == true && i['medioPago'] == 'EFECTIVO';
+        case 'Pendientes': return i['marca'] == null && (i['suma'] != true || _lista(i['alertas']).isNotEmpty);
+        default: return true;
+      }
+    }).toList();
+    final firma = d?['revisadaPor'];
+    return RefreshIndicator(
+      onRefresh: _cargar,
+      child: ListView(padding: const EdgeInsets.all(12), children: [
+        Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Caja del ${caja['fecha'] ?? ''}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          if (dias > 1) Text('Lleva $dias días abierta: ciérrala cuanto antes', style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          Text('Efectivo que debe haber en la gaveta:'),
+          Text(_sol(cuadre['efectivoTeorico'] as num?), style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+          Text('Apertura ${_sol(cuadre['apertura'] as num?)} · Yape/depósitos ${_sol(cuadre['digitalTotal'] as num?)}'),
+          Text('Ingresos ${_sol(cuadre['totalIngresos'] as num?)} · Gastos/egresos ${_sol(cuadre['totalEgresos'] as num?)}'),
+          const SizedBox(height: 8),
+          Text('Gastos sin mirar: ${d?['porRevisar']} · Con alerta: ${d?['conAlerta']}'),
+          if (firma != null) Text('Revisado ${firma['fecha'] ?? ''}${firma['diferencia'] != null ? ' · diferencia ${_sol(firma['diferencia'] as num?)}' : ''}', style: const TextStyle(color: Colors.green)),
+        ]))),
+        Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Cuenta el efectivo que hay en la gaveta', style: TextStyle(fontWeight: FontWeight.bold)),
+          TextField(controller: contado, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(prefixText: 'S/ ', hintText: 'Efectivo contado')),
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, children: [
+            FilledButton.icon(
+              onPressed: () {
+                final v = double.tryParse(contado.text.trim().replaceAll(',', '.'));
+                if (v == null) { _aviso(context, 'Escribe el efectivo contado', error: true); return; }
+                _post('revisar-dia', {'efectivoContado': v}, 'Revisión firmada');
+              },
+              icon: const Icon(Icons.verified_outlined),
+              label: const Text('Firmar revisión'),
+            ),
+            OutlinedButton.icon(onPressed: _conciliar, icon: const Icon(Icons.compare_arrows), label: const Text('Comparar Yape')),
+          ]),
+        ]))),
+        const SizedBox(height: 4),
+        SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: [
+          for (final f in const ['Pendientes', 'Gastos', 'Alertas', 'Efectivo', 'Todos'])
+            Padding(padding: const EdgeInsets.only(right: 6), child: ChoiceChip(label: Text(f), selected: filtro == f, onSelected: (_) => setState(() => filtro = f))),
+        ])),
+        if (elegidos.isNotEmpty)
+          Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: FilledButton.icon(onPressed: _reclasificar, icon: const Icon(Icons.swap_horiz), label: Text('Pasar ${elegidos.length} a Yape/depósito'))),
+        if (items.isEmpty) const Padding(padding: EdgeInsets.all(24), child: Center(child: Text('Nada por revisar aquí 👍'))),
+        for (final i in items) _tarjeta(i),
+      ]),
+    );
+  }
+
+  Widget _tarjeta(Map<String, dynamic> i) {
+    final alertas = _lista(i['alertas']);
+    final esIngresoEfectivo = i['suma'] == true && i['medioPago'] == 'EFECTIVO' && i['anulado'] != true;
+    final marca = i['marca'];
+    final id = (i['id'] as num).toInt();
+    return Card(
+      color: i['anulado'] == true ? Colors.grey.shade200 : (alertas.isNotEmpty && marca == null ? Colors.orange.shade50 : null),
+      child: ListTile(
+        leading: esIngresoEfectivo
+            ? Checkbox(value: elegidos.contains(id), onChanged: (v) => setState(() { if (v == true) { elegidos.add(id); } else { elegidos.remove(id); } }))
+            : Icon(i['suma'] == true ? Icons.south_west : Icons.north_east, color: i['suma'] == true ? Colors.green : Colors.red),
+        title: Text('${i['suma'] == true ? '+' : '-'}${_sol(i['monto'] as num?)}  ${i['tipo'] ?? ''}${i['anulado'] == true ? '  (anulado)' : ''}'),
+        subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('${i['medioPago']} · ${(i['fotos'] as num?) ?? 0} foto(s)${(i['detalle'] ?? '').toString().isEmpty ? '' : ' · ${i['detalle']}'}'),
+          for (final a in alertas) Text('⚠ ${a['texto']}', style: TextStyle(color: a['nivel'] == 'ALTA' ? Colors.red.shade700 : Colors.orange.shade800, fontSize: 12)),
+          if (marca != null) Text(marca['estado'] == 'OK' ? '✔ Revisado' : '? En duda', style: TextStyle(color: marca['estado'] == 'OK' ? Colors.green : Colors.orange)),
+        ]),
+        trailing: i['anulado'] == true || marca != null ? null : IconButton(icon: const Icon(Icons.check_circle_outline), tooltip: 'Está bien', onPressed: () => _post('marcar', {'movimientoId': id, 'estado': 'OK'}, 'Marcado como revisado')),
+        isThreeLine: alertas.isNotEmpty,
       ),
     );
   }
