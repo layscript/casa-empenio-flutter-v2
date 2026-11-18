@@ -66,7 +66,7 @@ class _VentaAutorizadaPageState extends State<VentaAutorizadaPage> {
   final _entrega = TextEditingController();
   String _medio = 'EFECTIVO';
 
-  int get _codigo => widget.prestamo.codigo;
+  int get _codigo => widget.prestamo.codigo ?? 0;
   int get _uid => context.read<Preferences>().token?.id ?? 0;
   int get _sid => context.read<Preferences>().token?.sucursal?.id ?? 1;
 
