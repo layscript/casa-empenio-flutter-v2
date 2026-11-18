@@ -221,6 +221,8 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                   double.parse(loan?.ganancia ?? '0.00') -
                   (resultMontos ?? 0.00);
 
+              final montoEscrito = double.tryParse(montoCtrl.text.replaceAll(',', '.')) ?? 0;
+              final excede = montoEscrito > montoRestante + 0.005;
               return SizedBox(
                 width: 320,
                 child: SingleChildScrollView(
@@ -333,6 +335,15 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                           }
                         },
                       ),
+                      if (excede)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            'El cliente debe S/. ${montoRestante.toStringAsFixed(2)}. '
+                            'No se puede cobrar más que la deuda: escribe ${montoRestante.toStringAsFixed(2)} o menos.',
+                            style: const TextStyle(fontSize: 12, color: Colors.red),
+                          ),
+                        ),
                       const SizedBox(height: 15),
                       const Text(
                         '¿Cómo te pagó el cliente?',
@@ -427,6 +438,7 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                           onPressed: (loan?.ganancia != null &&
                                       montoCtrl.text != "" &&
                                       montoCtrl.text != "0" &&
+                                      !excede &&
                                       liquidar &&
                                       _medioValido &&
                                       selectedPhotosLiquidar!.isNotEmpty) &&
@@ -517,6 +529,7 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                           onPressed: (loan?.ganancia != null &&
                                       montoCtrl.text != "" &&
                                       montoCtrl.text != "0" &&
+                                      !excede &&
                                       _medioValido &&
                                       selectedPhotosLiquidar!.isNotEmpty) &&
                                   state.loansStatus != LoansStatus.loading
