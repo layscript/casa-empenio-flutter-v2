@@ -941,11 +941,14 @@ class _BuscarParecidosPageState extends State<_BuscarParecidosPage> {
     await _buscar();
   }
 
-  Future<void> _buscar() async {
+  String _avisoImagen = '';
+
+  Future<void> _buscar({bool sinImagen = false}) async {
     if (_fotos.isEmpty) return;
     setState(() {
       _buscando = true;
       _error = '';
+      if (!sinImagen) _avisoImagen = '';
     });
     try {
       final r = await _dioEscaner.post('operacion/escaner/consultar-parecidos', data: {
@@ -957,7 +960,7 @@ class _BuscarParecidosPageState extends State<_BuscarParecidosPage> {
               'textos': [_fotos[i].textos],
               'codigos': _fotos[i].codigos,
               'etiquetas': _fotos[i].etiquetas,
-              if (_fotos[i].imagen.isNotEmpty) 'imagen': _fotos[i].imagen,
+              if (!sinImagen && _fotos[i].imagen.isNotEmpty) 'imagen': _fotos[i].imagen,
             }
         ],
         if (_color.isNotEmpty) 'color': _color,
@@ -972,6 +975,13 @@ class _BuscarParecidosPageState extends State<_BuscarParecidosPage> {
       });
     } catch (e) {
       if (!mounted) return;
+      // Si el servidor corta la conexión al recibir la foto, se reintenta una vez solo con texto, códigos y color
+      final sinRespuesta = e is! DioException || e.response == null;
+      final hayImagen = _fotos.any((f) => f.imagen.isNotEmpty);
+      if (!sinImagen && sinRespuesta && hayImagen) {
+        setState(() => _avisoImagen = 'No se pudo comparar la imagen con el servidor; se buscó solo con el texto, códigos y color de la foto.');
+        return _buscar(sinImagen: true);
+      }
       var msg = 'No se pudo buscar. Revisa la conexión e intenta de nuevo.';
       if (e is DioException) {
         final code = e.response?.statusCode;
@@ -985,8 +995,10 @@ class _BuscarParecidosPageState extends State<_BuscarParecidosPage> {
         } else if (e.type == DioExceptionType.receiveTimeout || e.type == DioExceptionType.sendTimeout) {
           msg = 'El servidor demoró en responder. Toca "Buscar de nuevo".';
         } else {
-          msg = 'No llegó respuesta del servidor (puede estar actualizándose). Espera 2 o 3 minutos y toca "Buscar de nuevo". [${e.type.name}]';
+          msg = 'No llegó respuesta del servidor. Revisa tu señal y toca "Buscar de nuevo". [${e.type.name}${e.error != null ? ': ${e.error.toString().split('\n').first}' : ''}]';
         }
+      } else {
+        msg = 'No se pudo leer la respuesta de la búsqueda: $e';
       }
       setState(() {
         _error = msg;
@@ -1093,6 +1105,7 @@ class _BuscarParecidosPageState extends State<_BuscarParecidosPage> {
           ]),
           const Divider(),
           if (_buscando) const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator())),
+          if (_avisoImagen.isNotEmpty && _error.isEmpty) Text(_avisoImagen, style: const TextStyle(color: Colors.orange, fontSize: 12)),
           if (_error.isNotEmpty) Text(_error, style: const TextStyle(color: Colors.red)),
           if (_error.isNotEmpty && _fotos.isNotEmpty)
             Align(
