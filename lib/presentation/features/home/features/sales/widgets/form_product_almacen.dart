@@ -402,6 +402,32 @@ class _CreateProductAlmacenState extends State<CreateProductAlmacen> {
               labelText: 'Observaciones del gasto (opcional)',
               controller: observacionesController,
             ),
+            if (_selection?.prestamo != null) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.verified_user, color: Colors.deepOrange),
+                  label: const Text(
+                    'Es de un cliente que nos autorizó venderlo: usar «Venta con autorización»',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  onPressed: () {
+                    final prestamo = _selection!.prestamo!;
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => VentaAutorizadaPage(
+                          prestamo: prestamo,
+                          yaEstabaEnVenta: prestamo.estado == 'VENTA',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
             const SizedBox(height: 10),
             Row(
               children: [
