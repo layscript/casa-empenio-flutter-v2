@@ -78,6 +78,11 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
         if (r == null || !mounted) return;
         ctl.text = r.valor;
         enviar(r.valor);
+        // si todavía no se eligió categoría, se elige sola según lo que se reconoció (celular, laptop, moto...)
+        if (bloc.state.categories == null && r.tipo != 'OTRO') {
+          final nueva = _categoriaPara(r.tipo, bloc.state.listCategories ?? <CategoriesEntity>[]);
+          if (nueva != null) bloc.add(ChangeCategoryWarranty(nueva));
+        }
         // la foto queda como evidencia si todavía hay lugar (máximo 3 fotos)
         final actuales = List<XFile>.from(bloc.state.photoWarranty ?? <XFile>[]);
         if (campo != 'descripcion' && actuales.length < 3) {

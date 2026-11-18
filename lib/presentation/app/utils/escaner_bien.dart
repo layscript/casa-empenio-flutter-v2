@@ -120,11 +120,11 @@ Future<ImageSource?> _elegirOrigenFoto(BuildContext context) {
 
 /// Lo que el teléfono reconoce mirando la imagen (ej. "Mobile phone", "Motorcycle").
 Future<List<String>> _etiquetasDeImagen(String ruta) async {
-  final et = ImageLabeler(options: ImageLabelerOptions(confidenceThreshold: 0.5));
+  final et = ImageLabeler(options: ImageLabelerOptions(confidenceThreshold: 0.35));
   try {
     final r = await et.processImage(InputImage.fromFilePath(ruta));
     r.sort((a, b) => b.confidence.compareTo(a.confidence));
-    return r.map((e) => e.label).take(10).toList();
+    return r.map((e) => e.label).take(15).toList();
   } catch (_) {
     return [];
   } finally {
@@ -842,9 +842,11 @@ class _EscanerPageState extends State<_EscanerPage> {
 
 /// Resultado de capturar un solo campo (serie, modelo...) con una foto.
 class CapturaCampo {
-  CapturaCampo(this.valor, this.foto);
+  CapturaCampo(this.valor, this.foto, [this.tipo = 'OTRO']);
   final String valor;
   final XFile foto;
+  /// Tipo de bien que reconoció el sistema (CELULAR, LAPTOP, MOTO_LINEAL...), para elegir la categoría solo.
+  final String tipo;
 }
 
 List<String> _candidatos(String texto) {
@@ -879,8 +881,10 @@ Widget botonBuscarConFoto(BuildContext context, {required void Function(String v
 }
 
 class _FotoBusqueda {
-  _FotoBusqueda(this.foto, this.textos, this.codigos, this.etiquetas);
+  _FotoBusqueda(this.foto, this.textos, this.codigos, this.etiquetas, this.imagen);
   final XFile foto;
+  /// La foto en base64 (ya reducida) para que el servidor compare cómo se ve contra las fotos registradas.
+  final String imagen;
   final String textos;
   final List<String> codigos;
   final List<String> etiquetas;
@@ -904,9 +908,13 @@ class _BuscarParecidosPageState extends State<_BuscarParecidosPage> {
   static const _colores = ['negro', 'blanco', 'plata', 'gris', 'rojo', 'azul', 'verde', 'amarillo', 'dorado'];
 
   Future<void> _tomarFoto(ImageSource origen) async {
-    final foto = await ImagePicker().pickImage(source: origen, imageQuality: 85);
+    final foto = await ImagePicker().pickImage(source: origen, imageQuality: 85, maxWidth: 1000);
     if (foto == null || !mounted) return;
     setState(() => _leyendo = true);
+    var imagen64 = '';
+    try {
+      imagen64 = base64Encode(await foto.readAsBytes());
+    } catch (_) {}
     var texto = '';
     var codigos = <String>[];
     final etiquetas = await _etiquetasDeImagen(foto.path);
@@ -926,7 +934,7 @@ class _BuscarParecidosPageState extends State<_BuscarParecidosPage> {
     }
     if (!mounted) return;
     setState(() {
-      _fotos.add(_FotoBusqueda(foto, texto, codigos, etiquetas));
+      _fotos.add(_FotoBusqueda(foto, texto, codigos, etiquetas, imagen64));
       _leyendo = false;
     });
     // con la primera foto ya se busca solo; las siguientes afinan
@@ -949,6 +957,7 @@ class _BuscarParecidosPageState extends State<_BuscarParecidosPage> {
               'textos': [_fotos[i].textos],
               'codigos': _fotos[i].codigos,
               'etiquetas': _fotos[i].etiquetas,
+              if (_fotos[i].imagen.isNotEmpty) 'imagen': _fotos[i].imagen,
             }
         ],
         if (_color.isNotEmpty) 'color': _color,
@@ -1149,9 +1158,10 @@ Future<CapturaCampo?> capturarCampo(
   }
 
   var propuesto = '';
+  var tipoReconocido = tipo;
   try {
     final r = await _dioEscaner.post('operacion/escaner/consultar', data: {
-      'tipo': tipo,
+      'tipo': (tipo.isEmpty || tipo == 'OTRO') ? 'DETECTAR' : tipo,
       'fuentes': [
         {
           'etiqueta': campo,
@@ -1165,6 +1175,7 @@ Future<CapturaCampo?> capturarCampo(
     final b = _body(r);
     if (b is Map && b['campos'] is Map) {
       propuesto = '${(b['campos'] as Map)[campo] ?? ''}';
+      tipoReconocido = '${b['tipo'] ?? 'OTRO'}';
     }
   } catch (_) {
     // sin conexión con el servidor: igual se puede elegir el texto leído
@@ -1231,5 +1242,5 @@ Future<CapturaCampo?> capturarCampo(
   );
   ctl.dispose();
   if (elegido == null || elegido.isEmpty) return null;
-  return CapturaCampo(elegido, foto);
+  return CapturaCampo(elegido, foto, tipoReconocido);
 }
