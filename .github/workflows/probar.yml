@@ -14,5 +14,7 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
+      # Revisa que el código no tenga errores de compilación (los avisos menores no detienen)
+      - run: flutter analyze --no-fatal-infos --no-fatal-warnings
       # Pruebas de pantallas: abren la pantalla real con el tema de la app y revisan que se vea todo sin errores
       - run: flutter test test/pantallas
