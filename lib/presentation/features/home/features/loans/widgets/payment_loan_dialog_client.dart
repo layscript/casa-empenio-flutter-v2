@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:casa_empenio_pe/data/remoto/http_loans_repository.dart' show ultimoErrorPago;
+
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/custom_image_picker.dart';
@@ -152,7 +154,7 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                         color: Colors.red,
                       ),
                     ),
-                    content: const Text('Vuelve a intentarlo de nuevo'),
+                    content: Text(ultimoErrorPago ?? 'Vuelve a intentarlo de nuevo'),
                     actions: [
                       TextButton(
                         onPressed: () {
@@ -178,7 +180,7 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                         color: Colors.red,
                       ),
                     ),
-                    content: const Text('Vuelve a intentarlo de nuevo'),
+                    content: Text(ultimoErrorPago ?? 'Vuelve a intentarlo de nuevo'),
                     actions: [
                       TextButton(
                         onPressed: () {

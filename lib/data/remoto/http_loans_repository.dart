@@ -8,6 +8,24 @@ import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 
+/// Último motivo que dio el servidor al fallar un pago o una liquidación (para mostrarlo en pantalla).
+String? ultimoErrorPago;
+
+String _motivoDelServidor(Object e) {
+  try {
+    if (e is DioException) {
+      var d = e.response?.data;
+      if (d is String && d.isNotEmpty) d = json.decode(d);
+      if (d is Map && d['message'] != null) {
+        final m = d['message'];
+        return m is List ? m.join(', ') : m.toString();
+      }
+      if (e.response == null) return 'No hay conexión con el servidor. Revisa tu internet.';
+    }
+  } catch (_) {}
+  return 'Ocurrió un error con el servidor';
+}
+
 class HttpLoansRepository implements LoansRepository {
   const HttpLoansRepository({
     required Dio dio,
@@ -389,6 +407,7 @@ class HttpLoansRepository implements LoansRepository {
     if (banco != null && banco.trim().isNotEmpty) {
       payload['banco'] = banco.trim();
     }
+    ultimoErrorPago = null;
     try {
       final response = await _dio.post<String>(path, data: payload);
       if (response.statusCode == 201 || response.statusCode == 200) {
@@ -399,12 +418,11 @@ class HttpLoansRepository implements LoansRepository {
         );
         return true;
       } else {
-        final map = json.decode(response.data!) as Map<String, dynamic>;
-        final message = map['message'] ?? 'Ocurrió un error';
-        //return Left(message);
+        ultimoErrorPago = _motivoDelServidor(DioException(requestOptions: response.requestOptions, response: response));
         return false;
       }
     } catch (e, stackTrace) {
+      ultimoErrorPago = _motivoDelServidor(e);
       //print('responseee ee: $e');
       //return const Left('Ocurrió un error 2');
       return false;
@@ -639,6 +657,7 @@ class HttpLoansRepository implements LoansRepository {
   }) async {
     final path = '/prestamos/prestamos/liquidar/$id';
 
+    ultimoErrorPago = null;
     try {
       final response = await _dio.put<String>(path);
       if (response.statusCode == 201 || response.statusCode == 200) {
@@ -651,12 +670,11 @@ class HttpLoansRepository implements LoansRepository {
 
         return true;
       } else {
-        final map = json.decode(response.data!) as Map<String, dynamic>;
-        final message = map['message'] ?? 'Ocurrió un error';
-        //return Left(message);
+        ultimoErrorPago = _motivoDelServidor(DioException(requestOptions: response.requestOptions, response: response));
         return false;
       }
     } catch (e, stackTrace) {
+      ultimoErrorPago = _motivoDelServidor(e);
       //print('responseee ee: $e');
       //return const Left('Ocurrió un error 2');
       return false;
