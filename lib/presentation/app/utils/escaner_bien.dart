@@ -970,10 +970,24 @@ class _BuscarParecidosPageState extends State<_BuscarParecidosPage> {
         _buscado = true;
         _buscando = false;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
+      var msg = 'No se pudo buscar. Revisa la conexión e intenta de nuevo.';
+      if (e is DioException) {
+        final code = e.response?.statusCode;
+        final d = e.response?.data;
+        if (code == 404) {
+          msg = 'El servidor todavía no tiene la búsqueda con foto (se está actualizando). Espera unos minutos y toca "Buscar de nuevo".';
+        } else if (code != null && d is Map && d['message'] != null) {
+          msg = 'El servidor respondió: ${d['message']}';
+        } else if (code != null) {
+          msg = 'El servidor tuvo un problema (código $code). Intenta de nuevo en un momento.';
+        } else if (e.type == DioExceptionType.receiveTimeout || e.type == DioExceptionType.sendTimeout) {
+          msg = 'El servidor demoró en responder. Toca "Buscar de nuevo".';
+        }
+      }
       setState(() {
-        _error = 'No se pudo buscar. Revisa la conexión e intenta de nuevo.';
+        _error = msg;
         _buscando = false;
       });
     }
@@ -1078,6 +1092,11 @@ class _BuscarParecidosPageState extends State<_BuscarParecidosPage> {
           const Divider(),
           if (_buscando) const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator())),
           if (_error.isNotEmpty) Text(_error, style: const TextStyle(color: Colors.red)),
+          if (_error.isNotEmpty && _fotos.isNotEmpty)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(onPressed: _buscando ? null : _buscar, icon: const Icon(Icons.refresh), label: const Text('Buscar de nuevo')),
+            ),
           if (_buscado && !_buscando && _resultados.isEmpty)
             const Padding(padding: EdgeInsets.all(16), child: Text('No encontré nada parecido. Prueba con otra foto (la etiqueta o la serie ayudan mucho).')),
           for (final r in _resultados)

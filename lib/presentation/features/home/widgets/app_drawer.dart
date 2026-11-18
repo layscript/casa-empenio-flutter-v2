@@ -166,9 +166,19 @@ class _AppDrawerState extends State<AppDrawer> {
             if (auth?.isAdmin == true) const QueVeCadaPuestoTile(),
             if (auth?.isAdmin == true)
               ListTile(
+                leading: const Icon(Icons.price_check, color: Colors.deepOrange),
+                title: const Text('Revisión de caja', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                subtitle: const Text('Yapes, depósitos, cuadre exacto y alertas del día', style: TextStyle(fontSize: 11)),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const OperacionAdminPage()));
+                },
+              ),
+            if (auth?.isAdmin == true)
+              ListTile(
                 leading: const Icon(Icons.fact_check_outlined, color: Colors.teal),
                 title: const Text('Operación diaria', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-                subtitle: const Text('Cumplimiento, equipo, tareas y vehículos', style: TextStyle(fontSize: 11)),
+                subtitle: const Text('Revisión de caja, cumplimiento, equipo, tareas y vehículos', style: TextStyle(fontSize: 11)),
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const OperacionAdminPage()));
