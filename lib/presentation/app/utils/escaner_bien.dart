@@ -984,6 +984,8 @@ class _BuscarParecidosPageState extends State<_BuscarParecidosPage> {
           msg = 'El servidor tuvo un problema (código $code). Intenta de nuevo en un momento.';
         } else if (e.type == DioExceptionType.receiveTimeout || e.type == DioExceptionType.sendTimeout) {
           msg = 'El servidor demoró en responder. Toca "Buscar de nuevo".';
+        } else {
+          msg = 'No llegó respuesta del servidor (puede estar actualizándose). Espera 2 o 3 minutos y toca "Buscar de nuevo". [${e.type.name}]';
         }
       }
       setState(() {
