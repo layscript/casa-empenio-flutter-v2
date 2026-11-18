@@ -339,9 +339,9 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
-                            'El cliente debe S/. ${montoRestante.toStringAsFixed(2)}. '
-                            'No se puede cobrar más que la deuda: escribe ${montoRestante.toStringAsFixed(2)} o menos.',
-                            style: const TextStyle(fontSize: 12, color: Colors.red),
+                            'Cobras S/. ${(montoEscrito - montoRestante).toStringAsFixed(2)} más que la deuda. '
+                            'Está permitido: el sobrante entra a caja y se cuenta como ganancia.',
+                            style: const TextStyle(fontSize: 12, color: Colors.green),
                           ),
                         ),
                       const SizedBox(height: 15),
@@ -438,7 +438,6 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                           onPressed: (loan?.ganancia != null &&
                                       montoCtrl.text != "" &&
                                       montoCtrl.text != "0" &&
-                                      !excede &&
                                       liquidar &&
                                       _medioValido &&
                                       selectedPhotosLiquidar!.isNotEmpty) &&
@@ -529,7 +528,6 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                           onPressed: (loan?.ganancia != null &&
                                       montoCtrl.text != "" &&
                                       montoCtrl.text != "0" &&
-                                      !excede &&
                                       _medioValido &&
                                       selectedPhotosLiquidar!.isNotEmpty) &&
                                   state.loansStatus != LoansStatus.loading
