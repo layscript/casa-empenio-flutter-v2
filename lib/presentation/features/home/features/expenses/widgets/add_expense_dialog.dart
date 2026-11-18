@@ -40,14 +40,17 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
             controller: montoCtrl,
             labelText: 'Monto',
             validator: (value) {
-              return value!.isEmpty ? invalidEmptyValue : null;
+              if (value!.isEmpty) return invalidEmptyValue;
+              final n = double.tryParse(value.replaceAll(',', '.'));
+              return (n == null || n <= 0) ? 'Escribe un monto mayor que cero' : null;
             },
             isValid: (value) => setState(() => isValidMonto = value),
           ),
           const SizedBox(height: 20),
           AppTextFormField(
             controller: obsCtrl,
-            labelText: 'Observaciones',
+            labelText: 'En qué se gastó (obligatorio)',
+            onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 16),
           SelectorMedioPago(
@@ -77,6 +80,7 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
       actions: [
         TextButton.icon(
           onPressed: !isValidMonto ||
+                  obsCtrl.text.trim().length < 3 ||
                   !medioCompleto ||
                   !selectedPhotosGastos!.isNotEmpty
               ? null
