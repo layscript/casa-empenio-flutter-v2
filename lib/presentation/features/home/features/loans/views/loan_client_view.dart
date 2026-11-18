@@ -518,6 +518,27 @@ class _LoanClientViewState extends State<LoanClientView> {
                                     width: 38,
                                     child: IconButton(
                                       padding: EdgeInsets.zero,
+                                      tooltip: 'Venta con autorización del cliente',
+                                      onPressed: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute<void>(
+                                          builder: (_) => VentaAutorizadaPage(
+                                              prestamo: prestamo,
+                                              yaEstabaEnVenta: true),
+                                        ),
+                                      ),
+                                      icon: const Icon(
+                                        Icons.verified_user,
+                                        color: Colors.deepOrange,
+                                      ),
+                                    ),
+                                  ),
+                                if (prestamo?.estado == 'VENTA' && prestamo != null)
+                                  SizedBox(
+                                    height: 38,
+                                    width: 38,
+                                    child: IconButton(
+                                      padding: EdgeInsets.zero,
                                       tooltip: '¿A quién se vendió?',
                                       onPressed: () => Navigator.push(
                                         context,

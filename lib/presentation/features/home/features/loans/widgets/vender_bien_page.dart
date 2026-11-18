@@ -5,6 +5,7 @@ import 'package:casa_empenio_pe/presentation/features/auth/auth.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/blocs/loans_bloc/loans_bloc.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/widgets/contrato_venta_firma_page.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/widgets/payment_loan_dialog_client.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/loans/widgets/venta_autorizada_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -558,6 +559,25 @@ class _VenderBienPageState extends State<VenderBienPage> {
             icon: const Icon(Icons.sell),
             label: const Text('VENTA  (se lo vendemos a alguien)',
                 style: TextStyle(fontSize: 15)),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                backgroundColor: Colors.teal[700],
+                foregroundColor: Colors.white),
+            onPressed: () async {
+              await Navigator.push<bool>(
+                context,
+                MaterialPageRoute<bool>(
+                  builder: (_) => VentaAutorizadaPage(prestamo: widget.prestamo),
+                ),
+              );
+              if (mounted) Navigator.pop(context, 'VENDIDO');
+            },
+            icon: const Icon(Icons.verified_user),
+            label: const Text('VENTA CON AUTORIZACIÓN DEL CLIENTE\n(el cliente nos pidió venderlo)',
+                textAlign: TextAlign.center, style: TextStyle(fontSize: 14)),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
