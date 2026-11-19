@@ -449,11 +449,12 @@ class HttpLoansRepository implements LoansRepository {
       if (medioPago != null) 'medioPago': medioPago,
       if (banco != null) 'banco': banco,
     };
+    ultimoErrorPago = null;
     try {
       final response = await _dio.post<String>(path, data: payload);
       if (response.statusCode != 201) {
         final map = json.decode(response.data!) as Map<String, dynamic>;
-        final message = map['message'] ?? 'Ocurrió un error';
+        ultimoErrorPago = _motivoDelServidor(DioException(requestOptions: response.requestOptions, response: response));
         return false;
       } else {
         await _customerRepository.createHistory(
@@ -465,7 +466,7 @@ class HttpLoansRepository implements LoansRepository {
       }
     } catch (e, stackTrace) {
       //print('responseee ee: $e');
-      //return const Left('Ocurrió un error 2');
+      ultimoErrorPago = _motivoDelServidor(e);
       return false;
     }
   }

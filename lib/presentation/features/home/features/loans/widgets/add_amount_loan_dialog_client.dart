@@ -101,7 +101,7 @@ class _AddAmountLoanDialogClientState extends State<AddAmountLoanDialogClient> {
                             color: Colors.red,
                           ),
                         ),
-                        content: const Text('Vuelve a intentarlo de nuevo'),
+                        content: Text(ultimoErrorPago ?? 'Vuelve a intentarlo de nuevo'),
                         actions: [
                           TextButton(
                             onPressed: () {
@@ -133,7 +133,7 @@ class _AddAmountLoanDialogClientState extends State<AddAmountLoanDialogClient> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Text(
-                        'Agregar Aumento',
+                        loan?.estado == 'VENTA' ? 'Agregar gasto del producto' : 'Agregar Aumento',
                         style: TextStyle(
                           fontSize: 18,
                         ),
@@ -141,6 +141,15 @@ class _AddAmountLoanDialogClientState extends State<AddAmountLoanDialogClient> {
                       const SizedBox(height: 10),
                       Text(
                           'Aumento Total Prestado: S/. ${oCcy.format(double.parse(loan?.monto ?? '0.00'))}'),
+                      if (loan?.estado == 'VENTA')
+                        const Padding(
+                          padding: EdgeInsets.only(top: 6),
+                          child: Text(
+                            'Este producto está en venta: el monto se anota como gasto del producto '
+                            '(gasolina, arreglo...). Sale de caja y se recupera al vender. No genera interés.',
+                            style: TextStyle(fontSize: 12, color: Colors.black54),
+                          ),
+                        ),
                       const SizedBox(height: 20),
                       AppTextFormField(
                         keyboardType: TextInputType.number,
