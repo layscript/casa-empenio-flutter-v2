@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/data/remoto/http_loans_repository.dart' show ultimoErrorPago;
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/custom_image_picker.dart';
@@ -132,7 +133,7 @@ class _AddAmountLoanDialogClientState extends State<AddAmountLoanDialogClient> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
+                      Text(
                         loan?.estado == 'VENTA' ? 'Agregar gasto del producto' : 'Agregar Aumento',
                         style: TextStyle(
                           fontSize: 18,
