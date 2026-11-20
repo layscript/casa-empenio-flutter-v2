@@ -51,7 +51,11 @@ Future<List<Actualizacion>> buscarActualizaciones() async {
 }
 
 Future<void> descargarApk() async {
-  await launchUrl(Uri.parse(_apkUrl), mode: LaunchMode.externalApplication);
+  // Se baja la actualización más nueva que tenga su APK; el enlace fijo queda solo como respaldo
+  if (_cache.isEmpty) await buscarActualizaciones();
+  final conApk = _cache.where((a) => a.tieneApk).toList();
+  final url = conApk.isNotEmpty ? 'https://github.com/$_repo/releases/download/build-${conApk.first.numero}/casa-empenio.apk' : _apkUrl;
+  await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
 }
 
 /// Descarga una versión anterior (por si una actualización falla)

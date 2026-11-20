@@ -5,6 +5,10 @@ on:
     branches: [main]
 permissions:
   contents: write
+# Una compilación a la vez: si dos corren juntas, una pisa el APK de la otra y el enlace de descarga da 404
+concurrency:
+  group: apk-produccion
+  cancel-in-progress: false
 jobs:
   apk:
     runs-on: ubuntu-latest
@@ -33,7 +37,13 @@ jobs:
           cp build/app/outputs/flutter-apk/app-release.apk casa-empenio.apk
           gh release view apk-latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
             gh release create apk-latest --repo "$GITHUB_REPOSITORY" --title "APK más reciente" --notes "APK de la app"
-          gh release upload apk-latest casa-empenio.apk --clobber --repo "$GITHUB_REPOSITORY"
+          # Subir y comprobar que el APK quedó de verdad en el enlace fijo (3 intentos)
+          for i in 1 2 3; do
+            gh release upload apk-latest casa-empenio.apk --clobber --repo "$GITHUB_REPOSITORY" || true
+            if gh release view apk-latest --repo "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' | grep -qx casa-empenio.apk; then break; fi
+            sleep 5
+          done
+          gh release view apk-latest --repo "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' | grep -qx casa-empenio.apk || { echo "El APK no quedó en el enlace fijo"; exit 1; }
           gh release edit apk-latest --repo "$GITHUB_REPOSITORY" --notes "Compilado el $(date -u '+%d/%m/%Y %H:%M') UTC · versión ${GITHUB_SHA::7}"
           # Registro numerado de la actualización (la app lo lee para avisar y mostrar el historial)
           MSG=$(printf '%s' "$COMMIT_MSG" | grep -v '^Co-Authored-By' | grep -v '^Claude-Session' | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')
