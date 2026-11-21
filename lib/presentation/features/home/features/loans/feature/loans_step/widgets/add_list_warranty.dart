@@ -221,6 +221,7 @@ class _AddFormWarrantyState extends State<AddFormWarranty> {
           labelText: 'Placa (opcional)',
           controller: _placa,
           onChanged: (e) => loansStepBloc.add(ChangePlacaWarranty(e)),
+          suffixIcon: _botonCaptura(loansStepBloc, 'placa', _placa, (t) => loansStepBloc.add(ChangePlacaWarranty(t))),
         ),
         const SizedBox(height: 15),
         AppTextFormField(

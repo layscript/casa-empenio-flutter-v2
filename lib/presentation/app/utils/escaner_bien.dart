@@ -1,4 +1,5 @@
 import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/escaner_vivo.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -116,6 +117,38 @@ Future<ImageSource?> _elegirOrigenFoto(BuildContext context) {
       ]),
     ),
   );
+}
+
+/// Pregunta cómo capturar: escáner en vivo (lee mientras se apunta), foto o galería (el cliente a veces la manda por WhatsApp).
+/// Devuelve null si cancela; [vivo] es true si eligió el escáner en vivo.
+Future<({ImageSource? origen, bool vivo})?> _elegirCaptura(BuildContext context, {bool ofrecerVivo = true}) async {
+  final r = await showModalBottomSheet<String>(
+    context: context,
+    builder: (ctx) => SafeArea(
+      child: Wrap(children: [
+        if (ofrecerVivo)
+          ListTile(
+            leading: const Icon(Icons.document_scanner),
+            title: const Text('Escanear en vivo (recomendado)'),
+            subtitle: const Text('Apuntas y lee solo; verificas ahí mismo'),
+            onTap: () => Navigator.pop(ctx, 'vivo'),
+          ),
+        ListTile(
+          leading: const Icon(Icons.photo_camera),
+          title: const Text('Tomar foto ahora'),
+          onTap: () => Navigator.pop(ctx, 'camara'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.photo_library),
+          title: const Text('Elegir de la galería'),
+          onTap: () => Navigator.pop(ctx, 'galeria'),
+        ),
+      ]),
+    ),
+  );
+  if (r == null) return null;
+  if (r == 'vivo') return (origen: null, vivo: true);
+  return (origen: r == 'camara' ? ImageSource.camera : ImageSource.gallery, vivo: false);
 }
 
 /// Lo que el teléfono reconoce mirando la imagen (ej. "Mobile phone", "Motorcycle").
@@ -246,9 +279,28 @@ class _EscanerPageState extends State<_EscanerPage> {
   }
 
   Future<void> _tomar(_Paso p) async {
-    final origen = await _elegirOrigenFoto(context);
-    if (origen == null || !mounted) return;
-    final foto = await ImagePicker().pickImage(source: origen, imageQuality: 92);
+    final cap = await _elegirCaptura(context, ofrecerVivo: p.leerTexto);
+    if (cap == null || !mounted) return;
+    if (cap.vivo) {
+      final v = await abrirEscanerVivo(context, campo: 'todo');
+      if (!mounted || v == null) return;
+      if (v.sinCamara || v.foto == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No se pudo abrir la cámara en vivo. Usa «Tomar foto ahora».')));
+        return;
+      }
+      setState(() {
+        p.foto = v.foto;
+        p.textos = v.textos;
+        p.codigos = v.codigos;
+        p.etiquetas = [];
+        p.leyendo = true;
+      });
+      p.etiquetas = await _etiquetasDeImagen(v.foto!.path);
+      if (!mounted) return;
+      setState(() => p.leyendo = false);
+      return;
+    }
+    final foto = await ImagePicker().pickImage(source: cap.origen!, imageQuality: 92);
     if (foto == null) return;
     setState(() {
       p.foto = foto;
@@ -1156,9 +1208,38 @@ Future<CapturaCampo?> capturarCampo(
   required String campo,
   required String tipo,
 }) async {
-  final origen = await _elegirOrigenFoto(context);
-  if (origen == null || !context.mounted) return null;
-  final foto = await ImagePicker().pickImage(source: origen, imageQuality: 92);
+  final cap = await _elegirCaptura(context);
+  if (cap == null || !context.mounted) return null;
+  if (cap.vivo) {
+    final v = await abrirEscanerVivo(context, campo: campo);
+    if (v == null || !context.mounted) return null;
+    if (v.sinCamara || v.foto == null || v.valor.isEmpty) {
+      if (v.sinCamara) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No se pudo abrir la cámara en vivo. Usa «Tomar foto ahora».')));
+      }
+      return null;
+    }
+    // el tipo de bien (celular, laptop, moto...) se reconoce con lo leído, sin molestar a la persona
+    var tipoVivo = tipo;
+    try {
+      final r = await _dioEscaner.post('/operacion/escaner/consultar', data: {
+        'tipo': (tipo.isEmpty || tipo == 'OTRO') ? 'DETECTAR' : tipo,
+        'fuentes': [
+          {
+            'etiqueta': campo,
+            'rol': campo == 'modelo' ? 'MODELO' : (campo == 'serie' ? 'SERIE' : 'GENERAL'),
+            'textos': v.textos,
+            'codigos': v.codigos,
+            'etiquetas': <String>[],
+          }
+        ],
+      }, options: Options(receiveTimeout: const Duration(seconds: 8), sendTimeout: const Duration(seconds: 8)));
+      final b = _body(r);
+      if (b is Map && '${b['tipo'] ?? ''}'.isNotEmpty) tipoVivo = '${b['tipo']}';
+    } catch (_) {}
+    return CapturaCampo(v.valor, v.foto!, tipoVivo);
+  }
+  final foto = await ImagePicker().pickImage(source: cap.origen!, imageQuality: 92);
   if (foto == null || !context.mounted) return null;
 
   showDialog<void>(
@@ -1221,7 +1302,7 @@ Future<CapturaCampo?> capturarCampo(
 
   final cands = {..._candidatos(texto), ...codigos}.where((e) => e != propuesto).take(12).toList();
   final ctl = TextEditingController(text: propuesto);
-  final nombre = campo == 'serie' ? 'la serie' : (campo == 'modelo' ? 'el modelo' : 'la descripción');
+  final nombre = campo == 'serie' ? 'la serie' : (campo == 'modelo' ? 'el modelo' : (campo == 'placa' ? 'la placa' : 'la descripción'));
   final elegido = await showModalBottomSheet<String>(
     context: context,
     isScrollControlled: true,
@@ -1240,7 +1321,7 @@ Future<CapturaCampo?> capturarCampo(
               autofocus: propuesto.isEmpty,
               textCapitalization: TextCapitalization.characters,
               decoration: InputDecoration(
-                labelText: campo == 'serie' ? 'Serie' : (campo == 'modelo' ? 'Modelo' : 'Descripción'),
+                labelText: campo == 'serie' ? 'Serie' : (campo == 'modelo' ? 'Modelo' : (campo == 'placa' ? 'Placa' : 'Descripción')),
                 border: const OutlineInputBorder(),
                 isDense: true,
               ),
