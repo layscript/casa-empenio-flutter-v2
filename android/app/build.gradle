@@ -82,6 +82,11 @@ flutter {
     source '../..'
 }
 
+// firebase-messaging ya trae las clases de firebase-iid; una librería vieja las duplicaba y rompía la compilación
+configurations.all {
+    exclude group: 'com.google.firebase', module: 'firebase-iid'
+}
+
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     // SDK del lector de huellas Suprema BioMini (archivo libBioMini-v3.0.3.3.aar junto a este build.gradle)
