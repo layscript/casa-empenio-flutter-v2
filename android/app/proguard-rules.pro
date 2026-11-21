@@ -19,3 +19,7 @@
 
 # Avisos de movimientos (flutter_local_notifications)
 -keep class com.dexterous.** { *; }
+
+# ML Kit antiguo menciona firebase-iid (ya incluido en firebase-messaging); no usamos esa parte
+-dontwarn com.google.firebase.iid.**
+-dontwarn com.google.mlkit.linkfirebase.**
