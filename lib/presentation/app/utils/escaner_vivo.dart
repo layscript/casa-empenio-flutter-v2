@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/escaner_vivo_logica.dart';
@@ -64,6 +65,7 @@ class _EscanerVivoPageState extends State<EscanerVivoPage> {
   bool _fallo = false;
   int _ultimo = 0;
   int _cuadros = 0;
+  String _estado = '';
 
   bool get _soloTextos => widget.campo == 'todo';
   String get _nombre {
@@ -117,33 +119,80 @@ class _EscanerVivoPageState extends State<EscanerVivoPage> {
     }
   }
 
+  /// Convierte el cuadro de la cámara a NV21 (lo que entiende ML Kit en Android), sea cual sea el formato que entregue el teléfono.
+  Uint8List? _aNv21(CameraImage img) {
+    final w = img.width, h = img.height;
+    if (img.planes.length == 1) return img.planes.first.bytes; // ya viene en NV21
+    if (img.planes.length < 3) return null;
+    final y = img.planes[0], u = img.planes[1], v = img.planes[2];
+    final out = Uint8List(w * h + (w ~/ 2) * (h ~/ 2) * 2);
+    var k = 0;
+    for (var r = 0; r < h; r++) {
+      final ini = r * y.bytesPerRow;
+      out.setRange(k, k + w, y.bytes, ini);
+      k += w;
+    }
+    final uvw = w ~/ 2, uvh = h ~/ 2;
+    final ups = u.bytesPerPixel ?? 1, vps = v.bytesPerPixel ?? 1;
+    for (var r = 0; r < uvh; r++) {
+      for (var c = 0; c < uvw; c++) {
+        final vi = r * v.bytesPerRow + c * vps;
+        final ui = r * u.bytesPerRow + c * ups;
+        if (vi >= v.bytes.length || ui >= u.bytes.length) return out;
+        out[k++] = v.bytes[vi];
+        out[k++] = u.bytes[ui];
+      }
+    }
+    return out;
+  }
+
+  int _giroExtra = 0; // 0, 90, 180, 270: se prueba hasta que el texto se lee
+  bool _giroFijo = false;
+  int _vacios = 0;
+
   InputImage? _aEntrada(CameraImage img) {
     final desc = _desc;
     final cam = _cam;
     if (desc == null || cam == null) return null;
     final sensor = desc.sensorOrientation;
-    int? giro;
+    int giro;
     if (Platform.isIOS) {
       giro = sensor;
     } else {
       var comp = _giros[cam.value.deviceOrientation] ?? 0;
-      comp = desc.lensDirection == CameraLensDirection.front ? (sensor + comp) % 360 : (sensor - comp + 360) % 360;
-      giro = comp;
+      giro = desc.lensDirection == CameraLensDirection.front ? (sensor + comp) % 360 : (sensor - comp + 360) % 360;
     }
+    giro = (giro + _giroExtra) % 360;
     final rotacion = InputImageRotationValue.fromRawValue(giro);
-    final formato = InputImageFormatValue.fromRawValue(img.format.raw);
-    if (rotacion == null || formato == null) return null;
-    if (Platform.isAndroid && formato != InputImageFormat.nv21) return null;
-    if (Platform.isIOS && formato != InputImageFormat.bgra8888) return null;
-    if (img.planes.length != 1) return null;
-    final p = img.planes.first;
+    if (rotacion == null) {
+      _estado = 'Rotación no válida ($giro)';
+      return null;
+    }
+    if (Platform.isIOS) {
+      if (img.planes.isEmpty) return null;
+      final p = img.planes.first;
+      return InputImage.fromBytes(
+        bytes: p.bytes,
+        metadata: InputImageMetadata(
+          size: Size(img.width.toDouble(), img.height.toDouble()),
+          rotation: rotacion,
+          format: InputImageFormat.bgra8888,
+          bytesPerRow: p.bytesPerRow,
+        ),
+      );
+    }
+    final bytes = _aNv21(img);
+    if (bytes == null) {
+      _estado = 'Formato de cámara no soportado (${img.planes.length} planos)';
+      return null;
+    }
     return InputImage.fromBytes(
-      bytes: p.bytes,
+      bytes: bytes,
       metadata: InputImageMetadata(
         size: Size(img.width.toDouble(), img.height.toDouble()),
         rotation: rotacion,
-        format: formato,
-        bytesPerRow: p.bytesPerRow,
+        format: InputImageFormat.nv21,
+        bytesPerRow: img.planes.length == 1 ? img.planes.first.bytesPerRow : img.width,
       ),
     );
   }
@@ -156,7 +205,10 @@ class _EscanerVivoPageState extends State<EscanerVivoPage> {
     _ultimo = ahora;
     try {
       final entrada = _aEntrada(img);
-      if (entrada == null) return;
+      if (entrada == null) {
+        if (mounted) setState(() {});
+        return;
+      }
       final t = await _lector.processImage(entrada);
       if (_cerrando || !mounted) return;
       if (widget.campo == 'serie' || _soloTextos) {
@@ -169,6 +221,18 @@ class _EscanerVivoPageState extends State<EscanerVivoPage> {
         } catch (_) {}
       }
       _cuadros++;
+      if (t.text.trim().isEmpty) {
+        // si no lee nada durante un rato, se prueba otra rotación hasta que salga texto
+        _vacios++;
+        if (!_giroFijo && _vacios >= 4) {
+          _giroExtra = (_giroExtra + 90) % 360;
+          _vacios = 0;
+        }
+      } else {
+        _vacios = 0;
+        _giroFijo = true;
+      }
+      _estado = '';
       if (t.text.trim().isNotEmpty) {
         anotarCuadro(_soloTextos ? 'descripcion' : widget.campo, t.text, _vistos);
         for (final l in t.text.split(RegExp(r'[\r\n]+'))) {
@@ -181,8 +245,9 @@ class _EscanerVivoPageState extends State<EscanerVivoPage> {
         if (p != null && p != _valor.text) _valor.text = p;
       }
       if (mounted) setState(() {});
-    } catch (_) {
-      // un cuadro que falla no importa: llega otro enseguida
+    } catch (e) {
+      _estado = 'Error al leer: $e';
+      if (mounted) setState(() {});
     } finally {
       _ocupado = false;
     }
@@ -371,6 +436,12 @@ class _EscanerVivoPageState extends State<EscanerVivoPage> {
                       ]),
                       const SizedBox(height: 8),
                     ],
+                    Text(
+                      _estado.isNotEmpty
+                          ? _estado
+                          : (_cuadros == 0 ? 'Iniciando lectura…' : 'Leyendo… (${_vistos.length} textos vistos)'),
+                      style: TextStyle(fontSize: 11, color: _estado.isNotEmpty ? Colors.red : Colors.black45),
+                    ),
                     Row(children: [
                       TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancelar')),
                       const Spacer(),
