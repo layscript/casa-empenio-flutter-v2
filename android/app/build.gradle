@@ -88,3 +88,8 @@ dependencies {
     implementation files('libBioMini-v3.0.3.3.aar')
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
 }
+
+// Avisos con la app cerrada (Firebase): solo se activa si está el archivo google-services.json
+if (file('google-services.json').exists()) {
+    apply plugin: 'com.google.gms.google-services'
+}

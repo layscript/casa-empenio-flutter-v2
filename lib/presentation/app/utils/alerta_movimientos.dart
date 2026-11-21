@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'package:dio/dio.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -12,7 +14,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 ///  - Ingresos (pago, venta, ingreso): campana tipo caja / Yape.
 ///  - Egresos (préstamo entregado, gasto, aumento, compra): sonido agudo descendente, "se fue".
 ///  - Anulaciones: tres pitidos de alerta.
-/// Funciona mientras la app esté abierta o en segundo plano (el sistema operativo puede dormirla si se cierra del todo).
+/// Con Firebase configurado (archivo google-services.json + clave en el servidor) los avisos llegan aunque la app esté cerrada,
+/// como WhatsApp. Sin Firebase, funciona mientras la app esté abierta o en segundo plano.
 class AlertaMovimientos {
   static final _plugin = FlutterLocalNotificationsPlugin();
   static final Dio _dio = crearDio(BaseOptions(
@@ -25,6 +28,11 @@ class AlertaMovimientos {
   static bool _lista = false;
   static bool _consultando = false;
   static int? _usuarioId;
+  static bool _fcm = false; // true: el servidor manda los avisos aunque la app esté cerrada
+  static String? _token;
+  static StreamSubscription<String>? _subToken;
+  static StreamSubscription<RemoteMessage>? _subMensaje;
+  static int _vueltas = 0;
 
   static Future<void> _preparar() async {
     if (_lista) return;
@@ -53,19 +61,81 @@ class AlertaMovimientos {
     } catch (_) {
       return; // sin permiso o sin soporte: la app sigue normal
     }
-    _timer = Timer.periodic(const Duration(seconds: 10), (_) => revisarYa());
+    _fcm = await _activarFcm();
+    if (_fcm) return; // el servidor avisa; la app no necesita preguntar cada 10 segundos
+    // Sin Firebase: la app pregunta cada 10 s; de paso reintenta activar Firebase de vez en cuando
+    _timer = Timer.periodic(const Duration(seconds: 10), (_) async {
+      _vueltas++;
+      if (!_fcm && _vueltas % 12 == 0 && await _activarFcm()) {
+        _fcm = true;
+        _timer?.cancel();
+        _timer = null;
+        return;
+      }
+      revisarYa();
+    });
     revisarYa();
+  }
+
+  /// Registra este celular en el servidor para recibir los avisos con la app cerrada.
+  /// Devuelve false si no hay Firebase configurado, si no es administrador o si no hay internet.
+  static Future<bool> _activarFcm() async {
+    try {
+      if (Firebase.apps.isEmpty) await Firebase.initializeApp();
+      final m = FirebaseMessaging.instance;
+      await m.requestPermission();
+      final t = await m.getToken();
+      if (t == null || _usuarioId == null) return false;
+      await _registrar(t);
+      _subToken ??= m.onTokenRefresh.listen((n) {
+        _registrar(n).catchError((_) {});
+      });
+      _subMensaje ??= FirebaseMessaging.onMessage.listen(_conAppAbierta);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<void> _registrar(String t) async {
+    await _dio.post('/avisos/registrar', data: {'usuarioId': _usuarioId, 'token': t});
+    _token = t;
+  }
+
+  /// Con la app abierta, Firebase no muestra el aviso solo: se muestra con su mismo sonido.
+  static Future<void> _conAppAbierta(RemoteMessage m) async {
+    final n = m.notification;
+    if (n == null) return;
+    final sonido = '${m.data['sonido'] ?? 'ingreso'}';
+    await _mostrar(
+      id: '${m.data['tag'] ?? m.messageId}'.hashCode,
+      sonido: _canales.containsKey(sonido) ? sonido : 'ingreso',
+      titulo: n.title ?? 'Movimiento',
+      cuerpo: n.body ?? '',
+    );
+  }
+
+  /// Al cerrar sesión: este celular deja de recibir los avisos (para que otra persona que use el celular no los vea).
+  static Future<void> darDeBaja() async {
+    final t = _token;
+    detener();
+    if (t == null) return;
+    try {
+      await _dio.post('/avisos/baja', data: {'token': t});
+    } catch (_) {}
+    _token = null;
   }
 
   static void detener() {
     _timer?.cancel();
     _timer = null;
     _usuarioId = null;
+    _fcm = false;
   }
 
   /// Pregunta al servidor si hay movimientos nuevos y avisa de cada uno.
   static Future<void> revisarYa() async {
-    if (_consultando || !_lista || _usuarioId == null) return;
+    if (_consultando || !_lista || _usuarioId == null || _fcm) return;
     _consultando = true;
     try {
       final sp = await SharedPreferences.getInstance();

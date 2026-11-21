@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/alerta_movimientos.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/vigilante_sesion.dart';
 import 'dart:async';
@@ -135,6 +136,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onSignOff(SignOff event, Emitter<AuthState> emit) async {
+    await AlertaMovimientos.darDeBaja(); // este celular deja de recibir avisos de dinero
     VistaPrevia.salir();
     await _preferences.removeRefresh();
     await _preferences.removeLoansPreferences();
