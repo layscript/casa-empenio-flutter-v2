@@ -223,6 +223,13 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
 
               final montoEscrito = double.tryParse(montoCtrl.text.replaceAll(',', '.')) ?? 0;
               final excede = montoEscrito > montoRestante + 0.005;
+              // Recuperación de crédito: a la venta, o vencido hace más de 6 meses. Se cobra capital, con pocos o ningún interés.
+              final venc = DateTime.tryParse(loan?.fechaPago ?? '');
+              final diasVencido = venc == null ? 0 : DateTime.now().difference(venc).inDays;
+              final enRecuperacion = loan?.estado == 'VENTA' || (loan?.estado == 'VENCIDO' && diasVencido > 180);
+              final capitalTotal = double.tryParse(loan?.monto ?? '') ?? 0;
+              final capitalPendiente = (capitalTotal - (resultMontos ?? 0)).clamp(0, double.infinity).toDouble();
+              final interesQueCobra = (montoEscrito - capitalPendiente).clamp(0, double.infinity).toDouble();
               return SizedBox(
                 width: 320,
                 child: SingleChildScrollView(
@@ -316,6 +323,42 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                         ),
                         const SizedBox(height: 15),
                       ],
+                      if (enRecuperacion)
+                        Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade50,
+                            border: Border.all(color: Colors.orange),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Row(children: [
+                              const Icon(Icons.warning_amber_rounded, color: Colors.deepOrange),
+                              const SizedBox(width: 6),
+                              Text('RECUPERACIÓN DE CRÉDITO',
+                                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.deepOrange.shade700)),
+                            ]),
+                            const SizedBox(height: 6),
+                            Text(
+                              loan?.estado == 'VENTA'
+                                  ? 'Este préstamo está a la venta. El pago se recibe para recuperar el capital (pendiente: S/. ${capitalPendiente.toStringAsFixed(2)}), con pocos intereses o sin ellos.'
+                                  : 'Este préstamo lleva más de 6 meses vencido. El pago se recibe para recuperar el capital (pendiente: S/. ${capitalPendiente.toStringAsFixed(2)}), con pocos intereses o sin ellos.',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            if (montoEscrito > 0) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                interesQueCobra <= 0.005
+                                    ? 'Este pago es SIN INTERESES: solo recupera capital (S/. ${montoEscrito.toStringAsFixed(2)} de S/. ${capitalPendiente.toStringAsFixed(2)}).'
+                                    : 'Este pago cubre el capital y cobra S/. ${interesQueCobra.toStringAsFixed(2)} de interés'
+                                        '${capitalPendiente > 0 ? ' (${(interesQueCobra / capitalPendiente * 100).toStringAsFixed(1)}% del capital)' : ''}.',
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.deepOrange.shade800),
+                              ),
+                            ],
+                          ]),
+                        ),
                       AppTextFormField(
                         controller: montoCtrl,
                         labelText: 'Monto a pagar',
