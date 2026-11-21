@@ -219,7 +219,7 @@ class _EscanerPageState extends State<_EscanerPage> {
     List<_Paso> nuevos;
     try {
       final r = await _dioEscaner
-          .get('operacion/escaner/guia', queryParameters: {'tipo': _tipo});
+          .get('/operacion/escaner/guia', queryParameters: {'tipo': _tipo});
       final b = _body(r);
       if (b is List && b.isNotEmpty) {
         nuevos = b
@@ -291,7 +291,7 @@ class _EscanerPageState extends State<_EscanerPage> {
       _error = null;
     });
     try {
-      final r = await _dioEscaner.post('operacion/escaner/consultar', data: {
+      final r = await _dioEscaner.post('/operacion/escaner/consultar', data: {
         'tipo': _tipo,
         'fuentes': _pasos
             .where((p) => p.foto != null)
@@ -951,7 +951,7 @@ class _BuscarParecidosPageState extends State<_BuscarParecidosPage> {
       if (!sinImagen) _avisoImagen = '';
     });
     try {
-      final r = await _dioEscaner.post('operacion/escaner/consultar-parecidos', data: {
+      final r = await _dioEscaner.post('/operacion/escaner/consultar-parecidos', data: {
         'fuentes': [
           for (var i = 0; i < _fotos.length; i++)
             {
@@ -1194,7 +1194,7 @@ Future<CapturaCampo?> capturarCampo(
   var propuesto = '';
   var tipoReconocido = tipo;
   try {
-    final r = await _dioEscaner.post('operacion/escaner/consultar', data: {
+    final r = await _dioEscaner.post('/operacion/escaner/consultar', data: {
       'tipo': (tipo.isEmpty || tipo == 'OTRO') ? 'DETECTAR' : tipo,
       'fuentes': [
         {
