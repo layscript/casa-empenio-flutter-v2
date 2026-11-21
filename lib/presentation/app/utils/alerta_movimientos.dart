@@ -24,6 +24,7 @@ class AlertaMovimientos {
   static Timer? _timer;
   static bool _lista = false;
   static bool _consultando = false;
+  static int? _usuarioId;
 
   static Future<void> _preparar() async {
     if (_lista) return;
@@ -43,8 +44,9 @@ class AlertaMovimientos {
     _lista = true;
   }
 
-  /// Empieza a escuchar (una sola vez; llamar de nuevo no hace nada).
-  static Future<void> iniciar() async {
+  /// Empieza a escuchar. Solo para el administrador: el servidor también lo verifica con [usuarioId].
+  static Future<void> iniciar(int usuarioId) async {
+    _usuarioId = usuarioId;
     if (_timer != null) return;
     try {
       await _preparar();
@@ -58,16 +60,17 @@ class AlertaMovimientos {
   static void detener() {
     _timer?.cancel();
     _timer = null;
+    _usuarioId = null;
   }
 
   /// Pregunta al servidor si hay movimientos nuevos y avisa de cada uno.
   static Future<void> revisarYa() async {
-    if (_consultando || !_lista) return;
+    if (_consultando || !_lista || _usuarioId == null) return;
     _consultando = true;
     try {
       final sp = await SharedPreferences.getInstance();
       final desde = sp.getInt(_kUltimo);
-      final r = await _dio.get('/finanza/movimiento/recientes', queryParameters: {if (desde != null) 'desde': desde});
+      final r = await _dio.get('/finanza/movimiento/recientes', queryParameters: {'usuarioId': _usuarioId, if (desde != null) 'desde': desde});
       final d = r.data is String ? jsonDecode(r.data as String) : r.data;
       final b = (d is Map ? d['body'] : null) as Map?;
       if (b == null) return;
@@ -104,6 +107,9 @@ class AlertaMovimientos {
       }
       final ultimoVisto = (items.last['id'] as num).toInt();
       await sp.setInt(_kUltimo, items.length >= 40 ? ultimoVisto : (ultimo > ultimoVisto ? ultimo : ultimoVisto));
+    } on DioException catch (e) {
+      // si el servidor dice que no es administrador, se deja de escuchar
+      if (e.response?.statusCode == 403) detener();
     } catch (_) {
       // sin internet o servidor ocupado: se reintenta en 10 segundos
     } finally {

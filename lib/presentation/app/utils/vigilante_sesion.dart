@@ -50,7 +50,8 @@ class _VigilanteSesionState extends State<VigilanteSesion> with WidgetsBindingOb
     WidgetsBinding.instance.addPostFrameCallback((_) {
       recordarUsuarioParaErrores(context.read<Preferences>().token);
       copiaSemanalAdmin(context); // solo administradores: baja la copia una vez por semana
-      if (context.read<Preferences>().token?.isAdmin == true) AlertaMovimientos.iniciar(); // avisos con sonido de cada movimiento de dinero
+      final yo = context.read<Preferences>().token;
+      if (yo != null && yo.isAdmin == true) AlertaMovimientos.iniciar(yo.id); // avisos con sonido de cada movimiento de dinero
       _revisarDia();
     });
     // Cada minuto revisa el día; cada 10 minutos, si hay actualización.
