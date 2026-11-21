@@ -16,3 +16,6 @@
 -dontwarn com.google.mlkit.vision.text.devanagari.**
 -dontwarn com.google.mlkit.vision.text.japanese.**
 -dontwarn com.google.mlkit.vision.text.korean.**
+
+# Avisos de movimientos (flutter_local_notifications)
+-keep class com.dexterous.** { *; }

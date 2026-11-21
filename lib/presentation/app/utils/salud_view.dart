@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/actualizaciones.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/alerta_movimientos.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -405,6 +406,15 @@ class _SaludPageState extends State<SaludPage> {
                         label: const Text('Bajar al celular'),
                       ),
                       OutlinedButton.icon(onPressed: _verCopias, icon: const Icon(Icons.list), label: const Text('Ver copias')),
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          try {
+                            await AlertaMovimientos.probarSonidos();
+                          } catch (_) {}
+                        },
+                        icon: const Icon(Icons.notifications_active_outlined),
+                        label: const Text('Probar sonidos de avisos'),
+                      ),
                     ]),
                   ]),
                 ),

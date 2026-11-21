@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:casa_empenio_pe/data/local/local_preferences.dart' show VistaPrevia;
 import 'package:casa_empenio_pe/domain/domain.dart' show Preferences;
 import 'package:casa_empenio_pe/presentation/app/utils/actualizaciones.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/alerta_movimientos.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/salud_view.dart' show recordarUsuarioParaErrores, copiaSemanalAdmin;
 import 'package:casa_empenio_pe/presentation/features/auth/auth.dart';
@@ -49,6 +50,7 @@ class _VigilanteSesionState extends State<VigilanteSesion> with WidgetsBindingOb
     WidgetsBinding.instance.addPostFrameCallback((_) {
       recordarUsuarioParaErrores(context.read<Preferences>().token);
       copiaSemanalAdmin(context); // solo administradores: baja la copia una vez por semana
+      if (context.read<Preferences>().token?.isAdmin == true) AlertaMovimientos.iniciar(); // avisos con sonido de cada movimiento de dinero
       _revisarDia();
     });
     // Cada minuto revisa el día; cada 10 minutos, si hay actualización.
@@ -63,6 +65,7 @@ class _VigilanteSesionState extends State<VigilanteSesion> with WidgetsBindingOb
   @override
   void dispose() {
     _reloj?.cancel();
+    AlertaMovimientos.detener();
     SesionSegura.vencimientos.removeListener(_sesionVencida);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -72,6 +75,7 @@ class _VigilanteSesionState extends State<VigilanteSesion> with WidgetsBindingOb
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _revisarDia();
+      AlertaMovimientos.revisarYa();
       if (mounted) avisarActualizacion(context, banner: true);
     }
   }
