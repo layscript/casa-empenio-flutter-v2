@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "456892895100",
+    "project_id": "casa-enpenio",
+    "storage_bucket": "casa-enpenio.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:456892895100:android:53a8d52f292a5c31e59ef9",
+        "android_client_info": {
+          "package_name": "com.example.casa_empenio_pe"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCBGJvhLKJI16Au6XPvgbXJOWYZqQlD6VE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

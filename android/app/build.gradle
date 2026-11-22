@@ -95,6 +95,7 @@ dependencies {
 }
 
 // Avisos con la app cerrada (Firebase): solo se activa si está el archivo google-services.json
-if (file('google-services.json').exists()) {
+// (la app de PRUEBA tiene otro nombre de paquete y no está en Firebase: no lleva avisos con la app cerrada)
+if (file('google-services.json').exists() && System.getenv('APP_PRUEBA') != 'true') {
     apply plugin: 'com.google.gms.google-services'
 }
