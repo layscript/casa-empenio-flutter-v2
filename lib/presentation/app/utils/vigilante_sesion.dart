@@ -104,6 +104,12 @@ class _VigilanteSesionState extends State<VigilanteSesion> with WidgetsBindingOb
     try {
       final sp = await SharedPreferences.getInstance();
       final hoy = hoyLima();
+      // El administrador NO se saca a medianoche: así sigue conectado y recibe los avisos de dinero.
+      // (Los trabajadores sí cierran sesión cada día.)
+      if (context.read<Preferences>().token?.isAdmin == true) {
+        await sp.setString(_kDiaSesion, hoy);
+        return;
+      }
       final guardado = sp.getString(_kDiaSesion);
       if (guardado == null) {
         await sp.setString(_kDiaSesion, hoy);
