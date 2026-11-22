@@ -142,7 +142,7 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
     Emitter<LoansStepState> emit,
   ) async {
     // Actualizar el valor del documento primero
-    emit(state.copyWith(documentClient: event.value));
+    emit(state.copyWith(documentClient: event.value, homeClient: event.domicilio.isNotEmpty ? event.domicilio : null));
     
     // Si el campo está vacío, limpiar todos los campos
     if (event.value.isEmpty) {
@@ -183,7 +183,8 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
               final customerName = customer.nombre ?? '';
               final customerLastName =
                   '${customer.apellidoPaterno ?? ''} ${customer.apellidoMaterno ?? ''}';
-              final customerDomicilio = customer.domicilio?.direccion ?? '';
+              final oficial = customer.domicilio?.direccion ?? '';
+              final customerDomicilio = oficial.trim().isNotEmpty ? oficial : event.domicilio;
 
               print('Datos encontrados: $customerName, $customerLastName, $customerDomicilio');
               

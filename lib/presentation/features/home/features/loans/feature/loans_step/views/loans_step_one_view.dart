@@ -65,9 +65,13 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
       loansStepBloc.add(ChangeFullLastNamesClient(value: d.apellidos));
     }
     loansStepBloc.add(ChangeDniPhotosClient(frente: r.frente, reverso: r.reverso));
+    if (d.domicilio.isNotEmpty) {
+      _domicilioController.text = d.domicilio;
+      loansStepBloc.add(ChangeHomeClient(value: d.domicilio));
+    }
     if (d.tieneDni) {
       _dniController.text = d.dni;
-      loansStepBloc.add(ChangeDocumentClient(value: d.dni));
+      loansStepBloc.add(ChangeDocumentClient(value: d.dni, domicilio: d.domicilio));
       revisarRiesgoCliente(context, d.dni);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

@@ -1,7 +1,8 @@
 /// Lógica pura (sin cámara) para leer un DNI peruano a partir del texto que reconoce la cámara.
 
 class DatosDni {
-  const DatosDni({this.dni = '', this.apellidos = '', this.nombres = ''});
+  const DatosDni({this.dni = '', this.apellidos = '', this.nombres = '', this.domicilio = ''});
+  final String domicilio;
   final String dni;
   final String apellidos;
   final String nombres;
@@ -13,6 +14,7 @@ class DatosDni {
         dni: o.dni.isNotEmpty ? o.dni : dni,
         apellidos: o.apellidos.isNotEmpty ? o.apellidos : apellidos,
         nombres: o.nombres.isNotEmpty ? o.nombres : nombres,
+        domicilio: o.domicilio.isNotEmpty ? o.domicilio : domicilio,
       );
 }
 
@@ -77,10 +79,55 @@ DatosDni extraerNombres(String texto) {
   return const DatosDni();
 }
 
+/// Qué lado del DNI es el texto: 'frente' (apellidos y nombres), 'reverso' (domicilio, zona automática) o null si no se sabe.
+String? ladoDelDni(String texto) {
+  final t = texto.toUpperCase();
+  final reverso = t.contains('<<') ||
+      RegExp(r'I\s*[<«]\s*PER').hasMatch(t) ||
+      RegExp(r'DOMICILIO|DISTRITO|PROVINCIA|DEPARTAMENTO|UBIGEO|DONACI|ESTADO CIVIL|GRADO DE INSTRUCCI').hasMatch(t);
+  final frente = RegExp(r'PRIMER\s+APELLIDO|SEGUNDO\s+APELLIDO|PRE\s*NOMBRES|FECHA DE NACIMIENTO').hasMatch(t);
+  if (reverso && !frente) return 'reverso';
+  if (frente && !reverso) return 'frente';
+  if (reverso && frente) return t.contains('<<') ? 'reverso' : null;
+  return null;
+}
+
+final _etiquetasReverso = RegExp(
+    r'^(DOMICILIO|DISTRITO|PROVINCIA|DEPARTAMENTO|UBIGEO|ESTADO CIVIL|GRADO|DONACI|SEXO|FECHA|RESTRICCI|EMISI|INSCRIP|CADUC|ELECTOR|PERU|PERÚ|REPUBLICA|REPÚBLICA|I\s*<)');
+
+/// Valor de una etiqueta del reverso: lo que sigue en la misma línea o, si no, la línea de abajo.
+String _valorReverso(List<String> lineas, RegExp etiqueta) {
+  for (var i = 0; i < lineas.length; i++) {
+    final m = etiqueta.firstMatch(lineas[i].toUpperCase());
+    if (m == null) continue;
+    final resto = lineas[i].substring(m.end).replaceAll(RegExp(r'^[\s:.\-]+'), '').trim();
+    if (resto.length >= 2) return resto.toUpperCase();
+    if (i + 1 < lineas.length) {
+      final sig = lineas[i + 1].trim().toUpperCase();
+      if (sig.length >= 2 && !_etiquetasReverso.hasMatch(sig) && !sig.contains('<')) return sig;
+    }
+  }
+  return '';
+}
+
+/// Domicilio del reverso: dirección + distrito, provincia y departamento si están.
+String extraerDomicilio(String texto) {
+  final lineas = texto.split(RegExp(r'[\r\n]+')).map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+  final dir = _valorReverso(lineas, RegExp(r'DOMICILIO'));
+  if (dir.isEmpty) return '';
+  final partes = [
+    dir,
+    _valorReverso(lineas, RegExp(r'DISTRITO')),
+    _valorReverso(lineas, RegExp(r'PROVINCIA')),
+    _valorReverso(lineas, RegExp(r'DEPARTAMENTO')),
+  ].where((e) => e.isNotEmpty).toList();
+  return partes.join(', ');
+}
+
 /// Lee todo lo que se pueda de un texto.
 DatosDni leerDni(String texto) {
   final n = extraerNombres(texto);
-  return DatosDni(dni: extraerDni(texto) ?? '', apellidos: n.apellidos, nombres: n.nombres);
+  return DatosDni(dni: extraerDni(texto) ?? '', apellidos: n.apellidos, nombres: n.nombres, domicilio: extraerDomicilio(texto));
 }
 
 /// Acumula lecturas de varios cuadros: un DNI se da por bueno cuando se ve igual en [minimo] cuadros.
@@ -90,10 +137,12 @@ class AcumuladorDni {
   final Map<String, int> _dnis = {};
   final Map<String, int> _nombres = {};
   final Map<String, DatosDni> _porNombre = {};
+  final Map<String, int> _domicilios = {};
 
   void anotar(String texto) {
     final d = leerDni(texto);
     if (d.dni.isNotEmpty) _dnis[d.dni] = (_dnis[d.dni] ?? 0) + 1;
+    if (d.domicilio.isNotEmpty) _domicilios[d.domicilio] = (_domicilios[d.domicilio] ?? 0) + 1;
     if (d.tieneNombre) {
       final k = '${d.apellidos}|${d.nombres}';
       _nombres[k] = (_nombres[k] ?? 0) + 1;
@@ -125,5 +174,17 @@ class AcumuladorDni {
     return mejor == null ? null : _porNombre[mejor];
   }
 
-  DatosDni get datos => (nombre ?? const DatosDni()).unir(DatosDni(dni: dni ?? ''));
+  String get domicilio {
+    String mejor = '';
+    var n = 0;
+    _domicilios.forEach((k, v) {
+      if (v >= minimo && v > n) {
+        mejor = k;
+        n = v;
+      }
+    });
+    return mejor;
+  }
+
+  DatosDni get datos => (nombre ?? const DatosDni()).unir(DatosDni(dni: dni ?? '', domicilio: domicilio));
 }

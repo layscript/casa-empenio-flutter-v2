@@ -2,6 +2,7 @@ import 'package:casa_empenio_pe/presentation/app/utils/dni_logica.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  pruebasLados();
   test('DNI con etiqueta', () {
     expect(extraerDni('REPUBLICA DEL PERU\nDNI 45678912 - 3\nPrimer Apellido'), '45678912');
   });
@@ -40,5 +41,20 @@ void main() {
   test('Etiquetas no se toman como nombre', () {
     final d = extraerNombres('Primer Apellido\nSegundo Apellido\nPre Nombres');
     expect(d.tieneNombre, false);
+  });
+}
+
+void pruebasLados() {
+  test('Lado del DNI', () {
+    expect(ladoDelDni('DNI 45678912\nPrimer Apellido\nQUISPE'), 'frente');
+    expect(ladoDelDni('DOMICILIO\nJR LIMA 123\nDISTRITO\nCALLERIA'), 'reverso');
+    expect(ladoDelDni('I<PER45678912<3<<<\nQUISPE<<JUAN'), 'reverso');
+    expect(ladoDelDni('hola'), isNull);
+  });
+  test('Domicilio del reverso', () {
+    expect(extraerDomicilio('DOMICILIO\nJR LIMA 123\nDISTRITO\nCALLERIA\nPROVINCIA\nCORONEL PORTILLO\nDEPARTAMENTO\nUCAYALI'),
+        'JR LIMA 123, CALLERIA, CORONEL PORTILLO, UCAYALI');
+    expect(extraerDomicilio('Domicilio: AV ARAUJO 45\nDistrito: YARINACOCHA'), 'AV ARAUJO 45, YARINACOCHA');
+    expect(extraerDomicilio('sin nada'), '');
   });
 }

@@ -65,8 +65,11 @@ class ChangeHasClientAval extends LoansStepEvent {
 }
 
 class ChangeDocumentClient extends LoansStepEvent {
-  const ChangeDocumentClient({required this.value});
+  const ChangeDocumentClient({required this.value, this.domicilio = ''});
   final String value;
+
+  /// Domicilio leído del reverso del DNI; si la consulta oficial no trae uno, se usa este.
+  final String domicilio;
 }
 
 class ChangeFullNamesClient extends LoansStepEvent {

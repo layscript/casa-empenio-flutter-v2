@@ -50,7 +50,9 @@ class _EscanerDniPageState extends State<EscanerDniPage> {
   int _cuadros = 0;
   int _estables = 0;
   String _estado = '';
-  int _paso = 0; // 0 = frente, 1 = reverso
+  String _ladoVisto = '';
+  String _aviso = '';
+  int get _paso => _frente == null ? 0 : 1;
   XFile? _frente;
   XFile? _reverso;
   DatosDni _datos = const DatosDni();
@@ -199,12 +201,30 @@ class _EscanerDniPageState extends State<EscanerDniPage> {
       }
       _estado = '';
       _datos = _datos.unir(_acum.datos);
-      if (_paso == 0) {
-        if (_acum.dni != null) await _capturar();
+      // Se reconoce solo qué lado es: nunca se repite el frente ni se confunde con el reverso.
+      final lado = ladoDelDni(texto);
+      if (lado == 'frente' || lado == 'reverso') {
+        if (lado == _ladoVisto) {
+          _estables++;
+        } else {
+          _ladoVisto = lado;
+          _estables = 1;
+        }
       } else {
-        final lineas = texto.split(RegExp(r'[\r\n]+')).where((e) => e.trim().length >= 4).length;
-        _estables = lineas >= 6 ? _estables + 1 : 0;
-        if (_estables >= 2) await _capturar();
+        _estables = 0;
+      }
+      _aviso = '';
+      if (lado == 'frente' && _frente != null && _reverso == null) {
+        _aviso = 'Ese es el frente, que ya está listo. Voltea el DNI para el reverso.';
+      } else if (lado == 'reverso' && _reverso != null && _frente == null) {
+        _aviso = 'Ese es el reverso, que ya está listo. Voltea el DNI para el frente.';
+      }
+      if (_estables >= 2) {
+        if (lado == 'frente' && _frente == null && _acum.dni != null) {
+          await _capturar('frente');
+        } else if (lado == 'reverso' && _reverso == null) {
+          await _capturar('reverso');
+        }
       }
       if (mounted) setState(() {});
     } catch (e) {
@@ -215,27 +235,31 @@ class _EscanerDniPageState extends State<EscanerDniPage> {
     }
   }
 
-  /// Toma la foto del lado actual y pasa al siguiente (o termina).
-  Future<void> _capturar() async {
+  /// Toma la foto de [lado] ('frente' o 'reverso'); sin [lado] toma el que falta. Al tener los dos, termina.
+  Future<void> _capturar([String? lado]) async {
     final c = _cam;
     if (c == null || _cerrando) return;
+    final que = lado ?? (_frente == null ? 'frente' : 'reverso');
     _cerrando = true;
     try {
       if (c.value.isStreamingImages) await c.stopImageStream();
       final foto = await c.takePicture();
       HapticFeedback.mediumImpact();
-      if (_paso == 0) {
+      if (que == 'frente') {
         _frente = foto;
-        _paso = 1;
-        _estables = 0;
-        _cerrando = false;
-        if (!mounted) return;
-        await c.startImageStream(_cuadro);
-        setState(() {});
       } else {
         _reverso = foto;
-        _terminar();
       }
+      _estables = 0;
+      _ladoVisto = '';
+      if (_frente != null && _reverso != null) {
+        _terminar();
+        return;
+      }
+      _cerrando = false;
+      if (!mounted) return;
+      await c.startImageStream(_cuadro);
+      setState(() {});
     } catch (_) {
       _cerrando = false;
       if (!mounted) return;
@@ -289,7 +313,7 @@ class _EscanerDniPageState extends State<EscanerDniPage> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        title: Text(_paso == 0 ? 'DNI: lado con el número (1 de 2)' : 'DNI: lado de atrás (2 de 2)'),
+        title: Text(_frente != null && _reverso == null ? 'DNI: ahora el reverso' : (_reverso != null && _frente == null ? 'DNI: ahora el frente' : 'Escanear DNI')),
         actions: [
           if (listo)
             IconButton(
@@ -322,7 +346,7 @@ class _EscanerDniPageState extends State<EscanerDniPage> {
                             heightFactor: 0.42,
                             child: DecoratedBox(
                               decoration: BoxDecoration(
-                                border: Border.all(color: _paso == 1 || d.tieneDni ? Colors.greenAccent : Colors.white70, width: 3),
+                                border: Border.all(color: _frente != null || _reverso != null ? Colors.greenAccent : Colors.white70, width: 3),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
@@ -336,9 +360,13 @@ class _EscanerDniPageState extends State<EscanerDniPage> {
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(8)),
                             child: Text(
-                              _paso == 0
-                                  ? 'Pon el DNI dentro del marco, con buena luz. La foto se toma sola al leer el número.'
-                                  : '¡Frente listo! Ahora voltea el DNI y ponlo en el marco. También se toma solo.',
+                              _aviso.isNotEmpty
+                                  ? _aviso
+                                  : _frente == null && _reverso == null
+                                      ? 'Pon un lado del DNI en el marco. Se reconoce solo si es el frente o el reverso y la foto se toma sola.'
+                                      : _frente != null
+                                          ? '✓ Frente listo. Voltea el DNI y ponlo en el marco: el reverso se toma solo.'
+                                          : '✓ Reverso listo. Voltea el DNI y ponlo en el marco: el frente se toma solo.',
                               style: const TextStyle(color: Colors.white, fontSize: 13),
                             ),
                           ),
@@ -351,9 +379,12 @@ class _EscanerDniPageState extends State<EscanerDniPage> {
                 child: SafeArea(
                   top: false,
                   child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('Frente: ${_frente != null ? '✓' : '—'}   Reverso: ${_reverso != null ? '✓' : '—'}',
+                        style: const TextStyle(fontSize: 12, color: Colors.black54)),
                     Text(d.tieneDni ? 'DNI leído: ${d.dni}' : 'Buscando el número de DNI…',
                         style: TextStyle(fontWeight: FontWeight.bold, color: d.tieneDni ? Colors.green.shade800 : Colors.black87)),
                     if (nombre.isNotEmpty) Text(nombre, style: const TextStyle(fontSize: 13)),
+                    if (d.domicilio.isNotEmpty) Text('Domicilio: ${d.domicilio}', style: const TextStyle(fontSize: 12)),
                     const SizedBox(height: 4),
                     Text(
                       _estado.isNotEmpty ? _estado : (_cuadros == 0 ? 'Iniciando lectura…' : 'Leyendo…'),
@@ -362,12 +393,12 @@ class _EscanerDniPageState extends State<EscanerDniPage> {
                     Row(children: [
                       TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancelar')),
                       const Spacer(),
-                      if (_paso == 1)
-                        TextButton(onPressed: _terminar, child: const Text('Omitir reverso')),
+                      if (_frente != null || _reverso != null)
+                        TextButton(onPressed: _terminar, child: const Text('Terminar')),
                       FilledButton.icon(
                         onPressed: listo ? _capturar : null,
                         icon: const Icon(Icons.camera_alt),
-                        label: Text(_paso == 0 ? 'Tomar ahora' : 'Tomar reverso'),
+                        label: Text(_frente == null ? 'Tomar frente' : 'Tomar reverso'),
                       ),
                     ]),
                   ]),
