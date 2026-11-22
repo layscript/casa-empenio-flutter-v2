@@ -1,0 +1,44 @@
+import 'package:casa_empenio_pe/presentation/app/utils/dni_logica.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  test('DNI con etiqueta', () {
+    expect(extraerDni('REPUBLICA DEL PERU\nDNI 45678912 - 3\nPrimer Apellido'), '45678912');
+  });
+  test('DNI en zona automatica', () {
+    expect(extraerDni('IDPER\nI<PER45678912<3<<<<<<<<<<<<<<<\n9001015M3001015PER<<<<<<<<<<<6'), '45678912');
+  });
+  test('DNI suelto, pero no fechas largas ni de la zona automatica', () {
+    expect(extraerDni('Numero\n45678912'), '45678912');
+    expect(extraerDni('123456789012'), isNull);
+    expect(extraerDni('90010150<<M30010150'), isNull);
+  });
+  test('Nombres por etiquetas', () {
+    final d = extraerNombres('Primer Apellido\nQUISPE\nSegundo Apellido\nMAMANI\nPre Nombres\nJUAN CARLOS\nFecha de nacimiento');
+    expect(d.apellidos, 'QUISPE MAMANI');
+    expect(d.nombres, 'JUAN CARLOS');
+  });
+  test('Nombres en la misma linea', () {
+    final d = extraerNombres('Primer Apellido QUISPE\nSegundo Apellido MAMANI\nPre Nombres JUAN CARLOS');
+    expect(d.apellidos, 'QUISPE MAMANI');
+    expect(d.nombres, 'JUAN CARLOS');
+  });
+  test('Nombres por zona automatica', () {
+    final d = extraerNombres('I<PER45678912<3<<<\n9001015M3001015PER<<<<<<<<<<<6\nQUISPE<MAMANI<<JUAN<CARLOS<<<<<<<<');
+    expect(d.apellidos, 'QUISPE MAMANI');
+    expect(d.nombres, 'JUAN CARLOS');
+  });
+  test('Acumulador pide ver el DNI en 2 cuadros', () {
+    final a = AcumuladorDni();
+    a.anotar('DNI 45678912');
+    expect(a.dni, isNull);
+    a.anotar('xx DNI 45678912 yy');
+    expect(a.dni, '45678912');
+    a.anotar('DNI 45678913');
+    expect(a.dni, '45678912');
+  });
+  test('Etiquetas no se toman como nombre', () {
+    final d = extraerNombres('Primer Apellido\nSegundo Apellido\nPre Nombres');
+    expect(d.tieneNombre, false);
+  });
+}

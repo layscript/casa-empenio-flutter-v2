@@ -253,6 +253,16 @@ class HttpLoansRepository implements LoansRepository {
           );
         }
 
+        if (cliente.dniFrente != null || cliente.dniReverso != null) {
+          await updateCustomerPhotos(
+            dni: (cliente.dni ?? '').trim(),
+            imagen: null,
+            imagen2: null,
+            dniRecto: cliente.dniFrente,
+            dniVerso: cliente.dniReverso,
+          );
+        }
+
         if (aval != null && aval.imagenUno != null) {
           await updateCustomerPhotos(
             dni: (aval.dni ?? '').trim(),
@@ -753,12 +763,16 @@ class HttpLoansRepository implements LoansRepository {
     required String dni,
     required String? imagen,
     required String? imagen2,
+    String? dniRecto,
+    String? dniVerso,
   }) async {
     for (var intento = 1; intento <= 3; intento++) {
       final ok = await _updateCustomerPhotosOnce(
         dni: dni,
         imagen: imagen,
         imagen2: imagen2,
+        dniRecto: dniRecto,
+        dniVerso: dniVerso,
       );
       if (ok) return true;
       await Future.delayed(Duration(seconds: intento));
@@ -789,9 +803,19 @@ class HttpLoansRepository implements LoansRepository {
     required String dni,
     required String? imagen,
     required String? imagen2,
+    String? dniRecto,
+    String? dniVerso,
   }) async {
     try {
       FormData formData = FormData();
+      for (final par in {'dniRecto': dniRecto, 'dniVerso': dniVerso}.entries) {
+        if (_esArchivoLocal(par.value)) {
+          final f = File(par.value!);
+          formData.files.add(MapEntry(
+              par.key,
+              await MultipartFile.fromFile(f.path, filename: f.path.split('/').last)));
+        }
+      }
       if (_esArchivoLocal(imagen)) {
         final imagenPath = imagen!;
         final img = File(imagenPath);

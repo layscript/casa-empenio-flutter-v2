@@ -14,6 +14,8 @@ class CustomerEntity extends Equatable {
     required this.pagos,
     required this.imagenUno,
     required this.imagenDos,
+    this.dniFrente,
+    this.dniReverso,
     required this.ventas,
     required this.updatedAt,
     required this.createdAt,
@@ -31,6 +33,10 @@ class CustomerEntity extends Equatable {
   final List<SalesEntity>? ventas;
   final String? imagenUno;
   final String? imagenDos;
+
+  /// Fotos locales del DNI (solo para subirlas al guardar; no vienen del servidor).
+  final String? dniFrente;
+  final String? dniReverso;
   final String? updatedAt;
   final String? createdAt;
 

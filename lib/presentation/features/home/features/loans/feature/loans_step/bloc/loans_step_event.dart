@@ -265,3 +265,10 @@ class SaveAllLoan extends LoansStepEvent {
   const SaveAllLoan(this.userId);
   final String userId;
 }
+
+/// El escáner de DNI leyó las fotos del frente y del reverso.
+class ChangeDniPhotosClient extends LoansStepEvent {
+  const ChangeDniPhotosClient({this.frente, this.reverso});
+  final XFile? frente;
+  final XFile? reverso;
+}

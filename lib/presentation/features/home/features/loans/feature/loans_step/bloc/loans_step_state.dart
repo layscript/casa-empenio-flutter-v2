@@ -106,6 +106,8 @@ class LoansStepState extends Equatable {
     this.emailClient,
     this.homeClient,
     this.photosClient,
+    this.dniFrente,
+    this.dniReverso,
     this.documentAval,
     this.fullNamesAval,
     this.fullLastNamesAval,
@@ -156,6 +158,8 @@ class LoansStepState extends Equatable {
   final String? emailClient;
   final String? homeClient;
   final List<XFile>? photosClient;
+  final XFile? dniFrente;
+  final XFile? dniReverso;
 
   final String? documentAval;
   final String? fullNamesAval;
@@ -273,6 +277,8 @@ class LoansStepState extends Equatable {
     String? emailClient,
     String? homeClient,
     List<XFile>? photosClient,
+    XFile? dniFrente,
+    XFile? dniReverso,
     String? documentAval,
     String? fullNamesAval,
     String? phoneAval,
@@ -323,6 +329,8 @@ class LoansStepState extends Equatable {
         homeClient: homeClient ?? this.homeClient,
         phoneClient: phoneClient ?? this.phoneClient,
         photosClient: photosClient ?? this.photosClient,
+        dniFrente: dniFrente ?? this.dniFrente,
+        dniReverso: dniReverso ?? this.dniReverso,
         documentAval: documentAval ?? this.documentAval,
         fullNamesAval: fullNamesAval ?? this.fullNamesAval,
         fullLastNamesAval: fullLastNamesAval ?? this.fullLastNamesAval,
@@ -460,6 +468,8 @@ class LoansStepState extends Equatable {
         phoneClient,
         photosAval,
         photosClient,
+        dniFrente?.path,
+        dniReverso?.path,
         documentAval,
         fullNamesAval,
         fullLastNamesAval,

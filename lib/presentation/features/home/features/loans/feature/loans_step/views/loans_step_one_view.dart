@@ -1,5 +1,6 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/custom_image_picker.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/escaner_dni.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/widgets.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/feature/loans_step/bloc/loans_step_bloc.dart';
@@ -44,6 +45,37 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
     super.dispose();
   }
 
+  /// Escanea el DNI (frente y reverso): llena DNI, nombres y apellidos, y guarda las fotos del DNI.
+  Future<void> _escanearDni() async {
+    final r = await abrirEscanerDni(context);
+    if (r == null || !mounted) return;
+    if (r.sinCamara) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo abrir la cámara. Escribe el DNI a mano.')),
+      );
+      return;
+    }
+    final d = r.datos;
+    if (d.nombres.isNotEmpty) {
+      _nombresController.text = d.nombres;
+      loansStepBloc.add(ChangeFullNamesClient(value: d.nombres));
+    }
+    if (d.apellidos.isNotEmpty) {
+      _apellidosController.text = d.apellidos;
+      loansStepBloc.add(ChangeFullLastNamesClient(value: d.apellidos));
+    }
+    loansStepBloc.add(ChangeDniPhotosClient(frente: r.frente, reverso: r.reverso));
+    if (d.tieneDni) {
+      _dniController.text = d.dni;
+      loansStepBloc.add(ChangeDocumentClient(value: d.dni));
+      revisarRiesgoCliente(context, d.dni);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo leer el número del DNI. Escríbelo (las fotos sí se guardaron).')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<LoansStepBloc, LoansStepState>(
@@ -66,6 +98,28 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
       child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const SizedBox(height: 15),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: _escanearDni,
+            icon: const Icon(Icons.document_scanner),
+            label: const Text('Escanear DNI (llena los datos solo)'),
+          ),
+        ),
+        BlocBuilder<LoansStepBloc, LoansStepState>(
+          buildWhen: (a, b) => a.dniFrente?.path != b.dniFrente?.path || a.dniReverso?.path != b.dniReverso?.path,
+          builder: (context, st) {
+            if (st.dniFrente == null && st.dniReverso == null) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                'Fotos del DNI: ${st.dniFrente != null ? 'frente ✓' : 'sin frente'} · ${st.dniReverso != null ? 'reverso ✓' : 'sin reverso'}',
+                style: const TextStyle(fontSize: 12, color: Colors.green),
+              ),
+            );
+          },
+        ),
         const SizedBox(height: 15),
         Row(
           children: [

@@ -41,6 +41,7 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
 
     on<ChangeDocumentClient>(_onChangeDocumentClient);
     on<ChangeFullNamesClient>(_onChangeFullNamesClient);
+    on<ChangeDniPhotosClient>((e, emit) => emit(state.copyWith(dniFrente: e.frente, dniReverso: e.reverso)));
     on<ChangeFullLastNamesClient>(_onChangeFullLastNamesClient);
     on<ChangePhoneClient>(_onChangePhoneClient);
     on<ChangeEmailClient>(_onChangeEmailClient);
@@ -1096,6 +1097,8 @@ class LoansStepBloc extends Bloc<LoansStepEvent, LoansStepState> {
           createdAt: '',
           imagenUno: _rutaFoto(fotosCliente, 0),
           imagenDos: _rutaFoto(fotosCliente, 1),
+          dniFrente: state.dniFrente?.path,
+          dniReverso: state.dniReverso?.path,
         ),
         aval: loansLocalState?.isAval == true || state.isAval == true
             ? CustomerEntity(
