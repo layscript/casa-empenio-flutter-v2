@@ -622,6 +622,8 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                     ),
                                     CustomImageApp(
                                       urlImg: bien.imagen ?? '',
+                                      galeria: [bien.imagen ?? '', bien.imagenDos ?? '', bien.imagenTres ?? ''],
+                                      titulo: 'Foto del bien',
                                       height: 50,
                                       width: 50,
                                     )
@@ -642,6 +644,8 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                     ),
                                     CustomImageApp(
                                       urlImg: bien.imagenDos ?? '',
+                                      galeria: [bien.imagen ?? '', bien.imagenDos ?? '', bien.imagenTres ?? ''],
+                                      titulo: 'Foto del bien',
                                       height: 50,
                                       width: 50,
                                     )
@@ -662,6 +666,8 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                     ),
                                     CustomImageApp(
                                       urlImg: bien.imagenTres ?? '',
+                                      galeria: [bien.imagen ?? '', bien.imagenDos ?? '', bien.imagenTres ?? ''],
+                                      titulo: 'Foto del bien',
                                       height: 50,
                                       width: 50,
                                     )

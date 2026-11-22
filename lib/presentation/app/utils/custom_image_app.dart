@@ -9,10 +9,16 @@ class CustomImageApp extends StatelessWidget {
     required this.urlImg,
     this.height = 50,
     this.width = 50,
+    this.galeria = const [],
+    this.titulo,
   });
   final String urlImg;
   final double height;
   final double width;
+
+  /// Otras fotos del mismo grupo (por ejemplo las 3 del bien): en el visor se pasan deslizando.
+  final List<String> galeria;
+  final String? titulo;
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +29,8 @@ class CustomImageApp extends StatelessWidget {
           MaterialPageRoute(
             builder: (context) => FullScreenImage(
               imageUrl: urlImg,
+              galeria: galeria,
+              titulo: titulo,
             ),
           ),
         );
