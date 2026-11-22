@@ -1,3 +1,4 @@
+import 'package:image_picker/image_picker.dart';
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/custom_image_picker.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/escaner_dni.dart';
@@ -22,6 +23,8 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
   late LoansStepBloc loansStepBloc;
   late Preferences preferences;
   late LoansPreferencesEntity localState;
+  List<XFile>? _fotosCliente;
+  int _claveFotos = 0;
 
   @override
   void initState() {
@@ -29,6 +32,7 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
     loansStepBloc = context.read<LoansStepBloc>();
     preferences = context.read<Preferences>();
     localState = preferences.getLoansPreferences ?? LoansPreferencesEntity.init();
+    _fotosCliente = localState.imagesClient;
     
     _dniController = TextEditingController(text: localState.documentClient);
     _nombresController = TextEditingController(text: localState.fullNamesClient);
@@ -64,7 +68,18 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
       _apellidosController.text = d.apellidos;
       loansStepBloc.add(ChangeFullLastNamesClient(value: d.apellidos));
     }
-    loansStepBloc.add(ChangeDniPhotosClient(frente: r.frente, reverso: r.reverso));
+    // Las fotos del DNI quedan abajo como miniaturas (ya guardadas, listas para el préstamo); se pueden quitar tocándolas.
+    final fotos = <XFile>[
+      if (r.frente != null) r.frente!,
+      if (r.reverso != null) r.reverso!,
+    ];
+    if (fotos.isNotEmpty) {
+      setState(() {
+        _fotosCliente = fotos;
+        _claveFotos++;
+      });
+      loansStepBloc.add(ChangePhotosClient(photosClient: fotos));
+    }
     if (d.domicilio.isEmpty && r.reverso != null && r.textoReverso.trim().isNotEmpty) {
       showDialog(
         context: context,
@@ -122,19 +137,6 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
             icon: const Icon(Icons.document_scanner),
             label: const Text('Escanear DNI (llena los datos solo)'),
           ),
-        ),
-        BlocBuilder<LoansStepBloc, LoansStepState>(
-          buildWhen: (a, b) => a.dniFrente?.path != b.dniFrente?.path || a.dniReverso?.path != b.dniReverso?.path,
-          builder: (context, st) {
-            if (st.dniFrente == null && st.dniReverso == null) return const SizedBox.shrink();
-            return Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text(
-                'Fotos del DNI: ${st.dniFrente != null ? 'frente ✓' : 'sin frente'} · ${st.dniReverso != null ? 'reverso ✓' : 'sin reverso'}',
-                style: const TextStyle(fontSize: 12, color: Colors.green),
-              ),
-            );
-          },
         ),
         const SizedBox(height: 15),
         Row(
@@ -244,12 +246,13 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
         ),
         const SizedBox(height: 15),
         CustomImagePicker(
+          key: ValueKey('fotosCliente$_claveFotos'),
           onImagesSelected: (e) => loansStepBloc.add(
             ChangePhotosClient(
               photosClient: e,
             ),
           ),
-          initialSelectedPhotos: localState.imagesClient,
+          initialSelectedPhotos: _fotosCliente,
           limit: 2,
         ),
         const SizedBox(height: 15),
