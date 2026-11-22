@@ -79,13 +79,17 @@ DatosDni extraerNombres(String texto) {
   return const DatosDni();
 }
 
-/// Qué lado del DNI es el texto: 'frente' (apellidos, nombres, fecha de nacimiento, estado civil),
-/// 'reverso' (domicilio, distrito, zona automática) o null si no se sabe. Gana el lado con más señales.
+/// Qué lado del DNI es el texto. Frente: foto, apellidos, nombres, nacimiento y las líneas automáticas (I<PER...<<).
+/// Reverso: dirección, distrito, provincia, departamento, grupo sanguíneo, donación de órganos, constancia de sufragio.
+/// Gana el lado con más señales; null si no se sabe.
 String? ladoDelDni(String texto) {
   final t = texto.toUpperCase();
   var rev = 0, fre = 0;
-  if (t.contains('<<') || RegExp(r'I\s*[<«]\s*PER').hasMatch(t)) rev += 3;
-  for (final m in ['DOMICILIO', 'DISTRITO', 'PROVINCIA', 'DEPARTAMENTO', 'DONACI', 'RESTRICCI', 'EMISI', 'CADUC']) {
+  if (t.contains('<<') || RegExp(r'I\s*[<«]\s*PER').hasMatch(t)) fre += 3;
+  for (final m in [
+    'DOMICILIO', 'DIRECCI', 'DISTRITO', 'PROVINCIA', 'DEPARTAMENTO', 'DONACI', 'RESTRICCI', 'EMISI', 'CADUC',
+    'SUFRAGIO', 'SANGUIN', 'OBSERVACIONES', 'VOTACI',
+  ]) {
     if (t.contains(m)) rev++;
   }
   for (final m in [
@@ -104,64 +108,59 @@ String? ladoDelDni(String texto) {
   return null;
 }
 
-final _etiquetasReverso = RegExp(
-    r'^(DOMICILIO|DISTRITO|PROVINCIA|DEPARTAMENTO|UBIGEO|ESTADO CIVIL|GRADO|DONACI|SEXO|FECHA|RESTRICCI|EMISI|INSCRIP|CADUC|ELECTOR|PERU|PERÚ|REPUBLICA|REPÚBLICA|APELLIDO|I\s*<)');
+final _etiqueta = RegExp(r'^(DIRECCI[OÓ]N|DOMICILIO|DISTRITO|PROVINCIA|DEPARTAMENTO)\b');
+final _ruido = RegExp(
+    r'CONSTANCIA|SUFRAGIO|GRUPO|FACTOR|SANGU|VOTACI|CUARTO|NIVEL|OBSERVACIONES|DONACI|RESTRICCI|EMISI|CADUC|FECHA|^DE$|^SI$|^NO$|<');
 
-/// Valor de una etiqueta del reverso: lo que sigue en la misma línea o, si no, la línea de abajo.
-String _valorReverso(List<String> lineas, RegExp etiqueta) {
-  for (var i = 0; i < lineas.length; i++) {
-    final m = etiqueta.firstMatch(lineas[i].toUpperCase());
-    if (m == null) continue;
-    final resto = lineas[i].substring(m.end).replaceAll(RegExp(r'^[\s:.\-]+'), '').trim();
-    if (resto.length >= 2) return resto.toUpperCase();
-    if (i + 1 < lineas.length) {
-      final sig = lineas[i + 1].trim().toUpperCase();
-      if (sig.length >= 2 && !_etiquetasReverso.hasMatch(sig) && !sig.contains('<')) return sig;
-    }
-  }
-  return '';
-}
-
-bool _esDato(String l) {
+bool _dato(String l, {bool permiteNumeros = false}) {
   final u = l.trim().toUpperCase();
-  return u.length >= 2 &&
-      !_etiquetasReverso.hasMatch(u) &&
-      !u.contains('<') &&
-      !RegExp(r'^\d{1,2}[/\- ]\d{1,2}[/\- ]\d{2,4}$').hasMatch(u) &&
-      !RegExp(r'^\d{8}(\D?\d)?$').hasMatch(u);
+  if (u.length < 2 || _etiqueta.hasMatch(u) || _ruido.hasMatch(u)) return false;
+  if (!permiteNumeros && RegExp(r'\d').hasMatch(u)) return false;
+  if (RegExp(r'^[\d\s/\-.]+$').hasMatch(u)) return false;
+  return true;
 }
 
-/// Domicilio del reverso: dirección + distrito, provincia y departamento si están.
-/// Sirve tanto si el valor viene junto a su etiqueta como si la cámara lee primero todas las etiquetas y luego los valores.
-String extraerDomicilio(String texto) {
+/// Partes del domicilio del reverso: dir, distrito, provincia, departamento.
+/// El valor puede ir junto a la etiqueta, en la línea de abajo o (según como lea la cámara) en la de arriba.
+Map<String, String> partesDomicilio(String texto) {
   final lineas = texto.split(RegExp(r'[\r\n]+')).map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
-  final dir = _valorReverso(lineas, RegExp(r'DOMICILIO'));
-  if (dir.isNotEmpty) {
-    final partes = [
-      dir,
-      _valorReverso(lineas, RegExp(r'DISTRITO')),
-      _valorReverso(lineas, RegExp(r'PROVINCIA')),
-      _valorReverso(lineas, RegExp(r'DEPARTAMENTO')),
-    ].where((e) => e.isNotEmpty).toList();
-    return partes.join(', ');
-  }
-  // Respaldo: etiquetas seguidas (Domicilio, Distrito, ...) y los valores después, en el mismo orden.
-  final etiq = RegExp(r'^(DOMICILIO|DISTRITO|PROVINCIA|DEPARTAMENTO)\b');
-  for (var i = 0; i < lineas.length; i++) {
-    if (!lineas[i].toUpperCase().startsWith('DOMICILIO')) continue;
-    var j = i;
-    var n = 0;
-    while (j < lineas.length && etiq.hasMatch(lineas[j].toUpperCase())) {
-      n++;
-      j++;
+  final usadas = <int>{};
+  final out = <String, String>{};
+
+  String buscar(String clave, RegExp et, {bool numeros = false, bool atras = true}) {
+    for (var i = 0; i < lineas.length; i++) {
+      final u = lineas[i].toUpperCase();
+      final m = et.firstMatch(u);
+      if (m == null) continue;
+      final resto = lineas[i].substring(m.end).replaceAll(RegExp(r'^[\s:.\-]+'), '').trim();
+      if (resto.length >= 2 && _dato(resto, permiteNumeros: numeros)) return resto.toUpperCase();
+      if (i + 1 < lineas.length && !usadas.contains(i + 1) && _dato(lineas[i + 1], permiteNumeros: numeros)) {
+        usadas.add(i + 1);
+        return lineas[i + 1].toUpperCase();
+      }
+      if (atras && i > 0 && !usadas.contains(i - 1) && _dato(lineas[i - 1], permiteNumeros: numeros)) {
+        usadas.add(i - 1);
+        return lineas[i - 1].toUpperCase();
+      }
     }
-    final valores = <String>[];
-    for (var k = j; k < lineas.length && valores.length < n; k++) {
-      if (_esDato(lineas[k])) valores.add(lineas[k].toUpperCase());
-    }
-    if (valores.isNotEmpty) return valores.join(', ');
+    return '';
   }
-  return '';
+
+  out['dir'] = buscar('dir', RegExp(r'DIRECCI[OÓ]N|DOMICILIO'), numeros: true, atras: false);
+  out['departamento'] = buscar('departamento', RegExp(r'DEPARTAMENTO'));
+  out['provincia'] = buscar('provincia', RegExp(r'PROVINCIA'));
+  out['distrito'] = buscar('distrito', RegExp(r'DISTRITO'));
+  return out;
+}
+
+String _unirDomicilio(Map<String, String> p) =>
+    [p['dir'], p['distrito'], p['provincia'], p['departamento']].where((e) => e != null && e.isNotEmpty).join(', ');
+
+/// Domicilio del reverso: dirección, distrito, provincia y departamento. Vacío si no hay dirección.
+String extraerDomicilio(String texto) {
+  final p = partesDomicilio(texto);
+  if ((p['dir'] ?? '').isEmpty) return '';
+  return _unirDomicilio(p);
 }
 
 /// Lee todo lo que se pueda de un texto.
@@ -177,12 +176,16 @@ class AcumuladorDni {
   final Map<String, int> _dnis = {};
   final Map<String, int> _nombres = {};
   final Map<String, DatosDni> _porNombre = {};
-  final Map<String, int> _domicilios = {};
+  final Map<String, Map<String, int>> _partes = {};
 
   void anotar(String texto) {
     final d = leerDni(texto);
     if (d.dni.isNotEmpty) _dnis[d.dni] = (_dnis[d.dni] ?? 0) + 1;
-    if (d.domicilio.isNotEmpty) _domicilios[d.domicilio] = (_domicilios[d.domicilio] ?? 0) + 1;
+    partesDomicilio(texto).forEach((k, v) {
+      if (v.isEmpty) return;
+      final m = _partes.putIfAbsent(k, () => {});
+      m[v] = (m[v] ?? 0) + 1;
+    });
     if (d.tieneNombre) {
       final k = '${d.apellidos}|${d.nombres}';
       _nombres[k] = (_nombres[k] ?? 0) + 1;
@@ -214,16 +217,22 @@ class AcumuladorDni {
     return mejor == null ? null : _porNombre[mejor];
   }
 
+  /// El valor más visto de cada parte (basta una lectura: se puede corregir a mano).
   String get domicilio {
-    String mejor = '';
-    var n = 0;
-    _domicilios.forEach((k, v) {
-      if (v >= minimo && v > n) {
-        mejor = k;
-        n = v;
-      }
+    final p = <String, String>{};
+    _partes.forEach((k, m) {
+      String mejor = '';
+      var n = 0;
+      m.forEach((v, c) {
+        if (c > n) {
+          mejor = v;
+          n = c;
+        }
+      });
+      p[k] = mejor;
     });
-    return mejor;
+    if ((p['dir'] ?? '').isEmpty) return '';
+    return _unirDomicilio(p);
   }
 
   DatosDni get datos => (nombre ?? const DatosDni()).unir(DatosDni(dni: dni ?? '', domicilio: domicilio));

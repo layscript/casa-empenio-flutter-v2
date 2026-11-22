@@ -48,14 +48,19 @@ void pruebasLados() {
   test('Frente con estado civil no se confunde con el reverso', () {
     expect(ladoDelDni('DNI 46864068\nPrimer Apellido\nTORRE\nSegundo Apellido\nMAYTA\nPre Nombres\nJOEL MAYCO\nFecha de Nacimiento\nEstado Civil\nSOLTERO'), 'frente');
   });
-  test('Reverso con etiquetas primero y valores despues', () {
-    expect(extraerDomicilio('Domicilio\nDistrito\nProvincia\nDepartamento\nJR LIMA 123\nYARINACOCHA\nCORONEL PORTILLO\nUCAYALI'),
-        'JR LIMA 123, YARINACOCHA, CORONEL PORTILLO, UCAYALI');
+  test('Reverso real (texto leido por la camara)', () {
+    const txt = 'CONSTANCIA\nSUFRAGIO\nDE\nCONSTANCIA\ncONSTANCIA\nCONSTANCIA\nSUFRAGIO\nSUFRAGIO\nSUFRAGIO\nRAIMONDI\nDistrito\nProvincia\nATALAYA\nDepartamento\nUCAYALI\nDirección\nJR. PANGOA 319 MZ. 23\nGrupo y Factor Sanguineo\nGrupo de\nVotación 336279\nCuarto Nivel 250301\nObservaciones\nDonación de Organos SI';
+    expect(ladoDelDni(txt), 'reverso');
+    expect(extraerDomicilio(txt), 'JR. PANGOA 319 MZ. 23, RAIMONDI, ATALAYA, UCAYALI');
+  });
+  test('Frente con lineas automaticas es frente', () {
+    const txt = 'REPUBLICA DEL PERU\nPrimer Apellido\nTORRE\nI<PER46864068<4<<<<<<<<<<<<<<<\n9203066M3304031PER<<<<<<<<<<<8\nMAYTA<<JOEL<MAYCO<<<<<<<<<<';
+    expect(ladoDelDni(txt), 'frente');
   });
   test('Lado del DNI', () {
     expect(ladoDelDni('DNI 45678912\nPrimer Apellido\nQUISPE'), 'frente');
     expect(ladoDelDni('DOMICILIO\nJR LIMA 123\nDISTRITO\nCALLERIA'), 'reverso');
-    expect(ladoDelDni('I<PER45678912<3<<<\nQUISPE<<JUAN'), 'reverso');
+    expect(ladoDelDni('I<PER45678912<3<<<\nQUISPE<<JUAN\nPrimer Apellido'), 'frente');
     expect(ladoDelDni('hola'), isNull);
   });
   test('Domicilio del reverso', () {
