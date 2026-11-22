@@ -46,6 +46,8 @@ class LoansStepView extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.delete),
                   onPressed: () {
+                    // El bloc se toma aquí: dentro del diálogo ya no se encuentra y fallaba al aceptar.
+                    final pasoBloc = context.read<LoansStepBloc>();
                     showDialog(
                       barrierDismissible: false,
                       context: context,
@@ -71,8 +73,10 @@ class LoansStepView extends StatelessWidget {
                             ),
                             TextButton(
                               onPressed: () {
-                                preferences.removeLoansPreferences();
-                                context.read<LoansStepBloc>().borrarBorradorRemoto();
+                                try {
+                                  preferences.removeLoansPreferences();
+                                  pasoBloc.borrarBorradorRemoto();
+                                } catch (_) {}
                                 Navigator.pop(context);
                                 Navigator.pop(context);
                               },
