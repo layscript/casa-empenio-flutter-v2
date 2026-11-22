@@ -65,6 +65,18 @@ class _LoansStepOneViewState extends State<LoansStepOneView> {
       loansStepBloc.add(ChangeFullLastNamesClient(value: d.apellidos));
     }
     loansStepBloc.add(ChangeDniPhotosClient(frente: r.frente, reverso: r.reverso));
+    if (d.domicilio.isEmpty && r.reverso != null && r.textoReverso.trim().isNotEmpty) {
+      showDialog(
+        context: context,
+        builder: (c) => AlertDialog(
+          title: const Text('No pude sacar el domicilio'),
+          content: SingleChildScrollView(
+            child: SelectableText('Escríbelo a mano. Esto fue lo que leí del reverso:\n\n${r.textoReverso}', style: const TextStyle(fontSize: 12)),
+          ),
+          actions: [TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cerrar'))],
+        ),
+      );
+    }
     if (d.domicilio.isNotEmpty) {
       _domicilioController.text = d.domicilio;
       loansStepBloc.add(ChangeHomeClient(value: d.domicilio));

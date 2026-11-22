@@ -79,21 +79,33 @@ DatosDni extraerNombres(String texto) {
   return const DatosDni();
 }
 
-/// Qué lado del DNI es el texto: 'frente' (apellidos y nombres), 'reverso' (domicilio, zona automática) o null si no se sabe.
+/// Qué lado del DNI es el texto: 'frente' (apellidos, nombres, fecha de nacimiento, estado civil),
+/// 'reverso' (domicilio, distrito, zona automática) o null si no se sabe. Gana el lado con más señales.
 String? ladoDelDni(String texto) {
   final t = texto.toUpperCase();
-  final reverso = t.contains('<<') ||
-      RegExp(r'I\s*[<«]\s*PER').hasMatch(t) ||
-      RegExp(r'DOMICILIO|DISTRITO|PROVINCIA|DEPARTAMENTO|UBIGEO|DONACI|ESTADO CIVIL|GRADO DE INSTRUCCI').hasMatch(t);
-  final frente = RegExp(r'PRIMER\s+APELLIDO|SEGUNDO\s+APELLIDO|PRE\s*NOMBRES|FECHA DE NACIMIENTO').hasMatch(t);
-  if (reverso && !frente) return 'reverso';
-  if (frente && !reverso) return 'frente';
-  if (reverso && frente) return t.contains('<<') ? 'reverso' : null;
+  var rev = 0, fre = 0;
+  if (t.contains('<<') || RegExp(r'I\s*[<«]\s*PER').hasMatch(t)) rev += 3;
+  for (final m in ['DOMICILIO', 'DISTRITO', 'PROVINCIA', 'DEPARTAMENTO', 'DONACI', 'RESTRICCI', 'EMISI', 'CADUC']) {
+    if (t.contains(m)) rev++;
+  }
+  for (final m in [
+    RegExp(r'PRIMER\s+APELLIDO'),
+    RegExp(r'SEGUNDO\s+APELLIDO'),
+    RegExp(r'PRE\s*NOMBRES'),
+    RegExp(r'NACIMIENTO'),
+    RegExp(r'ESTADO\s+CIVIL'),
+    RegExp(r'GRADO\s+DE\s+INSTRUCCI'),
+    RegExp(r'DNI\D{0,6}\d{8}'),
+  ]) {
+    if (m.hasMatch(t)) fre++;
+  }
+  if (rev >= 2 && rev > fre) return 'reverso';
+  if (fre >= 2 && fre > rev) return 'frente';
   return null;
 }
 
 final _etiquetasReverso = RegExp(
-    r'^(DOMICILIO|DISTRITO|PROVINCIA|DEPARTAMENTO|UBIGEO|ESTADO CIVIL|GRADO|DONACI|SEXO|FECHA|RESTRICCI|EMISI|INSCRIP|CADUC|ELECTOR|PERU|PERÚ|REPUBLICA|REPÚBLICA|I\s*<)');
+    r'^(DOMICILIO|DISTRITO|PROVINCIA|DEPARTAMENTO|UBIGEO|ESTADO CIVIL|GRADO|DONACI|SEXO|FECHA|RESTRICCI|EMISI|INSCRIP|CADUC|ELECTOR|PERU|PERÚ|REPUBLICA|REPÚBLICA|APELLIDO|I\s*<)');
 
 /// Valor de una etiqueta del reverso: lo que sigue en la misma línea o, si no, la línea de abajo.
 String _valorReverso(List<String> lineas, RegExp etiqueta) {
@@ -110,18 +122,46 @@ String _valorReverso(List<String> lineas, RegExp etiqueta) {
   return '';
 }
 
+bool _esDato(String l) {
+  final u = l.trim().toUpperCase();
+  return u.length >= 2 &&
+      !_etiquetasReverso.hasMatch(u) &&
+      !u.contains('<') &&
+      !RegExp(r'^\d{1,2}[/\- ]\d{1,2}[/\- ]\d{2,4}$').hasMatch(u) &&
+      !RegExp(r'^\d{8}(\D?\d)?$').hasMatch(u);
+}
+
 /// Domicilio del reverso: dirección + distrito, provincia y departamento si están.
+/// Sirve tanto si el valor viene junto a su etiqueta como si la cámara lee primero todas las etiquetas y luego los valores.
 String extraerDomicilio(String texto) {
   final lineas = texto.split(RegExp(r'[\r\n]+')).map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
   final dir = _valorReverso(lineas, RegExp(r'DOMICILIO'));
-  if (dir.isEmpty) return '';
-  final partes = [
-    dir,
-    _valorReverso(lineas, RegExp(r'DISTRITO')),
-    _valorReverso(lineas, RegExp(r'PROVINCIA')),
-    _valorReverso(lineas, RegExp(r'DEPARTAMENTO')),
-  ].where((e) => e.isNotEmpty).toList();
-  return partes.join(', ');
+  if (dir.isNotEmpty) {
+    final partes = [
+      dir,
+      _valorReverso(lineas, RegExp(r'DISTRITO')),
+      _valorReverso(lineas, RegExp(r'PROVINCIA')),
+      _valorReverso(lineas, RegExp(r'DEPARTAMENTO')),
+    ].where((e) => e.isNotEmpty).toList();
+    return partes.join(', ');
+  }
+  // Respaldo: etiquetas seguidas (Domicilio, Distrito, ...) y los valores después, en el mismo orden.
+  final etiq = RegExp(r'^(DOMICILIO|DISTRITO|PROVINCIA|DEPARTAMENTO)\b');
+  for (var i = 0; i < lineas.length; i++) {
+    if (!lineas[i].toUpperCase().startsWith('DOMICILIO')) continue;
+    var j = i;
+    var n = 0;
+    while (j < lineas.length && etiq.hasMatch(lineas[j].toUpperCase())) {
+      n++;
+      j++;
+    }
+    final valores = <String>[];
+    for (var k = j; k < lineas.length && valores.length < n; k++) {
+      if (_esDato(lineas[k])) valores.add(lineas[k].toUpperCase());
+    }
+    if (valores.isNotEmpty) return valores.join(', ');
+  }
+  return '';
 }
 
 /// Lee todo lo que se pueda de un texto.

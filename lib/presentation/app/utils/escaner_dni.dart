@@ -9,7 +9,8 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 
 /// Lo que devuelve el escáner de DNI.
 class ResultadoDni {
-  ResultadoDni({this.datos = const DatosDni(), this.frente, this.reverso, this.sinCamara = false});
+  ResultadoDni({this.datos = const DatosDni(), this.frente, this.reverso, this.sinCamara = false, this.textoReverso = ''});
+  final String textoReverso;
   final DatosDni datos;
   final XFile? frente;
   final XFile? reverso;
@@ -51,6 +52,8 @@ class _EscanerDniPageState extends State<EscanerDniPage> {
   int _estables = 0;
   String _estado = '';
   String _ladoVisto = '';
+  String? _ultimoLado;
+  String _textoReverso = '';
   String _aviso = '';
   int get _paso => _frente == null ? 0 : 1;
   XFile? _frente;
@@ -203,6 +206,8 @@ class _EscanerDniPageState extends State<EscanerDniPage> {
       _datos = _datos.unir(_acum.datos);
       // Se reconoce solo qué lado es: nunca se repite el frente ni se confunde con el reverso.
       final lado = ladoDelDni(texto);
+      _ultimoLado = lado;
+      if (texto.trim().isNotEmpty && lado == 'reverso') _textoReverso = texto;
       if (lado == 'frente' || lado == 'reverso') {
         if (lado == _ladoVisto) {
           _estables++;
@@ -239,7 +244,8 @@ class _EscanerDniPageState extends State<EscanerDniPage> {
   Future<void> _capturar([String? lado]) async {
     final c = _cam;
     if (c == null || _cerrando) return;
-    final que = lado ?? (_frente == null ? 'frente' : 'reverso');
+    // A mano: se toma el lado que la cámara ve; si no se sabe, el que falta. Retomar un lado lo reemplaza (no se duplica).
+    final que = lado ?? _ultimoLado ?? (_frente == null ? 'frente' : 'reverso');
     _cerrando = true;
     try {
       if (c.value.isStreamingImages) await c.stopImageStream();
@@ -273,7 +279,7 @@ class _EscanerDniPageState extends State<EscanerDniPage> {
   void _terminar() {
     if (!mounted) return;
     _cerrando = true;
-    Navigator.of(context).pop(ResultadoDni(datos: _datos.unir(_acum.datos), frente: _frente, reverso: _reverso));
+    Navigator.of(context).pop(ResultadoDni(datos: _datos.unir(_acum.datos), frente: _frente, reverso: _reverso, textoReverso: _textoReverso));
   }
 
   Future<void> _alternarLinterna() async {

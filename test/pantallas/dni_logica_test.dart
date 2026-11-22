@@ -45,6 +45,13 @@ void main() {
 }
 
 void pruebasLados() {
+  test('Frente con estado civil no se confunde con el reverso', () {
+    expect(ladoDelDni('DNI 46864068\nPrimer Apellido\nTORRE\nSegundo Apellido\nMAYTA\nPre Nombres\nJOEL MAYCO\nFecha de Nacimiento\nEstado Civil\nSOLTERO'), 'frente');
+  });
+  test('Reverso con etiquetas primero y valores despues', () {
+    expect(extraerDomicilio('Domicilio\nDistrito\nProvincia\nDepartamento\nJR LIMA 123\nYARINACOCHA\nCORONEL PORTILLO\nUCAYALI'),
+        'JR LIMA 123, YARINACOCHA, CORONEL PORTILLO, UCAYALI');
+  });
   test('Lado del DNI', () {
     expect(ladoDelDni('DNI 45678912\nPrimer Apellido\nQUISPE'), 'frente');
     expect(ladoDelDni('DOMICILIO\nJR LIMA 123\nDISTRITO\nCALLERIA'), 'reverso');
