@@ -33,4 +33,22 @@ void main() {
     await tester.pumpAndSettle();
     expect(ctl.value.getMaxScaleOnAxis(), 1.0);
   });
+
+  testWidgets('pellizco con dos dedos acerca de inmediato, sin doble toque', (tester) async {
+    await tester.pumpWidget(MaterialApp(home: FullScreenImageUint8List(image: _png)));
+    await tester.pump();
+    final visor = find.byType(InteractiveViewer);
+    final ctl = tester.widget<InteractiveViewer>(visor).transformationController!;
+    final c = tester.getCenter(visor);
+    final a = await tester.startGesture(c - const Offset(20, 0), pointer: 1);
+    final b = await tester.startGesture(c + const Offset(20, 0), pointer: 2);
+    await tester.pump();
+    await a.moveTo(c - const Offset(120, 0));
+    await b.moveTo(c + const Offset(120, 0));
+    await tester.pump();
+    await a.up();
+    await b.up();
+    await tester.pumpAndSettle();
+    expect(ctl.value.getMaxScaleOnAxis(), greaterThan(1.5));
+  });
 }

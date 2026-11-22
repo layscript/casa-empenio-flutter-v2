@@ -25,6 +25,7 @@ class _FullScreenImageState extends State<FullScreenImage> {
   late final PageController _pagina;
   int _actual = 0;
   bool _acercada = false;
+  final Set<int> _dedos = {};
 
   @override
   void initState() {
@@ -55,10 +56,16 @@ class _FullScreenImageState extends State<FullScreenImage> {
         ),
       ),
       body: Stack(children: [
-        PageView.builder(
+        // Con 2 dedos en la pantalla (pellizco) la lista de fotos no se mueve: el zoom empieza al instante.
+        Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: (e) => setState(() => _dedos.add(e.pointer)),
+          onPointerUp: (e) => setState(() => _dedos.remove(e.pointer)),
+          onPointerCancel: (e) => setState(() => _dedos.remove(e.pointer)),
+          child: PageView.builder(
           controller: _pagina,
-          // con la foto acercada, deslizar mueve la foto; sin acercar, cambia de foto
-          physics: _acercada ? const NeverScrollableScrollPhysics() : const PageScrollPhysics(),
+          // con la foto acercada o con 2 dedos, deslizar mueve/acerca la foto; solo con 1 dedo y sin acercar, cambia de foto
+          physics: (_acercada || _dedos.length >= 2) ? const NeverScrollableScrollPhysics() : const PageScrollPhysics(),
           itemCount: _fotos.length,
           onPageChanged: (i) => setState(() {
             _actual = i;
@@ -71,7 +78,7 @@ class _FullScreenImageState extends State<FullScreenImage> {
               if (z != _acercada && i == _actual) setState(() => _acercada = z);
             },
           ),
-        ),
+        )),
         Positioned(
           left: 0,
           right: 0,
@@ -82,7 +89,7 @@ class _FullScreenImageState extends State<FullScreenImage> {
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(20)),
                 child: const Text(
-                  'Pellizca con dos dedos para acercar · doble toque para ampliar',
+                  'Acerca con dos dedos · doble toque para ampliar',
                   style: TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ),
@@ -108,6 +115,10 @@ class _ZoomableImageState extends State<ZoomableImage> {
   final TransformationController _ctl = TransformationController();
   Offset _toque = Offset.zero;
   bool _acercada = false;
+  int _ultimoToque = 0;
+  Offset _ultimaPos = Offset.zero;
+  final Set<int> _punteros = {};
+  bool _huboMovimiento = false;
 
   @override
   void initState() {
@@ -138,11 +149,50 @@ class _ZoomableImageState extends State<ZoomableImage> {
     }
   }
 
+  // El doble toque se detecta a mano (sin GestureDetector) para que no compita con el pellizco:
+  // así el zoom con dos dedos empieza de inmediato.
+  void _alBajar(PointerDownEvent e) {
+    _punteros.add(e.pointer);
+    if (_punteros.length > 1) {
+      _ultimoToque = 0;
+      return;
+    }
+    _huboMovimiento = false;
+    _toque = e.localPosition;
+  }
+
+  void _alMover(PointerMoveEvent e) {
+    if ((e.delta.distance) > 0.5 && (e.localPosition - _toque).distance > 12) _huboMovimiento = true;
+  }
+
+  void _alSubir(PointerUpEvent e) {
+    final eraUnico = _punteros.length == 1;
+    _punteros.remove(e.pointer);
+    if (!eraUnico || _huboMovimiento) {
+      _ultimoToque = 0;
+      return;
+    }
+    final ahora = DateTime.now().millisecondsSinceEpoch;
+    if (ahora - _ultimoToque < 300 && (e.localPosition - _ultimaPos).distance < 60) {
+      _ultimoToque = 0;
+      _toque = e.localPosition;
+      _dobleToque();
+    } else {
+      _ultimoToque = ahora;
+      _ultimaPos = e.localPosition;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onDoubleTapDown: (d) => _toque = d.localPosition,
-      onDoubleTap: _dobleToque,
+    return Listener(
+      onPointerDown: _alBajar,
+      onPointerMove: _alMover,
+      onPointerUp: _alSubir,
+      onPointerCancel: (e) {
+        _punteros.remove(e.pointer);
+        _ultimoToque = 0;
+      },
       child: InteractiveViewer(
         transformationController: _ctl,
         minScale: 1,
