@@ -200,7 +200,12 @@ class _EscanerDniPageState extends State<EscanerDniPage> {
       } else {
         _vacios = 0;
         _giroFijo = true;
-        _acum.anotar(texto);
+        final geo = <LineaGeo>[
+          for (final b in t.blocks)
+            for (final ln in b.lines)
+              LineaGeo(ln.text, ln.boundingBox.left, ln.boundingBox.top, ln.boundingBox.width, ln.boundingBox.height),
+        ];
+        _acum.anotar(texto, geo);
       }
       _estado = '';
       _datos = _datos.unir(_acum.datos);

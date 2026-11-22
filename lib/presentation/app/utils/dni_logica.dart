@@ -79,6 +79,59 @@ DatosDni extraerNombres(String texto) {
   return const DatosDni();
 }
 
+/// Una línea de texto con su posición en la imagen (para saber qué valor está debajo de qué etiqueta).
+class LineaGeo {
+  const LineaGeo(this.texto, this.izq, this.arriba, this.ancho, this.alto);
+  final String texto;
+  final double izq;
+  final double arriba;
+  final double ancho;
+  final double alto;
+}
+
+/// Apellidos y nombres usando la posición: el valor de "Primer Apellido", "Segundo Apellido" y "Pre Nombres"
+/// es el texto que está justo debajo de su etiqueta (o a su lado). No depende del orden en que la cámara entregue las líneas.
+DatosDni extraerNombresGeo(List<LineaGeo> lineas) {
+  final etiquetas = <String, RegExp>{
+    'ap1': RegExp(r'PRIMER\s+APELLIDO'),
+    'ap2': RegExp(r'SEGUNDO\s+APELLIDO'),
+    'nom': RegExp(r'PRE\s*NOMBRES?'),
+  };
+  bool esEtiqueta(LineaGeo l) => etiquetas.values.any((r) => r.hasMatch(l.texto.toUpperCase()));
+
+  String valor(RegExp et) {
+    for (final l in lineas) {
+      final u = l.texto.toUpperCase();
+      final m = et.firstMatch(u);
+      if (m == null) continue;
+      final resto = l.texto.substring(m.end).trim();
+      if (_esNombre(resto) && !RegExp(r'\d').hasMatch(resto)) return _limpiaNombre(resto);
+      LineaGeo? mejor;
+      var mejorDist = double.infinity;
+      for (final c in lineas) {
+        if (identical(c, l) || esEtiqueta(c)) continue;
+        if (RegExp(r'\d').hasMatch(c.texto) || !_esNombre(c.texto)) continue;
+        final dy = c.arriba - l.arriba;
+        if (dy < l.alto * 0.4 || dy > l.alto * 5) continue;
+        final dx = (c.izq - l.izq).abs();
+        if (dx > (l.ancho * 0.6 < 40 ? 40 : l.ancho * 0.6)) continue;
+        if (dy < mejorDist) {
+          mejorDist = dy;
+          mejor = c;
+        }
+      }
+      if (mejor != null) return _limpiaNombre(mejor.texto);
+    }
+    return '';
+  }
+
+  final ap1 = valor(etiquetas['ap1']!);
+  final ap2 = valor(etiquetas['ap2']!);
+  final nom = valor(etiquetas['nom']!);
+  if (nom.isEmpty || (ap1.isEmpty && ap2.isEmpty)) return const DatosDni();
+  return DatosDni(apellidos: [ap1, ap2].where((e) => e.isNotEmpty).join(' '), nombres: nom);
+}
+
 /// Qué lado del DNI es el texto. Frente: foto, apellidos, nombres, nacimiento y las líneas automáticas (I<PER...<<).
 /// Reverso: dirección, distrito, provincia, departamento, grupo sanguíneo, donación de órganos, constancia de sufragio.
 /// Gana el lado con más señales; null si no se sabe.
@@ -164,8 +217,9 @@ String extraerDomicilio(String texto) {
 }
 
 /// Lee todo lo que se pueda de un texto.
-DatosDni leerDni(String texto) {
-  final n = extraerNombres(texto);
+DatosDni leerDni(String texto, [List<LineaGeo>? lineas]) {
+  final geo = lineas == null ? const DatosDni() : extraerNombresGeo(lineas);
+  final n = geo.tieneNombre ? geo : extraerNombres(texto);
   return DatosDni(dni: extraerDni(texto) ?? '', apellidos: n.apellidos, nombres: n.nombres, domicilio: extraerDomicilio(texto));
 }
 
@@ -178,8 +232,8 @@ class AcumuladorDni {
   final Map<String, DatosDni> _porNombre = {};
   final Map<String, Map<String, int>> _partes = {};
 
-  void anotar(String texto) {
-    final d = leerDni(texto);
+  void anotar(String texto, [List<LineaGeo>? lineas]) {
+    final d = leerDni(texto, lineas);
     if (d.dni.isNotEmpty) _dnis[d.dni] = (_dnis[d.dni] ?? 0) + 1;
     partesDomicilio(texto).forEach((k, v) {
       if (v.isEmpty) return;

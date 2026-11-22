@@ -44,7 +44,26 @@ void main() {
   });
 }
 
+void pruebasGeo() {
+  test('Apellidos por posicion, aunque la camara entregue las lineas desordenadas', () {
+    final l = [
+      const LineaGeo('TORRE', 530, 1540, 160, 40),
+      const LineaGeo('JOEL MAYCO', 525, 1700, 290, 40),
+      const LineaGeo('Segundo Apellido', 530, 1500, 360, 40),
+      const LineaGeo('Primer Apellido', 540, 1000, 300, 40),
+      const LineaGeo('Pre Nombres', 530, 1660, 260, 40),
+      const LineaGeo('MAYTA', 540, 1040, 140, 40),
+      const LineaGeo('REPUBLICA DEL PERU', 60, 1190, 480, 40),
+    ];
+    final d = extraerNombresGeo(l);
+    expect(d.apellidos, 'MAYTA TORRE');
+    expect(d.nombres, 'JOEL MAYCO');
+    expect(leerDni('DNI 46864068', l).apellidos, 'MAYTA TORRE');
+  });
+}
+
 void pruebasLados() {
+  pruebasGeo();
   test('Frente con estado civil no se confunde con el reverso', () {
     expect(ladoDelDni('DNI 46864068\nPrimer Apellido\nTORRE\nSegundo Apellido\nMAYTA\nPre Nombres\nJOEL MAYCO\nFecha de Nacimiento\nEstado Civil\nSOLTERO'), 'frente');
   });
