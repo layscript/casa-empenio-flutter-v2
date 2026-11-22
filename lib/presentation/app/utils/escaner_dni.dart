@@ -207,7 +207,7 @@ class _EscanerDniPageState extends State<EscanerDniPage> {
         if (lado == _ladoVisto) {
           _estables++;
         } else {
-          _ladoVisto = lado;
+          _ladoVisto = lado!;
           _estables = 1;
         }
       } else {
