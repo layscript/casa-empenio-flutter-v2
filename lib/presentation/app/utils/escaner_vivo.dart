@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/dni_logica.dart' show LineaGeo;
 import 'package:casa_empenio_pe/presentation/app/utils/escaner_vivo_logica.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -66,6 +67,9 @@ class _EscanerVivoPageState extends State<EscanerVivoPage> {
   int _ultimo = 0;
   int _cuadros = 0;
   String _estado = '';
+  List<LineaGeo> _lineasVivas = const [];
+  Offset? _selA;
+  Offset? _selB;
 
   bool get _soloTextos => widget.campo == 'todo';
   String get _nombre {
@@ -200,7 +204,7 @@ class _EscanerVivoPageState extends State<EscanerVivoPage> {
   /// Se llama con cada cuadro de la cámara; se lee uno cada ~0.6 s para no recalentar el teléfono.
   Future<void> _cuadro(CameraImage img) async {
     final ahora = DateTime.now().millisecondsSinceEpoch;
-    if (_ocupado || _cerrando || ahora - _ultimo < 600) return;
+    if (_ocupado || _cerrando || ahora - _ultimo < 400) return;
     _ocupado = true;
     _ultimo = ahora;
     try {
@@ -233,6 +237,11 @@ class _EscanerVivoPageState extends State<EscanerVivoPage> {
         _giroFijo = true;
       }
       _estado = '';
+      _lineasVivas = [
+        for (final b in t.blocks)
+          for (final ln in b.lines)
+            LineaGeo(ln.text, ln.boundingBox.left, ln.boundingBox.top, ln.boundingBox.width, ln.boundingBox.height),
+      ];
       if (t.text.trim().isNotEmpty) {
         anotarCuadro(_soloTextos ? 'descripcion' : widget.campo, t.text, _vistos);
         for (final l in t.text.split(RegExp(r'[\r\n]+'))) {
@@ -294,6 +303,63 @@ class _EscanerVivoPageState extends State<EscanerVivoPage> {
         if (!c.value.isStreamingImages) await c.startImageStream(_cuadro);
       } catch (_) {}
     }
+  }
+
+  /// Capa táctil sobre la cámara: se ven las líneas de texto leídas; tocar una la elige,
+  /// y arrastrando el dedo se dibuja un recuadro: se toma solo el texto de esa zona.
+  Widget _capaDeSeleccion(CameraController c) {
+    final ps = c.value.previewSize!;
+    final iw = ps.height; // la imagen vertical: ancho = lado corto
+    final ih = ps.width;
+    return LayoutBuilder(builder: (context, caja) {
+      final w = caja.maxWidth, h = caja.maxHeight;
+      final esc = (w / iw > h / ih) ? w / iw : h / ih; // cover
+      final ox = (w - iw * esc) / 2, oy = (h - ih * esc) / 2;
+      Offset aImg(Offset p) => Offset((p.dx - ox) / esc, (p.dy - oy) / esc);
+      void elegir(String v) {
+        if (v.isEmpty) return;
+        HapticFeedback.selectionClick();
+        setState(() {
+          _valor.text = v.length > 60 ? v.substring(0, 60) : v;
+          _editado = true;
+        });
+      }
+
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapUp: (d) {
+          final p = aImg(d.localPosition);
+          elegir(textoDeToque(_lineasVivas, p.dx, p.dy));
+        },
+        onPanStart: (d) => setState(() {
+          _selA = d.localPosition;
+          _selB = d.localPosition;
+        }),
+        onPanUpdate: (d) => setState(() => _selB = d.localPosition),
+        onPanEnd: (_) {
+          final a = _selA, b = _selB;
+          if (a != null && b != null) {
+            final p1 = aImg(a), p2 = aImg(b);
+            final izq = p1.dx < p2.dx ? p1.dx : p2.dx, der = p1.dx < p2.dx ? p2.dx : p1.dx;
+            final arr = p1.dy < p2.dy ? p1.dy : p2.dy, aba = p1.dy < p2.dy ? p2.dy : p1.dy;
+            elegir(textoDeArea(_lineasVivas, izq, arr, der, aba));
+          }
+          Future.delayed(const Duration(milliseconds: 900), () {
+            if (mounted) setState(() => _selA = _selB = null);
+          });
+        },
+        child: CustomPaint(
+          size: Size(w, h),
+          painter: _PintorTextos(
+            [
+              for (final l in _lineasVivas)
+                Rect.fromLTWH(l.izq * esc + ox, l.arriba * esc + oy, l.ancho * esc, l.alto * esc),
+            ],
+            _selA == null || _selB == null ? null : Rect.fromPoints(_selA!, _selB!),
+          ),
+        ),
+      );
+    });
   }
 
   Future<void> _alternarLinterna() async {
@@ -373,20 +439,21 @@ class _EscanerVivoPageState extends State<EscanerVivoPage> {
                             ),
                           ),
                         ),
+                        if (!_soloTextos) _capaDeSeleccion(c),
                         Positioned(
                           left: 12,
                           right: 12,
                           top: 12,
-                          child: Container(
+                          child: IgnorePointer(child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(8)),
                             child: Text(
                               _soloTextos
                                   ? 'Apunta al texto del bien (etiqueta, serie, tarjeta). Se lee solo; toca «Usar esta foto» cuando salga lo que buscas.'
-                                  : 'Apunta $_nombre dentro del marco. Se lee solo: compara con el bien y, si está bien, toca «Usar».',
+                                  : 'Apunta $_nombre. Se lee solo, o elige tú: toca un texto o dibuja un recuadro con el dedo sobre lo que quieres. Luego «Usar».',
                               style: const TextStyle(color: Colors.white, fontSize: 13),
                             ),
-                          ),
+                          )),
                         ),
                       ]),
               ),
@@ -462,4 +529,34 @@ class _EscanerVivoPageState extends State<EscanerVivoPage> {
             ]),
     );
   }
+}
+
+class _PintorTextos extends CustomPainter {
+  _PintorTextos(this.cajas, this.seleccion);
+  final List<Rect> cajas;
+  final Rect? seleccion;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final borde = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..color = Colors.white54;
+    for (final r in cajas) {
+      canvas.drawRRect(RRect.fromRectAndRadius(r.inflate(2), const Radius.circular(3)), borde);
+    }
+    final sel = seleccion;
+    if (sel != null) {
+      canvas.drawRect(sel, Paint()..color = Colors.greenAccent.withOpacity(0.25));
+      canvas.drawRect(
+          sel,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2.5
+            ..color = Colors.greenAccent);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _PintorTextos old) => true;
 }

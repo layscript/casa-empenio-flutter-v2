@@ -1,3 +1,4 @@
+import 'package:casa_empenio_pe/presentation/app/utils/dni_logica.dart' show LineaGeo;
 import 'package:casa_empenio_pe/presentation/app/utils/escaner_vivo_logica.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -70,5 +71,19 @@ void main() {
 
   test('la descripcion no se llena de grupos de palabras', () {
     expect(candidatosDeTexto('LAPTOP HP 15 PULGADAS').length, lessThan(6));
+  });
+
+  test('elegir con el dedo: recuadro y toque', () {
+    final l = [
+      const LineaGeo('IdeaPad', 100, 200, 200, 40),
+      const LineaGeo('Slim 3', 320, 205, 150, 40),
+      const LineaGeo('Intel Core i5', 100, 400, 300, 40),
+      const LineaGeo('S/N PF3ABCD1', 100, 600, 300, 40),
+    ];
+    expect(textoDeArea(l, 80, 180, 500, 260), 'IDEAPAD SLIM 3');
+    expect(textoDeArea(l, 80, 380, 500, 460), 'INTEL CORE I5');
+    expect(textoDeArea(l, 0, 0, 50, 50), '');
+    expect(textoDeToque(l, 150, 215), 'IDEAPAD');
+    expect(textoDeToque(l, 700, 900), '');
   });
 }

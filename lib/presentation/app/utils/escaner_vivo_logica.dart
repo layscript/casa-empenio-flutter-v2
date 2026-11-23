@@ -1,3 +1,5 @@
+import 'package:casa_empenio_pe/presentation/app/utils/dni_logica.dart' show LineaGeo;
+
 /// Lógica pura (sin cámara) del escáner en vivo: de los textos que la cámara va leyendo cuadro a cuadro,
 /// decide cuál es el valor más probable de un campo (serie, placa, modelo, descripción).
 
@@ -143,4 +145,41 @@ void anotarCuadro(String campo, String texto, Map<String, int> vistos) {
     final v = valorTrasEtiqueta(campo, linea);
     if (v != null) vistos[v] = (vistos[v] ?? 0) + 3; // vale por 3 cuadros
   }
+}
+
+/// Texto de las líneas que caen dentro de un recuadro (en coordenadas de la imagen). Se ordenan de arriba a abajo
+/// y de izquierda a derecha. Una línea cuenta si al menos [minSolape] de su área está dentro del recuadro.
+String textoDeArea(List<LineaGeo> lineas, double izq, double arriba, double der, double abajo, {double minSolape = 0.3}) {
+  final dentro = <LineaGeo>[];
+  for (final l in lineas) {
+    final ancho = l.ancho <= 0 ? 1.0 : l.ancho;
+    final alto = l.alto <= 0 ? 1.0 : l.alto;
+    final w = (l.izq + ancho < der ? l.izq + ancho : der) - (l.izq > izq ? l.izq : izq);
+    final h = (l.arriba + alto < abajo ? l.arriba + alto : abajo) - (l.arriba > arriba ? l.arriba : arriba);
+    if (w <= 0 || h <= 0) continue;
+    if (w * h / (ancho * alto) >= minSolape) dentro.add(l);
+  }
+  dentro.sort((a, b) {
+    final dy = a.arriba - b.arriba;
+    if ((dy).abs() > (a.alto < b.alto ? a.alto : b.alto) * 0.6) return dy < 0 ? -1 : 1;
+    return a.izq.compareTo(b.izq);
+  });
+  return dentro.map((e) => e.texto.trim()).where((e) => e.isNotEmpty).join(' ').toUpperCase();
+}
+
+/// La línea tocada (o la más cercana dentro de [margen] píxeles de la imagen).
+String textoDeToque(List<LineaGeo> lineas, double x, double y, {double margen = 30}) {
+  LineaGeo? mejor;
+  var mejorD = double.infinity;
+  for (final l in lineas) {
+    final dx = x < l.izq ? l.izq - x : (x > l.izq + l.ancho ? x - (l.izq + l.ancho) : 0.0);
+    final dy = y < l.arriba ? l.arriba - y : (y > l.arriba + l.alto ? y - (l.arriba + l.alto) : 0.0);
+    final d = dx * dx + dy * dy;
+    if (d < mejorD) {
+      mejorD = d;
+      mejor = l;
+    }
+  }
+  if (mejor == null || mejorD > margen * margen) return '';
+  return mejor.texto.trim().toUpperCase();
 }
