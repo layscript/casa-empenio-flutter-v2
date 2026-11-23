@@ -42,4 +42,33 @@ void main() {
     expect(c.contains('123456789'), isTrue);
     expect(c.any((e) => e.length > 40), isFalse);
   });
+
+  test('modelo con nombre: laptop Lenovo IdeaPad', () {
+    final v = <String, int>{};
+    for (var i = 0; i < 3; i++) {
+      anotarCuadro('modelo', 'Lenovo\nIdeaPad Slim 3\n15IAH8\nIntel Core i5\nMade in China', v);
+    }
+    final p = proponerCampo('modelo', v)!;
+    expect(p.startsWith('IDEAPAD SLIM 3'), isTrue);
+    expect(puntosDeCandidato('modelo', 'INTEL CORE I5'), 0);
+    expect(puntosDeCandidato('modelo', 'MADE IN CHINA'), 0);
+    expect(puntosDeCandidato('modelo', 'LENOVO'), 0);
+  });
+
+  test('modelo con nombre: celular Samsung Galaxy S24', () {
+    final v = <String, int>{};
+    for (var i = 0; i < 3; i++) {
+      anotarCuadro('modelo', 'SAMSUNG\nGalaxy S24\nMade in Vietnam', v);
+    }
+    expect(proponerCampo('modelo', v), contains('GALAXY S24'));
+  });
+
+  test('modelo: sigue tomando codigos y la etiqueta con nombre', () {
+    expect(puntosDeCandidato('modelo', 'SM-A155M/DSN'), greaterThan(0));
+    expect(valorTrasEtiqueta('modelo', 'Model Name: IdeaPad Slim 3 15IAH8'), 'IDEAPAD SLIM 3 15IAH8');
+  });
+
+  test('la descripcion no se llena de grupos de palabras', () {
+    expect(candidatosDeTexto('LAPTOP HP 15 PULGADAS').length, lessThan(6));
+  });
 }

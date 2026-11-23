@@ -257,7 +257,12 @@ class _EscanerVivoPageState extends State<EscanerVivoPage> {
     final l = _vistos.entries
         .where((e) => e.value >= 2 && (_soloTextos ? e.key.length >= 4 : puntosDeCandidato(widget.campo, e.key) > 0))
         .toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+      ..sort((a, b) {
+        // para el modelo, primero lo que más parece un modelo (nombre de serie / código) y luego lo más visto
+        final pa = widget.campo == 'modelo' ? puntosDeCandidato('modelo', a.key) * (a.value > 5 ? 5 : a.value) : a.value;
+        final pb = widget.campo == 'modelo' ? puntosDeCandidato('modelo', b.key) * (b.value > 5 ? 5 : b.value) : b.value;
+        return pb.compareTo(pa);
+      });
     return [
       ..._codigos,
       for (final e in l)

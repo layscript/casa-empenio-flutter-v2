@@ -2,21 +2,76 @@
 /// decide cuál es el valor más probable de un campo (serie, placa, modelo, descripción).
 
 /// Trozos de texto que podrían ser un dato: líneas cortas y palabras con números (series, placas, modelos).
-List<String> candidatosDeTexto(String texto) {
+List<String> candidatosDeTexto(String texto, {bool ventanas = false}) {
   final out = <String>[];
   void sumar(String x) {
     if (!out.contains(x)) out.add(x);
   }
 
-  for (final linea in texto.split(RegExp(r'[\r\n]+'))) {
-    final l = linea.trim().toUpperCase();
+  final lineas = texto.split(RegExp(r'[\r\n]+')).map((e) => e.trim().toUpperCase()).where((e) => e.isNotEmpty).toList();
+  for (var i = 0; i < lineas.length; i++) {
+    final l = lineas[i];
     if (l.length >= 3 && l.length <= 40) sumar(l);
+    if (ventanas) {
+      // Modelos con nombre ("IDEAPAD SLIM 3 15IAH8", "GALAXY S24"): grupos de 2 a 4 palabras seguidas y línea + línea de abajo.
+      final pal = l.split(RegExp(r'\s+')).map((e) => e.replaceAll(RegExp(r'[^A-Z0-9\-/.]'), '')).where((e) => e.isNotEmpty).toList();
+      for (var a = 0; a < pal.length; a++) {
+        for (var n = 2; n <= 4 && a + n <= pal.length; n++) {
+          final w = pal.sublist(a, a + n).join(' ');
+          if (w.length <= 32) sumar(w);
+        }
+      }
+      if (i + 1 < lineas.length) {
+        final j = '$l ${lineas[i + 1]}';
+        if (j.length <= 32) sumar(j);
+      }
+    }
     for (final t in l.split(RegExp(r'[\s,;:]+'))) {
       final x = t.replaceAll(RegExp(r'[^A-Z0-9\-/]'), '');
       if (x.length >= 4 && x.length <= 30 && RegExp(r'\d').hasMatch(x)) sumar(x);
     }
   }
-  return out.take(30).toList();
+  return out.take(ventanas ? 90 : 30).toList();
+}
+
+const _series = {
+  'IDEAPAD', 'THINKPAD', 'THINKBOOK', 'LEGION', 'YOGA', 'LOQ', 'VICTUS', 'PAVILION', 'OMEN', 'ENVY', 'SPECTRE',
+  'PROBOOK', 'ELITEBOOK', 'INSPIRON', 'LATITUDE', 'VOSTRO', 'XPS', 'ALIENWARE', 'MACBOOK', 'IPHONE', 'IPAD',
+  'GALAXY', 'REDMI', 'POCO', 'NOTE', 'MOTO', 'NITRO', 'ASPIRE', 'SWIFT', 'PREDATOR', 'TUF', 'ROG', 'VIVOBOOK',
+  'ZENBOOK', 'EXPERTBOOK', 'SURFACE', 'PLAYSTATION', 'XBOX', 'SWITCH', 'TECNO', 'SPARK', 'INFINIX', 'PAD', 'TAB',
+  'SLIM', 'GAMING', 'FLEX', 'CHROMEBOOK', 'MAGIC', 'PURA', 'MATE', 'NOVA', 'HONOR', 'REALME', 'VIVO', 'OPPO',
+};
+const _marcas = {
+  'LENOVO', 'HP', 'DELL', 'ASUS', 'ACER', 'SAMSUNG', 'APPLE', 'MSI', 'LG', 'SONY', 'JBL', 'CANON', 'NIKON', 'EPSON',
+  'XIAOMI', 'HUAWEI', 'MOTOROLA', 'NOKIA', 'TOSHIBA', 'HONOR', 'HAIER', 'PHILIPS', 'PANASONIC', 'BOSE', 'DJI',
+};
+const _ruidoModelo = {
+  'INTEL', 'CORE', 'CELERON', 'PENTIUM', 'RYZEN', 'AMD', 'WINDOWS', 'MADE', 'IN', 'CHINA', 'VIETNAM', 'MEMORY', 'PROCESSOR',
+  'INSIDE', 'INPUT', 'OUTPUT', 'WARNING', 'CAUTION', 'SERIAL', 'FCC', 'RAM', 'SSD', 'DDR4', 'DDR5', 'HDD', 'LISTED',
+  'CLASS', 'VOLT', 'HZ', 'GB', 'TB', 'NVME', 'PCIE', 'USB', 'HDMI', 'WIFI', 'BLUETOOTH', 'BATTERY', 'ADAPTER', 'POWER',
+  'ENERGY', 'STAR', 'REGULATORY', 'COMPLIANT', 'CERTIFIED', 'NO', 'NUMBER', 'S/N', 'SN', 'PN', 'P/N', 'MTM', 'DC', 'AC',
+  'THE', 'AND', 'FOR', 'WITH', 'PERU', 'MEXICO', 'TAIWAN', 'INDONESIA', 'INDIA', 'BRAZIL', 'LAPTOP', 'NOTEBOOK',
+};
+
+/// Puntos de un texto como modelo: nombres de serie ("IDEAPAD SLIM 3 15IAH8", "GALAXY S24") y códigos ("SM-A155M").
+int _puntosModelo(String c) {
+  if (c.startsWith('MODEL')) return 0; // es la etiqueta, no el valor
+  if (c.length < 3 || c.length > 32) return 0;
+  final pal = c.split(' ').where((e) => e.isNotEmpty).toList();
+  if (pal.isEmpty || pal.length > 5) return 0;
+  if (pal.any(_ruidoModelo.contains)) return 0;
+  final tieneDigito = RegExp(r'\d').hasMatch(c);
+  final serie = pal.any(_series.contains);
+  final marca = pal.any(_marcas.contains);
+  final codigo = pal.any((p) => RegExp(r'\d').hasMatch(p) && RegExp(r'[A-Z]').hasMatch(p) && p.length >= 3);
+  if (!serie && !marca && !tieneDigito) return 0; // palabras sueltas sin pista: no son un modelo
+  if (!serie && !codigo) return pal.length == 1 ? (tieneDigito ? 1 : 0) : (marca && tieneDigito ? 2 : 1);
+  var p = 0;
+  if (serie) p += 4;
+  if (codigo) p += 3;
+  if (marca) p += 1;
+  if (serie && tieneDigito) p += 1;
+  return p;
 }
 
 final _placa1 = RegExp(r'^[A-Z0-9]{3}-?[A-Z0-9]{3}$');
@@ -42,9 +97,7 @@ int puntosDeCandidato(String campo, String c) {
       if (c.length > 20) p -= 1;
       return p;
     case 'modelo':
-      if (c.contains('MODEL')) return 0; // es la etiqueta, no el valor
-      if (!esToken || c.length < 3 || c.length > 25 || !tieneDigito) return 0;
-      return tieneLetra ? 3 : 1;
+      return _puntosModelo(c);
     default: // descripcion
       if (c.length < 4 || c.length > 40) return 0;
       return c.length >= 8 ? 2 : 1;
@@ -57,10 +110,10 @@ String? valorTrasEtiqueta(String campo, String linea) {
   final claves = campo == 'serie'
       ? RegExp(r'(?:S/N|SN|SERIAL(?: NO\.?| NUMBER)?|SERIE|IMEI)\s*[:#.]?\s*([A-Z0-9\-/]{6,30})')
       : campo == 'modelo'
-          ? RegExp(r'(?:MODEL(?:O)?(?: NO\.?| NUMBER)?)\s*[:#.]?\s*([A-Z0-9\-/]{3,25})')
+          ? RegExp(r'(?:MODEL(?:O)?(?: NAME| NO\.?| NUMBER)?|PRODUCT NAME|NOMBRE DEL PRODUCTO)\s*[:#.]?\s*([A-Z0-9][A-Z0-9\-/ ]{2,28})')
           : null;
   final m = claves?.firstMatch(l);
-  return m?.group(1);
+  return m?.group(1)?.trim();
 }
 
 /// El mejor valor visto hasta ahora. [vistos] cuenta en cuántos cuadros apareció cada texto;
@@ -83,7 +136,7 @@ String? proponerCampo(String campo, Map<String, int> vistos) {
 
 /// Anota lo leído en un cuadro: cada candidato suma una vez por cuadro. Lo que viene tras una etiqueta ("S/N ...") vale más.
 void anotarCuadro(String campo, String texto, Map<String, int> vistos) {
-  for (final c in candidatosDeTexto(texto)) {
+  for (final c in candidatosDeTexto(texto, ventanas: campo == 'modelo')) {
     vistos[c] = (vistos[c] ?? 0) + 1;
   }
   for (final linea in texto.split(RegExp(r'[\r\n]+'))) {
