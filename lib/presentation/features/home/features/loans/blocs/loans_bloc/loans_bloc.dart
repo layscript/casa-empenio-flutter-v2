@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 
+import 'package:casa_empenio_pe/data/remoto/http_loans_repository.dart' show ultimoErrorPago, ultimaRenovacionCodigo;
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -226,13 +227,51 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
     if (state.loansStatus == LoansStatus.loading) return;
     emit(_loadingState);
 
-    final urlImg = await savePhotoPayment(event.photos);
+    // Todas las capturas (por ejemplo 500 + 500 + 100 por Yape): un solo pago con todas las fotos.
+    final urlsImg = await savePhotosPayment(event.photos);
+    final urlImg = urlsImg.isNotEmpty ? urlsImg.first : '';
+    if ((event.photos ?? const []).isNotEmpty && urlsImg.length < event.photos!.length) {
+      // No se registra el pago si alguna captura no subió: así nunca queda dinero sin su comprobante
+      ultimoErrorPago = 'No se pudieron subir ${event.photos!.length - urlsImg.length} de ${event.photos!.length} capturas. Revisa la conexión y vuelve a intentar (no se registró el pago).';
+      emit(state.copyWith(loansStatus: LoansStatus.paymentError));
+      return;
+    }
+    if (event.renovarCapital) {
+      // Pagar y renovar con este dinero: lo que se cobra entra a caja; el capital que queda pasa a un préstamo nuevo
+      final cobrado = double.tryParse(event.monto) ?? 0;
+      var pagoOk = true;
+      if (cobrado > 0) {
+        pagoOk = await _loansRepository.savePayment(
+          codigo: event.idPrestamo,
+          monto: cobrado,
+          userId: event.userId,
+          url: urlImg,
+          urls: urlsImg,
+          efectivo: event.efectivo,
+          medioPago: event.medioPago,
+          banco: event.banco,
+          cajaId: state.cajaId,
+        );
+      }
+      if (!pagoOk) {
+        emit(state.copyWith(loansStatus: LoansStatus.paymentError));
+        return;
+      }
+      final codigoNuevo = await _loansRepository.renewCapital(prestamoId: event.idPrestamo, userId: event.userId);
+      if (codigoNuevo == null && cobrado > 0) {
+        ultimoErrorPago = 'El pago sí se registró, pero no se pudo renovar el capital: ${ultimoErrorPago ?? 'error'}. Renuévalo desde el préstamo.';
+      }
+      ultimaRenovacionCodigo = codigoNuevo;
+      emit(state.copyWith(loansStatus: codigoNuevo != null ? LoansStatus.paymentSuccess : LoansStatus.paymentError));
+      return;
+    }
     if (double.parse(event.monto) >= double.parse(event.montoRestante)) {
       final resultPayment = await _loansRepository.savePayment(
         codigo: event.idPrestamo,
         monto: double.parse(event.monto),
         userId: event.userId,
         url: urlImg,
+        urls: urlsImg,
         efectivo: event.efectivo,
         medioPago: event.medioPago,
         banco: event.banco,
@@ -265,6 +304,7 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
         monto: double.parse(event.monto),
         userId: event.userId,
         url: urlImg,
+        urls: urlsImg,
         efectivo: event.efectivo,
         medioPago: event.medioPago,
         banco: event.banco,
@@ -811,6 +851,18 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
         ),
       );
     }
+  }
+
+  /// Sube todas las capturas del pago y devuelve las rutas (solo las que subieron bien).
+  Future<List<String>> savePhotosPayment(List<XFile>? photos) async {
+    final fotos = photos ?? const <XFile>[];
+    final out = <String>[];
+    for (final f in fotos) {
+      final r = await _loansRepository.createImagePagos(path: f.path);
+      final url = r.fold((err) => '', (ok) => ok);
+      if (url.isNotEmpty) out.add(url);
+    }
+    return out;
   }
 
   Future<String> savePhotoPayment(List<XFile>? photos) async {

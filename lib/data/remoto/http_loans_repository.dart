@@ -11,6 +11,9 @@ import 'package:dio/dio.dart';
 /// Último motivo que dio el servidor al fallar un pago o una liquidación (para mostrarlo en pantalla).
 String? ultimoErrorPago;
 
+/// Código del préstamo nuevo creado por la última renovación con capital (para avisar al cajero).
+String? ultimaRenovacionCodigo;
+
 String _motivoDelServidor(Object e) {
   try {
     if (e is DioException) {
@@ -391,6 +394,7 @@ class HttpLoansRepository implements LoansRepository {
     required String userId,
     //required List<XFile>? photos,
     required String url,
+    List<String>? urls,
     required bool? efectivo,
     required int? cajaId,
     bool isLiquidacion = false,
@@ -405,6 +409,7 @@ class HttpLoansRepository implements LoansRepository {
       'cajaId': cajaId,
       'isLiquidacion': isLiquidacion,
       'url': url,
+      if (urls != null && urls.length > 1) 'urls': urls,
     };
 
     if (efectivo != null) {
@@ -436,6 +441,33 @@ class HttpLoansRepository implements LoansRepository {
       //print('responseee ee: $e');
       //return const Left('Ocurrió un error 2');
       return false;
+    }
+  }
+
+  @override
+  Future<String?> renewCapital({required int prestamoId, required String userId}) async {
+    ultimoErrorPago = null;
+    try {
+      final response = await _dio.post<String>('/prestamos/prestamos/renovar-capital', data: {
+        'prestamoId': prestamoId,
+        'usuarioId': int.parse(userId),
+      });
+      final d = json.decode(response.data!) as Map<String, dynamic>;
+      final b = d['body'] as Map<String, dynamic>?;
+      final codigo = '${b?['codigoNuevo'] ?? b?['nuevo'] ?? ''}';
+      if (codigo.isEmpty) {
+        ultimoErrorPago = 'No se pudo renovar el capital';
+        return null;
+      }
+      await _customerRepository.createHistory(
+        accion: 'RENOVAR',
+        detalle: 'renovar con capital el prestamo $prestamoId en el prestamo $codigo',
+        usuarioId: int.parse(userId),
+      );
+      return codigo;
+    } catch (e) {
+      ultimoErrorPago = _motivoDelServidor(e);
+      return null;
     }
   }
 

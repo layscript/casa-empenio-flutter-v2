@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:casa_empenio_pe/data/remoto/http_loans_repository.dart' show ultimoErrorPago;
+import 'package:casa_empenio_pe/data/remoto/http_loans_repository.dart' show ultimoErrorPago, ultimaRenovacionCodigo;
 
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
@@ -31,6 +31,7 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
   List<XFile>? selectedPhotosLiquidar = [];
 
   bool liquidar = false;
+  bool renovarCapital = false;
   double restante = 0;
   bool efectivo = true;
   String medioPago = 'EFECTIVO';
@@ -97,11 +98,13 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                         color: Colors.green,
                       ),
                     ),
-                    content:
-                        const Text('El pago se ha registrado correctamente'),
+                    content: Text(ultimaRenovacionCodigo != null
+                        ? 'Pago registrado y capital renovado en el préstamo N° $ultimaRenovacionCodigo (no entró ni salió dinero de caja por esa parte).'
+                        : 'El pago se ha registrado correctamente'),
                     actions: [
                       TextButton(
                         onPressed: () {
+                          ultimaRenovacionCodigo = null;
                           Navigator.pop(context);
                           Navigator.pop(context, true);
                         },
@@ -230,6 +233,14 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
               final capitalTotal = double.tryParse(loan?.monto ?? '') ?? 0;
               final capitalPendiente = (capitalTotal - (resultMontos ?? 0)).clamp(0, double.infinity).toDouble();
               final interesQueCobra = (montoEscrito - capitalPendiente).clamp(0, double.infinity).toDouble();
+              // Pagar y renovar con este dinero: el interés se cobra en caja y el capital que queda sigue prestado en un préstamo nuevo
+              final gananciaNum = double.tryParse(loan?.ganancia ?? '') ?? 0;
+              final puedeRenovar = !liquidar && !enRecuperacion && (loan?.estado == 'VIGENTE' || loan?.estado == 'VENCIDO') && capitalPendiente > 0.005;
+              final interesPend = (gananciaNum - (resultMontos ?? 0)).clamp(0, double.infinity).toDouble();
+              final capitalPagadoDespues = ((resultMontos ?? 0) + montoEscrito - gananciaNum).clamp(0, double.infinity).toDouble();
+              final capitalARenovar = (capitalTotal - capitalPagadoDespues).clamp(0, double.infinity).toDouble();
+              final renovando = renovarCapital && puedeRenovar;
+              final renovacionValida = renovando && montoEscrito + 0.005 >= interesPend && capitalARenovar > 0.005 && !excede;
               return SizedBox(
                 width: 320,
                 child: SingleChildScrollView(
@@ -463,6 +474,30 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                                 ),
                               )
                             : const SizedBox(),
+                      if (puedeRenovar) ...[
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                          title: const Text('Renovar con este dinero', style: TextStyle(fontWeight: FontWeight.w600)),
+                          subtitle: const Text('El capital que queda sigue prestado en un préstamo nuevo (sin mover caja)', style: TextStyle(fontSize: 11)),
+                          value: renovarCapital,
+                          onChanged: (v) => setState(() => renovarCapital = v),
+                        ),
+                        if (renovando)
+                          Container(
+                            width: double.infinity,
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.blue.shade200)),
+                            child: Text(
+                              montoEscrito + 0.005 < interesPend
+                                  ? 'Primero cobra el interés pendiente: S/ ${interesPend.toStringAsFixed(2)}. Escribe ese monto (o más) como pago; el capital se renueva aparte.'
+                                  : 'Entra a caja: S/ ${montoEscrito.toStringAsFixed(2)} (${medioPago ?? 'EFECTIVO'}).\n'
+                                      'Se renueva: S/ ${capitalARenovar.toStringAsFixed(2)} de capital en un préstamo NUEVO, con las mismas prendas, enlazado a este (no entra ni sale dinero de caja). Este préstamo queda pagado.',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ),
+                      ],
                       const SizedBox(height: 10),
                       CustomImagePicker(
                         onImagesSelected: (photo) {
@@ -473,7 +508,7 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                           }
                         },
                         initialSelectedPhotos: selectedPhotosLiquidar,
-                        limit: 1,
+                        limit: 5,
                       ),
                       const SizedBox(height: 20),
                       if (liquidar)
@@ -568,17 +603,20 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                         ),
                       if (!liquidar)
                         PrimaryButton(
-                          onPressed: (loan?.ganancia != null &&
-                                      montoCtrl.text != "" &&
-                                      montoCtrl.text != "0" &&
-                                      _medioValido &&
-                                      selectedPhotosLiquidar!.isNotEmpty) &&
+                          onPressed: (renovando
+                                      ? (renovacionValida && _medioValido && (montoEscrito <= 0 || selectedPhotosLiquidar!.isNotEmpty))
+                                      : (loan?.ganancia != null &&
+                                          montoCtrl.text != "" &&
+                                          montoCtrl.text != "0" &&
+                                          _medioValido &&
+                                          selectedPhotosLiquidar!.isNotEmpty)) &&
                                   state.loansStatus != LoansStatus.loading
                               ? () {
                                   context.read<LoansBloc>().add(
                                         SavePaymentLoan(
+                                          renovarCapital: renovando,
                                           idPrestamo: widget.nroPrestamo ?? 0,
-                                          monto: montoCtrl.text,
+                                          monto: montoCtrl.text.trim().isEmpty ? '0' : montoCtrl.text,
                                           userId:
                                               authBloc.user?.id.toString() ??
                                                   '1',
@@ -593,8 +631,8 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                                       );
                                 }
                               : null,
-                          child: const Text(
-                            'Registrar Pago',
+                          child: Text(
+                            renovando ? 'Pagar y renovar' : 'Registrar Pago',
                           ),
                         )
                     ],

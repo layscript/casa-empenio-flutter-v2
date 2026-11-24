@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
+import 'package:casa_empenio_pe/presentation/app/config/route.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/detalle_movimiento.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -32,11 +34,20 @@ class AlertaMovimientos {
   static String? _token;
   static StreamSubscription<String>? _subToken;
   static StreamSubscription<RemoteMessage>? _subMensaje;
+  static StreamSubscription<RemoteMessage>? _subAbierto;
   static int _vueltas = 0;
 
   static Future<void> _preparar() async {
     if (_lista) return;
-    await _plugin.initialize(const InitializationSettings(android: AndroidInitializationSettings('@mipmap/ic_launcher')));
+    await _plugin.initialize(
+      const InitializationSettings(android: AndroidInitializationSettings('@mipmap/ic_launcher')),
+      onDidReceiveNotificationResponse: (r) => _alTocar(r.payload),
+    );
+    try {
+      // La app estaba cerrada y se abrió tocando un aviso: se abre esa operación
+      final inicio = await _plugin.getNotificationAppLaunchDetails();
+      if (inicio?.didNotificationLaunchApp == true) _alTocar(inicio?.notificationResponse?.payload);
+    } catch (_) {}
     final a = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     await a?.requestNotificationsPermission();
     for (final c in _canales.entries) {
@@ -50,6 +61,39 @@ class AlertaMovimientos {
       ));
     }
     _lista = true;
+  }
+
+  /// Al tocar un aviso (local o de Firebase) se abre directo esa operación, como un mensaje de WhatsApp.
+  static void _alTocar(String? payload) {
+    if (payload == null || !payload.startsWith('mov:')) return;
+    final id = int.tryParse(payload.substring(4));
+    if (id != null) abrirMovimiento(id);
+  }
+
+  static bool _abriendo = false;
+
+  /// Abre el detalle de un movimiento. Si la app recién arranca, espera a que esté lista la sesión (hasta ~20 s).
+  static Future<void> abrirMovimiento(int id) async {
+    if (_abriendo) return;
+    _abriendo = true;
+    try {
+      for (var i = 0; i < 40; i++) {
+        final nav = AppRoute.mainNavigatorKey.currentState;
+        final uid = _usuarioId;
+        if (nav != null && uid != null) {
+          nav.push(MaterialPageRoute(builder: (_) => DetalleMovimientoPage(movimientoId: id, usuarioId: uid)));
+          return;
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+      }
+    } finally {
+      _abriendo = false;
+    }
+  }
+
+  static void _alTocarFcm(RemoteMessage m) {
+    final id = int.tryParse('${m.data['movId'] ?? ''}');
+    if (id != null) abrirMovimiento(id);
   }
 
   /// Empieza a escuchar. Solo para el administrador: el servidor también lo verifica con [usuarioId].
@@ -91,6 +135,9 @@ class AlertaMovimientos {
         _registrar(n).catchError((_) {});
       });
       _subMensaje ??= FirebaseMessaging.onMessage.listen(_conAppAbierta);
+      _subAbierto ??= FirebaseMessaging.onMessageOpenedApp.listen(_alTocarFcm);
+      final inicial = await m.getInitialMessage(); // la app estaba cerrada y se abrió tocando el aviso
+      if (inicial != null) _alTocarFcm(inicial);
       return true;
     } catch (_) {
       return false;
@@ -112,6 +159,7 @@ class AlertaMovimientos {
       sonido: _canales.containsKey(sonido) ? sonido : 'ingreso',
       titulo: n.title ?? 'Movimiento',
       cuerpo: n.body ?? '',
+      payload: m.data['movId'] != null ? 'mov:${m.data['movId']}' : null,
     );
   }
 
@@ -171,6 +219,7 @@ class AlertaMovimientos {
             sonido: sonidoDe(m),
             titulo: tituloDe(m),
             cuerpo: cuerpoDe(m),
+            payload: 'mov:${(m['id'] as num).toInt()}',
           );
           await Future<void>.delayed(const Duration(milliseconds: 1200)); // para que cada sonido se oiga
         }
@@ -229,7 +278,7 @@ class AlertaMovimientos {
     return partes.isEmpty ? '${m['tipo'] ?? ''}' : partes.join(' · ');
   }
 
-  static Future<void> _mostrar({required int id, required String sonido, required String titulo, required String cuerpo}) async {
+  static Future<void> _mostrar({required int id, required String sonido, required String titulo, required String cuerpo, String? payload}) async {
     final c = _canales[sonido]!;
     await _plugin.show(
       id,
@@ -247,6 +296,7 @@ class AlertaMovimientos {
           styleInformation: BigTextStyleInformation(cuerpo),
         ),
       ),
+      payload: payload,
     );
   }
 

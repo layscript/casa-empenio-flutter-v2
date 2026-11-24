@@ -93,12 +93,16 @@ abstract class LoansRepository {
     required double monto,
     required String userId,
     required String url,
+    List<String>? urls,
     required bool? efectivo,
     required int? cajaId,
     bool isLiquidacion,
     String? medioPago,
     String? banco,
   });
+
+  /// Pagar y renovar con este dinero: el capital pendiente pasa a un préstamo nuevo (sin mover caja). Devuelve el código nuevo o null.
+  Future<String?> renewCapital({required int prestamoId, required String userId});
 
   Future<bool> payOffLoan({
     required int id,

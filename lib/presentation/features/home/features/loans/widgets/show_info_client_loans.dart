@@ -350,8 +350,8 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                         ),
                                       );
                                     },
-                                    child: const Text(
-                                      'Ver Imagen',
+                                    child: Text(
+                                      pago.fotos.length > 1 ? 'Ver ${pago.fotos.length} imágenes' : 'Ver Imagen',
                                       style: TextStyle(
                                         color: AppColors.darkBlue,
                                         decoration: TextDecoration.underline,
@@ -743,6 +743,8 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                         MaterialPageRoute(
                                           builder: (context) => FullScreenImage(
                                             imageUrl: pago.url!,
+                                            galeria: pago.fotos,
+                                            titulo: 'Captura del pago',
                                           ),
                                         ),
                                       );

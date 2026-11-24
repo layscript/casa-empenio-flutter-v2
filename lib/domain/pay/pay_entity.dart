@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:equatable/equatable.dart';
 
@@ -12,6 +14,8 @@ class PayEntity extends Equatable {
     required this.updatedAt,
     required this.createdAt,
     required this.url,
+    this.urls = const [],
+    this.tipoPago,
   });
 
   final int? id;
@@ -24,6 +28,13 @@ class PayEntity extends Equatable {
   final String? createdAt;
   final String? url;
 
+  /// Todas las capturas del pago (si fueron varias); la primera es [url].
+  final List<String> urls;
+  final String? tipoPago;
+
+  /// Capturas para mostrar: las varias si las hay, si no la de siempre.
+  List<String> get fotos => urls.isNotEmpty ? urls : ((url ?? '').isNotEmpty ? [url!] : const []);
+
   static List<PayEntity> listGetPayFromMap(
     List<dynamic> list,
   ) {
@@ -34,6 +45,8 @@ class PayEntity extends Equatable {
     return PayEntity(
       id: map['id'],
       url: map['url'],
+      urls: _leerUrls(map['urls']),
+      tipoPago: map['tipoPago']?.toString(),
       monto: map['monto'],
       fecha: map['fecha'],
       customer: map['customer'] != null
@@ -50,6 +63,14 @@ class PayEntity extends Equatable {
     );
   }
 
+  static List<String> _leerUrls(dynamic v) {
+    try {
+      final l = v is String && v.trim().isNotEmpty ? jsonDecode(v) : v;
+      if (l is List) return l.map((e) => '$e').where((e) => e.isNotEmpty).toList();
+    } catch (_) {}
+    return const [];
+  }
+
   @override
   List<Object?> get props => [
         id,
@@ -61,5 +82,7 @@ class PayEntity extends Equatable {
         updatedAt,
         createdAt,
         url,
+        urls,
+        tipoPago,
       ];
 }
