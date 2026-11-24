@@ -351,7 +351,7 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                       );
                                     },
                                     child: Text(
-                                      pago.fotos.length > 1 ? 'Ver ${pago.fotos.length} imágenes' : 'Ver Imagen',
+                                      'Ver Imagen',
                                       style: TextStyle(
                                         color: AppColors.darkBlue,
                                         decoration: TextDecoration.underline,
@@ -750,7 +750,7 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                       );
                                     },
                                     child: const Text(
-                                      'Ver Imagen',
+                                      pago.fotos.length > 1 ? 'Ver ${pago.fotos.length} imágenes' : 'Ver Imagen',
                                       style: TextStyle(
                                         color: AppColors.darkBlue,
                                         decoration: TextDecoration.underline,

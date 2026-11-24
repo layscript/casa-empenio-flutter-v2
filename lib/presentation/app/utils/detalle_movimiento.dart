@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/full_screen_image.dart';
 import 'package:dio/dio.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/sesion_segura.dart';
 import 'package:flutter/material.dart';
 
 /// Pantalla a la que se llega al tocar un aviso de movimiento: la operación completa y sus capturas.
