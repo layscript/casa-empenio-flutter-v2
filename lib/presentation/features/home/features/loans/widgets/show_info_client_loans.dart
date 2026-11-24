@@ -749,7 +749,7 @@ class _ShowInfoClientLoansState extends State<ShowInfoClientLoans> {
                                         ),
                                       );
                                     },
-                                    child: const Text(
+                                    child: Text(
                                       pago.fotos.length > 1 ? 'Ver ${pago.fotos.length} imágenes' : 'Ver Imagen',
                                       style: TextStyle(
                                         color: AppColors.darkBlue,
