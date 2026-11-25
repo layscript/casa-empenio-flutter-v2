@@ -257,7 +257,7 @@ class LoansBloc extends Bloc<LoansEvent, LoansState> {
         emit(state.copyWith(loansStatus: LoansStatus.paymentError));
         return;
       }
-      final codigoNuevo = await _loansRepository.renewCapital(prestamoId: event.idPrestamo, userId: event.userId);
+      final codigoNuevo = await _loansRepository.renewCapital(prestamoId: event.idPrestamo, userId: event.userId, perdonarInteres: event.perdonarInteres);
       if (codigoNuevo == null && cobrado > 0) {
         ultimoErrorPago = 'El pago sí se registró, pero no se pudo renovar el capital: ${ultimoErrorPago ?? 'error'}. Renuévalo desde el préstamo.';
       }

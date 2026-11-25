@@ -240,7 +240,9 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
               final capitalPagadoDespues = ((resultMontos ?? 0) + montoEscrito - gananciaNum).clamp(0, double.infinity).toDouble();
               final capitalARenovar = (capitalTotal - capitalPagadoDespues).clamp(0, double.infinity).toDouble();
               final renovando = renovarCapital && puedeRenovar;
-              final renovacionValida = renovando && montoEscrito + 0.005 >= interesPend && capitalARenovar > 0.005 && !excede;
+              // Si el cliente paga menos que el interés/mora, la diferencia se perdona y se renueva todo el capital (como al liquidar)
+              final perdona = renovando && montoEscrito + 0.005 < interesPend ? interesPend - montoEscrito : 0.0;
+              final renovacionValida = renovando && capitalARenovar > 0.005 && !excede;
               return SizedBox(
                 width: 320,
                 child: SingleChildScrollView(
@@ -497,12 +499,11 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                             width: double.infinity,
                             margin: const EdgeInsets.only(bottom: 8),
                             padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.blue.shade200)),
+                            decoration: BoxDecoration(color: perdona > 0 ? Colors.orange.shade50 : Colors.blue.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: perdona > 0 ? Colors.orange.shade300 : Colors.blue.shade200)),
                             child: Text(
-                              montoEscrito + 0.005 < interesPend
-                                  ? 'Primero se cobra el interés y la mora pendientes: S/ ${interesPend.toStringAsFixed(2)}. Escribe ese monto (o más); lo que pase de eso abona capital.'
-                                  : 'Cliente paga: S/ ${montoEscrito.toStringAsFixed(2)} (${medioPago})  → entra a caja\n'
-                                      '• Interés y mora: S/ ${interesPend.toStringAsFixed(2)}\n'
+                              'Cliente paga: S/ ${montoEscrito.toStringAsFixed(2)} (${medioPago})  → entra a caja\n'
+                                      '• Interés y mora: S/ ${interesPend.toStringAsFixed(2)}'
+                                      '${perdona > 0 ? '  (se cobra ${montoEscrito.toStringAsFixed(2)} y se PERDONA S/ ${perdona.toStringAsFixed(2)})' : ''}\n'
                                       '• Abona a capital: S/ ${(montoEscrito - interesPend).clamp(0, double.infinity).toStringAsFixed(2)}\n'
                                       '• Capital que se renueva: S/ ${capitalARenovar.toStringAsFixed(2)} → préstamo NUEVO enlazado (no sale dinero de caja)\n'
                                       'Este préstamo queda pagado.',
@@ -628,6 +629,7 @@ class _PaymentLoanDialogClientState extends State<PaymentLoanDialogClient> {
                                   context.read<LoansBloc>().add(
                                         SavePaymentLoan(
                                           renovarCapital: renovando,
+                                          perdonarInteres: perdona > 0,
                                           idPrestamo: widget.nroPrestamo ?? 0,
                                           monto: montoCtrl.text.trim().isEmpty ? '0' : montoCtrl.text,
                                           userId:

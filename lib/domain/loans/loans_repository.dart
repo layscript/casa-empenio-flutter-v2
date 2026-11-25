@@ -102,7 +102,7 @@ abstract class LoansRepository {
   });
 
   /// Pagar y renovar con este dinero: el capital pendiente pasa a un préstamo nuevo (sin mover caja). Devuelve el código nuevo o null.
-  Future<String?> renewCapital({required int prestamoId, required String userId});
+  Future<String?> renewCapital({required int prestamoId, required String userId, bool perdonarInteres = false});
 
   Future<bool> payOffLoan({
     required int id,

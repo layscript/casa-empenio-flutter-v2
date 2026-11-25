@@ -445,12 +445,13 @@ class HttpLoansRepository implements LoansRepository {
   }
 
   @override
-  Future<String?> renewCapital({required int prestamoId, required String userId}) async {
+  Future<String?> renewCapital({required int prestamoId, required String userId, bool perdonarInteres = false}) async {
     ultimoErrorPago = null;
     try {
       final response = await _dio.post<String>('/prestamos/prestamos/renovar-capital', data: {
         'prestamoId': prestamoId,
         'usuarioId': int.parse(userId),
+        if (perdonarInteres) 'perdonarInteres': true,
       });
       final d = json.decode(response.data!) as Map<String, dynamic>;
       final b = d['body'] as Map<String, dynamic>?;

@@ -63,8 +63,10 @@ class SavePaymentLoan extends LoansEvent {
     this.medioPago,
     this.banco,
     this.renovarCapital = false,
+    this.perdonarInteres = false,
   });
   final bool renovarCapital;
+  final bool perdonarInteres;
   final int idPrestamo;
   final String monto;
   final String userId;
