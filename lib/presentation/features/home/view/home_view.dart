@@ -1,5 +1,6 @@
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/assets/assets.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/facturas_mes_view.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/utils.dart';
 import 'package:casa_empenio_pe/presentation/features/features.dart';
 import 'package:casa_empenio_pe/presentation/features/home/bloc/home_bloc.dart';
@@ -92,6 +93,7 @@ class _HomeViewState extends State<HomeView> {
             ),
           ),
           const AvisoCobranza(),
+          const AvisoFacturasMes(),
           const Padding(
             padding: EdgeInsets.fromLTRB(20, 14, 20, 0),
             child: Row(
