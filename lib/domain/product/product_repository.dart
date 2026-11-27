@@ -32,10 +32,11 @@ abstract class ProductRepository {
     required Map<String, dynamic> payload,
   });
 
-  /// Sube hasta 2 fotos a un producto ya creado.
+  /// Sube hasta 3 fotos a un producto ya creado.
   Future<bool> subirFotosProducto({
     required int id,
     String? imagenUno,
     String? imagenDos,
+    String? imagenTres,
   });
 }

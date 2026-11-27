@@ -3,7 +3,11 @@ import 'dart:typed_data';
 
 import 'package:casa_empenio_pe/domain/domain.dart';
 import 'package:casa_empenio_pe/presentation/app/config/config.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/campos_dinamicos_form.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/contrato_compraventa.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/escaner_bien.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/escaner_dni.dart';
+import 'package:casa_empenio_pe/presentation/app/utils/salud_view.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/custom_image_picker.dart';
 import 'package:casa_empenio_pe/presentation/app/utils/expediente_page.dart';
 import 'package:casa_empenio_pe/presentation/app/widgets/selector_medio_pago.dart';
@@ -49,6 +53,9 @@ class _RegistrarCompraPageState extends State<RegistrarCompraPage> {
   final _venta = TextEditingController();
   String _medio = 'EFECTIVO';
   String? _banco;
+  String _estadoBien = 'bueno';
+  int _fotosNonce = 0;
+  CategoriesEntity? _principal;
   bool _medioOk = true;
 
   // contrato
@@ -79,17 +86,216 @@ class _RegistrarCompraPageState extends State<RegistrarCompraPage> {
     ]) {
       c.dispose();
     }
+    CamposDinamicosEstado.limpiar();
     super.dispose();
   }
 
   bool get _esVehiculo {
-    final t = ((_cat?.plantilla ?? '') + ' ' + (_cat?.descripcion ?? ''))
+    final t = ((_cat?.plantilla ?? '') +
+            ' ' +
+            (_cat?.descripcion ?? '') +
+            ' ' +
+            (_principal?.plantilla ?? '') +
+            ' ' +
+            (_principal?.descripcion ?? ''))
         .toLowerCase();
     return t.contains('vehic') ||
         t.contains('vehíc') ||
         t.contains('moto') ||
         t.contains('auto') ||
         t.contains('camion');
+  }
+
+  // ---------- registro rápido (igual que en préstamos) ----------
+  String? get _nombrePadre => _principal?.descripcion;
+
+  CategoriesEntity? _categoriaPara(String tipo) {
+    final palabras = palabrasCategoria(tipo);
+    if (palabras.isEmpty) return null;
+    String n(String s) => s
+        .toLowerCase()
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u');
+    final todas = widget.categories;
+    for (final w in palabras) {
+      final subs = todas.where((c) => c.padreId != null && n(c.descripcion).contains(w));
+      if (subs.isNotEmpty) return subs.first;
+      final raiz = todas.where((c) => n(c.descripcion).contains(w));
+      if (raiz.isNotEmpty) return raiz.first;
+    }
+    return null;
+  }
+
+  void _elegirCategoria(CategoriesEntity? c) {
+    setState(() {
+      _cat = c;
+      if (c == null) {
+        _principal = null;
+      } else if (c.padreId != null &&
+          widget.categories.any((x) => x.id == c.padreId)) {
+        _principal = widget.categories.firstWhere((x) => x.id == c.padreId);
+      } else {
+        _principal = c;
+      }
+      CamposDinamicosEstado.limpiar();
+    });
+  }
+
+  bool get _ocultaBasicos => categoriaOcultaBasicos(_cat, widget.categories);
+
+  String get _tipoEscaneo => tipoEscaneoDeCategoria(_cat?.descripcion, _nombrePadre);
+
+  Future<void> _escanearDni() async {
+    final r = await abrirEscanerDni(context);
+    if (r == null || !mounted) return;
+    if (r.sinCamara) {
+      setState(() => _error = 'No se pudo abrir la cámara. Escribe el DNI a mano.');
+      return;
+    }
+    final d = r.datos;
+    setState(() {
+      _error = null;
+      final nom = '${d.nombres} ${d.apellidos}'.trim();
+      if (nom.isNotEmpty) _nombre.text = nom;
+      if (d.domicilio.isNotEmpty) _domicilio.text = d.domicilio;
+      if (d.tieneDni) _dni.text = d.dni;
+    });
+    if (d.tieneDni) {
+      revisarRiesgoCliente(context, d.dni);
+    } else {
+      setState(() => _error = 'No se pudo leer el número del DNI. Escríbelo y toca Buscar.');
+    }
+  }
+
+  Future<void> _escanearBien() async {
+    final r = await abrirEscanerBien(context, tipoInicial: _tipoEscaneo);
+    if (r == null || !mounted) return;
+    final c = r.campos;
+    if (_cat == null) {
+      final nueva = _categoriaPara(r.tipo);
+      if (nueva != null) _elegirCategoria(nueva);
+    }
+    void poner(TextEditingController ctl, String? v) {
+      final t = (v ?? '').trim();
+      if (t.isNotEmpty) ctl.text = t;
+    }
+
+    setState(() {
+      poner(_desc, c['descripcion']);
+      poner(_placa, c['placa']);
+      poner(_motor, c['motor']);
+      poner(_carroceria, c['clase']);
+      poner(_marca, c['marca']);
+      poner(_modelo, c['modelo']);
+      poner(_color, c['color']);
+      poner(_serie, c['serie']);
+      final partes = <String>[
+        if (_obs.text.trim().isNotEmpty) _obs.text.trim(),
+        if (r.observaciones.isNotEmpty) r.observaciones,
+        if (r.extras.isNotEmpty) r.extras,
+      ];
+      _obs.text = partes.isEmpty ? 'Registrado con escáner' : partes.join(' · ');
+      if (r.fotos.isNotEmpty) {
+        _fotos = r.fotos.take(3).toList();
+        _fotosNonce++;
+      }
+    });
+  }
+
+  Widget _camara(String campo, TextEditingController ctl) => IconButton(
+        tooltip: 'Capturar con la cámara',
+        icon: const Icon(Icons.photo_camera_outlined),
+        onPressed: () async {
+          final r = await capturarCampo(context, campo: campo, tipo: _tipoEscaneo);
+          if (r == null || !mounted) return;
+          setState(() {
+            ctl.text = r.valor;
+            if (_cat == null && r.tipo != 'OTRO') {
+              final nueva = _categoriaPara(r.tipo);
+              if (nueva != null) _elegirCategoria(nueva);
+            }
+            if (campo != 'descripcion' && _fotos.length < 3) {
+              _fotos = [..._fotos, r.foto];
+              _fotosNonce++;
+            }
+          });
+        },
+      );
+
+  Future<void> _agregarDocumento(ImageSource origen) async {
+    final foto = await ImagePicker().pickImage(source: origen, imageQuality: 92);
+    if (foto == null || !mounted || _fotos.length >= 3) return;
+    setState(() {
+      _fotos = [..._fotos, foto];
+      _fotosNonce++;
+    });
+  }
+
+  Widget _selectorCategoria() {
+    final todas = widget.categories;
+    final ids = todas.map((e) => e.id).toSet();
+    int porNombre(CategoriesEntity a, CategoriesEntity b) =>
+        a.descripcion.toLowerCase().compareTo(b.descripcion.toLowerCase());
+    final raices = todas.where((c) => c.padreId == null || !ids.contains(c.padreId)).toList()
+      ..sort(porNombre);
+    final subs = _principal == null
+        ? <CategoriesEntity>[]
+        : (todas.where((c) => c.padreId == _principal!.id).toList()..sort(porNombre));
+    InputDecoration deco(String l, String ayuda) => InputDecoration(
+        labelText: l,
+        helperText: ayuda,
+        helperMaxLines: 2,
+        border: const OutlineInputBorder(),
+        isDense: true);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: DropdownButtonFormField<int>(
+          value: _principal != null && raices.any((r) => r.id == _principal!.id)
+              ? _principal!.id
+              : null,
+          isExpanded: true,
+          menuMaxHeight: 360,
+          decoration: deco('1. Categoría (requerido)', 'Elige el tipo de bien: celular, terreno, vehículo...'),
+          items: [
+            for (final c in raices)
+              DropdownMenuItem<int>(value: c.id, child: Text(c.descripcion, overflow: TextOverflow.ellipsis)),
+          ],
+          onChanged: (id) {
+            if (id == null) return;
+            _elegirCategoria(todas.firstWhere((c) => c.id == id));
+          },
+        ),
+      ),
+      if (subs.isNotEmpty)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: DropdownButtonFormField<int?>(
+            value: _cat != null && _cat!.padreId != null && subs.any((x) => x.id == _cat!.id) ? _cat!.id : null,
+            isExpanded: true,
+            menuMaxHeight: 360,
+            decoration: deco('2. Subcategoría (opcional)', 'Hay ${subs.length} opciones dentro de ${_principal!.descripcion}'),
+            items: [
+              DropdownMenuItem<int?>(
+                  value: null,
+                  child: Text('Solo ${_principal!.descripcion} (general)', overflow: TextOverflow.ellipsis)),
+              for (final c in subs)
+                DropdownMenuItem<int?>(value: c.id, child: Text(c.descripcion, overflow: TextOverflow.ellipsis)),
+            ],
+            onChanged: (id) {
+              final p = _principal!;
+              final nueva = id == null ? p : todas.firstWhere((c) => c.id == id);
+              setState(() {
+                _cat = nueva;
+                CamposDinamicosEstado.limpiar();
+              });
+            },
+          ),
+        ),
+    ]);
   }
 
   Future<void> _buscarDni() async {
@@ -117,6 +323,17 @@ class _RegistrarCompraPageState extends State<RegistrarCompraPage> {
         _domicilio.text = c.domicilio?.direccion ?? '';
       }),
     );
+    if (dni.length == 8) revisarRiesgoCliente(context, dni);
+  }
+
+  String get _observacionesFinal {
+    final extra = CamposDinamicosEstado.resumen();
+    final partes = <String>[
+      if (!_ocultaBasicos) 'Estado: $_estadoBien',
+      if (_obs.text.trim().isNotEmpty) _obs.text.trim(),
+      if (extra.isNotEmpty) extra,
+    ];
+    return partes.join(' | ');
   }
 
   double get _precioPagado =>
@@ -139,7 +356,7 @@ class _RegistrarCompraPageState extends State<RegistrarCompraPage> {
         carroceria: _carroceria.text,
         anio: _anio.text,
         clase: _cat?.descripcion ?? '',
-        estado: _obs.text,
+        estado: _observacionesFinal,
         precio: _precioPagado,
         ciudad: 'Atalaya',
         fecha: DateTime.now(),
@@ -154,6 +371,12 @@ class _RegistrarCompraPageState extends State<RegistrarCompraPage> {
     }
     if (_cat == null) return 'Paso 2: elige la categoría del producto';
     if (_desc.text.trim().isEmpty) return 'Paso 2: describe el producto';
+    if (!_ocultaBasicos &&
+        (_marca.text.trim().isEmpty || _modelo.text.trim().isEmpty || _color.text.trim().isEmpty)) {
+      return 'Paso 2: faltan marca, modelo o color';
+    }
+    final faltan = CamposDinamicosEstado.faltantes();
+    if (faltan.isNotEmpty) return 'Paso 2: complete ${faltan.join(', ')}';
     if (_precioPagado <= 0) return 'Paso 3: escribe cuánto vas a pagar';
     if (!_medioOk) return 'Paso 3: elige el banco del depósito';
     return null;
@@ -205,7 +428,7 @@ class _RegistrarCompraPageState extends State<RegistrarCompraPage> {
         'carroceria': _carroceria.text.trim(),
         if (int.tryParse(_anio.text.trim()) != null)
           'anio': int.parse(_anio.text.trim()),
-        'observaciones': _obs.text.trim(),
+        'observaciones': _observacionesFinal,
         'cantidad': _cantidad,
         if (double.tryParse(_venta.text.replaceAll(',', '.')) != null)
           'valorizacion': double.parse(_venta.text.replaceAll(',', '.')),
@@ -244,6 +467,7 @@ class _RegistrarCompraPageState extends State<RegistrarCompraPage> {
             id: bienId,
             imagenUno: _fotos[0].path,
             imagenDos: _fotos.length > 1 ? _fotos[1].path : null,
+            imagenTres: _fotos.length > 2 ? _fotos[2].path : null,
           );
       if (!ok) aviso = 'Las fotos no se pudieron subir; agrégalas luego editando el producto.';
     }
@@ -280,7 +504,7 @@ class _RegistrarCompraPageState extends State<RegistrarCompraPage> {
       );
 
   Widget _campo(TextEditingController c, String label,
-          {TextInputType? tipo, int lineas = 1, VoidCallback? cambio}) =>
+          {TextInputType? tipo, int lineas = 1, VoidCallback? cambio, Widget? sufijo}) =>
       Padding(
         padding: const EdgeInsets.only(bottom: 10),
         child: TextField(
@@ -293,6 +517,7 @@ class _RegistrarCompraPageState extends State<RegistrarCompraPage> {
             labelText: label,
             border: const OutlineInputBorder(),
             isDense: true,
+            suffixIcon: sufijo,
           ),
         ),
       );
@@ -302,7 +527,16 @@ class _RegistrarCompraPageState extends State<RegistrarCompraPage> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(14, 0, 14, 30),
       children: [
-        _titulo(1, '¿A quién le compras?', 'Busca por DNI y se llena solo'),
+        _titulo(1, '¿A quién le compras?', 'Escanea el DNI o búscalo por número'),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: _escanearDni,
+            icon: const Icon(Icons.document_scanner),
+            label: const Text('Escanear DNI (llena los datos solo)'),
+          ),
+        ),
+        const SizedBox(height: 10),
         Row(children: [
           Expanded(child: _campo(_dni, 'DNI o RUC', tipo: TextInputType.number)),
           const SizedBox(width: 8),
@@ -333,44 +567,45 @@ class _RegistrarCompraPageState extends State<RegistrarCompraPage> {
           ),
         ),
         _titulo(2, '¿Qué compras?', 'Los mismos datos que al registrar un préstamo'),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: DropdownButtonFormField<CategoriesEntity>(
-            value: _cat,
-            isExpanded: true,
-            decoration: const InputDecoration(
-                labelText: 'Categoría',
-                border: OutlineInputBorder(),
-                isDense: true),
-            items: [
-              for (final c in cats)
-                DropdownMenuItem(
-                  value: c,
-                  child: Text(
-                    (c.padreId != null ? '   ↳ ' : '') + c.descripcion,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-            ],
-            onChanged: (v) => setState(() => _cat = v),
-          ),
+        OutlinedButton.icon(
+          onPressed: _escanearBien,
+          icon: const Icon(Icons.document_scanner_outlined),
+          label: const Text('Escanear todo el bien (varias fotos)'),
         ),
-        _campo(_desc, 'Descripción (ej: Moto lineal Honda 150)'),
-        if (!(_cat?.ocultarBasicos ?? false)) ...[
+        const Padding(
+          padding: EdgeInsets.only(top: 4, bottom: 10),
+          child: Text('Toma fotos y el sistema llena marca, modelo, serie/IMEI y placa. Tú revisas.',
+              style: TextStyle(fontSize: 12, color: Colors.black54)),
+        ),
+        _selectorCategoria(),
+        _campo(_desc, 'Descripción (requerido, ej: Moto lineal Honda 150)', sufijo: _camara('descripcion', _desc)),
+        if (!_ocultaBasicos) ...[
           Row(children: [
-            Expanded(child: _campo(_marca, 'Marca')),
+            Expanded(child: _campo(_marca, 'Marca (requerido)')),
             const SizedBox(width: 8),
-            Expanded(child: _campo(_modelo, 'Modelo')),
+            Expanded(child: _campo(_modelo, 'Modelo (requerido)', sufijo: _camara('modelo', _modelo))),
           ]),
           Row(children: [
-            Expanded(child: _campo(_color, 'Color')),
+            Expanded(child: _campo(_color, 'Color (requerido)')),
             const SizedBox(width: 8),
-            Expanded(child: _campo(_serie, 'Serie / IMEI')),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: DropdownButtonFormField<String>(
+                  value: _estadoBien,
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'Estado (requerido)', border: OutlineInputBorder(), isDense: true),
+                  items: [for (final e in const ['nuevo', 'bueno', 'regular']) DropdownMenuItem(value: e, child: Text(e))],
+                  onChanged: (v) => setState(() => _estadoBien = v ?? _estadoBien),
+                ),
+              ),
+            ),
           ]),
         ],
+        _campo(_serie, 'Serie / IMEI / chasis / VIN (opcional)', sufijo: _camara('serie', _serie)),
         if (_esVehiculo) ...[
           Row(children: [
-            Expanded(child: _campo(_placa, 'Placa')),
+            Expanded(child: _campo(_placa, 'Placa', sufijo: _camara('placa', _placa))),
             const SizedBox(width: 8),
             Expanded(child: _campo(_anio, 'Año', tipo: TextInputType.number)),
           ]),
@@ -380,7 +615,8 @@ class _RegistrarCompraPageState extends State<RegistrarCompraPage> {
             Expanded(child: _campo(_carroceria, 'Carrocería')),
           ]),
         ],
-        _campo(_obs, 'Estado / observaciones (accesorios, desperfectos, reparaciones)', lineas: 2),
+        CamposDinamicosForm(key: ValueKey('cd${_cat?.id}'), categoriaId: _cat?.id),
+        _campo(_obs, 'Observaciones (accesorios, desperfectos, reparaciones)', lineas: 2),
         Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: Builder(builder: (_) {
@@ -407,13 +643,44 @@ class _RegistrarCompraPageState extends State<RegistrarCompraPage> {
               onPressed: () => setState(() => _cantidad++),
               icon: const Icon(Icons.add_circle_outline)),
         ]),
-        const Text('Fotos (hasta 2)',
+        const Text('Fotos (hasta 3: bien, tarjeta de propiedad, documentos)',
             style: TextStyle(fontSize: 12, color: Colors.black54)),
         const SizedBox(height: 4),
         CustomImagePicker(
-          limit: 2,
+          key: ValueKey('fotos$_fotosNonce'),
+          limit: 3,
           initialSelectedPhotos: _fotos,
           onImagesSelected: (l) => _fotos = l ?? [],
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: _fotos.length >= 3
+              ? null
+              : () => showModalBottomSheet<void>(
+                    context: context,
+                    builder: (ctx) => SafeArea(
+                      child: Wrap(children: [
+                        ListTile(
+                          leading: const Icon(Icons.photo_camera),
+                          title: const Text('Tomar foto del documento'),
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            _agregarDocumento(ImageSource.camera);
+                          },
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.photo_library),
+                          title: const Text('Elegir de la galería'),
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            _agregarDocumento(ImageSource.gallery);
+                          },
+                        ),
+                      ]),
+                    ),
+                  ),
+          icon: const Icon(Icons.description_outlined),
+          label: const Text('Agregar tarjeta o documento'),
         ),
         _titulo(3, '¿Cuánto pagas?', 'Sale de la caja de hoy'),
         _campo(_precio, 'Precio que le pagas al vendedor (S/.)',

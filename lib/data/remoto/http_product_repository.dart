@@ -227,20 +227,32 @@ class HttpProductRepository implements ProductRepository {
     required int id,
     String? imagenUno,
     String? imagenDos,
+    String? imagenTres,
   }) =>
       uploadWarrantyImageProductVehiculo(
         idGarantia: id,
         imagenUno: imagenUno,
         imagenDos: imagenDos,
+        imagenTres: imagenTres,
       );
 
   Future<bool> uploadWarrantyImageProductVehiculo({
     required int idGarantia,
     required String? imagenUno,
     required String? imagenDos,
+    String? imagenTres,
   }) async {
     try {
       FormData formData = FormData();
+
+      if (imagenTres != null && !imagenTres.contains('files/')) {
+        formData.files.add(MapEntry(
+            'imagen3',
+            await MultipartFile.fromFile(
+              imagenTres,
+              filename: imagenTres.split('/').last,
+            )));
+      }
 
       if (imagenUno != null && !imagenUno.contains('files/')) {
         final img = File(imagenUno);
