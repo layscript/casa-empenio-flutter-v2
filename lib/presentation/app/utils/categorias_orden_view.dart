@@ -168,6 +168,8 @@ class _CategoriasOrdenPageState extends State<CategoriasOrdenPage> {
   List<Map<String, dynamic>> _cats = [];
   List<Map<String, dynamic>> _plantillas = [];
   final Map<int, int> _camposPorCat = {};
+  Map<String, dynamic>? _prop; // propuesta de orden por familias (servidor)
+  List<Map<String, dynamic>> _resumen = []; // bienes por familia
   bool _cargando = true;
   bool _trabajando = false;
   String? _error;
@@ -216,7 +218,75 @@ class _CategoriasOrdenPageState extends State<CategoriasOrdenPage> {
     } catch (e) {
       _error = _mensajeError(e);
     }
+    // familias: si el servidor no las tiene todavía, la pantalla sigue funcionando igual
+    try {
+      final p = await _dio.get<dynamic>('/almacen/producto/categoria/orden/propuesta');
+      final d = p.data is String ? jsonDecode(p.data as String) : p.data;
+      _prop = d is Map && d['body'] is Map ? Map<String, dynamic>.from(d['body'] as Map) : null;
+      final r = await _dio.get<dynamic>('/almacen/producto/categoria/orden/resumen');
+      _resumen = _lista(r.data);
+    } catch (_) {
+      _prop = null;
+      _resumen = [];
+    }
     if (mounted) setState(() => _cargando = false);
+  }
+
+  /// Ordena todo por familias (Vehículos > Moto lineal, Motocar...; Electrodomésticos > Refrigeradora...) y clasifica los bienes ya registrados.
+  Future<void> _ordenarFamilias() async {
+    final p = _prop;
+    if (p == null) return;
+    final crear = ((p['crear'] as List?) ?? const []).map((e) => '${(e as Map)['nombre']}').toList();
+    final asignar = ((p['asignar'] as List?) ?? const []).cast<Map>();
+    final unir = ((p['unir'] as List?) ?? const []).cast<Map>();
+    final porFamilia = <String, List<String>>{};
+    for (final a in asignar) {
+      porFamilia.putIfAbsent('${a['familiaNombre']}', () => []).add('${a['descripcion']}');
+    }
+    final lineas = <String>[
+      if (unir.isNotEmpty) '• Unir repetidas: ${unir.map((u) => ((u['sobran'] as List).map((x) => '«${(x as Map)['descripcion']}»').join(', '))).join('; ')}',
+      for (final e in porFamilia.entries) '• ${e.key}: ${e.value.join(', ')}',
+      if (crear.isNotEmpty) '\nSe crean las categorías principales: ${crear.join(', ')}.',
+    ];
+    final ok = await _confirmar(
+      'Ordenar por familias',
+      '${lineas.join('\n')}\n\nTambién se ordena cada préstamo ya hecho según su categoría. '
+          'No se borra ni se cambia ningún préstamo, bien, precio ni código. ¿Continuar?',
+    );
+    if (!ok) return;
+    await _hacer(() async {
+      final r = await _dio.post<dynamic>('/almacen/producto/categoria/orden/aplicar');
+      final d = r.data is String ? jsonDecode(r.data as String) : r.data;
+      final b = d is Map && d['body'] is Map ? d['body'] as Map : const {};
+      return 'Listo: ${b['agrupadas'] ?? 0} subcategorías ordenadas, ${b['bienesOrdenados'] ?? 0} bienes clasificados';
+    });
+  }
+
+  Widget _tarjetaFamilias() {
+    final p = _prop;
+    final hay = p != null && p['hayCambios'] == true;
+    final pendientes = (p?['pendientesBienes'] as num?)?.toInt() ?? 0;
+    final conteo = _resumen.isEmpty
+        ? ''
+        : '\n\nHoy: ${_resumen.map((f) => '${f['familia']} ${f['bienes']}').join(' · ')}';
+    if (p == null) return const SizedBox.shrink();
+    if (!hay && pendientes == 0) {
+      return _tarjeta(Colors.green, Icons.account_tree, 'Familias en orden', 'Las categorías y los préstamos ya están ordenados por familia y subcategoría.$conteo');
+    }
+    return _tarjeta(
+      Colors.indigo,
+      Icons.account_tree,
+      'Ordenar por familias',
+      'Agrupa cada categoría en su familia (Vehículos, Cómputo y tecnología, Electrodomésticos...) con sus subcategorías, y ordena los '
+          'préstamos ya hechos. ${hay ? '' : 'Faltan clasificar $pendientes bien(es) nuevos. '}Nada se borra.$conteo',
+      acciones: [
+        FilledButton.icon(
+          onPressed: _trabajando ? null : _ordenarFamilias,
+          icon: const Icon(Icons.auto_fix_high),
+          label: const Text('Ordenar por familias'),
+        ),
+      ],
+    );
   }
 
   void _aviso(String t) {
@@ -614,6 +684,7 @@ class _CategoriasOrdenPageState extends State<CategoriasOrdenPage> {
                             style: const TextStyle(fontSize: 13),
                           ),
                         ),
+                        _tarjetaFamilias(),
                         if (repetidas.isNotEmpty ||
                             familias.isNotEmpty ||
                             sinCampos.isNotEmpty)
