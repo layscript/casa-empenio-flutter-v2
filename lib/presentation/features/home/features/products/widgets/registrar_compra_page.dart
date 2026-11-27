@@ -51,6 +51,10 @@ class _RegistrarCompraPageState extends State<RegistrarCompraPage> {
   String? _banco;
   bool _medioOk = true;
 
+  // contrato
+  String _estadoCivil = 'Soltero(a)';
+  String _docProp = 'Ninguno (declaración jurada)';
+
   bool _buscando = false;
   bool _trabajando = false;
   String? _error;
@@ -139,6 +143,9 @@ class _RegistrarCompraPageState extends State<RegistrarCompraPage> {
         precio: _precioPagado,
         ciudad: 'Atalaya',
         fecha: DateTime.now(),
+        estadoCivil: _estadoCivil,
+        documentoPropiedad: (_esVehiculo ? const ['Tarjeta de propiedad', 'Factura de compra', 'Guía de remisión de la concesionaria', 'Consulta vehicular SUNARP'] : const ['Boleta o factura de compra', 'Caja o garantía original']).contains(_docProp) ? _docProp : 'Ninguno (declaración jurada)',
+        medioPago: _medio == 'EFECTIVO' ? 'EFECTIVO' : '${_medio.toLowerCase()}${(_banco ?? '').isEmpty ? '' : ' (${_banco!})'}',
       );
 
   String? _validar() {
@@ -315,6 +322,16 @@ class _RegistrarCompraPageState extends State<RegistrarCompraPage> {
         ]),
         _campo(_nombre, 'Nombre completo'),
         _campo(_domicilio, 'Domicilio'),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: DropdownButtonFormField<String>(
+            value: _estadoCivil,
+            isExpanded: true,
+            decoration: const InputDecoration(labelText: 'Estado civil del vendedor', border: OutlineInputBorder(), isDense: true, helperText: 'Si es casado(a) o conviviente, el contrato lleva firma del cónyuge'),
+            items: [for (final e in const ['Soltero(a)', 'Casado(a)', 'Conviviente', 'Viudo(a)', 'Divorciado(a)']) DropdownMenuItem(value: e, child: Text(e))],
+            onChanged: (v) => setState(() => _estadoCivil = v ?? _estadoCivil),
+          ),
+        ),
         _titulo(2, '¿Qué compras?', 'Los mismos datos que al registrar un préstamo'),
         Padding(
           padding: const EdgeInsets.only(bottom: 10),
@@ -363,7 +380,22 @@ class _RegistrarCompraPageState extends State<RegistrarCompraPage> {
             Expanded(child: _campo(_carroceria, 'Carrocería')),
           ]),
         ],
-        _campo(_obs, 'Estado / observaciones', lineas: 2),
+        _campo(_obs, 'Estado / observaciones (accesorios, desperfectos, reparaciones)', lineas: 2),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Builder(builder: (_) {
+            final docs = _esVehiculo
+                ? const ['Tarjeta de propiedad', 'Factura de compra', 'Guía de remisión de la concesionaria', 'Consulta vehicular SUNARP', 'Ninguno (declaración jurada)']
+                : const ['Boleta o factura de compra', 'Caja o garantía original', 'Ninguno (declaración jurada)'];
+            return DropdownButtonFormField<String>(
+              value: docs.contains(_docProp) ? _docProp : docs.last,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Documento con el que acredita ser el dueño', border: OutlineInputBorder(), isDense: true),
+              items: [for (final e in docs) DropdownMenuItem(value: e, child: Text(e, overflow: TextOverflow.ellipsis))],
+              onChanged: (v) => setState(() => _docProp = v ?? _docProp),
+            );
+          }),
+        ),
         Row(children: [
           const Text('Cantidad:'),
           IconButton(

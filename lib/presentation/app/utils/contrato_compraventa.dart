@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:casa_empenio_pe/domain/domain.dart' show Preferences;
+import 'package:casa_empenio_pe/presentation/app/utils/contrato_compra_clausulas.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -54,7 +55,19 @@ class DatosContrato {
     this.fechaLimite,
     this.cocheraDia,
     this.representante,
+    this.medioPago = '',
+    this.documentoPropiedad = '',
+    this.estadoCivil = '',
   });
+
+  /// Cómo se pagó (EFECTIVO, o el texto del depósito: «depósito en Caja Huancayo»). Solo contrato de compra.
+  final String medioPago;
+
+  /// Documento con el que el vendedor acredita ser dueño (tarjeta de propiedad, factura, guía de remisión...).
+  final String documentoPropiedad;
+
+  /// Estado civil del vendedor (si es casado o conviviente, firma también el cónyuge).
+  final String estadoCivil;
 
   /// Trabajador que firma en nombre de la empresa (nombre completo, tomado de su usuario enlazado a RRHH).
   final String? representante;
@@ -195,6 +208,73 @@ Future<Uint8List> crearContratoCompraVentaPdf(
           if (huellaImg != null) w.Text('(huella índice derecho)', style: const w.TextStyle(fontSize: 7)),
         ],
       );
+
+  if (d.empresaCompra) {
+    // La empresa COMPRA: contrato completo (cláusulas del Código Civil peruano) + declaración jurada del vendedor
+    final casado = ['casado', 'casada', 'conviviente'].contains(d.estadoCivil.trim().toLowerCase());
+    w.Widget firmaV() => firma(d.nombre.trim().toUpperCase(), 'DNI N° ${d.dni.trim()}', persona, firmaPersona, huellaPersona);
+    w.Widget firmaE0() => firma(_empresa, _lineaEmpresa(d), empresaRol, firmaEmpresa, null);
+    pdf.addPage(
+      w.MultiPage(
+        pageFormat: p.PdfPageFormat.a4,
+        margin: const w.EdgeInsets.all(40),
+        build: (ctx) => [
+          w.Center(
+            child: w.Text('$titulo\nDE SEGUNDO USO',
+                textAlign: w.TextAlign.center, style: w.TextStyle(fontWeight: w.FontWeight.bold, fontSize: 13)),
+          ),
+          w.SizedBox(height: 18),
+          w.RichText(
+            textAlign: w.TextAlign.justify,
+            text: w.TextSpan(style: base, children: [
+              const w.TextSpan(text: 'Consta por el presente documento el contrato privado de compra y venta de '),
+              b(bien),
+              const w.TextSpan(text: ', que celebran de una parte el Sr(a). '),
+              b(d.nombre.trim().toUpperCase()),
+              const w.TextSpan(text: ', identificado(a) con DNI N° '),
+              b(d.dni.trim()),
+              w.TextSpan(text: ', domiciliado(a) en ${d.domicilio.trim()}, a quien en adelante se le llamará EL VENDEDOR; y de la otra parte la empresa '),
+              b(_empresa),
+              const w.TextSpan(text: ' con RUC '),
+              b(_ruc),
+              w.TextSpan(text: ', con domicilio fiscal en $_domicilioFiscal, ${(d.representante ?? '').trim().isEmpty ? 'representada por su encargado de tienda' : 'representada por su encargado ${d.representante!.trim().toUpperCase()}'}, a quien en adelante se le llamará EL COMPRADOR, en los términos siguientes:'),
+            ]),
+          ),
+          ...clausulasCompra(
+            d,
+            base,
+            negrita,
+            tabla: w.TableHelper.fromTextArray(
+              context: ctx,
+              cellStyle: const w.TextStyle(fontSize: 9),
+              cellAlignment: w.Alignment.centerLeft,
+              data: <List<String>>[cabecera, fila],
+            ),
+          ),
+          w.SizedBox(height: 14),
+          w.SizedBox(
+            width: double.infinity,
+            child: w.Text('${d.ciudad.trim().isEmpty ? 'Atalaya' : d.ciudad.trim()}, ${fechaLarga(d.fecha)}', textAlign: w.TextAlign.right, style: base),
+          ),
+          w.SizedBox(height: 12),
+          w.Row(mainAxisAlignment: w.MainAxisAlignment.spaceAround, children: [firmaV(), firmaE0()]),
+          if (casado) ...[
+            w.SizedBox(height: 14),
+            w.Center(child: w.Text('CONSENTIMIENTO DEL CÓNYUGE O CONVIVIENTE', style: w.TextStyle(fontWeight: w.FontWeight.bold, fontSize: 9))),
+            w.SizedBox(height: 40),
+            w.Center(child: w.Text('______________________\nNombre: ____________________  DNI N°: ____________', textAlign: w.TextAlign.center, style: base)),
+          ],
+          if (selloDigital != null) ...[
+            w.SizedBox(height: 14),
+            w.Text(selloDigital, style: const w.TextStyle(fontSize: 8)),
+          ],
+          w.NewPage(),
+          ...declaracionJuradaCompra(d, base, negrita, firmaVendedor: firmaV(), firmaEmpresa: firmaE0()),
+        ],
+      ),
+    );
+    return pdf.save();
+  }
 
   pdf.addPage(
     w.MultiPage(

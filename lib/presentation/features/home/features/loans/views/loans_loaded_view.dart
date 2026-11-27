@@ -12,6 +12,7 @@ import 'package:casa_empenio_pe/presentation/features/home/features/loans/featur
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/views/loan_client_view.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/widgets/panel_prestamos.dart';
 import 'package:casa_empenio_pe/presentation/features/home/features/loans/widgets/widgets.dart';
+import 'package:casa_empenio_pe/presentation/features/home/features/products/widgets/registrar_compra_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -1284,7 +1285,11 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      PrimaryButton(
+                      Row(
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: PrimaryButton(
                         onPressed: () async {
                           // Si no hay borrador en este teléfono (ej. se reinstaló la app), se recupera el de la nube
                           try {
@@ -1326,6 +1331,29 @@ class _LoansLoadedViewState extends State<LoansLoadedView> {
                             Text('Agregar Préstamo'),
                           ],
                         ),
+                      ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            flex: 2,
+                            child: SizedBox(
+                              height: 48,
+                              child: OutlinedButton.icon(
+                                onPressed: () async {
+                                  final repo = context.read<CategoriesRepository>();
+                                  final r = await repo.getCategories();
+                                  if (!context.mounted) return;
+                                  final cats = r.fold((_) => <CategoriesEntity>[], (l) => l);
+                                  await Navigator.of(context).push<bool>(
+                                    MaterialPageRoute<bool>(builder: (_) => RegistrarCompraPage(categories: cats)),
+                                  );
+                                },
+                                icon: const Icon(Icons.shopping_cart_checkout),
+                                label: const Text('Agregar compra'),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
